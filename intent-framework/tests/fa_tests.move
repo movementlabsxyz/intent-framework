@@ -1,6 +1,7 @@
 #[test_only]
 module aptos_intent::fa_tests {
     use std::signer;
+    use std::option;
     use aptos_framework::timestamp;
     use aptos_framework::fungible_asset;
     use aptos_framework::object;
@@ -35,13 +36,14 @@ module aptos_intent::fa_tests {
             25,
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
+            option::none(),
         );
         // Verify intent was created
         assert!(object::object_address(&intent) != @0x0);
 
         // Solver 
         // 1. starts the session and unlocks the tokens
-        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(intent);
+        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(solver, intent);
         // Verify solver got the correct amount from the session
         assert!(fungible_asset::amount(&unlocked_fa) == 50);
         assert!(fungible_asset::metadata_from_asset(&unlocked_fa) == object::convert(offered_fa_type));
@@ -80,6 +82,7 @@ module aptos_intent::fa_tests {
             15,
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer1),
+            option::none(),
         );
 
         // Offerer2 deposits 15 of FA2 requesting 30 of FA1.
@@ -89,13 +92,14 @@ module aptos_intent::fa_tests {
             30,
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer2),
+            option::none(),
         );
 
         // Solver unlocks both intents to gather the offered assets.
-        let (solver_fa1, session1) = fa_intent::start_fa_offering_session(intent1);
+        let (solver_fa1, session1) = fa_intent::start_fa_offering_session(solver, intent1);
         primary_fungible_store::deposit(signer::address_of(solver), solver_fa1);
 
-        let (solver_fa2, session2) = fa_intent::start_fa_offering_session(intent2);
+        let (solver_fa2, session2) = fa_intent::start_fa_offering_session(solver, intent2);
         primary_fungible_store::deposit(signer::address_of(solver), solver_fa2);
 
         // Solver repays 15 FA2 to fulfill offerer1's request and closes their session.
@@ -137,6 +141,7 @@ module aptos_intent::fa_tests {
             25,
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
+            option::none(),
         );
         // Check balance before revocation
         assert!(primary_fungible_store::balance(signer::address_of(offerer), offered_fa_type) == 50);
@@ -171,10 +176,11 @@ module aptos_intent::fa_tests {
             25, // Wants 25 but solver only has 5
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
+            option::none(),
         );
         
         // Solver starts the session and unlocks the 50 offered tokens
-        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(intent);
+        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(solver, intent);
         
         // Solver deposits the unlocked tokens to their account
         primary_fungible_store::deposit(signer::address_of(solver), unlocked_fa);

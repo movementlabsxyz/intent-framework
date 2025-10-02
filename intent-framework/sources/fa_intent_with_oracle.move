@@ -159,6 +159,7 @@ module aptos_intent::fa_intent_with_oracle {
             expiry_time,
             issuer,
             OracleGuardedWitness {},
+            option::none(),
         )
     }
 

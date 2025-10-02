@@ -1,9 +1,11 @@
 module aptos_intent::intent {
     use std::error;
     use std::signer;
+    use std::option::Option;
     use aptos_framework::object::{Self, DeleteRef, Object};
     use aptos_framework::timestamp;
     use aptos_framework::type_info::{Self, TypeInfo};
+    use aptos_intent::intent_reservation::IntentReserved;
 
     /// The offered intent has expired
     const EINTENT_EXPIRED: u64 = 0;
@@ -30,6 +32,7 @@ module aptos_intent::intent {
         self_delete_ref: DeleteRef,
         expiry_time: u64,
         witness_type: TypeInfo,
+        reservation: Option<IntentReserved>,
     }
 
     /// Active trading session containing the conditions and witness requirements.
@@ -37,6 +40,7 @@ module aptos_intent::intent {
     struct TradeSession<Args> {
         argument: Args,
         witness_type: TypeInfo,
+        reservation: Option<IntentReserved>,
     }
 
     // Core offering logic
@@ -61,6 +65,7 @@ module aptos_intent::intent {
         expiry_time: u64,
         issuer: address,
         _witness: Witness,
+        reservation: Option<IntentReserved>,
     ): Object<TradeIntent<Source, Args>> {
         let constructor_ref = object::create_object(issuer);
         let object_signer = object::generate_signer(&constructor_ref);
@@ -74,6 +79,7 @@ module aptos_intent::intent {
                 expiry_time,
                 self_delete_ref,
                 witness_type: type_info::type_of<Witness>(),
+                reservation,
             }
         );
         object::object_from_constructor_ref(&constructor_ref)
@@ -105,6 +111,7 @@ module aptos_intent::intent {
             expiry_time: _,
             self_delete_ref,
             witness_type,
+            reservation,
         } = move_from<TradeIntent<Source, Args>>(object::object_address(&intent));
 
         object::delete(self_delete_ref);
@@ -112,6 +119,7 @@ module aptos_intent::intent {
         return (offered_resource, TradeSession {
             argument,
             witness_type,
+            reservation,
         })
     }
 
@@ -124,6 +132,17 @@ module aptos_intent::intent {
     /// - `&Args`: Reference to the trading conditions
     public fun get_argument<Args>(session: &TradeSession<Args>): &Args {
         &session.argument
+    }
+
+    /// Retrieves the reservation from a trading session.
+    ///
+    /// # Arguments
+    /// - `session`: Reference to the trading session
+    ///
+    /// # Returns
+    /// - `&Option<IntentReserved>`: Reference to the reservation
+    public fun get_reservation<Args>(session: &TradeSession<Args>): &Option<IntentReserved> {
+        &session.reservation
     }
 
     /// Completes an intent session by providing the required witness.
@@ -145,6 +164,7 @@ module aptos_intent::intent {
         let TradeSession {
             argument:_ ,
             witness_type,
+            reservation: _,
         } = session;
 
         assert!(type_info::type_of<Witness>() == witness_type, error::permission_denied(EINVALID_WITNESS));
@@ -175,6 +195,7 @@ module aptos_intent::intent {
             expiry_time: _,
             self_delete_ref,
             witness_type: _,
+            reservation: _,
         } = move_from<TradeIntent<Source, Args>>(object::object_address(&intent));
 
         object::delete(self_delete_ref);

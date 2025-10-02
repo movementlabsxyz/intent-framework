@@ -1,6 +1,7 @@
 #[test_only]
 module aptos_intent::intent_tests {
     use std::signer;
+    use std::option;
     use aptos_framework::timestamp;
     use aptos_framework::object;
     use aptos_intent::intent;
@@ -42,6 +43,7 @@ module aptos_intent::intent_tests {
             expiry_time,
             signer::address_of(offerer),
             TestWitness {},
+            option::none(),
         )
     }
 
@@ -116,6 +118,7 @@ module aptos_intent::intent_tests {
             expiry_time,
             signer::address_of(offerer),
             TestWitness {},
+            option::none(),
         );
         
         // Advance time to make the intent expired

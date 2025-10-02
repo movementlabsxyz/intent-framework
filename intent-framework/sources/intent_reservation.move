@@ -1,0 +1,105 @@
+module aptos_intent::intent_reservation {
+    use std::bcs;
+    use std::option::{Self, Option};
+    use std::signer;
+    use aptos_std::ed25519;
+    use aptos_framework::object::Object;
+    use aptos_framework::fungible_asset::Metadata;
+    use aptos_framework::account;
+
+    /// The public key used for verification is invalid.
+    const EINVALID_PUBLIC_KEY: u64 = 1;
+    /// The signature is invalid.
+    const EINVALID_SIGNATURE: u64 = 2;
+    /// The signer is not the authorized solver for this intent.
+    const EUNAUTHORIZED_SOLVER: u64 = 3;
+
+    /// Struct to hold reservation details for an intent.
+    /// This is stored inside the `TradeIntent` if the intent is reserved for a specific solver.
+    struct IntentReserved has store, drop {
+        solver: address,
+    }
+
+    /// The data structure that is signed by the solver off-chain.
+    struct IntentToSign has drop {
+        source_metadata: Object<Metadata>,
+        source_amount: u64,
+        desired_metadata: Object<Metadata>,
+        desired_amount: u64,
+        expiry_time: u64,
+        issuer: address,
+        solver: address,
+    }
+
+    /// Hashes the core components of an intent for off-chain signing by a solver.
+    public fun hash_intent(
+        source_metadata: Object<Metadata>,
+        source_amount: u64,
+        desired_metadata: Object<Metadata>,
+        desired_amount: u64,
+        expiry_time: u64,
+        issuer: address,
+        solver: address,
+    ): vector<u8> {
+        bcs::to_bytes(&IntentToSign {
+            source_metadata,
+            source_amount,
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            issuer,
+            solver,
+        })
+    }
+
+    /// Verifies a solver's signature against the intent data and creates a reservation.
+    public fun verify_and_create_reservation(
+        source_metadata: Object<Metadata>,
+        source_amount: u64,
+        desired_metadata: Object<Metadata>,
+        desired_amount: u64,
+        expiry_time: u64,
+        issuer: address,
+        solver: address,
+        solver_signature: vector<u8>,
+    ): Option<IntentReserved> {
+        let auth_key = account::get_authentication_key(solver);
+        // We only support single-key Ed25519 accounts for now.
+        if (std::vector::length(&auth_key) != 33 || auth_key[0] != 0x00) {
+            return option::none()
+        };
+        let public_key_bytes = std::vector::slice(&auth_key, 1, 33);
+
+        let unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(public_key_bytes);
+        let validated_public_key_opt = ed25519::public_key_validate(&unvalidated_public_key);
+        if (option::is_none(&validated_public_key_opt)) {
+            return option::none()
+        };
+
+        let signature = ed25519::new_signature_from_bytes(solver_signature);
+
+        let message = hash_intent(
+            source_metadata,
+            source_amount,
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            issuer,
+            solver,
+        );
+
+        if (ed25519::signature_verify_strict(&signature, &unvalidated_public_key, message)) {
+            option::some(IntentReserved { solver })
+        } else {
+            option::none()
+        }
+    }
+
+    /// Ensures the signer of the transaction is the authorized solver.
+    public fun ensure_solver_authorized(solver_signer: &signer, reservation: &Option<IntentReserved>) {
+        if (option::is_some(reservation)) {
+            let intent_reserved = option::borrow(reservation);
+            assert!(signer::address_of(solver_signer) == intent_reserved.solver, EUNAUTHORIZED_SOLVER);
+        }
+    }
+}

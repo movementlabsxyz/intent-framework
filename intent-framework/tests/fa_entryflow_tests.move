@@ -4,6 +4,7 @@
 #[test_only]
 module aptos_intent::fa_entryflow_tests {
     use std::signer;
+    use std::option;
 
     use aptos_framework::fungible_asset::Metadata;
     use aptos_framework::object;
@@ -44,6 +45,7 @@ module aptos_intent::fa_entryflow_tests {
             desired_amount,
             expiry_time,
             offerer_addr,
+            option::none(),
         );
 
         move_to(offerer, PendingIntent { intent });
@@ -60,7 +62,7 @@ module aptos_intent::fa_entryflow_tests {
         let PendingIntent { intent } = move_from<PendingIntent>(offerer_addr);
 
         // Solver 1. starts the session and unlocks the tokens from the offerer's intent.
-        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(intent);
+        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(solver, intent);
         // Solver deposits the unlocked tokens to their own account before providing the desired asset.
         primary_fungible_store::deposit(signer::address_of(solver), unlocked_fa);
 

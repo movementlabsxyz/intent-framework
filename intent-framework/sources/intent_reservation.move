@@ -20,6 +20,16 @@ module aptos_intent::intent_reservation {
         solver: address,
     }
 
+    /// The draft intent data created by the offerer (without solver address).
+    struct IntentDraft has copy, drop {
+        source_metadata: Object<Metadata>,
+        source_amount: u64,
+        desired_metadata: Object<Metadata>,
+        desired_amount: u64,
+        expiry_time: u64,
+        issuer: address,
+    }
+
     /// The data structure that is signed by the solver off-chain.
     struct IntentToSign has drop {
         source_metadata: Object<Metadata>,
@@ -31,25 +41,44 @@ module aptos_intent::intent_reservation {
         solver: address,
     }
 
-    /// Hashes the core components of an intent for off-chain signing by a solver.
-    public fun hash_intent(
+    /// Hashes the IntentToSign struct for off-chain signing by a solver.
+    public fun hash_intent(intent_to_sign: IntentToSign): vector<u8> {
+        bcs::to_bytes(&intent_to_sign)
+    }
+
+    /// Creates a draft intent without a solver address.
+    public fun create_draft_intent(
         source_metadata: Object<Metadata>,
         source_amount: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         expiry_time: u64,
         issuer: address,
-        solver: address,
-    ): vector<u8> {
-        bcs::to_bytes(&IntentToSign {
+    ): IntentDraft {
+        IntentDraft {
             source_metadata,
             source_amount,
             desired_metadata,
             desired_amount,
             expiry_time,
             issuer,
-            solver,
-        })
+        }
+    }
+
+    /// Converts draft intent to IntentToSign by adding solver address.
+    public fun add_solver_to_draft_intent(
+        draft: IntentDraft,
+        solver: address,
+    ): IntentToSign {
+        IntentToSign {
+            source_metadata: draft.source_metadata,
+            source_amount: draft.source_amount,
+            desired_metadata: draft.desired_metadata,
+            desired_amount: draft.desired_amount,
+            expiry_time: draft.expiry_time,
+            issuer: draft.issuer,
+            solver: solver,
+        }
     }
 
     /// Verifies a solver's signature against the intent data and creates a reservation.
@@ -78,7 +107,7 @@ module aptos_intent::intent_reservation {
 
         let signature = ed25519::new_signature_from_bytes(solver_signature);
 
-        let message = hash_intent(
+        let message = hash_intent(IntentToSign {
             source_metadata,
             source_amount,
             desired_metadata,
@@ -86,7 +115,7 @@ module aptos_intent::intent_reservation {
             expiry_time,
             issuer,
             solver,
-        );
+        });
 
         if (ed25519::signature_verify_strict(&signature, &unvalidated_public_key, message)) {
             option::some(IntentReserved { solver })

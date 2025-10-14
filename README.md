@@ -8,12 +8,26 @@ For detailed technical specifications and design rationale, see [AIP-511: Aptos 
 
 ## Intent Flow
 
-1. **Intent Creator (User) creates intent**: Locks on-chain resources with specific trading conditions (stored in the intent's `argument` field) and expiry time.
-2. **Intent broadcast**: The contract emits an event containing the trading details (source token, wanted token, amounts, expiry) that solvers can monitor.
-3. **Intent Solver execution**: In a single transaction, the solver:
+The framework supports two types of intents:
+
+#### Unreserved Intent Flow
+
+1. **Intent Creator creates intent**: Locks on-chain resources with specific trading conditions and expiry time.
+2. **Intent broadcast**: The contract emits an event containing the trading details that any solver can monitor.
+3. **Any Solver execution**: In a single transaction, any solver:
    - Calls `start_intent_session()` to begin fulfilling the intent
    - Meets the intent's trading conditions (e.g., obtains the wanted fungible asset).
    - Calls `finish_intent_session()` with the required witness to complete the intent.
+
+#### Reserved Intent Flow
+
+**Why reserved intents?** For cross-chain trading, solvers need guarantees that intent creators won't switch to another solver after the solver has committed resources on other chains. Reserved intents provide this commitment.
+
+1. **Off-chain negotiation**: Intent creator shares intent details with a specific solver.
+2. **Solver authorization**: Solver signs the intent hash off-chain and returns signature to creator.
+3. **Intent Creator creates reserved intent**: Locks resources with solver address and signature.
+4. **Intent broadcast**: Contract emits event, but only the authorized solver can execute.
+5. **Authorized Solver execution**: Only the pre-authorized solver can call `start_intent_session()` and complete the intent.
 
 ## Development Setup
 

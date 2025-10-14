@@ -31,7 +31,7 @@ module aptos_intent::intent_reservation {
     }
 
     /// The data structure that is signed by the solver off-chain.
-    struct IntentToSign has drop {
+    public struct IntentToSign has copy, drop {
         source_metadata: Object<Metadata>,
         source_amount: u64,
         desired_metadata: Object<Metadata>,
@@ -39,6 +39,27 @@ module aptos_intent::intent_reservation {
         expiry_time: u64,
         issuer: address,
         solver: address,
+    }
+
+    /// Creates an IntentToSign struct from the provided parameters.
+    public fun new_intent_to_sign(
+        source_metadata: Object<Metadata>,
+        source_amount: u64,
+        desired_metadata: Object<Metadata>,
+        desired_amount: u64,
+        expiry_time: u64,
+        issuer: address,
+        solver: address,
+    ): IntentToSign {
+        IntentToSign {
+            source_metadata,
+            source_amount,
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            issuer,
+            solver,
+        }
     }
 
     /// Hashes the IntentToSign struct for off-chain signing by a solver.
@@ -82,16 +103,28 @@ module aptos_intent::intent_reservation {
     }
 
     /// Verifies a solver's signature against the intent data and creates a reservation.
+    /// This version accepts the public key directly for testing purposes.
+    public fun verify_and_create_reservation_with_public_key(
+        intent_to_sign: IntentToSign,
+        solver_signature: vector<u8>,
+        solver_public_key: &ed25519::UnvalidatedPublicKey,
+    ): Option<IntentReserved> {
+        let signature = ed25519::new_signature_from_bytes(solver_signature);
+        let message = hash_intent(intent_to_sign);
+
+        if (ed25519::signature_verify_strict(&signature, solver_public_key, message)) {
+            option::some(IntentReserved { solver: intent_to_sign.solver })
+        } else {
+            option::none()
+        }
+    }
+
+    /// Verifies a solver's signature against the intent data and creates a reservation.
     public fun verify_and_create_reservation(
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
-        desired_metadata: Object<Metadata>,
-        desired_amount: u64,
-        expiry_time: u64,
-        issuer: address,
-        solver: address,
+        intent_to_sign: IntentToSign,
         solver_signature: vector<u8>,
     ): Option<IntentReserved> {
+        let solver = intent_to_sign.solver;
         let auth_key = account::get_authentication_key(solver);
         // We only support single-key Ed25519 accounts for now.
         if (std::vector::length(&auth_key) != 33 || auth_key[0] != 0x00) {
@@ -107,15 +140,7 @@ module aptos_intent::intent_reservation {
 
         let signature = ed25519::new_signature_from_bytes(solver_signature);
 
-        let message = hash_intent(IntentToSign {
-            source_metadata,
-            source_amount,
-            desired_metadata,
-            desired_amount,
-            expiry_time,
-            issuer,
-            solver,
-        });
+        let message = hash_intent(intent_to_sign);
 
         if (ed25519::signature_verify_strict(&signature, &unvalidated_public_key, message)) {
             option::some(IntentReserved { solver })

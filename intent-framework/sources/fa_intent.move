@@ -129,7 +129,7 @@ module aptos_intent::fa_intent {
         let reservation = if (vector::is_empty(&solver_signature)) {
             option::none()  // Explicitly unreserved intent
         } else {
-            let result = intent_reservation::verify_and_create_reservation(
+            let intent_to_sign = intent_reservation::new_intent_to_sign(
                 source_metadata,
                 source_amount,
                 desired_metadata,
@@ -137,6 +137,9 @@ module aptos_intent::fa_intent {
                 expiry_time,
                 issuer,
                 solver,
+            );
+            let result = intent_reservation::verify_and_create_reservation(
+                intent_to_sign,
                 solver_signature,
             );
             // Fail if signature verification failed instead of silently falling back

@@ -2,10 +2,8 @@
 #[test_only]
 module aptos_intent::intent_reservation_tests {
     use std::signer;
-    use std::vector;
     use std::option;
     use aptos_std::ed25519;
-    use aptos_std::unit_test;
     use aptos_intent::fa_intent;
     use aptos_intent::intent_reservation;
     use aptos_intent::fa_test_utils::register_and_mint_tokens;
@@ -31,12 +29,15 @@ module aptos_intent::intent_reservation_tests {
         desired_fa_holder: &signer,
     ) {
         // Generate Ed25519 keys for the solver
-        let (solver_secret_key, _solver_public_key) = ed25519::generate_keys();
+        let (solver_secret_key, solver_public_key) = ed25519::generate_keys();
         
-        // Create a solver signer for testing (for minting tokens)
-        let solver_signers = unit_test::create_signers_for_testing(1);
-        let solver_signer = vector::pop_back(&mut solver_signers);
-        let solver_address = signer::address_of(&solver_signer);
+        // Convert to unvalidated public key for the verification function
+        let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
+        let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
+        
+        // Use offerer as solver address - verification uses the provided public key, not the address
+        let solver_address = signer::address_of(offerer);
+
         
         let (offered_fa_type, _offered_mint_ref) = register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
@@ -57,28 +58,21 @@ module aptos_intent::intent_reservation_tests {
             solver_address,
         );
         
-        // Step 3: Hash the intent to sign
+        // Step 3: Hash the intent to sign and sign it
         let intent_data = intent_reservation::hash_intent(
             intent_to_sign,
         );
-        
-        // Sign with the generated key
         let signature = ed25519::sign_arbitrary_bytes(&solver_secret_key, intent_data);
         
-        // Step 3: Test with solver address and valid signature
-        fa_intent::create_fa_to_fa_intent_entry(
-            offerer,
-            offered_fa_type,
-            SOURCE_AMOUNT,
-            desired_fa_type,
-            DESIRED_AMOUNT,
-            EXPIRY_TIME,
-            solver_address, // Use solver address
-            ed25519::signature_to_bytes(&signature), // Use generated signature
+        // Test signature verification with the generated public key
+        let result = intent_reservation::verify_and_create_reservation_with_public_key(
+            intent_to_sign,
+            ed25519::signature_to_bytes(&signature),
+            &solver_unvalidated_public_key,
         );
-
-        // Verify the intent was created successfully
-        // Note: The function should complete without aborting, indicating successful creation
+        
+        // Verify the signature verification succeeded
+        assert!(option::is_some(&result), 0);
     }
 
     #[test(

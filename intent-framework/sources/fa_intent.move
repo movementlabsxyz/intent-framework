@@ -15,6 +15,8 @@ module aptos_intent::fa_intent {
 
     /// The token offered does not meet amount requirement.
     const EAMOUNT_NOT_MEET: u64 = 1;
+    /// The solver signature is invalid and cannot be verified.
+    const EINVALID_SIGNATURE: u64 = 2;
 
     /// Manages a fungible asset store for intent execution.
     /// Contains references needed to withdraw assets from the store.
@@ -125,9 +127,9 @@ module aptos_intent::fa_intent {
     ) {
         let issuer = signer::address_of(account);
         let reservation = if (vector::is_empty(&solver_signature)) {
-            option::none()
+            option::none()  // Explicitly unreserved intent
         } else {
-            intent_reservation::verify_and_create_reservation(
+            let result = intent_reservation::verify_and_create_reservation(
                 source_metadata,
                 source_amount,
                 desired_metadata,
@@ -136,7 +138,10 @@ module aptos_intent::fa_intent {
                 issuer,
                 solver,
                 solver_signature,
-            )
+            );
+            // Fail if signature verification failed instead of silently falling back
+            assert!(option::is_some(&result), error::invalid_argument(EINVALID_SIGNATURE));
+            result
         };
 
         let fa = primary_fungible_store::withdraw(account, source_metadata, source_amount);

@@ -29,6 +29,8 @@ The framework supports two types of intents:
 4. **Intent broadcast**: Contract emits event, but only the authorized solver can execute.
 5. **Authorized Solver execution**: Only the pre-authorized solver can call `start_intent_session()` and complete the intent.
 
+For detailed implementation details of the reservation system, see [intent-framework/docs/intent-reservation.md](intent-framework/docs/intent-reservation.md).
+
 ## Development Setup
 
 #### Prerequisites
@@ -103,4 +105,4 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## Dependencies
 
 - [Aptos Framework](https://github.com/aptos-labs/aptos-framework) (mainnet branch) - configured in [Move.toml](intent-framework/Move.toml)
-- Aptos CLI v4.3.0 - defined in [aptos.nix](aptos.nix) 
+- Aptos CLI v4.3.0 - defined in [aptos.nix](aptos.nix)

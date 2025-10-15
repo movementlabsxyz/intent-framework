@@ -1,22 +1,11 @@
-# Intent Reservation Integration Plan
+# Intent Reservation System
 
-## Goal
+The intent framework supports two flows for creating trade intents:
 
-Support two flows for creating trade intents:
-- Unreserved: anyone can solve the intent after it's created.
-- Reserved: only a specific solver (chosen off-chain) can solve the intent.
+- **Unreserved**: Anyone can solve the intent after it's created.
+- **Reserved**: Only a specific solver (chosen off-chain) can solve the intent.
 
 ## Flow Overview
-
-We number the steps in order of execution.
-Each numbered item should exactly correspond to the file that implements it.
-Then each of these files can have several bullet points of actions.
-
-For example:
-
-0. `some_module.move`
-   - Do this
-   - Do that
 
 ### Stage 1 - Common Path
 
@@ -63,20 +52,3 @@ This phase happens after `create_fa_to_fa_intent_entry` is called. Hence we cont
    - If the intent is reserved, this function first calls `intent_reservation::ensure_solver_authorized`.
    - Settlement uses `finish_fa_receiving_session`, which validates payment before calling `intent::finish_intent_session`.
 
-## Implementation Tasks
-
-- [ ] **Create `intent_reservation.move`**:
-  - [ ] Create the new module file.
-  - [ ] Define the `IntentReserved` struct (containing `solver` address and `signature`).
-  - [ ] Implement the `ensure_solver_authorized` function for use during settlement.
-
-- [ ] **Update `intent.move`**:
-  - [ ] Modify the on-chain `TradeIntent` struct to include a field for `Option<IntentReserved>`, allowing reservation data to be persisted.
-  - [ ] Update the `create_intent` function to accept and store the optional reservation data.
-
-- [ ] **Refactor `fa_intent.move`**:
-  - [ ] Integrate the reserved flow logic into the existing `create_fa_to_fa_intent_entry` function by adding the `reservation: Option<IntentReserved>` parameter. This is a breaking change to the module's public API.
-  - [ ] Update the settlement logic (`start_fa_offering_session`) to call `ensure_solver_authorized` when an intent is reserved.
-
-- [ ] **Update Build Configuration**:
-  - [ ] Add the new `intent_reservation` module to the `Move.toml` file to ensure it is included in the project build.

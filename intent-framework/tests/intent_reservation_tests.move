@@ -30,45 +30,30 @@ module aptos_intent::intent_reservation_tests {
     ) {
         // Generate Ed25519 keys for the solver
         let (solver_secret_key, solver_public_key) = ed25519::generate_keys();
-        
-        // Convert to unvalidated public key for the verification function
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
         
         // Use offerer as solver address - verification uses the provided public key, not the address
         let solver_address = signer::address_of(offerer);
 
-        
         let (offered_fa_type, _offered_mint_ref) = register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
         
         // Step 1: Offerer creates draft intent (without solver)
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type,
-            SOURCE_AMOUNT,
-            desired_fa_type,
-            DESIRED_AMOUNT,
-            EXPIRY_TIME,
-            signer::address_of(offerer),
+            offered_fa_type, SOURCE_AMOUNT, desired_fa_type, DESIRED_AMOUNT, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 2: Solver adds their address to the draft intent
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(
-            draft_intent,
-            solver_address,
-        );
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
         
         // Step 3: Hash the intent to sign and sign it
-        let intent_data = intent_reservation::hash_intent(
-            intent_to_sign,
-        );
+        let intent_data = intent_reservation::hash_intent(intent_to_sign);
         let signature = ed25519::sign_arbitrary_bytes(&solver_secret_key, intent_data);
         
         // Test signature verification with the generated public key
         let result = intent_reservation::verify_and_create_reservation_with_public_key(
-            intent_to_sign,
-            ed25519::signature_to_bytes(&signature),
-            &solver_unvalidated_public_key,
+            intent_to_sign, ed25519::signature_to_bytes(&signature), &solver_unvalidated_public_key
         );
         
         // Verify the signature verification succeeded
@@ -89,33 +74,22 @@ module aptos_intent::intent_reservation_tests {
     ) {
         // Generate Ed25519 keys for the solver
         let (solver_secret_key, solver_public_key) = ed25519::generate_keys();
-        
-        // Convert to unvalidated public key for the verification function
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
         
         // Use offerer as solver address - verification uses the provided public key, not the address
         let solver_address = signer::address_of(offerer);
 
-        
         let (offered_fa_type, _offered_mint_ref) = register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
         
         // Step 1: Offerer creates draft intent (without solver)
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type,
-            SOURCE_AMOUNT,
-            desired_fa_type,
-            DESIRED_AMOUNT,
-            EXPIRY_TIME,
-            signer::address_of(offerer),
+            offered_fa_type, SOURCE_AMOUNT, desired_fa_type, DESIRED_AMOUNT, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 2: Solver adds their address to the draft intent
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(
-            draft_intent,
-            solver_address,
-        );
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
         
         // Step 3: Sign with WRONG data instead of the actual intent data
         let wrong_data = b"wrong_data_for_testing";
@@ -123,9 +97,7 @@ module aptos_intent::intent_reservation_tests {
         
         // Test signature verification with the generated public key
         let result = intent_reservation::verify_and_create_reservation_with_public_key(
-            intent_to_sign,
-            ed25519::signature_to_bytes(&signature),
-            &solver_unvalidated_public_key,
+            intent_to_sign, ed25519::signature_to_bytes(&signature), &solver_unvalidated_public_key
         );
         
         // Verify the signature verification failed
@@ -146,42 +118,29 @@ module aptos_intent::intent_reservation_tests {
     ) {
         // Generate Ed25519 keys for the solver
         let (_solver_secret_key, solver_public_key) = ed25519::generate_keys();
-        
-        // Convert to unvalidated public key for the verification function
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
         
         // Use offerer as solver address - verification uses the provided public key, not the address
         let solver_address = signer::address_of(offerer);
 
-        
         let (offered_fa_type, _offered_mint_ref) = register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
         
         // Step 1: Offerer creates draft intent (without solver)
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type,
-            SOURCE_AMOUNT,
-            desired_fa_type,
-            DESIRED_AMOUNT,
-            EXPIRY_TIME,
-            signer::address_of(offerer),
+            offered_fa_type, SOURCE_AMOUNT, desired_fa_type, DESIRED_AMOUNT, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 2: Solver adds their address to the draft intent
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(
-            draft_intent,
-            solver_address,
-        );
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
         
         // Step 3: Use a completely wrong signature (64 bytes of random data)
         let wrong_signature_bytes = b"1234567890123456789012345678901234567890123456789012345678901234";
         
         // Test signature verification with the generated public key
         let result = intent_reservation::verify_and_create_reservation_with_public_key(
-            intent_to_sign,
-            wrong_signature_bytes,
-            &solver_unvalidated_public_key,
+            intent_to_sign, wrong_signature_bytes, &solver_unvalidated_public_key
         );
         
         // Verify the signature verification failed
@@ -208,14 +167,8 @@ module aptos_intent::intent_reservation_tests {
         // Create a reserved intent with solver authorization
         let incorrect_signature = b"incorrect_signature_for_testing";
         fa_intent::create_fa_to_fa_intent_entry(
-            offerer,
-            offered_fa_type,
-            SOURCE_AMOUNT,
-            desired_fa_type,
-            DESIRED_AMOUNT,
-            EXPIRY_TIME,
-            signer::address_of(solver),
-            incorrect_signature,
+            offerer, offered_fa_type, SOURCE_AMOUNT, desired_fa_type, DESIRED_AMOUNT, 
+            EXPIRY_TIME, signer::address_of(solver), incorrect_signature
         );
     }
 

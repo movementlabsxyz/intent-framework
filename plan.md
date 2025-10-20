@@ -23,138 +23,59 @@
   3. Fund test accounts on both chains and publish the `aptos-intent` Move package if needed (or use existing published modules if baked into genesis).
   4. Configure RPC endpoints in test runner and monitoring service.
 
-### Repository Integration: Movement Aptos-Core as Submodule
-- Add `aptos-core` (branch `l1-migration`) as a Git submodule to build and run local validators directly from this repo.
+### Repository Integration: Movement Aptos-Core as Plain Clone
+- Use a plain clone of `aptos-core` (branch `l1-migration`) with commit pinning for reproducibility.
 
-Submodule layout:
+Repository layout:
 - Path: `infra/external/movement-aptos-core` (external dependency; Movement fork of aptos-core)
+- Lock file: `infra/external/movement-aptos-core.lock` (pinned commit SHA)
+- Verification: `infra/external/verify-aptos-pin.sh` (enforces correct commit)
 
-Add and pin the submodule:
-
-```bash
-git submodule add -b l1-migration https://github.com/movementlabsxyz/aptos-core.git infra/external/movement-aptos-core
-git submodule update --init --recursive
-# Optionally pin to a specific commit for reproducibility
-cd infra/external/movement-aptos-core && git checkout <commit-sha>
-cd -
-git add .gitmodules infra/external/movement-aptos-core
-git commit -m "Add aptos-core submodule (l1-migration) and pin"
-```
-
-Update submodule (later):
+Setup and pinning:
 
 ```bash
-git submodule update --remote --init --recursive infra/external/movement-aptos-core
-# or within the submodule
-cd infra/external/movement-aptos-core && git fetch && git checkout l1-migration && git pull && cd -
+# Automated setup (recommended)
+bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
+
+# Manual setup
+git clone --branch l1-migration https://github.com/movementlabsxyz/aptos-core.git infra/external/movement-aptos-core
+git -C infra/external/movement-aptos-core submodule update --init --recursive
+git -C infra/external/movement-aptos-core rev-parse HEAD > infra/external/movement-aptos-core.lock
 ```
 
-Build `aptos-node` from the submodule:
+Build enforcement:
+- `move-intent-framework/Move.toml` includes a build hook that runs `infra/external/verify-aptos-pin.sh`
+- This ensures `aptos move test` fails if the wrong commit is checked out
+- Build hook runs automatically before any Move compilation/testing
+
+Run a single local validator using the automated script:
+```bash
+./infra/single-validator/run_local_validator.sh
+```
+
+#### Automated Node Setup (Current Implementation)
+The single validator setup is now fully automated:
 
 ```bash
-cd infra/external/movement-aptos-core
-cargo build -p aptos-node --release
-cd -
+# Single validator (Chain A)
+./infra/single-validator/run_local_validator.sh
+
+# For Chain B, modify ports in validator_node.yaml and run manually
+# Or extend the script to support multiple validators
 ```
 
-Run a single local validator using the steps below, but referencing configs and binaries from `infra/external/movement-aptos-core`.
+Key files created:
+- `infra/single-validator/work/validator-identity.yaml` - Combined validator identity with all keys
+- `infra/single-validator/work/validator_node.yaml` - Configured node config
+- `infra/single-validator/work/data/` - Genesis files and validator data
 
-#### Node Setup Details (from provided instructions)
-- Clone Movement Aptos Core (l1-migration branch):
-
-```bash
-git clone https://github.com/movementlabsxyz/aptos-core.git
-cd aptos-core && git checkout l1-migration
-```
-
-- Build the node binary:
-
-```bash
-cargo build -p aptos-node --release
-# or run directly
-cargo run -p aptos-node --release -- --help
-```
-
-- Prepare per-node `.aptos` directories (one for each chain):
-  - Example: `/path/to/chainA/.aptos` and `/path/to/chainB/.aptos`
-  - Each should contain its own `data/`, `validator-identity.yaml`, `waypoint.txt`, etc.
-
-- Use Aptos CLI to set validator configuration for each node (adjust paths per node):
-
-```bash
-aptos genesis set-validator-configuration \
-  --local-repository-dir /path/to/chainA/.aptos/data \
-  --username mvt_val \
-  --owner-public-identity-file /path/to/chainA/.aptos/validator-identity.yaml \
-  --validator-host 0.0.0.0:6180
-```
-
-- Create `validator_node.yaml` per node using this template (update all paths and adjust ports for Chain B):
-
-```yaml
-base:
-  data_dir: /home/ubuntu/.aptos/data/maptos # contains DB
-  role: validator
-  waypoint:
-    from_file: /home/ubuntu/.aptos/data/waypoint.txt # update to your path
-consensus:
-  vote_back_pressure_limit: 50
-  safety_rules:
-    service:
-      type: local
-    backend:
-      type: on_disk_storage
-      path: /home/ubuntu/.aptos/data/secure-data.json # update to your path
-      namespace: null
-    initial_safety_rules_config:
-      from_file:
-        waypoint:
-          from_file: /home/ubuntu/.aptos/data/waypoint.txt # update to your path
-        identity_blob_path: /home/ubuntu/.aptos/validator-identity.yaml # update to your path
-
-execution:
-  genesis_file_location: /home/ubuntu/.aptos/data/genesis.blob # update to your path
-storage:
-  backup_service_address: 0.0.0.0:6186
-  rocksdb_configs:
-    enable_storage_sharding: false
-validator_network:
-  discovery_method: none
-  mutual_authentication: true
-  identity:
-    type: from_file
-    path: /home/ubuntu/.aptos/validator-identity.yaml # update to your path
-  listen_address: /ip4/0.0.0.0/tcp/6180
-full_node_networks:
-  - network_id:
-      private: "vfn"
-    listen_address: "/ip4/0.0.0.0/tcp/6181"
-    identity:
-      type: "from_config"
-      key: "604191ee408af3250997fd346b91bd390779ba07d74d044dfe17da21fc593a01"
-      peer_id: "e05148cdf30a050eb216c8dfc4b7b9e6c64cd412f0be395436242f2200a3d936"
-api:
-  enabled: true
-  address: 0.0.0.0:8080
-admin_service:
-  enabled: true
-  address: 0.0.0.0
-  port: 9102
-state_sync:
-  state_sync_driver:
-    bootstrapping_mode: ExecuteOrApplyFromGenesis
-    continuous_syncing_mode: ExecuteTransactionsOrApplyOutputs
-    enable_auto_bootstrapping: true
-    max_connection_deadline_secs: 1
-```
-
-- Start each validator with its config:
-
-```bash
-aptos-node -f /path/to/chainA/validator_node.yaml
-# and for chain B (use different ports in YAML, e.g., 6182/8081, etc.)
-aptos-node -f /path/to/chainB/validator_node.yaml
-```
+The script handles:
+1. Cloning/updating Movement aptos-core
+2. Building aptos-node (with caching)
+3. Generating validator identity files
+4. Running `aptos genesis set-validator-configuration`
+5. Starting the validator node
+6. Waiting for REST API readiness
 
  
 

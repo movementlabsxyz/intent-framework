@@ -14,23 +14,33 @@ bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
 ```
 
 ## Setup Two Nodes
-Initialize nodes from scratch (l1-migration).
+Use the automated single validator script to set up both Chain A and Chain B.
 
-### Option 1: From Scratch (l1-migration)
-1. Clone and build:
+### Automated Setup
+1. **Chain A (Port 8080)**:
    ```bash
-   git clone https://github.com/movementlabsxyz/aptos-core.git
-   cd aptos-core && git checkout l1-migration
+   ./infra/single-validator/run_local_validator.sh
+   ```
+
+2. **Chain B (Port 8081)**:
+   ```bash
+   # Modify the script to use different ports, or run manually:
+   # Copy infra/single-validator/work/validator_node.yaml to chainB/
+   # Edit ports: 8080->8081, 6180->6182, etc.
+   # Run: aptos-node -f chainB/validator_node.yaml
+   ```
+
+### Manual Setup (Alternative)
+1. Ensure Movement `aptos-core` is available:
+   ```bash
+   bash setup_aptos_core.sh
+   ```
+2. Build the node binary:
+   ```bash
+   cd infra/external/movement-aptos-core
    cargo build -p aptos-node --release
    ```
-2. Prepare per-node directories (A/B) and identities under separate ROOTs.
-3. Use `aptos genesis set-validator-configuration` for each node.
-4. Create `validator_node.yaml` per node (different ports for B).
-5. Start nodes:
-   ```bash
-   aptos-node -f /path/to/chainA/validator_node.yaml
-   aptos-node -f /path/to/chainB/validator_node.yaml
-   ```
+3. Set up Chain A and Chain B with different ports and identities
 
  
 

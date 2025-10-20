@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
+REPO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
 LOCK_FILE="$REPO_ROOT_DIR/infra/external/movement-aptos-core.lock"
 AP_DIR="$REPO_ROOT_DIR/infra/external/movement-aptos-core"
 

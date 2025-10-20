@@ -8,6 +8,11 @@ This directory contains orchestration scripts and docs to run a cross-chain test
 - Movement `aptos-core` repository (branches: `l1-migration` and `start_single_node_network`)
 - Optional: Restic v0.18+ if using Movement DB snapshots
 
+Run this once to ensure `movement/aptos-core` is available:
+```bash
+bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
+```
+
 ## Setup Two Nodes
 Initialize nodes from scratch (l1-migration).
 

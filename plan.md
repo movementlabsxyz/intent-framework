@@ -27,37 +27,37 @@
 - Add `aptos-core` (branch `l1-migration`) as a Git submodule to build and run local validators directly from this repo.
 
 Submodule layout:
-- Path: `third_party/aptos-core`
+- Path: `infra/external/movement-aptos-core` (external dependency; Movement fork of aptos-core)
 
 Add and pin the submodule:
 
 ```bash
-git submodule add -b l1-migration https://github.com/movementlabsxyz/aptos-core.git third_party/aptos-core
+git submodule add -b l1-migration https://github.com/movementlabsxyz/aptos-core.git infra/external/movement-aptos-core
 git submodule update --init --recursive
 # Optionally pin to a specific commit for reproducibility
-cd third_party/aptos-core && git checkout <commit-sha>
+cd infra/external/movement-aptos-core && git checkout <commit-sha>
 cd -
-git add .gitmodules third_party/aptos-core
+git add .gitmodules infra/external/movement-aptos-core
 git commit -m "Add aptos-core submodule (l1-migration) and pin"
 ```
 
 Update submodule (later):
 
 ```bash
-git submodule update --remote --init --recursive third_party/aptos-core
+git submodule update --remote --init --recursive infra/external/movement-aptos-core
 # or within the submodule
-cd third_party/aptos-core && git fetch && git checkout l1-migration && git pull && cd -
+cd infra/external/movement-aptos-core && git fetch && git checkout l1-migration && git pull && cd -
 ```
 
 Build `aptos-node` from the submodule:
 
 ```bash
-cd third_party/aptos-core
+cd infra/external/movement-aptos-core
 cargo build -p aptos-node --release
 cd -
 ```
 
-Run a single local validator using the steps below, but referencing configs and binaries from `third_party/aptos-core`.
+Run a single local validator using the steps below, but referencing configs and binaries from `infra/external/movement-aptos-core`.
 
 #### Node Setup Details (from provided instructions)
 - Clone Movement Aptos Core (l1-migration branch):

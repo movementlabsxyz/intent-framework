@@ -5,10 +5,10 @@ This directory contains orchestration scripts and docs to run a cross-chain test
 ## Prerequisites
 - Rust toolchain
 - Aptos CLI
-- Movement `aptos-core` repository (branches: `l1-migration` and `start_single_node_network`)
+- Aptos `aptos-core` repository (main branch)
 - Optional: Restic v0.18+ if using Movement DB snapshots
 
-Run this once to ensure `movement/aptos-core` is available:
+Run this once to ensure `aptos-core` is available:
 ```bash
 bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
 ```
@@ -31,13 +31,13 @@ Use the automated single validator script to set up both Chain A and Chain B.
    ```
 
 ### Manual Setup (Alternative)
-1. Ensure Movement `aptos-core` is available:
+1. Ensure Aptos `aptos-core` is available:
    ```bash
    bash setup_aptos_core.sh
    ```
 2. Build the node binary:
    ```bash
-   cd infra/external/movement-aptos-core
+   cd infra/external/aptos-core
    cargo build -p aptos-node --release
    ```
 3. Set up Chain A and Chain B with different ports and identities
@@ -77,4 +77,7 @@ This folder contains a committed `config.json` with placeholders:
 ```
 
 Replace the placeholders locally with your validator endpoints and dev keys.
+
+## Note
+Currently using main Aptos repository; Movement fork integration planned for later.
 

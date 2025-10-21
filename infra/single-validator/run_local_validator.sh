@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
-AP_DIR="$ROOT_DIR/infra/external/movement-aptos-core"
-LOCK_FILE="$ROOT_DIR/infra/external/movement-aptos-core.lock"
+AP_DIR="$ROOT_DIR/infra/external/aptos-core"
+LOCK_FILE="$ROOT_DIR/infra/external/aptos-core.lock"
 VERIFY_SCRIPT="$ROOT_DIR/infra/external/verify-aptos-pin.sh"
 SETUP_SCRIPT="$ROOT_DIR/move-intent-framework/tests/cross_chain/setup_aptos_core.sh"
 
@@ -51,6 +51,21 @@ aptos genesis set-validator-configuration \
   --username mvt_val \
   --owner-public-identity-file "$VAL_IDENTITY" \
   --validator-host 0.0.0.0:6180
+
+echo "[run] Generating layout template…"
+aptos genesis generate-layout-template \
+  --output-file "$NODE_HOME/data/layout.yaml" \
+  --assume-yes
+
+echo "[run] Setting root key in layout…"
+ROOT_KEY=$(grep account_public_key "$VAL_IDENTITY" | cut -d'"' -f2)
+sed -i.bak "s/root_key: ~/root_key: \"$ROOT_KEY\"/" "$NODE_HOME/data/layout.yaml"
+
+echo "[run] Downloading genesis files from Aptos testnet…"
+cd "$NODE_HOME/data"
+curl -s -O https://raw.githubusercontent.com/aptos-labs/aptos-networks/main/testnet/genesis.blob
+curl -s -O https://raw.githubusercontent.com/aptos-labs/aptos-networks/main/testnet/waypoint.txt
+cd - >/dev/null
 
 CFG_SRC="$ROOT_DIR/infra/single-validator/validator_node.yaml"
 CFG_DST="$NODE_HOME/validator_node.yaml"

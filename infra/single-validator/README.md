@@ -1,6 +1,6 @@
 # Single Validator Quickstart (Automated)
 
-This guide runs a local validator using Movement's `aptos-core` (branch `l1-migration`) with automated setup.
+This guide runs a local validator using Aptos `aptos-core` (main branch) with automated setup.
 
 ## Prerequisites
 - Rust toolchain
@@ -13,7 +13,7 @@ Run the automated setup script:
 ```
 
 This script will:
-1. Ensure Movement `aptos-core` is cloned and on the correct branch
+1. Ensure Aptos `aptos-core` is cloned and on the main branch
 2. Build `aptos-node` (release) if needed
 3. Generate validator identity files if not present
 4. Configure the validator using Aptos CLI
@@ -47,17 +47,18 @@ Notes:
 - The validator identity contains test keys for local development only
 - All generated files are in `infra/single-validator/work/`
 - The `data/` directory is regenerated on each run
+- Currently using main Aptos repository; Movement fork integration planned for later
 
 ## Pin and Verify aptos-core (Enforced on Build)
-- Ensure Movement `aptos-core` is present (plain clone):
+- Ensure Aptos `aptos-core` is present (plain clone):
   ```bash
   bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
   ```
-- Builds/tests run a verification hook via `move-intent-framework/Move.toml` that checks `infra/external/movement-aptos-core` HEAD against the lock file `infra/external/movement-aptos-core.lock`.
+- Builds/tests run a verification hook via `move-intent-framework/Move.toml` that checks `infra/external/aptos-core` HEAD against the lock file `infra/external/aptos-core.lock`.
   - If they differ, the build exits non-zero with a clear message.
 - To update the pinned commit intentionally:
   ```bash
-  git -C infra/external/movement-aptos-core rev-parse HEAD > infra/external/movement-aptos-core.lock
+  git -C infra/external/aptos-core rev-parse HEAD > infra/external/aptos-core.lock
   ```
   Commit the updated lock file.
 

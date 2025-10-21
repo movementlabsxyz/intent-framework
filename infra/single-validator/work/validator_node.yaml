@@ -23,13 +23,14 @@ execution:
 storage:
   backup_service_address: 0.0.0.0:6186
   rocksdb_configs:
-    enable_storage_sharding: false
+    enable_storage_sharding: true
 validator_network:
   discovery_method: none
   mutual_authentication: true
   identity:
-    type: from_file
-    path: /Users/ap/code/movement/_research/intent-framework/infra/single-validator/work/validator-identity.yaml
+    type: from_config
+    key: "0xf8f363b0fd4d8e0e3174cf5f115330142aa9bf96768cfe69924006e9d3fe5d65"
+    peer_id: "8b53b97417e598d94209575487ab64bd16ca3e1e965f38f82e50a3a0fcf16e43"
   listen_address: /ip4/0.0.0.0/tcp/6180
 api:
   enabled: true

@@ -16,6 +16,90 @@ The simplest way to run a local validator with automatic account funding:
 aptos node run-localnet --with-faucet --force-restart --assume-yes
 ```
 
+**⚠️ Important Port Limitation:**
+The `aptos node run-localnet` command does **not** support custom port configuration. It hardcodes:
+- REST API to port 8080
+- Faucet to port 8081
+
+To run multiple chains in parallel with custom ports (e.g., Chain A on 8010/8011, Chain B on 8020/8021), you must use manual validator setup instead of `run-localnet`.
+
+## Manual Validator Setup (Multi-Chain)
+
+For running multiple chains in parallel with custom ports, use the manual setup approach:
+
+### Quick Start
+```bash
+# Setup Chain A (ports 8010/8011)
+./infra/setup-chain-a.sh
+
+# Test Chain A
+./infra/test-chain-a.sh
+```
+
+### Manual Setup Process
+1. **Generate config files** (one-time):
+   ```bash
+   aptos node run-localnet --with-faucet --force-restart --assume-yes --test-dir ./infra/.aptos/chain-a
+   # Stop immediately after config generation (Ctrl+C)
+   ```
+
+2. **Modify ports** in `./infra/.aptos/chain-a/0/node.yaml`:
+   ```yaml
+   api:
+     address: "0.0.0.0:8010"  # Change from 8080
+   admin_service:
+     address: "0.0.0.0:9112"  # Change from 9102
+   metrics:
+     address: "0.0.0.0:9111"  # Change from 9101
+   ```
+
+3. **Start validator**:
+   ```bash
+   RUST_LOG=warn infra/external/aptos-core/target/release/aptos-node -f ./infra/.aptos/chain-a/0/node.yaml
+   ```
+
+4. **Start faucet**:
+   ```bash
+   infra/external/aptos-core/target/release/aptos-faucet-service run-simple \
+     --node-url http://127.0.0.1:8010 \
+     --listen-port 8011 \
+     --key-file-path ./infra/.aptos/chain-a/mint.key \
+     --chain-id 4
+   ```
+
+### Benefits of Manual Setup
+- **Custom ports**: Full control over REST API and faucet ports
+- **Multiple chains**: Run Chain A (8010/8011) and Chain B (8020/8021) in parallel
+- **Fresh starts**: Scripts ensure clean state on each run
+- **Automated testing**: Built-in account creation, funding, and transfer tests
+
+### Automated Scripts
+The manual setup includes automated scripts for reliability:
+
+**`infra/setup-chain-a.sh`** - Complete Chain A setup:
+- Cleans up existing processes and data
+- Generates fresh config files
+- Modifies ports to 8010/8011
+- Starts validator and faucet
+- Creates and funds test accounts (alice, bob)
+- Verifies initial balances
+
+**`infra/test-chain-a.sh`** - Dedicated testing:
+- Checks if Chain A is running
+- Creates fresh test accounts
+- Tests token transfers between accounts
+- Verifies final balances
+- Fails if any test fails
+
+**Usage:**
+```bash
+# Setup Chain A
+./infra/setup-chain-a.sh
+
+# Test Chain A (can run multiple times)
+./infra/test-chain-a.sh
+```
+
 **Benefits:**
 
 - Automatically generates all configuration files

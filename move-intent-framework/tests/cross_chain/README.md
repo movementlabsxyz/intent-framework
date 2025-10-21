@@ -14,9 +14,23 @@ bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
 ```
 
 ## Setup Two Nodes
-Use the automated single validator script to set up both Chain A and Chain B.
+Use the modern Aptos CLI approach to set up both Chain A and Chain B.
 
-### Automated Setup
+### Automated Setup (Recommended)
+1. **Chain A (Port 8080)**:
+   ```bash
+   # Terminal 1
+   aptos node run-localnet --with-faucet --force-restart --assume-yes
+   ```
+
+2. **Chain B (Port 8081)**:
+   ```bash
+   # Terminal 2 - Use different ports
+   aptos node run-localnet --with-faucet --force-restart --assume-yes --faucet-port 8082
+   ```
+
+### Legacy Manual Setup (Alternative)
+Use the automated single validator script for more control:
 1. **Chain A (Port 8080)**:
    ```bash
    ./infra/single-validator/run_local_validator.sh
@@ -30,27 +44,34 @@ Use the automated single validator script to set up both Chain A and Chain B.
    # Run: aptos-node -f chainB/validator_node.yaml
    ```
 
-### Manual Setup (Alternative)
-1. Ensure Aptos `aptos-core` is available:
-   ```bash
-   bash setup_aptos_core.sh
-   ```
-2. Build the node binary:
-   ```bash
-   cd infra/external/aptos-core
-   cargo build -p aptos-node --release
-   ```
-3. Set up Chain A and Chain B with different ports and identities
-
  
 
 
 
 ## Verify Nodes
 ```bash
+# Check Chain A (default ports)
 curl http://127.0.0.1:8080/v1
+
+# Check Chain B (if using different ports)
 curl http://127.0.0.1:8081/v1
 ```
+
+**Expected Response:**
+```json
+{
+  "chain_id": 4,
+  "epoch": "2", 
+  "ledger_version": "25",
+  "oldest_ledger_version": "0",
+  "ledger_timestamp": "1761052515406711",
+  "node_role": "validator",
+  "oldest_block_height": "0",
+  "block_height": "11",
+  "git_hash": ""
+}
+```
+
 Expect growing `block_height` and logs with executing transactions.
 
 ## Test Flow (High-Level)

@@ -1,29 +1,18 @@
 services:
-  # Single Aptos Chain with Faucet
-  aptos-chain:
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
-    container_name: aptos-chain
-    ports:
-      - "8080:8080"  # REST API
-      - "8081:8081"  # Faucet
+  # Aptos Localnet following the single-validator approach
+  aptos-localnet:
+    image: aptoslabs/tools:nightly
+    container_name: aptos-localnet
+    network_mode: host
     volumes:
-      - aptos-data:/aptos/data
-      - aptos-config:/aptos/config
-    environment:
-      - RUST_LOG=warn
+      - aptos-data:/aptos/config
+      - /var/run/docker.sock:/var/run/docker.sock
     command: >
       sh -c "
-        # Start the node with faucet using Aptos CLI
-        aptos node run-localnet --test-dir /aptos/config --with-faucet
+        echo 'Starting Aptos Localnet with faucet (fresh start)...' &&
+        aptos node run-localnet --with-faucet --force-restart --assume-yes
       "
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/ledger/info"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    restart: unless-stopped
 
 volumes:
   aptos-data:
-  aptos-config:

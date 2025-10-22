@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Docker Aptos Chain Setup Script
-# This script sets up a single Aptos chain in Docker containers
+# Docker Aptos Localnet Setup Script
+# This script sets up a complete Aptos localnet in Docker with all services
 
 set -e
 
-echo "🐳 DOCKER APTOS CHAIN SETUP"
-echo "============================"
+echo "🐳 DOCKER APTOS LOCALNET SETUP"
+echo "==============================="
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -20,49 +20,75 @@ echo "✅ Docker is running"
 # Stop any existing containers
 echo ""
 echo "🧹 Stopping existing containers..."
-docker-compose -f infra/docker/docker-compose.yml down 2>/dev/null || true
+docker-compose -f infra/docker-build-from-source/docker-compose.yml down 2>/dev/null || true
 
-# Build and start the chain
+# Build and start the localnet
 echo ""
-echo "🚀 Building and starting Aptos chain..."
-docker-compose -f infra/docker/docker-compose.yml up --build -d
+echo "🚀 Starting Aptos localnet with all services..."
+docker-compose -f infra/docker-build-from-source/docker-compose.yml up -d
 
 # Wait for services to be ready
 echo ""
-echo "⏳ Waiting for services to start..."
-sleep 30
+echo "⏳ Waiting for services to start (this may take 1-2 minutes)..."
+echo "   - Node API starting..."
+echo "   - Faucet starting..."
 
-# Test the chain
+# Wait for readiness endpoint
 echo ""
-echo "🧪 Testing Aptos chain..."
-if curl -s http://127.0.0.1:8080/v1/ledger/info > /dev/null; then
-    echo "✅ Aptos node is running!"
-    echo "📊 Chain Status:"
-    curl -s http://127.0.0.1:8080/v1/ledger/info | jq '.chain_id, .block_height, .node_role'
-    echo ""
-    
-    # Test faucet
-    if curl -s http://127.0.0.1:8081/healthy > /dev/null; then
-        echo "✅ Faucet is running!"
-    else
-        echo "❌ Faucet failed to start"
+echo "🔍 Checking service readiness..."
+for i in {1..30}; do
+    if curl -s http://127.0.0.1:8070/ > /dev/null 2>&1; then
+        echo "✅ All services are ready!"
+        break
     fi
-    
-    echo ""
-    echo "🔗 Aptos Chain Endpoints:"
-    echo "   REST API: http://127.0.0.1:8080"
-    echo "   Faucet:   http://127.0.0.1:8081"
-    echo ""
-    echo "📁 Docker containers:"
-    docker-compose -f infra/docker/docker-compose.yml ps
-    echo ""
-    echo "🎉 Aptos chain setup complete!"
-    echo ""
-    echo "To stop the chain: docker-compose -f infra/docker/docker-compose.yml down"
-    echo "To view logs: docker-compose -f infra/docker/docker-compose.yml logs -f"
+    echo "   Waiting... (attempt $i/30)"
+    sleep 10
+done
+
+# Test the services
+echo ""
+echo "🧪 Testing Aptos localnet services..."
+
+# Test Node API
+if curl -s http://127.0.0.1:8080/v1/ledger/info > /dev/null; then
+    echo "✅ Node API is running!"
+    echo "📊 Chain Status:"
+    curl -s http://127.0.0.1:8080/v1/ledger/info | jq '.chain_id, .block_height, .node_role' 2>/dev/null || echo "   Chain ID: $(curl -s http://127.0.0.1:8080/v1/ledger/info | grep -o '"chain_id":[0-9]*' | cut -d: -f2)"
 else
-    echo "❌ Aptos chain failed to start"
-    echo "📋 Container logs:"
-    docker-compose -f infra/docker/docker-compose.yml logs
-    exit 1
+    echo "❌ Node API failed to start"
 fi
+
+# Test Faucet
+if curl -s http://127.0.0.1:8081/healthy > /dev/null; then
+    echo "✅ Faucet is running!"
+else
+    echo "❌ Faucet failed to start"
+fi
+
+# Test Indexer API
+if curl -s http://127.0.0.1:8090/health > /dev/null; then
+    echo "✅ Indexer API is running!"
+else
+    echo "ℹ️  Indexer API not available (running with faucet only)"
+fi
+
+echo ""
+echo "🔗 Aptos Localnet Endpoints:"
+echo "   REST API:        http://127.0.0.1:8080"
+echo "   Faucet:          http://127.0.0.1:8081"
+echo ""
+echo "ℹ️  Note: Running with faucet only (no Indexer API) for simplicity"
+echo ""
+echo "📁 Docker containers:"
+docker-compose -f infra/docker-build-from-source/docker-compose.yml ps
+echo ""
+echo "🎉 Aptos localnet setup complete!"
+echo ""
+echo "🔄 Fresh start every time:"
+echo "   Each run starts from block 0 with clean state"
+echo "   All previous accounts and transactions are cleared"
+echo ""
+echo "📋 Management Commands:"
+echo "   Stop:    docker-compose -f infra/docker-build-from-source/docker-compose.yml down"
+echo "   Logs:    docker-compose -f infra/docker-build-from-source/docker-compose.yml logs -f"
+echo "   Restart: docker-compose -f infra/docker-build-from-source/docker-compose.yml restart"

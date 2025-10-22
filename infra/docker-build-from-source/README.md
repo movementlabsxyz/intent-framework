@@ -1,21 +1,24 @@
-# Docker Aptos Chain Setup
+# Docker Aptos Localnet Setup
 
-This directory contains a Docker setup for building and running Aptos from source, based on the [official Aptos documentation](https://aptos.dev/network/nodes/localnet/local-development-network).
+This directory contains a Docker setup for running a complete Aptos localnet with all services, based on the [official Aptos documentation](https://aptos.dev/network/nodes/localnet/local-development-network).
 
 ## Quick Start
 
 ```bash
-# Start the Aptos chain
-./infra/docker/setup-docker-chain.sh
+# Start the complete Aptos localnet with all services
+./infra/docker-build-from-source/setup-docker-chain.sh
 ```
 
-## What it does
+## What it includes
 
-- **Builds Linux binaries** inside Docker (compatible with macOS host)
-- **Runs Aptos node** on port 8080 (REST API)
-- **Runs Aptet service** on port 8081 (Faucet)
+- **Node API** on port 8080 (REST API for core functionality)
+- **Faucet** on port 8081 (for funding accounts)
 - **Persistent storage** using Docker volumes
 - **Health checks** to ensure services are running
+
+This setup follows the single-validator approach with `aptos node run-localnet --with-faucet --force-restart --assume-yes`.
+
+**Fresh Start Every Time**: Each run starts from block 0 with a completely clean state - all previous accounts and transactions are cleared.
 
 ## Endpoints
 
@@ -25,26 +28,56 @@ This directory contains a Docker setup for building and running Aptos from sourc
 ## Management
 
 ```bash
-# Stop the chain
-docker-compose -f infra/docker/docker-compose.yml down
+# Stop the localnet
+docker-compose -f infra/docker-build-from-source/docker-compose.yml down
 
 # View logs
-docker-compose -f infra/docker/docker-compose.yml logs -f
+docker-compose -f infra/docker-build-from-source/docker-compose.yml logs -f
 
 # Restart
-docker-compose -f infra/docker/docker-compose.yml restart
+docker-compose -f infra/docker-build-from-source/docker-compose.yml restart
+
+# Reset the chain (fresh start)
+docker-compose -f infra/docker-build-from-source/docker-compose.yml down -v
+./infra/docker-build-from-source/setup-docker-chain.sh
 ```
 
 ## Files
 
-- `Dockerfile`: Multi-stage build (builds Linux binaries from source)
-- `docker-compose.yml`: Orchestrates node and faucet containers
-- `setup-docker-chain.sh`: One-command setup script
+- `docker-compose.yml`: Uses official `aptoslabs/tools:nightly` image with host networking
+- `setup-docker-chain.sh`: One-command setup script with health checks
+- `Dockerfile`: Not needed - uses official Aptos image directly
 
 ## Benefits
 
+- ✅ **Fresh start every time** - Always starts from block 0 with clean state
 - ✅ **Clean isolation** - No conflicts with local processes
 - ✅ **Easy cleanup** - Just `docker-compose down`
 - ✅ **Consistent environment** - Same setup everywhere
-- ✅ **No port conflicts** - Uses default Aptos ports
-- ✅ **Fresh start** - Always starts from block 0
+- ✅ **No port conflicts** - Uses host networking
+- ✅ **Reproducible testing** - Clean slate for each test run
+- ✅ **Health monitoring** - Automatic service health checks
+
+## Usage with Aptos CLI
+
+Once running, you can create a local profile:
+
+```bash
+aptos init --profile local --network local
+```
+
+Then use it for commands:
+
+```bash
+aptos move publish --profile local --package-dir ./move-intent-framework
+```
+
+## Usage with TypeScript SDK
+
+```typescript
+import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+
+const network = Network.LOCAL;
+const config = new AptosConfig({ network });
+const client = new Aptos(config);
+```

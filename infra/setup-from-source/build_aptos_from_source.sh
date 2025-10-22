@@ -22,6 +22,16 @@ fi
 echo "[build] Verifying aptos-core pin…"
 bash "$VERIFY_SCRIPT"
 
+echo "[build] Building aptos CLI (release)…"
+APTOS_CLI_BIN="$AP_DIR/target/release/aptos"
+if [ ! -f "$APTOS_CLI_BIN" ] || [ "$(stat -f %m "$APTOS_CLI_BIN" 2>/dev/null || echo 0)" -lt "$(stat -f %m "$AP_DIR/Cargo.toml" 2>/dev/null || echo 0)" ]; then
+  pushd "$AP_DIR" >/dev/null
+  cargo build -p aptos --release
+  popd >/dev/null
+else
+  echo "[build] aptos CLI binary already built and up-to-date."
+fi
+
 echo "[build] Building aptos-node (release)…"
 APTOS_NODE_BIN="$AP_DIR/target/release/aptos-node"
 if [ ! -f "$APTOS_NODE_BIN" ] || [ "$(stat -f %m "$APTOS_NODE_BIN" 2>/dev/null || echo 0)" -lt "$(stat -f %m "$AP_DIR/Cargo.toml" 2>/dev/null || echo 0)" ]; then
@@ -44,6 +54,7 @@ fi
 
 echo "[build] ✅ Build complete!"
 echo "[build] Binaries available at:"
+echo "[build]   - $APTOS_CLI_BIN"
 echo "[build]   - $APTOS_NODE_BIN"
 echo "[build]   - $APTOS_FAUCET_BIN"
 echo "[build]"

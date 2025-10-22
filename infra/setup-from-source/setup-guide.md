@@ -7,6 +7,21 @@ This guide runs a local validator using Aptos `aptos-core` (main branch) with tw
 - Rust toolchain
 - Aptos CLI
 
+### System Dependencies
+
+Install required system packages:
+
+```bash
+# Install system dependencies
+sudo apt install -y $(cat infra/setup-from-source/requirements.txt)
+```
+
+Required packages:
+- `binutils` - GNU linker tools
+- `lld` - LLVM linker  
+- `libudev-dev` - Hardware device library (for HID API)
+- `pkg-config` - Package configuration tool
+
 ## Running the Local Testnet
 
 The simplest way to run a local validator with automatic account funding:

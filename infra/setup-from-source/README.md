@@ -20,6 +20,10 @@ This setup provides:
 ./infra/setup-from-source/build_aptos_from_source.sh
 ```
 
+**Build Output**: Binaries are created in `infra/external/aptos-core/target/release/`:
+- `aptos-node` - Main Aptos node binary
+- `aptos-faucet-service` - Faucet service binary
+
 ### Multi-Chain Setup (Advanced)
 
 ```bash
@@ -72,6 +76,15 @@ infra/setup-from-source/
 - Aptos CLI installed
 - Sufficient system resources
 - Network configuration knowledge
+
+### System Dependencies
+
+Install required system packages:
+
+```bash
+# Install system dependencies
+sudo apt install -y $(cat infra/setup-from-source/requirements.txt)
+```
 
 ## Known Limitations
 

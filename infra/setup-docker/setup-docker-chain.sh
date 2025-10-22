@@ -20,12 +20,12 @@ echo "✅ Docker is running"
 # Stop any existing containers
 echo ""
 echo "🧹 Stopping existing containers..."
-docker-compose -f infra/docker-build-from-source/docker-compose.yml down 2>/dev/null || true
+docker-compose -f infra/setup-docker/docker-compose.yml down 2>/dev/null || true
 
 # Build and start the localnet
 echo ""
 echo "🚀 Starting Aptos localnet with all services..."
-docker-compose -f infra/docker-build-from-source/docker-compose.yml up -d
+docker-compose -f infra/setup-docker/docker-compose.yml up -d
 
 # Wait for services to be ready
 echo ""
@@ -80,7 +80,7 @@ echo ""
 echo "ℹ️  Note: Running with faucet only (no Indexer API) for simplicity"
 echo ""
 echo "📁 Docker containers:"
-docker-compose -f infra/docker-build-from-source/docker-compose.yml ps
+docker-compose -f infra/setup-docker/docker-compose.yml ps
 echo ""
 echo "🎉 Aptos localnet setup complete!"
 echo ""
@@ -89,6 +89,6 @@ echo "   Each run starts from block 0 with clean state"
 echo "   All previous accounts and transactions are cleared"
 echo ""
 echo "📋 Management Commands:"
-echo "   Stop:    docker-compose -f infra/docker-build-from-source/docker-compose.yml down"
-echo "   Logs:    docker-compose -f infra/docker-build-from-source/docker-compose.yml logs -f"
-echo "   Restart: docker-compose -f infra/docker-build-from-source/docker-compose.yml restart"
+echo "   Stop:    docker-compose -f infra/setup-docker/docker-compose.yml down"
+echo "   Logs:    docker-compose -f infra/setup-docker/docker-compose.yml logs -f"
+echo "   Restart: docker-compose -f infra/setup-docker/docker-compose.yml restart"

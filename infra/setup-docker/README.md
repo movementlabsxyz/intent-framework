@@ -1,12 +1,12 @@
 # Docker Aptos Localnet Setup
 
-This directory contains a Docker setup for running a complete Aptos localnet with all services, based on the [official Aptos documentation](https://aptos.dev/network/nodes/localnet/local-development-network).
+This directory contains a Docker-based setup for running Aptos localnet with all services, providing a clean and isolated development environment.
 
 ## Quick Start
 
 ```bash
-# Start the complete Aptos localnet with all services
-./infra/docker-build-from-source/setup-docker-chain.sh
+# Start the Aptos localnet
+./infra/setup-docker/setup-docker-chain.sh
 ```
 
 ## What it includes
@@ -29,17 +29,13 @@ This setup follows the single-validator approach with `aptos node run-localnet -
 
 ```bash
 # Stop the localnet
-docker-compose -f infra/docker-build-from-source/docker-compose.yml down
+docker-compose -f infra/setup-docker/docker-compose.yml down
 
 # View logs
-docker-compose -f infra/docker-build-from-source/docker-compose.yml logs -f
+docker-compose -f infra/setup-docker/docker-compose.yml logs -f
 
 # Restart
-docker-compose -f infra/docker-build-from-source/docker-compose.yml restart
-
-# Reset the chain (fresh start)
-docker-compose -f infra/docker-build-from-source/docker-compose.yml down -v
-./infra/docker-build-from-source/setup-docker-chain.sh
+docker-compose -f infra/setup-docker/docker-compose.yml restart
 ```
 
 ## Files

@@ -1,8 +1,8 @@
 base:
-  data_dir: /Users/ap/code/movement/_research/intent-framework/infra/single-validator/work/data/maptos
+  data_dir: UPDATE_TO_YOUR_PATH/data/maptos
   role: validator
   waypoint:
-    from_file: /Users/ap/code/movement/_research/intent-framework/infra/single-validator/work/data/waypoint.txt
+    from_file: UPDATE_TO_YOUR_PATH/data/waypoint.txt
 consensus:
   vote_back_pressure_limit: 50
   safety_rules:
@@ -10,16 +10,16 @@ consensus:
       type: local
     backend:
       type: on_disk_storage
-      path: /Users/ap/code/movement/_research/intent-framework/infra/single-validator/work/data/secure-data.json
+      path: UPDATE_TO_YOUR_PATH/data/secure-data.json
       namespace: null
     initial_safety_rules_config:
       from_file:
         waypoint:
-          from_file: /Users/ap/code/movement/_research/intent-framework/infra/single-validator/work/data/waypoint.txt
-        identity_blob_path: /Users/ap/code/movement/_research/intent-framework/infra/single-validator/work/validator-identity.yaml
+          from_file: UPDATE_TO_YOUR_PATH/data/waypoint.txt
+        identity_blob_path: UPDATE_TO_YOUR_PATH/validator-identity.yaml
 
 execution:
-  genesis_file_location: /Users/ap/code/movement/_research/intent-framework/infra/single-validator/work/data/genesis.blob
+  genesis_file_location: UPDATE_TO_YOUR_PATH/data/genesis.blob
 storage:
   backup_service_address: 0.0.0.0:6186
   rocksdb_configs:

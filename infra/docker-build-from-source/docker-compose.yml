@@ -1,0 +1,29 @@
+services:
+  # Single Aptos Chain with Faucet
+  aptos-chain:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    container_name: aptos-chain
+    ports:
+      - "8080:8080"  # REST API
+      - "8081:8081"  # Faucet
+    volumes:
+      - aptos-data:/aptos/data
+      - aptos-config:/aptos/config
+    environment:
+      - RUST_LOG=warn
+    command: >
+      sh -c "
+        # Start the node with faucet using Aptos CLI
+        aptos node run-localnet --test-dir /aptos/config --with-faucet
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/ledger/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  aptos-data:
+  aptos-config:

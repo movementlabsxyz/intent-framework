@@ -1,6 +1,6 @@
 # Docker Aptos Chain Setup
 
-This directory contains a simple Docker setup for running a single Aptos blockchain node.
+This directory contains a Docker setup for building and running Aptos from source, based on the [official Aptos documentation](https://aptos.dev/network/nodes/localnet/local-development-network).
 
 ## Quick Start
 

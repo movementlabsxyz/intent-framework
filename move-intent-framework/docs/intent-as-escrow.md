@@ -1,5 +1,7 @@
 # Intent System as Escrow Mechanism
 
+⚠️ **Important**: In this escrow system, the **oracle acts as a verifier** that approves or rejects escrow conditions. The oracle does NOT provide external data values - it only verifies whether predefined conditions are met and provides a signature to approve/reject the escrow release.
+
 ## Overview
 
 The Aptos Intent Framework implements a sophisticated escrow system through its intent mechanism. This document explains how the existing intent system functions as an escrow, particularly in the context of cross-chain architectures.
@@ -41,41 +43,56 @@ struct FungibleAssetLimitOrder has store, drop {
 
 ## Escrow Lifecycle
 
-### Phase 1: Deposit (Create Intent)
+### Phase 1: Deposit (Create Oracle-Guarded Intent)
 ```move
-// User deposits tokens and sets conditions
-let intent_obj = fa_intent::create_fa_limit_order_intent(
+// User deposits tokens and sets oracle requirements
+let requirement = fa_intent_with_oracle::new_oracle_signature_requirement(
+    min_approval_value,   // Minimum approval value oracle must provide (e.g., 1 for approve)
+    oracle_public_key     // Authorized oracle's public key
+);
+
+let intent_obj = fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
     user,
     source_asset,           // ← Tokens to escrow
     desired_metadata,      // ← What they want in return
     desired_amount,        // ← How much they want
     expiry_time,           // ← When escrow expires
+    user_address,          // ← Intent creator
+    requirement,           // ← Oracle signature requirements
 );
 ```
 
 **What happens:**
-1. User's tokens are locked in the intent
+1. User's tokens are locked in the oracle-guarded intent
 2. Escrow conditions are set (desired token type/amount)
-3. Expiry time is established
-4. Event is emitted for cross-chain communication
+3. Oracle signature requirements are established
+4. Expiry time is set
+5. OracleLimitOrderEvent is emitted for cross-chain communication
 
-### Phase 2: Verification (Oracle Witness)
+### Phase 2: Verification (Oracle Approval)
 ```move
-// Oracle verifies conditions and provides witness
-let witness = fa_intent::FungibleAssetRecipientWitness {};
-intent::finish_intent_session(solver, intent_obj, witness);
+// Oracle verifies conditions and provides approval signature
+let witness = fa_intent_with_oracle::new_oracle_signature_witness(
+    approval_value,    // Oracle's approval decision (e.g., 1 for approve, 0 for reject)
+    oracle_signature   // Oracle's Ed25519 signature
+);
+fa_intent_with_oracle::finish_fa_receiving_session_with_oracle(
+    session, 
+    solver_payment, 
+    option::some(witness)
+);
 ```
 
 **What happens:**
-1. Oracle validates the escrow conditions
-2. Oracle provides witness proving conditions are met
+1. Oracle verifies the escrow conditions on connected chain
+2. Oracle provides approval signature if conditions are met
 3. Tokens are released from escrow to solver
 4. Escrow is completed and cleaned up
 
 ### Phase 3: Expiry (Fallback)
 ```move
 // If oracle doesn't verify within expiry time
-intent::revoke_intent(user, intent_obj);
+fa_intent_with_oracle::revoke_fa_intent(user, intent_obj);
 ```
 
 **What happens:**
@@ -86,9 +103,9 @@ intent::revoke_intent(user, intent_obj);
 ## Cross-Chain Escrow Architecture
 
 ### Hub Chain (Escrow Chain)
-- **Role**: Hosts the escrow contracts
-- **Components**: `intent.move`, `fa_intent.move`
-- **Function**: Locks tokens until oracle verification
+- **Role**: Hosts the oracle-guarded escrow contracts
+- **Components**: `intent.move`, `fa_intent_with_oracle.move`
+- **Function**: Locks tokens until oracle signature verification
 
 ### Connected Chain (Oracle Chain)
 - **Role**: Provides oracle verification
@@ -98,46 +115,46 @@ intent::revoke_intent(user, intent_obj);
 ### Cross-Chain Communication
 ```move
 #[event]
-struct LimitOrderEvent has store, drop {
+struct OracleLimitOrderEvent has store, drop {
     source_metadata: Object<Metadata>,
     source_amount: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
     issuer: address,
     expiry_time: u64,
+    min_approval_value: u64,  // Oracle approval threshold requirement
 }
 ```
 
 **Flow:**
-1. Hub Chain emits `LimitOrderEvent` when escrow is created
+1. Hub Chain emits `OracleLimitOrderEvent` when oracle-guarded escrow is created
 2. Connected Chain oracle listens to events
 3. Oracle verifies conditions on connected chain
-4. Oracle provides witness back to hub chain
-5. Escrow releases tokens to solver
+4. Oracle provides Ed25519 approval signature back to hub chain
+5. Escrow releases tokens to solver upon valid approval signature verification
 
 ## Oracle Integration
 
-### Witness System
-The intent system uses a witness-based verification:
+### Oracle Witness System
+The oracle-guarded intent system uses signature-based verification:
 
 ```move
-struct FungibleAssetRecipientWitness has drop {}
+struct OracleSignatureWitness has drop {
+    approval_value: u64,        // Oracle's approval decision (e.g., 1 for approve, 0 for reject)
+    signature: ed25519::Signature, // Oracle's Ed25519 signature
+}
+
+struct OracleSignatureRequirement has store, drop {
+    min_approval_value: u64,    // Minimum approval value oracle must provide
+    public_key: ed25519::UnvalidatedPublicKey, // Authorized oracle's public key
+}
 ```
 
 **Oracle Requirements:**
-1. Must be able to create the specific witness type
-2. Must verify escrow conditions are met
-3. Must provide witness within expiry time
-
-### Signature Verification
-For additional security, the system supports signature verification:
-
-```move
-struct IntentReserved has store {
-    solver: address,
-    signature: vector<u8>,
-}
-```
+1. Must have the authorized public key for signature verification
+2. Must provide approval value >= `min_approval_value` threshold (e.g., 1 for approve)
+3. Must provide valid Ed25519 signature within expiry time
+4. Must verify escrow conditions are met on connected chain
 
 ## Escrow States
 

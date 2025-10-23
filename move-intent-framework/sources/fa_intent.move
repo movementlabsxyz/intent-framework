@@ -99,6 +99,7 @@ module aptos_intent::fa_intent {
             issuer,
             FungibleAssetRecipientWitness {},
             reservation,
+            true, // revocable by default for fungible asset intents
         )
     }
 

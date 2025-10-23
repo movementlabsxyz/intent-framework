@@ -120,6 +120,7 @@ module aptos_intent::fa_intent_with_oracle {
     /// - `expiry_time`: Unix timestamp after which the intent can no longer be filled
     /// - `issuer`: Address of the intent creator
     /// - `requirement`: Oracle public key and minimum reported value used for verification
+    /// - `revocable`: Whether the intent can be revoked by the owner
     ///
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created oracle-guarded intent
@@ -130,6 +131,7 @@ module aptos_intent::fa_intent_with_oracle {
         expiry_time: u64,
         issuer: address,
         requirement: OracleSignatureRequirement,
+        revocable: bool,
     ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         event::emit(OracleLimitOrderEvent {
             source_metadata: fungible_asset::asset_metadata(&source_fungible_asset),
@@ -160,6 +162,7 @@ module aptos_intent::fa_intent_with_oracle {
             issuer,
             OracleGuardedWitness {},
             option::none(),
+            revocable,
         )
     }
 
@@ -219,19 +222,9 @@ module aptos_intent::fa_intent_with_oracle {
         intent::finish_intent_session(session, OracleGuardedWitness {})
     }
 
-    /// Entry function to revoke an oracle-guarded intent and return the locked assets.
-    ///
-    /// # Arguments
-    /// - `account`: Signer of the intent owner
-    /// - `intent`: Object reference to the oracle-guarded intent
-    public entry fun revoke_fa_intent(
-        account: &signer,
-        intent: Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>
-    ) {
-        let store_manager = intent::revoke_intent(account, intent);
-        let fa = destroy_store_manager(store_manager);
-        primary_fungible_store::deposit(signer::address_of(account), fa);
-    }
+    // SECURITY: Revocation functionality removed for oracle-guarded intents
+    // Once funds are locked with oracle requirements, they can only be released
+    // through proper oracle verification - not through revocation
 
     // ============================================================================
     // INTERNAL HELPERS
@@ -284,6 +277,23 @@ module aptos_intent::fa_intent_with_oracle {
 
     /// Destroys the on-chain store manager and returns the locked fungible asset.
     ///
+    /// Entry function to revoke an oracle-guarded fungible asset intent and return the locked assets.
+    /// 
+    /// This function allows the intent owner to cancel their intent and get back
+    /// their locked fungible assets before the intent expires or is completed.
+    /// 
+    /// # Arguments
+    /// - `account`: Signer of the intent owner
+    /// - `intent`: Object reference to the intent to revoke
+    public entry fun revoke_fa_intent<Args: store + drop>(
+        account: &signer,
+        intent: Object<TradeIntent<FungibleStoreManager, Args>>
+    ) {
+        let store_manager = intent::revoke_intent(account, intent);
+        let fa = destroy_store_manager(store_manager);
+        primary_fungible_store::deposit(signer::address_of(account), fa);
+    }
+
     /// Shared implementation with the base module; duplicated here to avoid
     /// reaching through an external helper from tests.
     fun destroy_store_manager(store_manager: FungibleStoreManager): FungibleAsset {

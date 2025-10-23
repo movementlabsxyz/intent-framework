@@ -124,9 +124,9 @@ module aptos_intent::fa_tests {
         offerer = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Fungible Asset Intent Revocation
-    /// Verifies that intent creators can revoke fungible asset intents and recover their locked tokens.
-    fun test_revoke_fa_intent(
+    /// Test: Fungible Asset Intent Revocation Success (revocable = true)
+    /// Verifies that revocable fungible asset intents can be cancelled and tokens recovered.
+    fun test_revoke_fa_intent_success(
         aptos_framework: &signer,
         offerer: &signer,
         solver: &signer,

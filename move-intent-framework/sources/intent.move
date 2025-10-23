@@ -19,6 +19,9 @@ module aptos_intent::intent {
     /// Provided wrong witness to complete intent.
     const EINVALID_WITNESS: u64 = 3;
 
+    /// Intent is not revocable by the owner.
+    const ENOT_REVOCABLE: u64 = 4;
+
     /// Core intent structure that locks a resource until specific conditions are met.
     /// 
     /// - `offered_resource`: The resource being offered for trade
@@ -26,6 +29,7 @@ module aptos_intent::intent {
     /// - `self_delete_ref`: Reference to delete the intent object
     /// - `expiry_time`: Unix timestamp when the intent expires
     /// - `witness_type`: Type information for the required witness
+    /// - `revocable`: Whether the intent can be revoked by the owner
     struct TradeIntent<Source, Args> has key {
         offered_resource: Source,
         argument: Args,
@@ -33,6 +37,7 @@ module aptos_intent::intent {
         expiry_time: u64,
         witness_type: TypeInfo,
         reservation: Option<IntentReserved>,
+        revocable: bool,
     }
 
     /// Active trading session containing the conditions and witness requirements.
@@ -48,7 +53,7 @@ module aptos_intent::intent {
     /// Creates a new trade intent that locks a resource until specific conditions are met.
     /// 
     /// The intent can only be completed by providing a witness of the specified type,
-    /// which proves that the trading conditions have been satisfied.
+    /// or revoked by the owner if revocable is true.
     /// 
     /// # Arguments
     /// - `offered_resource`: The resource to be locked in the intent
@@ -56,6 +61,7 @@ module aptos_intent::intent {
     /// - `expiry_time`: Unix timestamp when the intent expires
     /// - `issuer`: Address of the intent creator
     /// - `_witness`: Witness type that must be provided to complete the intent
+    /// - `revocable`: Whether the intent can be revoked by the owner
     /// 
     /// # Returns
     /// - `Object<TradeIntent<Source, Args>>`: Object reference to the created intent
@@ -66,6 +72,7 @@ module aptos_intent::intent {
         issuer: address,
         _witness: Witness,
         reservation: Option<IntentReserved>,
+        revocable: bool,
     ): Object<TradeIntent<Source, Args>> {
         let constructor_ref = object::create_object(issuer);
         let object_signer = object::generate_signer(&constructor_ref);
@@ -80,6 +87,7 @@ module aptos_intent::intent {
                 self_delete_ref,
                 witness_type: type_info::type_of<Witness>(),
                 reservation,
+                revocable,
             }
         );
         object::object_from_constructor_ref(&constructor_ref)
@@ -112,6 +120,7 @@ module aptos_intent::intent {
             self_delete_ref,
             witness_type,
             reservation,
+            revocable: _,
         } = move_from<TradeIntent<Source, Args>>(object::object_address(&intent));
 
         object::delete(self_delete_ref);
@@ -184,6 +193,7 @@ module aptos_intent::intent {
     /// 
     /// # Aborts
     /// - `ENOT_OWNER`: If the signer is not the owner of the intent
+    /// - `ENOT_REVOCABLE`: If the intent is not revocable
     public fun revoke_intent<Source: store, Args: store + drop>(
         issuer: &signer,
         intent: Object<TradeIntent<Source, Args>>,
@@ -196,8 +206,10 @@ module aptos_intent::intent {
             self_delete_ref,
             witness_type: _,
             reservation: _,
+            revocable,
         } = move_from<TradeIntent<Source, Args>>(object::object_address(&intent));
 
+        assert!(revocable, error::permission_denied(ENOT_REVOCABLE));
         object::delete(self_delete_ref);
         offered_resource
     }

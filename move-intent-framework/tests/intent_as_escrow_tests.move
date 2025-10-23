@@ -4,6 +4,7 @@ module aptos_intent::intent_as_escrow_tests {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
     use aptos_intent::intent_as_escrow;
+    use aptos_intent::fa_intent_with_oracle;
     use aptos_intent::fa_test_utils::register_and_mint_tokens;
     use aptos_std::ed25519;
 
@@ -128,7 +129,7 @@ module aptos_intent::intent_as_escrow_tests {
         solver = @0xdead,
         _verifier = @0xbeef
     )]
-    /// Test escrow revocation by user
+    #[expected_failure(abort_code = 327684, location = aptos_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
     fun test_escrow_revocation(
         aptos_framework: &signer,
         user: &signer,
@@ -149,10 +150,7 @@ module aptos_intent::intent_as_escrow_tests {
             timestamp::now_seconds() + 3600,
         );
         
-        // User revokes the escrow before oracle acts
-        intent_as_escrow::revoke_escrow(user, escrow_intent);
-        
-        // User should have their tokens back
-        assert!(primary_fungible_store::balance(signer::address_of(user), source_token_type) == 100);
+        // User tries to revoke the escrow directly - this should fail because escrow is non-revocable
+        fa_intent_with_oracle::revoke_fa_intent(user, escrow_intent);
     }
 }

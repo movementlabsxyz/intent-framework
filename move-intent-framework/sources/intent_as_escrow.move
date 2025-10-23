@@ -9,6 +9,25 @@
 /// 
 /// The verifier acts as a trusted entity that approves or rejects escrow conditions.
 /// Verifier provides approval_value: 1 = approve, 0 = reject
+/// 
+/// ============================================================================
+/// 🔒 CRITICAL SECURITY REQUIREMENT 🔒
+/// ============================================================================
+/// 
+/// ⚠️  ESCROW INTENTS MUST ALWAYS BE CREATED AS NON-REVOCABLE ⚠️
+/// 
+/// This is a FUNDAMENTAL security requirement for any escrow system:
+/// 
+/// 1. Escrow funds MUST be locked and cannot be withdrawn by the user
+/// 2. Funds can ONLY be released by verifier approval or rejection
+/// 3. The `revocable` parameter MUST ALWAYS be set to `false` when creating escrow intents
+/// 4. Any verifier implementation MUST verify that escrow intents are non-revocable
+/// 5. This prevents users from withdrawing funds before verifier decision
+/// 
+/// FAILURE TO ENSURE NON-REVOCABLE ESCROW INTENTS COMPLETELY DEFEATS THE PURPOSE
+/// OF AN ESCROW SYSTEM AND CREATES A CRITICAL SECURITY VULNERABILITY./// 
+/// 
+/// ============================================================================
 module aptos_intent::intent_as_escrow {
     use std::option::{Self as option};
     use std::signer;
@@ -80,6 +99,9 @@ module aptos_intent::intent_as_escrow {
             expiry_time,
             signer::address_of(user),
             requirement,
+            false, // 🔒 CRITICAL: escrow intents MUST be non-revocable for security!
+            //      This ensures funds can ONLY be released by verifier approval/rejection
+            //      Users cannot withdraw funds before verifier decision
         )
     }
 
@@ -130,18 +152,6 @@ module aptos_intent::intent_as_escrow {
             solver_payment,
             option::some(witness),
         );
-    }
-
-    /// Revokes an escrow and returns assets to original depositor
-    /// 
-    /// # Arguments
-    /// - `user`: Signer of the original escrow creator
-    /// - `intent`: Handle to the escrow intent
-    public fun revoke_escrow(
-        user: &signer,
-        intent: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>
-    ) {
-        fa_intent_with_oracle::revoke_fa_intent(user, intent);
     }
 
     // ============================================================================

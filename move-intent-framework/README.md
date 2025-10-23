@@ -6,6 +6,33 @@ This framework integrates with the blockchain's native fungible asset standard a
 
 For detailed technical specifications and design rationale, see [AIP-511: Aptos Intent Framework](https://github.com/aptos-foundation/AIPs/pull/511).
 
+## 🔒 Security Requirements
+
+### Critical: Escrow Intent Revocation Control
+
+**⚠️ ESCROW INTENTS MUST ALWAYS BE CREATED AS NON-REVOCABLE ⚠️**
+
+This is a **FUNDAMENTAL** security requirement for any escrow system:
+
+1. **Escrow funds MUST be locked** and cannot be withdrawn by the user
+2. **Funds can ONLY be released** by verifier approval or rejection  
+3. **The `revocable` parameter MUST ALWAYS be set to `false`** when creating escrow intents
+4. **Any verifier implementation MUST verify** that escrow intents are non-revocable
+5. **This prevents users from withdrawing funds** before verifier decision
+
+**FAILURE TO ENSURE NON-REVOCABLE ESCROW INTENTS COMPLETELY DEFEATS THE PURPOSE OF AN ESCROW SYSTEM AND CREATES A CRITICAL SECURITY VULNERABILITY.**
+
+✅ **Current implementation**: ESCROW INTENTS ARE CREATED AS NON-REVOCABLE (`revocable = false`)
+
+### Verifier Implementation Requirements
+
+When implementing verifiers for escrow systems:
+
+- **Always verify** that escrow intents have `revocable = false`
+- **Reject any escrow intent** that allows user revocation
+- **Document this requirement** in your verifier implementation
+- **Test thoroughly** to ensure revocation is impossible
+
 ## Quick Start
 
 ### Basic Usage

@@ -44,6 +44,7 @@ module aptos_intent::intent_tests {
             signer::address_of(offerer),
             TestWitness {},
             option::none(),
+            true, // revocable by default for tests
         )
     }
 
@@ -82,15 +83,43 @@ module aptos_intent::intent_tests {
         aptos_framework = @0x1,
         offerer = @0x123
     )]
-    /// Test: Intent Revocation
-    /// Verifies that intent owners can cancel their intents and recover locked resources.
-    fun test_revoke_intent(
+    fun test_revoke_intent_success(
         aptos_framework: &signer,
         offerer: &signer,
     ) {
         let intent = create_test_intent(aptos_framework, offerer);
 
         // Revoke the intent (returns the locked resource to the owner)
+        let returned_resource = intent::revoke_intent(offerer, intent);
+        assert!(returned_resource.value == 100);
+    }
+
+    #[test(
+        aptos_framework = @0x1,
+        offerer = @0x123
+    )]
+    #[expected_failure(abort_code = 327684, location = aptos_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
+    fun test_revoke_intent_failure(
+        aptos_framework: &signer,
+        offerer: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        
+        let resource = TestResource { value: 100 };
+        let args = TestArgs { condition: 1111 };
+        let expiry_time = timestamp::now_seconds() + 3600;
+
+        let intent = intent::create_intent(
+            resource,
+            args,
+            expiry_time,
+            signer::address_of(offerer),
+            TestWitness {},
+            option::none(),
+            false, // revocable = false
+        );
+
+        // This should fail because the intent is not revocable
         let returned_resource = intent::revoke_intent(offerer, intent);
         assert!(returned_resource.value == 100);
     }
@@ -119,6 +148,7 @@ module aptos_intent::intent_tests {
             signer::address_of(offerer),
             TestWitness {},
             option::none(),
+            true, // revocable by default for tests
         );
         
         // Advance time to make the intent expired

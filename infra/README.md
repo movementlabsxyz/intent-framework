@@ -8,8 +8,10 @@ This directory contains infrastructure setup options for running Aptos chains fo
 
 ## Setup Options
 
-### 🐳 Docker Setup (Recommended)
+### 🐳 Docker Setup 
 **Easy, isolated, and reproducible**
+
+⚠️ **Warning**: This script does not work on Apple Silicon Macs (M1/M2) - Linux AMD64 architecture only
 
 - **Location**: [`setup-docker/`](./setup-docker/)
 - **Best for**: Quick development, testing, CI/CD, cross-chain testing
@@ -22,6 +24,8 @@ This directory contains infrastructure setup options for running Aptos chains fo
 
 ### 🔧 Manual Setup (From Source)
 **Full control and customization**
+
+⚠️ **Warning**: Cannot run multi-chain setup (port conflicts) - use Docker for dual-chain testing
 
 - **Location**: [`setup-from-source/`](./setup-from-source/)
 - **Best for**: Custom configurations

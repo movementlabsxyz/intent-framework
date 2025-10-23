@@ -15,6 +15,3 @@ rev = "mainnet"
 subdir = "aptos-framework"
 
 [dev-dependencies]
-
-[build]
-script = "../infra/external/verify-aptos-pin.sh"

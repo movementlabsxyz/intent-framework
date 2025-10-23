@@ -106,7 +106,7 @@ module aptos_intent::fa_intent_with_oracle {
     // ENTRY / PUBLIC API
     // ============================================================================
 
-    /// Creates a fungible asset → fungible asset trading intent guarded by an
+    /// Creates a fungible asset -> fungible asset trading intent guarded by an
     /// oracle signature requirement.
     ///
     /// The offered fungible asset is parked in a temporary store owned by this

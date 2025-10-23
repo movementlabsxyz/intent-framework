@@ -19,6 +19,7 @@ For detailed flow descriptions and implementation details, see:
 - [API Reference](docs/api-reference.md) - Complete API documentation
 - [Intent Reservation](docs/intent-reservation.md) - Reserved intent implementation
 - [Oracle Intents](docs/oracle-intents.md) - Oracle-guarded intent implementation
+- [Intent as Escrow](docs/intent-as-escrow.md) - How the intent system functions as an escrow mechanism
 
 ## Development
 
@@ -51,7 +52,8 @@ move-intent-framework/
 │   ├── api-reference.md         # Complete API documentation
 │   ├── development.md          # Development setup and testing
 │   ├── intent-reservation.md   # Reservation system details
-│   └── oracle-intents.md       # Oracle-guarded intent details
+│   ├── oracle-intents.md       # Oracle-guarded intent details
+│   └── intent-as-escrow.md     # Intent system as escrow mechanism
 ├── sources/                    # Move modules
 │   ├── intent.move            # Core generic intent framework
 │   ├── fa_intent.move         # Fungible asset implementation

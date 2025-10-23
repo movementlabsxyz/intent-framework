@@ -10,13 +10,14 @@
 /// The verifier acts as a trusted entity that approves or rejects escrow conditions.
 /// Verifier provides approval_value: 1 = approve, 0 = reject
 module aptos_intent::intent_as_escrow {
-    use std::option::{Self as option, Option};
+    use std::option::{Self as option};
     use std::signer;
+    use std::error;
+    use std::bcs;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
     use aptos_framework::object::Object;
-    use aptos_framework::primary_fungible_store;
     use aptos_intent::fa_intent_with_oracle;
-    use aptos_intent::intent::{Self, TradeIntent, TradeSession};
+    use aptos_intent::intent::{TradeIntent, TradeSession};
     use aptos_std::ed25519;
 
     // ============================================================================

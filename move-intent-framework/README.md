@@ -18,7 +18,7 @@ This is a **FUNDAMENTAL** security requirement for any escrow system:
 2. **Funds can ONLY be released** by verifier approval or rejection  
 3. **The `revocable` parameter MUST ALWAYS be set to `false`** when creating escrow intents
 4. **Any verifier implementation MUST verify** that escrow intents are non-revocable
-5. **This prevents users from withdrawing funds** before verifier decision
+5. **This ensures verifiers can safely trigger actions elsewhere** based on deposit events
 
 **FAILURE TO ENSURE NON-REVOCABLE ESCROW INTENTS COMPLETELY DEFEATS THE PURPOSE OF AN ESCROW SYSTEM AND CREATES A CRITICAL SECURITY VULNERABILITY.**
 

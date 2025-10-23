@@ -22,7 +22,7 @@
 /// 2. Funds can ONLY be released by verifier approval or rejection
 /// 3. The `revocable` parameter MUST ALWAYS be set to `false` when creating escrow intents
 /// 4. Any verifier implementation MUST verify that escrow intents are non-revocable
-/// 5. This prevents users from withdrawing funds before verifier decision
+/// 5. This ensures verifiers can safely trigger actions elsewhere based on deposit events
 /// 
 /// FAILURE TO ENSURE NON-REVOCABLE ESCROW INTENTS COMPLETELY DEFEATS THE PURPOSE
 /// OF AN ESCROW SYSTEM AND CREATES A CRITICAL SECURITY VULNERABILITY./// 
@@ -101,7 +101,7 @@ module aptos_intent::intent_as_escrow {
             requirement,
             false, // 🔒 CRITICAL: escrow intents MUST be non-revocable for security!
             //      This ensures funds can ONLY be released by verifier approval/rejection
-            //      Users cannot withdraw funds before verifier decision
+            //      Verifiers can safely trigger actions elsewhere based on deposit events
         )
     }
 

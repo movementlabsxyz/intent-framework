@@ -58,6 +58,7 @@ move-intent-framework/
 │   ├── intent.move            # Core generic intent framework
 │   ├── fa_intent.move         # Fungible asset implementation
 │   ├── fa_intent_with_oracle.move # Oracle-based implementation
+│   ├── intent_as_escrow.move  # Simplified escrow abstraction
 │   └── intent_reservation.move # Reservation system
 ├── tests/                      # Test modules
 ├── Move.toml                   # Package configuration

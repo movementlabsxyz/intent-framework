@@ -16,6 +16,7 @@ This directory contains infrastructure setup options for running Aptos chains fo
 - **Features**: Fresh start every time, no system dependencies
 - **Platform**: Linux only (AMD64 architecture) - not compatible with Apple Silicon Macs
 - **Documentation**: [`setup-docker/README.md`](./setup-docker/README.md)
+- **Testing**: [`test-alice-bob.sh`](./setup-docker/test-alice-bob.sh) - Complete Alice and Bob account testing
 
 ### 🔧 Manual Setup (From Source)
 **Full control and customization**

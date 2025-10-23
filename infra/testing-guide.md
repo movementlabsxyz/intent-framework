@@ -10,10 +10,10 @@ This guide contains common testing and validation commands that work with both D
 curl -s http://127.0.0.1:8080/v1/ledger/info
 
 # Extract key chain information
-curl -s http://127.0.0.1:8080/v1 | grep -E '"chain_id"|"block_height"'
+curl -s http://127.0.0.1:8080/v1
 
 # Check node role and status
-curl -s http://127.0.0.1:8080/v1/ledger/info | jq '.chain_id, .block_height, .node_role'
+curl -s http://127.0.0.1:8080/v1/ledger/info
 ```
 
 ### Faucet Service Status

@@ -42,6 +42,7 @@ docker-compose -f infra/setup-docker/docker-compose.yml restart
 
 - `docker-compose.yml`: Uses official `aptoslabs/tools:nightly` image with host networking
 - `setup-docker-chain.sh`: One-command setup script with health checks
+- `test-alice-bob.sh`: Complete Alice and Bob account testing script
 - `Dockerfile`: Not needed - uses official Aptos image directly
 
 ## Benefits
@@ -71,6 +72,23 @@ aptos move publish --profile local --package-dir ./move-intent-framework
 ## Testing and Validation
 
 For common testing commands and validation steps, see the [shared testing guide](../testing-guide.md).
+
+### Alice and Bob Account Testing
+
+Run the complete Alice and Bob account testing script:
+
+```bash
+# Test account creation, funding, and transfers
+./infra/setup-docker/test-alice-bob.sh
+```
+
+This script will:
+- ✅ Verify Docker localnet is running
+- ✅ Create Alice and Bob accounts
+- ✅ Fund both accounts via faucet
+- ✅ Test transfer from Alice to Bob
+- ✅ Verify balances before and after transfer
+- ✅ Test REST API balance verification
 
 ## Usage with TypeScript SDK
 

@@ -240,98 +240,17 @@ pkill -f faucet || true
 aptos node run-localnet --with-faucet --force-restart --assume-yes
 ```
 
-### CLI Funding Issues
-If `aptos init` hangs during funding:
-```bash
-# Check if validator is running
-ps aux | grep "aptos node"
+### Testing and Validation
 
-# Check validator status
-curl -s http://127.0.0.1:8080/v1 | grep -E '"chain_id"|"block_height"'
+For comprehensive testing commands, troubleshooting steps, and validation procedures that work with both Docker and manual setups, see the [shared testing guide](../testing-guide.md).
 
-# Manual funding via faucet API (use address=, not auth_key=)
-curl -X POST "http://127.0.0.1:8081/mint?address=<ACCOUNT_ADDRESS>&amount=100000000"
-```
-
-### Fungible Asset System (FA)
-**Important**: Modern Aptos versions use the Fungible Asset (FA) system instead of the traditional CoinStore. The `aptos account balance` command shows simulated/cached balances, but actual balances are stored in separate fungible asset store objects.
-
-```bash
-# Fund an account
-SENDER=0x85eb5517a0e7fbd349ecd71794c940695f2a8c3a3f120a32aa57087c6997d81d
-TX_HASH=$(curl -s -X POST "http://127.0.0.1:8081/mint?address=${SENDER}&amount=100000000" | jq -r '.[0]')
-
-# Check transaction status
-curl -s "http://127.0.0.1:8080/v1/transactions/by_hash/${TX_HASH}" | jq '.success, .vm_status'
-
-# Find FA store address from transaction events
-curl -s "http://127.0.0.1:8080/v1/transactions/by_hash/${TX_HASH}" | jq '.events[] | select(.type=="0x1::fungible_asset::Deposit").data.store'
-
-# Check actual on-chain balance via FA store (replace STORE_ADDRESS with actual address)
-curl -s "http://127.0.0.1:8080/v1/accounts/<STORE_ADDRESS>/resources" | jq '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance'
-```
-
-**Key Differences from Traditional CoinStore:**
-- **CoinStore**: `0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>` (outdated)
-- **Fungible Asset**: `0x1::fungible_asset::FungibleStore` (current)
-- **CLI Balance**: Shows simulated/cached values (usually accurate)
-- **On-Chain Reality**: Balances stored in separate FA store objects
-- **Account Resources**: May only show `0x1::account::Account`, not CoinStore
-
-**Why This Matters:**
-- Direct REST API queries for CoinStore will return empty `[]`
-- Real balances are in fungible asset store objects
-- Transaction events show `fungible_asset::Deposit/Withdraw` instead of `coin::DepositEvent`
-
-### Complete Working Example
-Here's a step-by-step example that creates accounts and sends transactions:
-
-```bash
-# 1. Clean start (remove any existing configs)
-pkill -f "aptos node" || true
-pkill -f faucet || true
-rm -rf ~/.aptos/ .aptos/
-
-# 2. Start local testnet
-aptos node run-localnet --with-faucet --force-restart --assume-yes
-
-# 3. Create Alice account (non-interactive)
-printf "\n" | aptos init --profile alice --network local --assume-yes
-
-# 4. Create Bob account (non-interactive)
-printf "\n" | aptos init --profile bob --network local --assume-yes
-
-# 5. Verify both accounts are funded
-aptos account balance --profile alice
-aptos account balance --profile bob
-
-# 6. Send transaction from Alice to Bob (non-interactive)
-# First, get Bob's address from the profile
-BOB_ADDRESS=$(aptos config show-profiles | jq -r '.bob.account')
-printf "yes\n" | aptos account transfer --profile alice --account ${BOB_ADDRESS} --amount 2000000 --max-gas 10000
-
-# 7. Verify transaction results
-aptos account balance --profile alice
-aptos account balance --profile bob
-
-# 8. Optional: Verify on-chain balances (FA system)
-# Get the transaction hash from step 6 output, then:
-TX_HASH="0x53858ac187dc7c92b51fc43d58c1135e42425aaad7a2aa6c4e4fd14ac0e3eaf1"
-FA_STORE=$(curl -s "http://127.0.0.1:8080/v1/transactions/by_hash/${TX_HASH}" | jq -r '.events[] | select(.type=="0x1::fungible_asset::Deposit").data.store')
-curl -s "http://127.0.0.1:8080/v1/accounts/${FA_STORE}/resources" | jq '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance'
-```
-
-**Expected Results:**
-- Alice: ~97,950,100 Octas (100M - 2M transfer - gas fees)
-- Bob: 102,000,000 Octas (100M + 2M transfer)
-- Transaction hash returned for verification
-
-**Key Points:**
-- Use `printf "\n"` to handle interactive prompts for account creation
-- Use `printf "yes\n"` to handle transaction confirmation prompts
-- Use `--max-gas 10000` to ensure sufficient gas for transactions
-- Both accounts are automatically funded with 100M Octas via faucet
-- **Note**: Balances shown by CLI are simulated/cached; actual balances use fungible asset system
+This includes:
+- Service health checks
+- Account funding and management
+- Transaction verification
+- Fungible Asset System documentation
+- Complete working examples
+- Troubleshooting commands
 
 ### Process Names
 - **Validator process**: `aptos node run-localnet` (not `aptos-node`)

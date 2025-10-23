@@ -2,6 +2,10 @@
 
 This directory contains infrastructure setup options for running Aptos chains for development and testing.
 
+## Shared Resources
+
+- **[Testing Guide](./testing-guide.md)** - Common testing and validation commands for both Docker and manual setups
+
 ## Setup Options
 
 ### 🐳 Docker Setup (Recommended)

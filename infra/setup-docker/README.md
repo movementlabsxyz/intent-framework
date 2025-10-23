@@ -68,6 +68,10 @@ Then use it for commands:
 aptos move publish --profile local --package-dir ./move-intent-framework
 ```
 
+## Testing and Validation
+
+For common testing commands and validation steps, see the [shared testing guide](../testing-guide.md).
+
 ## Usage with TypeScript SDK
 
 ```typescript

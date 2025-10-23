@@ -103,3 +103,7 @@ See the [setup guide](./setup-guide.md) for detailed troubleshooting steps.
 4. Start developing with your custom Aptos setup
 
 For Docker-based setup (easier), see [../setup-docker/README.md](../setup-docker/README.md).
+
+## Testing and Validation
+
+For common testing commands and validation steps that work with both Docker and manual setups, see the [shared testing guide](../testing-guide.md).

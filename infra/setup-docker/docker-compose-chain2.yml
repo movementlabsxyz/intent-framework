@@ -1,0 +1,19 @@
+services:
+  # Aptos Localnet Chain 2 - Different ports
+  aptos-localnet-chain2:
+    image: aptoslabs/tools:nightly
+    container_name: aptos-localnet-chain2
+    ports:
+      - "8082:8080"  # REST API on port 8082
+      - "8083:8081"  # Faucet on port 8083
+    volumes:
+      - aptos-data-chain2:/aptos/config
+    command: >
+      sh -c "
+        echo 'Starting Aptos Localnet Chain 2 with faucet (fresh start)...' &&
+        aptos node run-localnet --with-faucet --force-restart --assume-yes
+      "
+    restart: unless-stopped
+
+volumes:
+  aptos-data-chain2:

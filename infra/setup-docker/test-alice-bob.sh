@@ -222,9 +222,9 @@ else
     exit 1
 fi
 
-echo ""
-echo "🧹 Cleaning up Docker containers..."
-docker-compose -f infra/setup-docker/docker-compose.yml down
+#echo ""
+#echo "🧹 Cleaning up Docker containers..."
+# docker-compose -f infra/setup-docker/docker-compose.yml down
 
 echo ""
 echo "🎯 Alice and Bob testing ended!"

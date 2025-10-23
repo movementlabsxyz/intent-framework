@@ -2,6 +2,37 @@
 
 This guide contains common testing and validation commands that work with both Docker and manual Aptos localnet setups.
 
+## Dual-Chain Testing
+
+### Service Health Checks for Dual Chains
+```bash
+# Chain 1 (ports 8080/8081)
+curl -s http://127.0.0.1:8080/v1/ledger/info
+curl -s http://127.0.0.1:8081/
+
+# Chain 2 (ports 8082/8083)
+curl -s http://127.0.0.1:8082/v1/ledger/info
+curl -s http://127.0.0.1:8083/
+```
+
+### Dual-Chain Account Funding
+```bash
+# Fund account on Chain 1
+curl -X POST "http://127.0.0.1:8081/mint?address=<ACCOUNT_ADDRESS>&amount=100000000"
+
+# Fund account on Chain 2
+curl -X POST "http://127.0.0.1:8083/mint?address=<ACCOUNT_ADDRESS>&amount=100000000"
+```
+
+### Cross-Chain Balance Verification
+```bash
+# Check balance on Chain 1
+curl -s "http://127.0.0.1:8080/v1/accounts/<FA_STORE_ADDRESS>/resources" | jq '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance'
+
+# Check balance on Chain 2
+curl -s "http://127.0.0.1:8082/v1/accounts/<FA_STORE_ADDRESS>/resources" | jq '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance'
+```
+
 ## Service Health Checks
 
 ### Node API Status

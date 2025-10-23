@@ -1,16 +1,27 @@
 # Docker Aptos Localnet Setup
 
-This directory contains a Docker-based setup for running Aptos localnet with all services, providing a clean and isolated development environment.
+This directory contains Docker-based setups for running Aptos localnet, providing clean and isolated development environments for both single-chain and dual-chain testing.
 
 ## Quick Start
 
+### Single Chain Setup
 ```bash
-# Start the Aptos localnet
+# Start a single Aptos localnet
 ./infra/setup-docker/setup-docker-chain.sh
 ```
 
-## What it includes
+### Dual Chain Setup
+```bash
+# Start two independent Aptos chains for cross-chain testing
+./infra/setup-docker/setup-dual-chains.sh
 
+# Stop both chains when done
+./infra/setup-docker/stop-dual-chains.sh
+```
+
+## Single Chain Setup
+
+### What it includes
 - **Node API** on port 8080 (REST API for core functionality)
 - **Faucet** on port 8081 (for funding accounts)
 - **Persistent storage** using Docker volumes
@@ -20,13 +31,11 @@ This setup follows the single-validator approach with `aptos node run-localnet -
 
 **Fresh Start Every Time**: Each run starts from block 0 with a completely clean state - all previous accounts and transactions are cleared.
 
-## Endpoints
-
+### Endpoints
 - **REST API**: http://127.0.0.1:8080
 - **Faucet**: http://127.0.0.1:8081
 
-## Management
-
+### Management
 ```bash
 # Stop the localnet
 docker-compose -f infra/setup-docker/docker-compose.yml down
@@ -38,15 +47,53 @@ docker-compose -f infra/setup-docker/docker-compose.yml logs -f
 docker-compose -f infra/setup-docker/docker-compose.yml restart
 ```
 
+## Dual Chain Setup
+
+### What it includes
+- **Chain 1**: Node API on port 8080, Faucet on port 8081
+- **Chain 2**: Node API on port 8082, Faucet on port 8083
+- **Independent chains**: Each chain has its own chain ID and state
+- **Separate volumes**: `aptos-data` and `aptos-data-chain2`
+
+Perfect for testing cross-chain interactions, bridge protocols, and multi-chain applications.
+
+### Endpoints
+- **Chain 1**:
+  - REST API: http://127.0.0.1:8080
+  - Faucet: http://127.0.0.1:8081
+- **Chain 2**:
+  - REST API: http://127.0.0.1:8082
+  - Faucet: http://127.0.0.1:8083
+
+### Management
+```bash
+# Stop both chains (recommended)
+./infra/setup-docker/stop-dual-chains.sh
+
+# Stop individual chains
+docker-compose -f infra/setup-docker/docker-compose.yml down
+docker-compose -f infra/setup-docker/docker-compose-chain2.yml down
+
+# View logs
+docker-compose -f infra/setup-docker/docker-compose.yml logs -f
+docker-compose -f infra/setup-docker/docker-compose-chain2.yml logs -f
+```
+
 ## Files
 
+### Single Chain Files
 - `docker-compose.yml`: Uses official `aptoslabs/tools:nightly` image with host networking
 - `setup-docker-chain.sh`: One-command setup script with health checks
 - `test-alice-bob.sh`: Complete Alice and Bob account testing script
-- `Dockerfile`: Not needed - uses official Aptos image directly
+
+### Dual Chain Files
+- `docker-compose-chain2.yml`: Second chain configuration with port mapping
+- `setup-dual-chains.sh`: Dual-chain setup script with health checks
+- `stop-dual-chains.sh`: Clean shutdown script for both chains
 
 ## Benefits
 
+### Single Chain Benefits
 - ✅ **Fresh start every time** - Always starts from block 0 with clean state
 - ✅ **Clean isolation** - No conflicts with local processes
 - ✅ **Easy cleanup** - Just `docker-compose down`
@@ -54,6 +101,13 @@ docker-compose -f infra/setup-docker/docker-compose.yml restart
 - ✅ **No port conflicts** - Uses host networking
 - ✅ **Reproducible testing** - Clean slate for each test run
 - ✅ **Health monitoring** - Automatic service health checks
+
+### Dual Chain Benefits
+- ✅ **Cross-chain testing** - Test bridge protocols and multi-chain apps
+- ✅ **Independent chains** - Each chain has separate state and chain ID
+- ✅ **Port isolation** - Different ports prevent conflicts
+- ✅ **Parallel development** - Test on both chains simultaneously
+- ✅ **Realistic scenarios** - Simulate real multi-chain environments
 
 ## Usage with Aptos CLI
 

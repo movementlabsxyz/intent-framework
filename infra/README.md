@@ -12,11 +12,13 @@ This directory contains infrastructure setup options for running Aptos chains fo
 **Easy, isolated, and reproducible**
 
 - **Location**: [`setup-docker/`](./setup-docker/)
-- **Best for**: Quick development, testing, CI/CD
-- **Features**: Fresh start every time, no system dependencies
+- **Best for**: Quick development, testing, CI/CD, cross-chain testing
+- **Features**: Fresh start every time, no system dependencies, dual-chain support
 - **Platform**: Linux only (AMD64 architecture) - not compatible with Apple Silicon Macs
 - **Documentation**: [`setup-docker/README.md`](./setup-docker/README.md)
 - **Testing**: [`test-alice-bob.sh`](./setup-docker/test-alice-bob.sh) - Complete Alice and Bob account testing
+- **Dual Chain**: [`setup-dual-chains.sh`](./setup-docker/setup-dual-chains.sh) - Two independent chains for cross-chain testing
+- **Stop Dual Chain**: [`stop-dual-chains.sh`](./setup-docker/stop-dual-chains.sh) - Clean shutdown for both chains
 
 ### 🔧 Manual Setup (From Source)
 **Full control and customization**

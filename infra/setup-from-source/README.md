@@ -2,7 +2,7 @@
 
 This directory contains scripts and configurations for setting up Aptos chains manually from source code, including support for multiple chains (Chain A and Chain B).
 
-> ⚠️ **IMPORTANT WARNING**: The manual setup does **NOT** work for multi-chain configurations due to port conflicts and CLI limitations. Use Docker setup for reliable single-chain development.
+> ⚠️ **IMPORTANT WARNING**: The manual setup does **NOT** work for multi-chain configurations due to port conflicts and CLI limitations. Use Docker setup for multi-chain development.
 
 ## Overview
 

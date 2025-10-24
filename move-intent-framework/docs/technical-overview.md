@@ -36,7 +36,7 @@ The framework supports three types of intents:
 5. **Contract verifies oracle signature**: Contract verifies the oracle signature and checks that the reported value meets the minimum threshold.
 6. **Intent completion**: If verification succeeds, the intent executes; otherwise, the transaction aborts.
 
-For detailed implementation details of the oracle system, see [oracle-intents.md](oracle-intents.md).
+For detailed implementation details of the oracle system, see [oracle-intents](oracle-intents.md).
 
 ## Core Components
 

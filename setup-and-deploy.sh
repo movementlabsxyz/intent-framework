@@ -25,7 +25,7 @@ aptos init --profile local --network local --assume-yes
 
 # Configure Chain 2 (port 8082)
 echo "   - Configuring Chain 2 (port 8082)..."
-aptos init --profile local2 --network custom --rest-url http://127.0.0.1:8082 --assume-yes
+aptos init --profile local2 --network custom --rest-url http://127.0.0.1:8082 --faucet-url http://127.0.0.1:8083 --assume-yes
 
 echo ""
 echo "📦 Step 3: Deploying contracts to Chain 1..."
@@ -34,7 +34,7 @@ CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r ".Result.local.account")
 
 echo "   - Deploying to Chain 1 with address: $CHAIN1_ADDRESS"
 cd move-intent-framework
-aptos move publish --profile local --named-addresses aptos_intent=$CHAIN1_ADDRESS
+aptos move publish --profile local --named-addresses aptos_intent=$CHAIN1_ADDRESS --assume-yes
 
 if [ $? -eq 0 ]; then
     echo "   ✅ Chain 1 deployment successful!"
@@ -46,10 +46,12 @@ fi
 echo ""
 echo "📦 Step 4: Deploying contracts to Chain 2..."
 echo "   - Getting account address for Chain 2..."
+cd ..
 CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r ".Result.local2.account")
 
 echo "   - Deploying to Chain 2 with address: $CHAIN2_ADDRESS"
-aptos move publish --profile local2 --named-addresses aptos_intent=$CHAIN2_ADDRESS
+cd move-intent-framework
+aptos move publish --profile local2 --named-addresses aptos_intent=$CHAIN2_ADDRESS --assume-yes
 
 if [ $? -eq 0 ]; then
     echo "   ✅ Chain 2 deployment successful!"

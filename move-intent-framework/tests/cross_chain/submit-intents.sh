@@ -68,56 +68,18 @@ cd move-intent-framework
 echo ""
 echo "🎯 Step 2: Creating escrow intent on Chain 1..."
 
-# Create a Move script that creates an escrow using Alice's funded account
-cat > create_escrow_intent.move << 'EOF'
-script {
-    use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
-    use aptos_framework::primary_fungible_store;
-    use aptos_intent::intent_as_escrow;
-    use aptos_std::ed25519;
-    use std::signer;
-    use std::vector;
+# Generate a dummy oracle public key for testing (32 bytes)
+ORACLE_PUBLIC_KEY="0x$(openssl rand -hex 32)"
+EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
-    fun main(account: signer) {
-        // Create a simple token for escrow
-        let metadata = fungible_asset::create_metadata(
-            &account,
-            vector::empty(),
-            b"Escrow Token",
-            b"ESC",
-            6, // decimals
-            false, // is_mutable
-        );
-        
-        let token_type = fungible_asset::create(&account, metadata);
-        let tokens = fungible_asset::mint(&account, token_type, 1000);
-        
-        // Store tokens in user's account
-        primary_fungible_store::deposit(signer::address_of(&account), tokens);
-        
-        // Generate a dummy oracle public key for testing
-        let (_, validated_pk) = ed25519::generate_keys();
-        let oracle_public_key = ed25519::public_key_to_unvalidated(&validated_pk);
-        
-        // Create escrow intent with the tokens
-        let escrow_intent = intent_as_escrow::create_escrow(
-            &account,
-            tokens,
-            oracle_public_key,
-            1761294000, // expiry_time (future timestamp)
-        );
-        
-        // Clean up
-        fungible_asset::destroy(token_type);
-    }
-}
-EOF
-
-echo "   - Created escrow intent script"
+echo "   - Oracle public key: $ORACLE_PUBLIC_KEY"
+echo "   - Expiry time: $EXPIRY_TIME"
 
 # Submit escrow intent using Alice's account on Chain 1
-# For scripts, we need to use aptos move run with the script file
-aptos move run --profile alice-chain1 --assume-yes --script create_escrow_intent.move
+echo "   - Creating escrow intent using Alice's account..."
+aptos move run --profile alice-chain1 --assume-yes \
+    --function-id "0x${CHAIN1_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}"
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Alice-chain1 escrow intent created successfully!"
@@ -129,7 +91,10 @@ echo ""
 echo "🎯 Step 3: Creating escrow intent using Bob's account on Chain 1..."
 
 # Submit escrow intent using Bob's account on Chain 1
-aptos move run --profile bob-chain1 --assume-yes --script create_escrow_intent.move
+echo "   - Creating escrow intent using Bob's account..."
+aptos move run --profile bob-chain1 --assume-yes \
+    --function-id "0x${CHAIN1_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}"
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Bob-chain1 escrow intent created successfully!"
@@ -141,7 +106,10 @@ echo ""
 echo "🎯 Step 4: Creating escrow intent using Alice's account on Chain 2..."
 
 # Submit escrow intent using Alice's account on Chain 2
-aptos move run --profile alice-chain2 --assume-yes --script create_escrow_intent.move
+echo "   - Creating escrow intent using Alice's account..."
+aptos move run --profile alice-chain2 --assume-yes \
+    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}"
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Alice-chain2 escrow intent created successfully!"
@@ -153,7 +121,10 @@ echo ""
 echo "🎯 Step 5: Creating escrow intent using Bob's account on Chain 2..."
 
 # Submit escrow intent using Bob's account on Chain 2
-aptos move run --profile bob-chain2 --assume-yes --script create_escrow_intent.move
+echo "   - Creating escrow intent using Bob's account..."
+aptos move run --profile bob-chain2 --assume-yes \
+    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}"
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Bob-chain2 escrow intent created successfully!"
@@ -171,12 +142,30 @@ echo "   - Chain 2: http://127.0.0.1:8082"
 echo ""
 echo "📋 What we accomplished:"
 echo "   ✅ Used existing Alice and Bob accounts (already funded)"
-echo "   ✅ Created fungible assets"
-echo "   ✅ Submitted escrow intents with tokens to Chain 1"
+echo "   ✅ Created escrow intents with APT tokens on both chains"
 echo "   ✅ Used the deployed Intent Framework contracts"
-
-# Clean up temporary files
+echo "   ✅ Each escrow intent contains 1,000,000 octas (0.01 APT)"
 echo ""
-echo "🧹 Cleaning up temporary files..."
-rm -f create_escrow_intent.move
-echo "   ✅ Cleaned up temporary Move script file"
+echo "🔑 Oracle Public Key used: $ORACLE_PUBLIC_KEY"
+echo "⏰ Expiry Time: $EXPIRY_TIME ($(date -d "@$EXPIRY_TIME"))"
+echo ""
+echo "🔍 VERIFY ESCROW INTENTS WITH CURL COMMANDS:"
+echo "============================================="
+echo ""
+echo "📜 Check Transaction History (shows intent creation):"
+echo "   Alice Chain 1: curl -s \"http://127.0.0.1:8080/v1/accounts/$ALICE_CHAIN1_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"TradeIntent\"))'"
+echo "   Bob Chain 1:   curl -s \"http://127.0.0.1:8080/v1/accounts/$BOB_CHAIN1_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"TradeIntent\"))'"
+echo "   Alice Chain 2: curl -s \"http://127.0.0.1:8082/v1/accounts/$ALICE_CHAIN2_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"TradeIntent\"))'"
+echo "   Bob Chain 2:   curl -s \"http://127.0.0.1:8082/v1/accounts/$BOB_CHAIN2_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"TradeIntent\"))'"
+echo ""
+echo "💰 Check APT Balance Changes (should be ~198M now, 1M withdrawn):"
+echo "   Alice Chain 1: curl -s \"http://127.0.0.1:8080/v1/accounts/$ALICE_CHAIN1_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"FungibleStore\")) | .data.data.balance'"
+echo "   Bob Chain 1:   curl -s \"http://127.0.0.1:8080/v1/accounts/$BOB_CHAIN1_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"FungibleStore\")) | .data.data.balance'"
+echo "   Alice Chain 2: curl -s \"http://127.0.0.1:8082/v1/accounts/$ALICE_CHAIN2_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"FungibleStore\")) | .data.data.balance'"
+echo "   Bob Chain 2:   curl -s \"http://127.0.0.1:8082/v1/accounts/$BOB_CHAIN2_ADDRESS/transactions\" | jq '.[0].changes[] | select(.data.type | contains(\"FungibleStore\")) | .data.data.balance'"
+echo ""
+echo "🎯 Check Intent Events (shows intent creation events):"
+echo "   Alice Chain 1: curl -s \"http://127.0.0.1:8080/v1/accounts/$ALICE_CHAIN1_ADDRESS/transactions\" | jq '.[0].events[] | select(.type | contains(\"OracleLimitOrderEvent\"))'"
+echo "   Bob Chain 1:   curl -s \"http://127.0.0.1:8080/v1/accounts/$BOB_CHAIN1_ADDRESS/transactions\" | jq '.[0].events[] | select(.type | contains(\"OracleLimitOrderEvent\"))'"
+echo "   Alice Chain 2: curl -s \"http://127.0.0.1:8082/v1/accounts/$ALICE_CHAIN2_ADDRESS/transactions\" | jq '.[0].events[] | select(.type | contains(\"OracleLimitOrderEvent\"))'"
+echo "   Bob Chain 2:   curl -s \"http://127.0.0.1:8082/v1/accounts/$BOB_CHAIN2_ADDRESS/transactions\" | jq '.[0].events[] | select(.type | contains(\"OracleLimitOrderEvent\"))'"

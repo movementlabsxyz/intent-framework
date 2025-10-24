@@ -32,7 +32,6 @@ module aptos_intent::intent_as_escrow {
     use std::option::{Self as option};
     use std::signer;
     use std::error;
-    use std::bcs;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
     use aptos_framework::object::Object;
     use aptos_intent::fa_intent_with_oracle;
@@ -154,28 +153,4 @@ module aptos_intent::intent_as_escrow {
         );
     }
 
-    // ============================================================================
-    // HELPER FUNCTIONS
-    // ============================================================================
-
-    /// Creates verifier signature witness for approval
-    /// 
-    /// # Arguments
-    /// - `verifier_secret_key`: Verifier's private key
-    /// - `approve`: Whether to approve (true) or reject (false)
-    /// 
-    /// # Returns
-    /// - `(u64, ed25519::Signature)`: Approval value and signature
-    public fun create_oracle_approval(
-        verifier_secret_key: &ed25519::SecretKey,
-        approve: bool,
-    ): (u64, ed25519::Signature) {
-        let approval_value = if (approve) { ORACLE_APPROVE } else { ORACLE_REJECT };
-        let signature = ed25519::sign_arbitrary_bytes(verifier_secret_key, bcs::to_bytes(&approval_value));
-        (approval_value, signature)
-    }
-
-    /// Gets the approval constants for external use
-    public fun get_oracle_approve(): u64 { ORACLE_APPROVE }
-    public fun get_oracle_reject(): u64 { ORACLE_REJECT }
 }

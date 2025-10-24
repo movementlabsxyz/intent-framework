@@ -1,12 +1,22 @@
 #[test_only]
 module aptos_intent::intent_as_escrow_tests {
     use std::signer;
+    use std::bcs;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
     use aptos_intent::intent_as_escrow;
     use aptos_intent::fa_intent_with_oracle;
     use aptos_intent::fa_test_utils::register_and_mint_tokens;
     use aptos_std::ed25519;
+
+    // ============================================================================
+    // TEST HELPER FUNCTIONS
+    // ============================================================================
+
+    /// Gets the approval constants for testing
+    fun get_oracle_approve(): u64 { 1 }
+    /// Gets the rejection constants for testing  
+    fun get_oracle_reject(): u64 { 0 }
 
     // ============================================================================
     // TESTS
@@ -51,10 +61,8 @@ module aptos_intent::intent_as_escrow_tests {
         primary_fungible_store::deposit(signer::address_of(solver), escrowed_asset);
         
         // Verifier approves the escrow
-        let (approval_value, verifier_signature) = intent_as_escrow::create_oracle_approval(
-            &verifier_secret_key,
-            true, // approve
-        );
+        let approval_value = get_oracle_approve();
+        let verifier_signature = ed25519::sign_arbitrary_bytes(&verifier_secret_key, bcs::to_bytes(&approval_value));
 
         // Solver provides payment (source token type)
         let solver_payment = primary_fungible_store::withdraw(solver, source_token_type, 50);
@@ -108,10 +116,8 @@ module aptos_intent::intent_as_escrow_tests {
         primary_fungible_store::deposit(signer::address_of(solver), escrowed_asset);
         
         // Verifier rejects the escrow
-        let (approval_value, verifier_signature) = intent_as_escrow::create_oracle_approval(
-            &verifier_secret_key,
-            false, // reject
-        );
+        let approval_value = get_oracle_reject();
+        let verifier_signature = ed25519::sign_arbitrary_bytes(&verifier_secret_key, bcs::to_bytes(&approval_value));
 
         // This should abort because oracle rejected
         let solver_payment = primary_fungible_store::withdraw(solver, source_token_type, 50);

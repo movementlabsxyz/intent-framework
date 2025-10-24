@@ -3,19 +3,41 @@
 echo "🎯 INTENT FRAMEWORK - SUBMIT ESCROW INTENT"
 echo "==========================================="
 
-echo ""
-echo "🚀 Step 0: Setting up chains and deploying contracts..."
-echo "========================================================"
-./move-intent-framework/tests/cross_chain/setup-and-deploy.sh
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to setup chains and deploy contracts"
+# Validate parameter
+if [ -z "$1" ] || ([ "$1" != "0" ] && [ "$1" != "1" ]); then
+    echo "❌ Error: Invalid parameter!"
+    echo ""
+    echo "Usage: $0 <parameter>"
+    echo "  Parameter 0: Use existing running networks (skip setup)"
+    echo "  Parameter 1: Run full setup and deploy contracts"
+    echo ""
+    echo "Examples:"
+    echo "  $0 0    # Use existing networks"
+    echo "  $0 1    # Run full setup"
     exit 1
 fi
 
-echo ""
-echo "✅ Chains setup and contracts deployed successfully!"
-echo ""
+# Check if we should run setup or use existing networks
+if [ "$1" = "1" ]; then
+    echo ""
+    echo "🚀 Step 0: Setting up chains and deploying contracts..."
+    echo "========================================================"
+    ./move-intent-framework/tests/cross_chain/setup-and-deploy.sh
+
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to setup chains and deploy contracts"
+        exit 1
+    fi
+
+    echo ""
+    echo "✅ Chains setup and contracts deployed successfully!"
+    echo ""
+else
+    echo ""
+    echo "⚡ Using existing running networks (skipping setup)"
+    echo "   Use parameter '1' to run full setup: ./submit-intents.sh 1"
+    echo ""
+fi
 
 # Get addresses
 CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
@@ -94,7 +116,8 @@ EOF
 echo "   - Created escrow intent script"
 
 # Submit escrow intent using Alice's account on Chain 1
-aptos move run --profile alice-chain1 --assume-yes
+# For scripts, we need to use aptos move run with the script file
+aptos move run --profile alice-chain1 --assume-yes --script create_escrow_intent.move
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Alice-chain1 escrow intent created successfully!"
@@ -106,7 +129,7 @@ echo ""
 echo "🎯 Step 3: Creating escrow intent using Bob's account on Chain 1..."
 
 # Submit escrow intent using Bob's account on Chain 1
-aptos move run --profile bob-chain1 --assume-yes
+aptos move run --profile bob-chain1 --assume-yes --script create_escrow_intent.move
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Bob-chain1 escrow intent created successfully!"
@@ -118,7 +141,7 @@ echo ""
 echo "🎯 Step 4: Creating escrow intent using Alice's account on Chain 2..."
 
 # Submit escrow intent using Alice's account on Chain 2
-aptos move run --profile alice-chain2 --assume-yes
+aptos move run --profile alice-chain2 --assume-yes --script create_escrow_intent.move
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Alice-chain2 escrow intent created successfully!"
@@ -130,7 +153,7 @@ echo ""
 echo "🎯 Step 5: Creating escrow intent using Bob's account on Chain 2..."
 
 # Submit escrow intent using Bob's account on Chain 2
-aptos move run --profile bob-chain2 --assume-yes
+aptos move run --profile bob-chain2 --assume-yes --script create_escrow_intent.move
 
 if [ $? -eq 0 ]; then
     echo "     ✅ Bob-chain2 escrow intent created successfully!"

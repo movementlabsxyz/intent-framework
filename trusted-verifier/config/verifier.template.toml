@@ -1,0 +1,39 @@
+# Trusted Verifier Configuration
+# 
+# This file contains all configuration settings for the trusted verifier service.
+# Copy this template to verifier.toml and update the values for your environment.
+#
+# ⚠️  SECURITY WARNING: This file contains private keys and should never be committed to version control!
+
+# Hub Chain Configuration
+# The hub chain is where intents are created and monitored
+[hub_chain]
+name = "Hub Chain"                                    # Human-readable name for the chain
+rpc_url = "http://127.0.0.1:8080"                    # RPC endpoint URL for blockchain communication
+chain_id = 4                                          # Unique chain identifier
+intent_module_address = "0x123"                      # Address of the intent framework module
+escrow_module_address = null                         # Address of escrow module (optional for hub)
+
+# Connected Chain Configuration  
+# The connected chain is where escrow events occur and are monitored
+[connected_chain]
+name = "Connected Chain"                              # Human-readable name for the chain
+rpc_url = "http://127.0.0.1:8082"                    # RPC endpoint URL for blockchain communication
+chain_id = 4                                          # Unique chain identifier
+intent_module_address = "0x123"                      # Address of the intent framework module
+escrow_module_address = "0x123"                      # Address of escrow module (required for connected chain)
+
+# Verifier Configuration
+# Cryptographic keys and timing parameters for the verifier
+[verifier]
+private_key = "REPLACE_WITH_YOUR_PRIVATE_KEY_BASE64" # Ed25519 private key for signing (base64 encoded)
+public_key = "REPLACE_WITH_YOUR_PUBLIC_KEY_BASE64"   # Ed25519 public key for verification (base64 encoded)
+polling_interval_ms = 2000                           # Polling interval for event monitoring in milliseconds
+validation_timeout_ms = 30000                        # Timeout for validation operations in milliseconds
+
+# API Server Configuration
+# HTTP server settings for the REST API
+[api]
+host = "127.0.0.1"                                    # Host address to bind the API server to
+port = 3000                                           # Port number to bind the API server to
+cors_origins = ["http://localhost:3000"]              # Allowed CORS origins for cross-origin requests

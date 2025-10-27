@@ -9,13 +9,14 @@
 //! ⚠️ **CRITICAL**: The monitor must validate that escrow intents are **non-revocable** 
 //! (`revocable = false`) before allowing any cross-chain actions to proceed.
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn, error};
 
 use crate::config::Config;
+use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, OracleLimitOrderEvent as AptosOracleLimitOrderEvent};
 
 // ============================================================================
 // EVENT DATA STRUCTURES
@@ -221,34 +222,145 @@ impl EventMonitor {
     /// Polls the hub chain for new intent events.
     /// 
     /// This function queries the hub chain's event logs for new intent
-    /// creation events. In a real implementation, this would use the
-    /// Aptos SDK to subscribe to specific event types.
+    /// creation events. Since module events are emitted in user transactions,
+    /// we query known test accounts for their events.
     /// 
     /// # Returns
     /// 
     /// * `Ok(Vec<IntentEvent>)` - List of new intent events
     /// * `Err(anyhow::Error)` - Failed to poll events
-    async fn poll_hub_events(&self) -> Result<Vec<IntentEvent>> {
-        // TODO: Implement actual Aptos event polling using the Aptos SDK
-        // This would subscribe to LimitOrderEvent and OracleLimitOrderEvent
-        // from the intent framework module
-        Ok(vec![])
+    pub async fn poll_hub_events(&self) -> Result<Vec<IntentEvent>> {
+        // Create Aptos client for hub chain
+        let client = AptosClient::new(&self.config.hub_chain.rpc_url)?;
+        
+        // Query events from known test accounts
+        let known_accounts = self.config.hub_chain.known_accounts.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No known accounts configured for hub chain"))?;
+        
+        let mut intent_events = Vec::new();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        
+        // Query each known account for events
+        for account in known_accounts {
+            let account_address = account.strip_prefix("0x")
+                .unwrap_or(account);
+            
+            let raw_events = client.get_account_events(account_address, None, None, Some(100))
+                .await
+                .context(format!("Failed to fetch events for account {}", account))?;
+            
+            for event in raw_events {
+                // Parse event type to check if it's an intent event
+                let event_type = event.r#type.clone();
+                
+                // Handle both LimitOrderEvent and OracleLimitOrderEvent
+                // Check if event has min_reported_value (OracleLimitOrderEvent) or not (LimitOrderEvent)
+                if event_type.contains("LimitOrderEvent") || event_type.contains("OracleLimitOrderEvent") {
+                    // Try to parse as OracleLimitOrderEvent first (it has min_reported_value)
+                    let data_result: Result<AptosOracleLimitOrderEvent, _> = serde_json::from_value(event.data.clone());
+                    
+                    match data_result {
+                        Ok(data) => {
+                            // Successfully parsed as OracleLimitOrderEvent
+                            intent_events.push(IntentEvent {
+                                intent_id: data.intent_address,
+                                creator: data.issuer.clone(),
+                                source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
+                                source_amount: data.source_amount.parse::<u64>()
+                                    .context("Failed to parse source_amount")?,
+                                desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
+                                desired_amount: data.desired_amount.parse::<u64>()
+                                    .context("Failed to parse desired_amount")?,
+                                expiry_time: data.expiry_time.parse::<u64>()
+                                    .context("Failed to parse expiry_time")?,
+                                revocable: data.revocable,
+                                timestamp,
+                            });
+                        }
+                        Err(_) => {
+                            // Try to parse as regular LimitOrderEvent
+                            let data: AptosLimitOrderEvent = serde_json::from_value(event.data.clone())
+                                .context("Failed to parse LimitOrderEvent")?;
+                            
+                            intent_events.push(IntentEvent {
+                                intent_id: data.intent_address,
+                                creator: data.issuer.clone(),
+                                source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
+                                source_amount: data.source_amount.parse::<u64>()
+                                    .context("Failed to parse source_amount")?,
+                                desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
+                                desired_amount: data.desired_amount.parse::<u64>()
+                                    .context("Failed to parse desired_amount")?,
+                                expiry_time: data.expiry_time.parse::<u64>()
+                                    .context("Failed to parse expiry_time")?,
+                                revocable: data.revocable,
+                                timestamp,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(intent_events)
     }
     
     /// Polls the connected chain for new escrow events.
     /// 
     /// This function queries the connected chain's event logs for new
-    /// escrow deposit events. In a real implementation, this would
-    /// monitor escrow-specific events.
+    /// escrow deposit events. Since module events are emitted in user transactions,
+    /// we query known test accounts for their events.
+    /// Escrows use oracle-guarded intents, so we monitor OracleLimitOrderEvent.
     /// 
     /// # Returns
     /// 
     /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
     /// * `Err(anyhow::Error)` - Failed to poll events
-    async fn poll_connected_events(&self) -> Result<Vec<EscrowEvent>> {
-        // TODO: Implement actual escrow event polling
-        // This would monitor escrow deposit events on the connected chain
-        Ok(vec![])
+    pub async fn poll_connected_events(&self) -> Result<Vec<EscrowEvent>> {
+        // Create Aptos client for connected chain
+        let client = AptosClient::new(&self.config.connected_chain.rpc_url)?;
+        
+        // Query events from known test accounts
+        let known_accounts = self.config.connected_chain.known_accounts.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected chain"))?;
+        
+        let mut escrow_events = Vec::new();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        
+        // Query each known account for events
+        for account in known_accounts {
+            let account_address = account.strip_prefix("0x")
+                .unwrap_or(account);
+            
+            let raw_events = client.get_account_events(account_address, None, None, Some(100))
+                .await
+                .context(format!("Failed to fetch events for account {}", account))?;
+            
+            for event in raw_events {
+                let event_type = event.r#type.clone();
+                
+                // Escrows use oracle-guarded intents, so we look for OracleLimitOrderEvent
+                if event_type.contains("OracleLimitOrderEvent") {
+                    let data: AptosOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
+                        .context("Failed to parse OracleLimitOrderEvent as escrow")?;
+                    
+                    escrow_events.push(EscrowEvent {
+                        escrow_id: data.intent_address.clone(),
+                        solver: data.issuer.clone(),
+                        deposit_amount: data.source_amount.parse::<u64>()
+                            .context("Failed to parse deposit amount")?,
+                        deposit_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
+                        timestamp,
+                    });
+                }
+            }
+        }
+        
+        Ok(escrow_events)
     }
     
     /// Validates that an escrow event fulfills the conditions of an existing intent.

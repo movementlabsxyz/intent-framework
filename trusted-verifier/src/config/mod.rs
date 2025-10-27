@@ -44,6 +44,8 @@ pub struct ChainConfig {
     pub intent_module_address: String,
     /// Address of the escrow module (optional for hub chain)
     pub escrow_module_address: Option<String>,
+    /// Known test accounts to poll for events
+    pub known_accounts: Option<Vec<String>>,
 }
 
 /// Verifier-specific configuration including cryptographic keys and timing parameters.
@@ -124,6 +126,7 @@ impl Config {
                 chain_id: 4,
                 intent_module_address: "0x123".to_string(),
                 escrow_module_address: None,
+                known_accounts: None, // Should be set in config/verifier.toml
             },
             connected_chain: ChainConfig {
                 name: "Connected Chain".to_string(),
@@ -131,6 +134,7 @@ impl Config {
                 chain_id: 4,
                 intent_module_address: "0x123".to_string(),
                 escrow_module_address: Some("0x123".to_string()),
+                known_accounts: None, // Should be set in config/verifier.toml
             },
             verifier: VerifierConfig {
                 private_key: "REPLACE_WITH_PRIVATE_KEY".to_string(),

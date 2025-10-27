@@ -1,5 +1,44 @@
 # Trusted Verifier Service
 
+## WARNING: The current event discovery approach is NOT final!**
+
+### Current Issue
+The verifier currently uses a **known accounts approach** to discover events:
+- Polls only configured test accounts (Alice, Bob) defined in `config/verifier.toml`
+- Extracts events from user transaction history (`/v1/accounts/{address}/transactions`)
+- This approach **will miss events** from any account not explicitly configured
+
+### Why This Is Problematic
+1. **Incomplete coverage**: Only monitors specific known accounts, missing events from all other users
+2. **Manual configuration**: Requires knowing all event-emitting accounts in advance
+3. **Not scalable**: Cannot handle production use cases with many users
+
+### Required Fixes for Production
+
+The following approaches should be implemented:
+
+1. **Aptos Indexer GraphQL API** (RECOMMENDED)
+   - Query events by event type across ALL accounts
+   - Most efficient and scalable solution
+   - Requires deploying/using an Aptos Indexer
+   - See: https://aptos.guide/network/blockchain/events
+
+2. **EventHandle with Global Resource** (Alternative)
+   - Use deprecated EventHandle pattern with a global resource at a known address
+   - Would allow querying via `/v1/accounts/{address}/events/{creation_number}`
+   - However, Aptos has deprecated EventHandle in favor of module events
+   - Reference: https://aptos.guide/network/blockchain/events
+
+3. **Block/Transaction Scanning** (Not Recommended)
+   - Scan all blocks/transactions for specific event types
+   - Very inefficient and resource-intensive
+   - Only suitable for low-throughput testnets
+
+### Current Workaround
+For testing purposes, the verifier can monitor known test accounts. **DO NOT USE IN PRODUCTION** without implementing proper event discovery.
+
+---
+
 ⚠️ **NOTE**: Initially this handles a very simple case - transfers from a connected chain to the hub!
 
 A trusted verifier service that monitors escrow deposit events and triggers actions on other chains or systems.

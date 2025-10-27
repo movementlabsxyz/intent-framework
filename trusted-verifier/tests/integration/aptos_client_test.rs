@@ -160,3 +160,95 @@ async fn test_get_account_events_chain2() {
     }
 }
 
+/// Test event polling with a real intent created on-chain
+/// Why: Verify that poll_hub_events() can parse real intent events from the blockchain
+/// Note: This test will FAIL if no intents exist on-chain, which is expected behavior
+#[tokio::test]
+async fn test_poll_hub_events_with_real_intent() {
+    // This test requires:
+    // 1. Chains running (via setup-and-deploy.sh)
+    // 2. Contracts deployed (via setup-and-deploy.sh)
+    // 3. Alice funded (via setup-and-deploy.sh)
+    // 4. An intent created (via submit-intents.sh or manual transaction)
+    //
+    // If no intents exist, this test will FAIL - which is correct behavior!
+    
+    let config = trusted_verifier::config::Config::load()
+        .expect("Failed to load verifier config");
+    
+    // Create a temporary monitor to test polling
+    let monitor = trusted_verifier::monitor::EventMonitor::new(&config).await
+        .expect("Failed to create monitor");
+    
+    // Poll for events
+    let result = monitor.poll_hub_events().await
+        .expect("Failed to poll hub events");
+    
+    // CRITICAL: Should find at least one event if intent was created
+    // This test FAILS if no intents exist, which is the expected behavior
+    assert!(result.len() > 0, "Expected to find at least one intent event. No intents found on-chain - this means poll_hub_events() is working but there are no intents to monitor.");
+    
+    // Verify the event has correct structure
+    if let Some(event) = result.first() {
+        assert!(!event.intent_id.is_empty(), "Intent ID should not be empty");
+        assert!(!event.creator.is_empty(), "Creator should not be empty");
+        println!("Successfully parsed intent event: {:?}", event);
+    }
+}
+
+/// Test event polling API connectivity for intent events
+/// Why: Verify that poll_hub_events() API calls work (does not verify parsing of real events yet)
+/// Note: This only tests API connectivity. For full event parsing test, intents must exist on-chain.
+#[tokio::test]
+async fn test_poll_hub_events_api() {
+    // This test requires chains to be running with deployed contracts
+    let config = trusted_verifier::config::Config::load()
+        .expect("Failed to load verifier config");
+    
+    // Create a temporary monitor to test polling
+    let monitor = trusted_verifier::monitor::EventMonitor::new(&config).await
+        .expect("Failed to create monitor");
+    
+    // Poll for events - this only tests API connectivity, not parsing of real events
+    let result = monitor.poll_hub_events().await;
+    
+    // This test just verifies the API call doesn't crash
+    match result {
+        Ok(events) => {
+            println!("API call successful, found {} intent events (may be 0)", events.len());
+        }
+        Err(e) => {
+            // Fail if API call itself fails (connection error, etc)
+            panic!("Poll API call failed: {:?}", e);
+        }
+    }
+}
+
+/// Test event polling API connectivity for escrow events  
+/// Why: Verify that poll_connected_events() API calls work (does not verify parsing of real events yet)
+/// Note: This only tests API connectivity. For full event parsing test, escrows must exist on-chain.
+#[tokio::test]
+async fn test_poll_connected_events_api() {
+    // This test requires chains to be running with deployed contracts
+    let config = trusted_verifier::config::Config::load()
+        .expect("Failed to load verifier config");
+    
+    // Create a temporary monitor to test polling
+    let monitor = trusted_verifier::monitor::EventMonitor::new(&config).await
+        .expect("Failed to create monitor");
+    
+    // Poll for events - this only tests API connectivity, not parsing of real events
+    let result = monitor.poll_connected_events().await;
+    
+    // This test just verifies the API call doesn't crash
+    match result {
+        Ok(events) => {
+            println!("API call successful, found {} escrow events (may be 0)", events.len());
+        }
+        Err(e) => {
+            // Fail if API call itself fails (connection error, etc)
+            panic!("Poll API call failed: {:?}", e);
+        }
+    }
+}
+

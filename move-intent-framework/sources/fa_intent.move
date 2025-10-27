@@ -41,12 +41,14 @@ module aptos_intent::fa_intent {
     /// Event emitted when a fungible asset limit order intent is created.
     /// Contains all the trading details that solvers need to evaluate the opportunity.
     struct LimitOrderEvent has store, drop {
+        intent_address: address,
         source_metadata: Object<Metadata>,
         source_amount: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         issuer: address,
         expiry_time: u64,
+        revocable: bool,
     }
 
     /// Creates a fungible asset to fungible asset trading intent.
@@ -71,15 +73,10 @@ module aptos_intent::fa_intent {
         issuer: address,
         reservation: Option<IntentReserved>,
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
-        event::emit(LimitOrderEvent {
-            source_metadata: fungible_asset::asset_metadata(&source_fungible_asset),
-            source_amount: fungible_asset::amount(&source_fungible_asset),
-            desired_metadata,
-            desired_amount,
-            expiry_time,
-            issuer,
-        });
-
+        // Capture metadata and amount before depositing
+        let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
+        let source_amount = fungible_asset::amount(&source_fungible_asset);
+        
         let coin_store_ref = object::create_object(issuer);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
         let delete_ref = object::generate_delete_ref(&coin_store_ref);
@@ -92,15 +89,30 @@ module aptos_intent::fa_intent {
             object::object_from_constructor_ref<FungibleStore>(&coin_store_ref),
             source_fungible_asset
         );
-        intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
+        let revocable = true; // revocable by default for fungible asset intents
+        let intent_obj = intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
             FungibleStoreManager { extend_ref, delete_ref},
             FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer },
             expiry_time,
             issuer,
             FungibleAssetRecipientWitness {},
             reservation,
-            true, // revocable by default for fungible asset intents
-        )
+            revocable,
+        );
+
+        // Emit event after creating intent so we have the intent address
+        event::emit(LimitOrderEvent {
+            intent_address: object::object_address(&intent_obj),
+            source_metadata,
+            source_amount,
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            issuer,
+            revocable,
+        });
+
+        intent_obj
     }
 
     /// Entry function to create a fungible asset limit order intent.

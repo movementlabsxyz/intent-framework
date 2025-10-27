@@ -5,6 +5,10 @@ edition = "2021"
 authors = ["Intent Framework Team"]
 description = "Trusted verifier service for cross-chain escrow validation"
 
+[lib]
+name = "trusted_verifier"
+path = "src/lib.rs"
+
 [dependencies]
 # Async runtime (matching aptos-core version)
 tokio = { version = "1.35.1", features = ["full"] }

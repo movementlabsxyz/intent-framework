@@ -26,6 +26,7 @@ mod validator;
 mod crypto;
 mod config;
 mod api;
+mod aptos_client;
 
 use config::Config;
 

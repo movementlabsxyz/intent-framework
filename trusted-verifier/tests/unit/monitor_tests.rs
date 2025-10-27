@@ -3,7 +3,7 @@
 //! These tests verify event structures and cache behavior
 //! without requiring external services.
 
-use trusted_verifier::monitor::{IntentEvent, EscrowEvent};
+use trusted_verifier::monitor::IntentEvent;
 
 /// Test that revocable intents are rejected (error thrown)
 /// Why: Verify critical security check - revocable intents must be rejected for escrow

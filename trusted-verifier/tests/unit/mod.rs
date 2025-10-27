@@ -5,4 +5,5 @@
 pub mod crypto_tests;
 pub mod config_tests;
 pub mod monitor_tests;
+pub mod cross_chain_tests;
 

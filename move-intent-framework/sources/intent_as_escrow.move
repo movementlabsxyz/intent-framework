@@ -74,6 +74,7 @@ module aptos_intent::intent_as_escrow {
     /// - `source_asset`: Asset to be escrowed
     /// - `verifier_public_key`: Public key of authorized verifier
     /// - `expiry_time`: Unix timestamp when escrow expires
+    /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
     /// 
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created escrow
@@ -82,6 +83,7 @@ module aptos_intent::intent_as_escrow {
         source_asset: FungibleAsset,
         verifier_public_key: ed25519::UnvalidatedPublicKey,
         expiry_time: u64,
+        intent_id: address,
     ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
         // Create verifier requirement: verifier must provide approval value >= 1 (approve)
         let requirement = fa_intent_with_oracle::new_oracle_signature_requirement(
@@ -104,6 +106,7 @@ module aptos_intent::intent_as_escrow {
             false, // 🔒 CRITICAL: escrow intents MUST be non-revocable for security!
             //      This ensures funds can ONLY be released by verifier approval/rejection
             //      Verifiers can safely trigger actions elsewhere based on deposit events
+            intent_id,
         )
     }
 
@@ -167,6 +170,7 @@ module aptos_intent::intent_as_escrow {
         amount_octas: u64,
         verifier_public_key: vector<u8>, // 32 bytes
         expiry_time: u64,
+        intent_id: address,
     ) {
         // Get APT's paired FA metadata (Object<Metadata>)
         let metadata_opt = coin::paired_metadata<aptos_coin::AptosCoin>();
@@ -180,7 +184,7 @@ module aptos_intent::intent_as_escrow {
         let oracle_pk = ed25519::new_unvalidated_public_key_from_bytes(verifier_public_key);
 
         // Call your existing internal function
-        create_escrow(user, fa, oracle_pk, expiry_time);
+        create_escrow(user, fa, oracle_pk, expiry_time, intent_id);
     }
 
 }

@@ -475,7 +475,8 @@ pub struct LimitOrderEvent {
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OracleLimitOrderEvent {
-    pub intent_address: String,
+    pub intent_address: String,      // The escrow intent address (on connected chain)
+    pub intent_id: String,            // The original intent ID (from hub chain)
     pub source_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub source_amount: String,
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}

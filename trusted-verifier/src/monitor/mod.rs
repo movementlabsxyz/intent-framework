@@ -56,8 +56,10 @@ pub struct IntentEvent {
 /// fulfills the conditions specified in the original intent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EscrowEvent {
-    /// Unique identifier for the escrow
+    /// Unique identifier for the escrow (on connected chain)
     pub escrow_id: String,
+    /// Unique identifier for the intent on hub chain (for matching)
+    pub intent_id: String,
     /// Address of the solver who made the deposit
     pub solver: String,
     /// Amount of assets deposited
@@ -351,6 +353,7 @@ impl EventMonitor {
                     
                     escrow_events.push(EscrowEvent {
                         escrow_id: data.intent_address.clone(),
+                        intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain intent
                         solver: data.issuer.clone(),
                         deposit_amount: data.source_amount.parse::<u64>()
                             .context("Failed to parse deposit amount")?,
@@ -379,16 +382,60 @@ impl EventMonitor {
     /// * `Ok(())` - Validation successful
     /// * `Err(anyhow::Error)` - Validation failed
     async fn validate_intent_fulfillment(&self, escrow_event: &EscrowEvent) -> Result<()> {
-        info!("Validating intent fulfillment for escrow: {}", escrow_event.escrow_id);
+        info!("Validating intent fulfillment for escrow: {} (intent_id: {})", 
+              escrow_event.escrow_id, escrow_event.intent_id);
         
-        // TODO: Implement actual intent fulfillment validation
-        // This would:
-        // 1. Find the corresponding intent from the cache
-        // 2. Check that deposit amount matches desired amount
-        // 3. Check that deposit metadata matches desired metadata
-        // 4. Verify the solver is authorized (if applicable)
+        // 1. Find the matching intent from the cache using intent_id
+        let cache = self.event_cache.read().await;
+        let matching_intent = cache.iter().find(|intent| intent.intent_id == escrow_event.intent_id);
         
-        Ok(())
+        match matching_intent {
+            Some(intent) => {
+                info!("Found matching intent: {} for escrow: {}", intent.intent_id, escrow_event.escrow_id);
+                
+                // 2. Check that deposit amount matches desired amount
+                if escrow_event.deposit_amount < intent.desired_amount {
+                    return Err(anyhow::anyhow!(
+                        "Deposit amount {} is less than required amount {}",
+                        escrow_event.deposit_amount,
+                        intent.desired_amount
+                    ));
+                }
+                
+                // 3. Check that deposit metadata matches desired metadata
+                if escrow_event.deposit_metadata != intent.desired_metadata {
+                    return Err(anyhow::anyhow!(
+                        "Deposit metadata {} does not match desired metadata {}",
+                        escrow_event.deposit_metadata,
+                        intent.desired_metadata
+                    ));
+                }
+                
+                // 4. Verify timing constraints (not expired)
+                let current_time = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)?
+                    .as_secs();
+                
+                if current_time > intent.expiry_time {
+                    return Err(anyhow::anyhow!(
+                        "Intent {} has expired (expiry: {}, current: {})",
+                        intent.intent_id,
+                        intent.expiry_time,
+                        current_time
+                    ));
+                }
+                
+                info!("Validation successful for escrow: {}", escrow_event.escrow_id);
+                Ok(())
+            }
+            None => {
+                Err(anyhow::anyhow!(
+                    "No matching intent found for escrow: {} (intent_id: {})",
+                    escrow_event.escrow_id,
+                    escrow_event.intent_id
+                ))
+            }
+        }
     }
     
     /// Returns a copy of all cached intent events.

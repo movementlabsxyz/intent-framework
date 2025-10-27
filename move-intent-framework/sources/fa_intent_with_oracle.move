@@ -73,7 +73,8 @@ module aptos_intent::fa_intent_with_oracle {
     /// Mirrors the base event while also surfacing the minimum acceptable
     /// oracle value chosen by the issuer for transparency.
     struct OracleLimitOrderEvent has store, drop {
-        intent_address: address,
+        intent_address: address, // The escrow intent address (on connected chain)
+        intent_id: address,      // The original intent ID (from hub chain) - links escrow to hub intent
         source_metadata: Object<Metadata>,
         source_amount: u64,
         desired_metadata: Object<Metadata>,
@@ -123,6 +124,7 @@ module aptos_intent::fa_intent_with_oracle {
     /// - `issuer`: Address of the intent creator
     /// - `requirement`: Oracle public key and minimum reported value used for verification
     /// - `revocable`: Whether the intent can be revoked by the owner
+    /// - `intent_id`: The original intent ID from hub chain (for escrows) or same as intent_address (for regular intents)
     ///
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created oracle-guarded intent
@@ -134,6 +136,7 @@ module aptos_intent::fa_intent_with_oracle {
         issuer: address,
         requirement: OracleSignatureRequirement,
         revocable: bool,
+        intent_id: address,
     ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         // Capture metadata and amount before depositing
         let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
@@ -164,6 +167,7 @@ module aptos_intent::fa_intent_with_oracle {
         // Emit event after creating intent so we have the intent address
         event::emit(OracleLimitOrderEvent {
             intent_address: object::object_address(&intent_obj),
+            intent_id,  // Pass the intent ID from user (hub chain intent ID for escrows)
             source_metadata,
             source_amount,
             desired_metadata,

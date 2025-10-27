@@ -9,7 +9,7 @@ cd /home/ap/code/movement/intent-framework
 echo ""
 echo "🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts..."
 echo " ============================================="
-./infra/setup-docker/test-alice-bob-dual-chains.sh
+./infra/setup-docker/setup-dual-chains-and-test-alice-bob.sh
 
 if [ $? -ne 0 ]; then
     echo "❌ Failed to setup dual chains with Alice and Bob accounts"

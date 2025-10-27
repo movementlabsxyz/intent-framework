@@ -2,6 +2,14 @@
 
 echo "🎯 CROSS-CHAIN INTENT - COMPLETE FLOW"
 echo "======================================"
+echo ""
+echo "Cross-chain escrow flow:"
+echo "  1. [HUB CHAIN] User creates intent requesting tokens"
+echo "  2. [CONNECTED CHAIN] User creates escrow with locked tokens"
+echo "  3. [HUB CHAIN] Solver fulfills intent on hub chain"
+echo "  4. [VERIFIER] Verifier validates cross-chain conditions"
+echo "  5. [CONNECTED CHAIN] Verifier releases escrow to solver"
+echo ""
 
 # Validate parameter
 if [ -z "$1" ] || ([ "$1" != "0" ] && [ "$1" != "1" ]); then
@@ -77,14 +85,15 @@ echo "   Intent ID (for hub & escrow): $INTENT_ID"
 echo ""
 echo "📝 STEP 1: [HUB CHAIN] Alice creates intent requesting tokens"
 echo "================================================="
+echo "   User creates intent on hub chain requesting tokens from solver"
 echo "   - Alice creates intent on Chain 1 (hub chain)"
 echo "   - Intent requests 1000000 tokens to be provided by solver"
 echo "   - Using intent_id: $INTENT_ID"
 
-# Create regular intent on Chain 1 using fa_intent module
-echo "   - Creating regular intent on Chain 1..."
+# Create cross-chain request intent on Chain 1 using fa_intent module
+echo "   - Creating cross-chain request intent on Chain 1..."
 aptos move run --profile alice-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent::create_regular_intent_from_apt_entry" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent::create_cross_chain_request_intent_entry" \
     --args "u64:1000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" > /tmp/intent_creation.log 2>&1
 
 if [ $? -eq 0 ]; then
@@ -110,7 +119,9 @@ fi
 echo ""
 echo "📝 STEP 2: [CONNECTED CHAIN] Alice creates escrow intent with locked tokens"
 echo "================================================="
+echo "   User creates escrow on connected chain WITH tokens locked in it"
 echo "   - Alice locks 1000000 tokens in escrow on Chain 2 (connected chain)"
+echo "   - User provides hub chain intent_id when creating escrow"
 echo "   - Using intent_id from hub chain: $INTENT_ID"
 
 # Submit escrow intent using Alice's account on Chain 2 (connected chain)
@@ -167,9 +178,48 @@ fi
 echo ""
 echo "📝 STEP 3: [HUB CHAIN] Bob fulfills intent on hub chain"
 echo "================================================="
+echo "   Solver monitors escrow event on connected chain and fulfills intent on hub chain"
+echo "   - Solver sees escrow event on connected chain"
 echo "   - Bob sees intent with ID: $INTENT_ID"
-echo "   - Bob provides 1000000 tokens to fulfill the intent"
-echo "   ⚠️  TODO: Implement intent fulfillment logic"
+echo "   - Bob provides 1000000 tokens on hub chain to fulfill the intent"
+
+# TODO: We need to get the actual intent object address from Step 1
+# For now, we'll need to extract it from the transaction event
+INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
+
+if [ -n "$INTENT_OBJECT_ADDRESS" ] && [ "$INTENT_OBJECT_ADDRESS" != "null" ]; then
+    echo "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
+    
+    # Bob fulfills the intent by providing tokens
+    aptos move run --profile bob-chain1 --assume-yes \
+        --function-id "0x${CHAIN1_ADDRESS}::fa_intent::fulfill_cross_chain_request_intent" \
+        --args "address:$INTENT_OBJECT_ADDRESS" "u64:1000000"
+    
+    if [ $? -eq 0 ]; then
+        echo "     ✅ Bob successfully fulfilled the intent!"
+    else
+        echo "     ❌ Intent fulfillment failed!"
+    fi
+else
+    echo "     ⚠️  Could not get intent object address, skipping fulfillment"
+fi
+
+echo ""
+echo "📝 STEP 4: [VERIFIER] Validates cross-chain conditions"
+echo "================================================="
+echo "   Verifier validates cross-chain conditions are met"
+echo "   - Verifier matches escrow.intent_id to hub_intent.intent_id"
+echo "   - Verifier validates solver fulfilled the intent on hub chain"
+echo "     (validates deposit amounts, metadata, and expiry)"
+echo "   ⚠️  TODO: Verifier monitoring and validation (not yet implemented)"
+
+echo ""
+echo "📝 STEP 5: [CONNECTED CHAIN] Verifier releases escrow to solver"
+echo "================================================="
+echo "   Verifier releases escrow to solver on connected chain"
+echo "   - Verifier generates approval signature"
+echo "   - Escrow is released to solver on connected chain"
+echo "   ⚠️  TODO: Verifier approval and escrow release (not yet implemented)"
 
 echo ""
 echo "🎉 CROSS-CHAIN INTENT FLOW SCRIPT ENDED!"

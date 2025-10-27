@@ -142,6 +142,7 @@ module aptos_intent::fa_intent_with_oracle_tests {
             signer::address_of(offerer),
             requirement,
             true, // revocable by default for tests
+            @0x1, // dummy intent_id for testing
         );
 
         let (unlocked_fa, session) = fa_intent_with_oracle::start_fa_offering_session(intent);

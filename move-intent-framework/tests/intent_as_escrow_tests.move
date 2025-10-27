@@ -55,6 +55,7 @@ module aptos_intent::intent_as_escrow_tests {
             source_asset,
             verifier_public_key,
             timestamp::now_seconds() + 3600, // 1 hour expiry
+            @0x1, // dummy intent_id for testing
         );
         
         // Solver starts escrow session
@@ -111,6 +112,7 @@ module aptos_intent::intent_as_escrow_tests {
             source_asset,
             verifier_public_key,
             timestamp::now_seconds() + 3600,
+            @0x1, // dummy intent_id for testing
         );
         
         let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(escrow_intent);
@@ -156,6 +158,7 @@ module aptos_intent::intent_as_escrow_tests {
             source_asset,
             verifier_public_key,
             timestamp::now_seconds() + 3600,
+            @0x1, // dummy intent_id for testing
         );
         
         // User tries to revoke the escrow directly - this should fail because escrow is non-revocable
@@ -194,6 +197,7 @@ module aptos_intent::intent_as_escrow_tests {
             fa,
             oracle_pk,
             timestamp::now_seconds() + 3600,
+            @0x1, // dummy intent_id for testing
         );
         
         // Verify user's balance decreased by 50

@@ -161,14 +161,15 @@ impl EventMonitor {
                     for event in events {
                         info!("Received intent event: {:?}", event);
                         
-                        // 🔒 CRITICAL SECURITY CHECK: Validate intent revocability
-                        if !event.revocable {
-                            info!("Intent {} is non-revocable - safe for escrow", event.intent_id);
-                        } else {
-                            warn!("Intent {} is revocable - NOT safe for escrow", event.intent_id);
+                        // 🔒 CRITICAL SECURITY CHECK: Reject revocable intents
+                        if event.revocable {
+                            error!("SECURITY: Rejecting revocable intent {} from {} - NOT safe for escrow", event.intent_id, event.creator);
+                            continue; // Skip this event - do not cache or process
                         }
                         
-                        // Cache the event for API access
+                        info!("Intent {} is non-revocable - safe for escrow", event.intent_id);
+                        
+                        // Cache the event for API access (only non-revocable events)
                         {
                             let mut cache = self.event_cache.write().await;
                             cache.push(event);

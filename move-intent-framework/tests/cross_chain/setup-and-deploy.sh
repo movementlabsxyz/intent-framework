@@ -19,6 +19,12 @@ fi
 echo ""
 echo "⚙️  Step 2: Configuring Aptos CLI for both chains..."
 echo " ============================================="
+
+# Clean up any existing profiles to ensure fresh addresses each run
+echo "🧹 Cleaning up existing CLI profiles..."
+aptos config delete-profile --profile intent-account-chain1 2>/dev/null || true
+aptos config delete-profile --profile intent-account-chain2 2>/dev/null || true
+
 # Configure Chain 1 (port 8080)
 echo "   - Configuring Chain 1 (port 8080)..."
 aptos init --profile intent-account-chain1 --network local --assume-yes

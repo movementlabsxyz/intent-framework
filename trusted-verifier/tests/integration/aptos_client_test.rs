@@ -56,9 +56,22 @@ async fn test_contracts_deployed_on_chain1() {
     let result = client.get(&url).send().await;
     assert!(result.is_ok(), "Should be able to query modules endpoint for Hub Chain");
     
-    // Verify we got a response (even if empty)
+    // Verify we got a response and that modules exist
     let response = result.unwrap();
     assert!(response.status().is_success(), "Modules endpoint should return success");
+    
+    // Parse the response to check if the aptos_intent module exists
+    let modules: Vec<serde_json::Value> = response.json().await
+        .expect("Failed to parse modules response");
+    
+    // Check if intent module is present (could be any intent-related module)
+    let has_intent_module = modules.iter().any(|m| {
+        m.get("abi").and_then(|a| a.get("name")).and_then(|n| n.as_str())
+            .map(|name| name.contains("intent"))
+            .unwrap_or(false)
+    });
+    
+    assert!(has_intent_module, "aptos_intent module should be deployed on Hub Chain at address {}", account_address);
 }
 
 /// Test that intent framework contracts are deployed on the chains
@@ -87,9 +100,22 @@ async fn test_contracts_deployed_on_chain2() {
     let result = client.get(&url).send().await;
     assert!(result.is_ok(), "Should be able to query modules endpoint for Connected Chain");
     
-    // Verify we got a response (even if empty)
+    // Verify we got a response and that modules exist
     let response = result.unwrap();
     assert!(response.status().is_success(), "Modules endpoint should return success");
+    
+    // Parse the response to check if the aptos_intent module exists
+    let modules: Vec<serde_json::Value> = response.json().await
+        .expect("Failed to parse modules response");
+    
+    // Check if intent module is present (could be any intent-related module)
+    let has_intent_module = modules.iter().any(|m| {
+        m.get("abi").and_then(|a| a.get("name")).and_then(|n| n.as_str())
+            .map(|name| name.contains("intent"))
+            .unwrap_or(false)
+    });
+    
+    assert!(has_intent_module, "aptos_intent module should be deployed on Connected Chain at address {}", account_address);
 }
 
 /// Test that we can query events on Chain 1

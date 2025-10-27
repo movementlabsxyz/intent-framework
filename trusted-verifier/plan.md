@@ -23,43 +23,23 @@
 - ✅ Configuration loads correctly
 - ✅ Crypto service generates valid signatures
 
+### Phase 3: Local Testing Environment
+
+- ✅ Ran `move-intent-framework/tests/cross_chain/setup-and-deploy.sh` to set up dual Docker chains (ports 8080 and 8082)
+- ✅ Deployed contracts to both chains automatically via the setup script
+- ✅ Created `config/verifier.toml` with real module addresses
+- ✅ Generated Ed25519 key pair using `cargo run --bin generate_keys`
+- ✅ Verified chains are running and accessible
+- ✅ Verified verifier service starts and loads config correctly
+- ✅ Tested API endpoints against running verifier
+
+**Configuration Created**:
+- `config/verifier.toml` contains chain addresses and cryptographic keys
+- Both chains running on localhost (8080 and 8082)
+- Verifier service runs on port 3000
+- Contract addresses are ephemeral (change with each Docker restart)
+
 ## 🚧 Next Steps
-
-### Phase 3: Local Testing Environment (Recommended First)
-
-**Goal**: Set up local Aptos chains for testing without deploying to mainnet
-
-**Tasks**:
-
-1. Run existing deployment script
-   - Use `move-intent-framework/tests/cross_chain/setup-and-deploy.sh`
-   - This script sets up dual chains AND deploys contracts automatically
-   - Creates `intent-account-chain1` and `intent-account-chain2` profiles
-2. Update verifier.toml with real module addresses
-   - Get deployed module addresses from script output
-   - Update `config/verifier.toml` with correct addresses
-3. Test verifier connection to real chains
-   - Verify health of both chains
-   - Test basic API connectivity
-   - Check event monitoring setup
-
-**Files to Modify**: `trusted-verifier/config/verifier.toml`  
-**Commands to Run**:
-
-```bash
-cd move-intent-framework/tests/cross_chain
-./setup-and-deploy.sh
-# This will output the addresses we need for verifier.toml
-```
-
-**Existing Script Details**:
-
-- Location: `move-intent-framework/tests/cross_chain/setup-and-deploy.sh`
-- What it does:
-  1. Starts dual Docker chains (ports 8080 and 8082)
-  2. Configures Aptos CLI profiles for both chains
-  3. Deploys contracts to both chains automatically
-  4. Outputs all addresses and useful commands
 
 ---
 
@@ -154,11 +134,11 @@ cd move-intent-framework/tests/cross_chain
 
 **Recommended Sequence**:
 
-1. **Phase 3** (Local Testing Environment) - **START HERE**
-   - Get real chains running
-   - Deploy contracts
-   - Establish baseline
-2. **Phase 4** (Aptos REST Client)
+1. ~~**Phase 3** (Local Testing Environment)~~ **COMPLETED** ✅
+   - Real chains running
+   - Contracts deployed
+   - Baseline established
+2. **Phase 4** (Aptos REST Client) - **NEXT**
    - Implement blockchain communication
    - Make real API calls
 3. **Phase 5** (Core Logic)
@@ -170,11 +150,12 @@ cd move-intent-framework/tests/cross_chain
 
 ## 📝 Notes
 
-- **Current Status**: API endpoints are functional but make no blockchain calls
-- **Blocking Issue**: Need local chains to test against
-- **Next Command**: Run `./infra/setup-docker/setup-dual-chains.sh`
-- **Dependencies**: Docker must be running
-- **Configuration**: Uses `trusted-verifier/config/verifier.toml`
+- **Current Status**: Phase 3 complete - chains running, config loaded, verifier starts successfully
+- **Chains**: Dual Docker chains on ports 8080 (Hub) and 8082 (Connected)
+- **Deployed Modules**: Both chains have aptos_intent modules deployed
+- **Configuration**: `trusted-verifier/config/verifier.toml` contains real addresses and keys
+- **Verifier**: Running on port 3000, API endpoints functional
+- **Next Step**: Phase 4 - Implement actual blockchain communication
 - **Aptos Core**: Pinned to stable version (a10a3c02f16a2114ad065db6b4a525f0382e96a6)
 
 ## 🔗 Related Files

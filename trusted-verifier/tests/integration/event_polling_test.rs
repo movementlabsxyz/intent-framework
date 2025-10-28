@@ -134,7 +134,7 @@ async fn test_poll_hub_events_with_real_intent() {
     // Verify the event has correct structure
     if let Some(event) = result.first() {
         assert!(!event.intent_id.is_empty(), "Intent ID should not be empty");
-        assert!(!event.creator.is_empty(), "Creator should not be empty");
+        assert!(!event.issuer.is_empty(), "Issuer should not be empty");
         println!("Successfully parsed intent event: {:?}", event);
     }
 }

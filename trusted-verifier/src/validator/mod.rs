@@ -145,25 +145,25 @@ impl CrossChainValidator {
         info!("Validating intent fulfillment for intent: {}, escrow: {}", 
               intent.intent_id, escrow_event.escrow_id);
         
-        // Validate deposit amount matches desired amount
-        if escrow_event.deposit_amount != intent.desired_amount {
+        // Validate the escrow's desired_amount matches the hub intent's desired_amount
+        if escrow_event.desired_amount != intent.desired_amount {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Deposit amount {} does not match desired amount {}",
-                    escrow_event.deposit_amount, intent.desired_amount
+                    "Escrow desired amount {} does not match hub intent desired amount {}",
+                    escrow_event.desired_amount, intent.desired_amount
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
         
-        // Validate deposit metadata matches desired metadata
-        if escrow_event.deposit_metadata != intent.desired_metadata {
+        // Validate the escrow's desired_metadata matches the hub intent's desired_metadata
+        if escrow_event.desired_metadata != intent.desired_metadata {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Deposit metadata '{}' does not match desired metadata '{}'",
-                    escrow_event.deposit_metadata, intent.desired_metadata
+                    "Escrow desired metadata '{}' does not match hub intent desired metadata '{}'",
+                    escrow_event.desired_metadata, intent.desired_metadata
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });

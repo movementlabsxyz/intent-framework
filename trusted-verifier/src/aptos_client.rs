@@ -463,6 +463,7 @@ impl AptosClient {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitOrderEvent {
     pub intent_address: String,
+    pub intent_id: String,  // For cross-chain linking
     pub source_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub source_amount: String,
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}

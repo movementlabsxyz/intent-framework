@@ -46,6 +46,7 @@ module aptos_intent::fa_entryflow_tests {
             expiry_time,
             offerer_addr,
             option::none(),
+            true, // revocable
         );
 
         move_to(offerer, PendingIntent { intent });

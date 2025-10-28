@@ -10,8 +10,9 @@ use trusted_verifier::monitor::IntentEvent;
 #[test]
 fn test_revocable_intent_rejection() {
     let revocable_intent = IntentEvent {
+        chain: "hub".to_string(),
         intent_id: "0xrevocable".to_string(),
-        creator: "0xalice".to_string(),
+        issuer: "0xalice".to_string(),
         source_metadata: String::new(),
         source_amount: 1000,
         desired_metadata: String::new(),
@@ -26,8 +27,9 @@ fn test_revocable_intent_rejection() {
     assert!(!result, "Revocable intents should NOT be safe for escrow");
     
     let non_revocable_intent = IntentEvent {
+        chain: "hub".to_string(),
         intent_id: "0xsafe".to_string(),
-        creator: "0xbob".to_string(),
+        issuer: "0xbob".to_string(),
         source_metadata: String::new(),
         source_amount: 1000,
         desired_metadata: String::new(),

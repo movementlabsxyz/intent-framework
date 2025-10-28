@@ -35,8 +35,9 @@ use trusted_verifier::monitor::{IntentEvent, EscrowEvent};
 fn test_cross_chain_intent_matching() {
     // Step 1: User creates intent on hub chain (requests 1000 tokens to be provided by solver)
     let hub_intent = IntentEvent {
+        chain: "hub".to_string(),
         intent_id: "0xhub_abc123".to_string(),
-        creator: "0xalice".to_string(),
+        issuer: "0xalice".to_string(),
         source_metadata: "{\"inner\":\"0xsource_meta\"}".to_string(),
         source_amount: 0, // User offers 0 tokens on hub chain (tokens are in escrow on connected chain)
         desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(),
@@ -49,11 +50,16 @@ fn test_cross_chain_intent_matching() {
     // Step 2: User creates escrow on connected chain WITH tokens locked in it
     // The user must manually provide the hub_intent_id when creating the escrow
     let escrow_creation = EscrowEvent {
+        chain: "connected".to_string(),
         escrow_id: "0xescrow_xyz789".to_string(), // Escrow object address on connected chain
         intent_id: "0xhub_abc123".to_string(),    // Intent ID from hub chain (provided by user)
-        solver: "0xzero".to_string(),              // No solver yet (escrow holds user's locked tokens)
-        deposit_amount: 1000,                     // User's tokens locked in escrow
-        deposit_metadata: "{\"inner\":\"0xsource_meta\"}".to_string(), // User's locked tokens
+        issuer: "0xalice".to_string(),           // Alice created the escrow and locked tokens
+        source_metadata: "{\"inner\":\"0xsource_meta\"}".to_string(), // User's locked tokens
+        source_amount: 1000,                     // User's tokens locked in escrow
+        desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(), // What solver needs to provide
+        desired_amount: 1000,                     // Amount solver needs to provide
+        expiry_time: 1000000,
+        revocable: false, // Escrows must be non-revocable for security
         timestamp: 0,
     };
     
@@ -72,11 +78,11 @@ fn test_cross_chain_intent_matching() {
                "Escrow intent_id should match the hub intent_id");
     
     // Verify escrow has tokens locked (user creates escrow with tokens locked)
-    assert_eq!(escrow_creation.deposit_amount, 1000,
+    assert_eq!(escrow_creation.source_amount, 1000,
                "Escrow should have tokens locked (user created escrow with tokens)");
     
     // Verify the locked tokens in escrow match what the intent wants
-    assert_eq!(escrow_creation.deposit_amount, hub_intent.desired_amount,
+    assert_eq!(escrow_creation.source_amount, hub_intent.desired_amount,
                "Escrow locked tokens should match what intent wants");
 }
 

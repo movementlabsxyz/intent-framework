@@ -117,6 +117,9 @@ done
 
 echo ""
 echo "📊 Monitoring verifier events..."
+echo "   Waiting 5 seconds for verifier to poll and collect events..."
+
+sleep 5
 
 # Query verifier events
 echo ""
@@ -125,15 +128,46 @@ echo "========================================"
 
 VERIFIER_EVENTS=$(curl -s "http://127.0.0.1:3000/events")
 
-# Check if verifier has events
-EVENT_COUNT=$(echo "$VERIFIER_EVENTS" | jq -r '.data | length' 2>/dev/null || echo "0")
+# Check if verifier has intent events
+INTENT_COUNT=$(echo "$VERIFIER_EVENTS" | jq -r '.data.intent_events | length' 2>/dev/null || echo "0")
+ESCROW_COUNT=$(echo "$VERIFIER_EVENTS" | jq -r '.data.escrow_events | length' 2>/dev/null || echo "0")
 
-if [ "$EVENT_COUNT" = "0" ]; then
+if [ "$INTENT_COUNT" = "0" ] && [ "$ESCROW_COUNT" = "0" ]; then
     echo "   ⚠️  No events monitored yet"
     echo "   Verifier is running and waiting for events"
 else
-    echo "   ✅ Verifier has monitored $EVENT_COUNT events:"
-    echo "$VERIFIER_EVENTS" | jq -r '.data[] | "     Intent ID: \(.intent_id), Creator: \(.creator), Amount: \(.source_amount)"' 2>/dev/null || echo "     (Unable to parse events)"
+    if [ "$INTENT_COUNT" != "0" ]; then
+        echo "   ✅ Verifier has monitored $INTENT_COUNT intent events:"
+        echo "$VERIFIER_EVENTS" | jq -r '.data.intent_events[] | 
+            "     chain: \(.chain)",
+            "     intent_id: \(.intent_id)",
+            "     issuer: \(.issuer)",
+            "     source_metadata: \(.source_metadata)",
+            "     source_amount: \(.source_amount)",
+            "     desired_metadata: \(.desired_metadata)",
+            "     desired_amount: \(.desired_amount)",
+            "     expiry_time: \(.expiry_time)",
+            "     revocable: \(.revocable)",
+            "     timestamp: \(.timestamp)",
+            ""' 2>/dev/null || echo "     (Unable to parse events)"
+    fi
+    
+    if [ "$ESCROW_COUNT" != "0" ]; then
+        echo "   ✅ Verifier has monitored $ESCROW_COUNT escrow events:"
+        echo "$VERIFIER_EVENTS" | jq -r '.data.escrow_events[] | 
+            "     chain: \(.chain)",
+            "     escrow_id: \(.escrow_id)",
+            "     intent_id: \(.intent_id)",
+            "     issuer: \(.issuer)",
+            "     source_metadata: \(.source_metadata)",
+            "     source_amount: \(.source_amount)",
+            "     desired_metadata: \(.desired_metadata)",
+            "     desired_amount: \(.desired_amount)",
+            "     expiry_time: \(.expiry_time)",
+            "     revocable: \(.revocable)",
+            "     timestamp: \(.timestamp)",
+            ""' 2>/dev/null || echo "     (Unable to parse events)"
+    fi
 fi
 
 # Check for rejected intents in the logs
@@ -197,21 +231,9 @@ echo "   Stop verifier:    kill $VERIFIER_PID"
 echo ""
 echo "ℹ️  Verifier is running in the background"
 echo "   Verifier PID: $VERIFIER_PID"
-echo "   Press Ctrl+C to stop monitoring (verifier will keep running)"
 echo ""
+echo "✨ Script complete! Verifier is monitoring events in the background."
 
 # Store PID for cleanup
 echo $VERIFIER_PID > /tmp/verifier.pid
-
-# Keep script running by waiting for verifier health
-echo "🔄 Monitoring verifier (Ctrl+C to stop)..."
-trap 'echo ""; echo "Stopping monitor..."; exit 0' INT TERM
-
-while true; do
-    if ! curl -s -f "http://127.0.0.1:3000/health" > /dev/null 2>&1; then
-        echo "   ⚠️  Verifier stopped responding"
-        break
-    fi
-    sleep 5
-done
 

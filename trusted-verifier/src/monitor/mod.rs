@@ -29,10 +29,12 @@ use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, 
 /// and validate their safety for escrow operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntentEvent {
+    /// Chain where the intent was created (hub or connected)
+    pub chain: String,
     /// Unique identifier for the intent
     pub intent_id: String,
-    /// Address of the intent creator
-    pub creator: String,
+    /// Address of the issuer who created the intent
+    pub issuer: String,
     /// Metadata of the source asset being offered
     pub source_metadata: String,
     /// Amount of the source asset being offered
@@ -56,16 +58,26 @@ pub struct IntentEvent {
 /// fulfills the conditions specified in the original intent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EscrowEvent {
+    /// Chain where the escrow is located (hub or connected)
+    pub chain: String,
     /// Unique identifier for the escrow (on connected chain)
     pub escrow_id: String,
     /// Unique identifier for the intent on hub chain (for matching)
     pub intent_id: String,
-    /// Address of the solver who made the deposit
-    pub solver: String,
-    /// Amount of assets deposited
-    pub deposit_amount: u64,
-    /// Metadata of the deposited assets
-    pub deposit_metadata: String,
+    /// Address of the issuer who created the escrow (who locked the funds)
+    pub issuer: String,
+    /// Metadata of the source asset (what's locked in escrow)
+    pub source_metadata: String,
+    /// Amount of the source asset locked in escrow
+    pub source_amount: u64,
+    /// Metadata of the desired asset (what solver needs to provide)
+    pub desired_metadata: String,
+    /// Amount of the desired asset
+    pub desired_amount: u64,
+    /// Unix timestamp when the escrow expires
+    pub expiry_time: u64,
+    /// Whether the escrow intent can be revoked (should always be false for security)
+    pub revocable: bool,
     /// Timestamp when the event was received
     pub timestamp: u64,
 }
@@ -89,6 +101,8 @@ pub struct EventMonitor {
     connected_client: reqwest::Client,
     /// In-memory cache of recent intent events
     event_cache: Arc<RwLock<Vec<IntentEvent>>>,
+    /// In-memory cache of recent escrow events
+    escrow_cache: Arc<RwLock<Vec<EscrowEvent>>>,
 }
 
 impl EventMonitor {
@@ -121,6 +135,7 @@ impl EventMonitor {
             hub_client,
             connected_client,
             event_cache: Arc::new(RwLock::new(Vec::new())),
+            escrow_cache: Arc::new(RwLock::new(Vec::new())),
         })
     }
     
@@ -166,7 +181,7 @@ impl EventMonitor {
                         
                         // 🔒 CRITICAL SECURITY CHECK: Reject revocable intents
                         if event.revocable {
-                            error!("SECURITY: Rejecting revocable intent {} from {} - NOT safe for escrow", event.intent_id, event.creator);
+                            error!("SECURITY: Rejecting revocable intent {} from {} - NOT safe for escrow", event.intent_id, event.issuer);
                             continue; // Skip this event - do not cache or process
                         }
                         
@@ -175,7 +190,10 @@ impl EventMonitor {
                         // Cache the event for API access (only non-revocable events)
                         {
                             let mut cache = self.event_cache.write().await;
-                            cache.push(event);
+                            // Check if this chain+intent_id combination already exists in the cache
+                            if !cache.iter().any(|cached| cached.intent_id == event.intent_id && cached.chain == event.chain) {
+                                cache.push(event);
+                            }
                         }
                     }
                 }
@@ -204,6 +222,15 @@ impl EventMonitor {
                 Ok(events) => {
                     for event in events {
                         info!("Received escrow event: {:?}", event);
+                        
+                        // Cache the escrow event
+                        {
+                            let mut escrow_cache = self.escrow_cache.write().await;
+                            // Check if this chain+escrow_id combination already exists in the cache
+                            if !escrow_cache.iter().any(|cached| cached.escrow_id == event.escrow_id && cached.chain == event.chain) {
+                                escrow_cache.push(event.clone());
+                            }
+                        }
                         
                         // Validate that this escrow fulfills an existing intent
                         if let Err(e) = self.validate_intent_fulfillment(&event).await {
@@ -269,8 +296,9 @@ impl EventMonitor {
                         Ok(data) => {
                             // Successfully parsed as OracleLimitOrderEvent
                             intent_events.push(IntentEvent {
-                                intent_id: data.intent_address,
-                                creator: data.issuer.clone(),
+                                chain: "hub".to_string(),
+                                intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
+                                issuer: data.issuer.clone(),
                                 source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
                                 source_amount: data.source_amount.parse::<u64>()
                                     .context("Failed to parse source_amount")?,
@@ -289,8 +317,9 @@ impl EventMonitor {
                                 .context("Failed to parse LimitOrderEvent")?;
                             
                             intent_events.push(IntentEvent {
-                                intent_id: data.intent_address,
-                                creator: data.issuer.clone(),
+                                chain: "hub".to_string(),
+                                intent_id: data.intent_id,  // Use intent_id for cross-chain linking
+                                issuer: data.issuer.clone(),
                                 source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
                                 source_amount: data.source_amount.parse::<u64>()
                                     .context("Failed to parse source_amount")?,
@@ -353,12 +382,19 @@ impl EventMonitor {
                         .context("Failed to parse OracleLimitOrderEvent as escrow")?;
                     
                     escrow_events.push(EscrowEvent {
+                        chain: "connected".to_string(),
                         escrow_id: data.intent_address.clone(),
                         intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain intent
-                        solver: data.issuer.clone(),
-                        deposit_amount: data.source_amount.parse::<u64>()
-                            .context("Failed to parse deposit amount")?,
-                        deposit_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
+                        issuer: data.issuer.clone(), // issuer is the escrow creator who locked the funds
+                        source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
+                        source_amount: data.source_amount.parse::<u64>()
+                            .context("Failed to parse source amount")?,
+                        desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
+                        desired_amount: data.desired_amount.parse::<u64>()
+                            .context("Failed to parse desired amount")?,
+                        expiry_time: data.expiry_time.parse::<u64>()
+                            .context("Failed to parse expiry time")?,
+                        revocable: data.revocable,
                         timestamp,
                     });
                 }
@@ -395,19 +431,19 @@ impl EventMonitor {
                 info!("Found matching intent: {} for escrow: {}", intent.intent_id, escrow_event.escrow_id);
                 
                 // 2. Check that deposit amount matches desired amount
-                if escrow_event.deposit_amount < intent.desired_amount {
+                if escrow_event.source_amount < intent.desired_amount {
                     return Err(anyhow::anyhow!(
                         "Deposit amount {} is less than required amount {}",
-                        escrow_event.deposit_amount,
+                        escrow_event.source_amount,
                         intent.desired_amount
                     ));
                 }
                 
                 // 3. Check that deposit metadata matches desired metadata
-                if escrow_event.deposit_metadata != intent.desired_metadata {
+                if escrow_event.desired_metadata != intent.desired_metadata {
                     return Err(anyhow::anyhow!(
                         "Deposit metadata {} does not match desired metadata {}",
-                        escrow_event.deposit_metadata,
+                        escrow_event.desired_metadata,
                         intent.desired_metadata
                     ));
                 }
@@ -449,5 +485,17 @@ impl EventMonitor {
     /// A vector containing all cached intent events
     pub async fn get_cached_events(&self) -> Vec<IntentEvent> {
         self.event_cache.read().await.clone()
+    }
+    
+    /// Returns a copy of all cached escrow events.
+    /// 
+    /// This function provides access to the escrow event cache for API endpoints
+    /// and external monitoring systems.
+    /// 
+    /// # Returns
+    /// 
+    /// A vector containing all cached escrow events
+    pub async fn get_cached_escrow_events(&self) -> Vec<EscrowEvent> {
+        self.escrow_cache.read().await.clone()
     }
 }

@@ -37,6 +37,7 @@ module aptos_intent::fa_tests {
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
             option::none(),
+            true, // revocable
         );
         // Verify intent was created
         assert!(object::object_address(&intent) != @0x0);
@@ -83,6 +84,7 @@ module aptos_intent::fa_tests {
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer1),
             option::none(),
+            true, // revocable
         );
 
         // Offerer2 deposits 15 of FA2 requesting 30 of FA1.
@@ -93,6 +95,7 @@ module aptos_intent::fa_tests {
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer2),
             option::none(),
+            true, // revocable
         );
 
         // Solver unlocks both intents to gather the offered assets.
@@ -142,6 +145,7 @@ module aptos_intent::fa_tests {
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
             option::none(),
+            true, // revocable
         );
         // Check balance before revocation
         assert!(primary_fungible_store::balance(signer::address_of(offerer), offered_fa_type) == 50);
@@ -177,6 +181,7 @@ module aptos_intent::fa_tests {
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
             option::none(),
+            true, // revocable
         );
         
         // Solver starts the session and unlocks the 50 offered tokens
@@ -192,16 +197,15 @@ module aptos_intent::fa_tests {
         fa_intent::finish_fa_receiving_session(session, desired_fa);
     }
 
-    /// DO NOT DELETE - This test is kept to document the limitation
-    /// 
-    /// This test FAILS because:
-    /// 1. create_cross_chain_request_intent() is hardcoded to use APT metadata
-    /// 2. In Move unit tests, coin::paired_metadata<AptosCoin>() returns None
-    /// 3. The function cannot be tested with generic tokens in unit tests
-    ///
-    /// Actual cross-chain fulfillment is verified via submit-cross-chain-intent.sh (E2E test)
+    // DO NOT DELETE - This test is kept to document the limitation
+    // 
+    // This test FAILS because:
+    // 1. create_cross_chain_request_intent() is hardcoded to use APT metadata
+    // 2. In Move unit tests, coin::paired_metadata<AptosCoin>() returns None
+    // 3. The function cannot be tested with generic tokens in unit tests
+    //
+    // Actual cross-chain fulfillment is verified via submit-cross-chain-intent.sh (E2E test)
     #[test(
-        aptos_framework = @0x1,
         requestor = @0xcafe,
         solver = @0xdead
     )]
@@ -210,7 +214,6 @@ module aptos_intent::fa_tests {
     /// has 0 tokens locked on the hub chain (tokens are in escrow on a different chain).
     /// This is Step 3 of the cross-chain escrow flow.
     fun test_fulfill_cross_chain_request_intent(
-        aptos_framework: &signer,
         requestor: &signer,
         solver: &signer,
     ) {
@@ -219,10 +222,13 @@ module aptos_intent::fa_tests {
         let aptos_metadata = option::destroy_some(aptos_metadata_opt);
         
         // Requestor creates a cross-chain request intent (has 0 tokens locked)
+        // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
+        let dummy_intent_id = @0x123;
         let intent_address = fa_intent::create_cross_chain_request_intent(
             requestor,
             1000, // Wants 1000 tokens from solver
             timestamp::now_seconds() + 3600,
+            dummy_intent_id,
         );
         
         // Verify intent was created

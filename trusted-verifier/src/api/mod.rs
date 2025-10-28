@@ -193,11 +193,24 @@ async fn get_events_handler(
     monitor: Arc<RwLock<EventMonitor>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let monitor = monitor.read().await;
-    let events = monitor.get_cached_events().await;
+    let intent_events = monitor.get_cached_events().await;
+    let escrow_events = monitor.get_cached_escrow_events().await;
+    
+    // Return both intent and escrow events in a combined structure
+    #[derive(Debug, Serialize)]
+    struct CombinedEvents {
+        intent_events: Vec<crate::monitor::IntentEvent>,
+        escrow_events: Vec<crate::monitor::EscrowEvent>,
+    }
+    
+    let combined = CombinedEvents {
+        intent_events,
+        escrow_events,
+    };
     
     Ok(warp::reply::json(&ApiResponse {
         success: true,
-        data: Some(events),
+        data: Some(combined),
         error: None,
     }))
 }

@@ -13,7 +13,7 @@ async fn test_contracts_deployed_on_chain1() {
     let config = trusted_verifier::config::Config::load()
         .expect("Failed to load verifier config - ensure config/verifier.toml exists with module addresses");
     
-    let aptos_client = AptosClient::new("http://127.0.0.1:8080").unwrap();
+    let _aptos_client = AptosClient::new("http://127.0.0.1:8080").unwrap();
     
     // Extract the account address from the module address
     // Module address format: "0x{address}::module_name"

@@ -6,8 +6,9 @@ echo ""
 echo "This script will:"
 echo "  1. Start the trusted verifier service"
 echo "  2. Monitor events on Chain 1 (hub) and Chain 2 (connected)"
-echo "  3. Validate cross-chain conditions"
-echo "  4. Provide approval/rejection signatures"
+echo "  3. Validate cross-chain conditions match"
+echo "  4. Wait for hub intent to be fulfilled by solver"
+echo "  5. Provide approval signatures for escrow release after hub fulfillment"
 echo ""
 
 # Get the project root

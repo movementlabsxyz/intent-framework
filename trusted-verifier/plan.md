@@ -102,6 +102,8 @@
 
 **Goal**: Implement the actual business logic for cross-chain validation
 
+**Workflow**: Verifier observes both chains, validates conditions match, waits for hub intent to be fulfilled, then generates approval signature for escrow release on connected chain.
+
 **Tasks**:
 
 1. Implement event monitoring loop ✅
@@ -118,7 +120,8 @@
 3. Implement approval/rejection workflow 🚧
    - ✅ Reject revocable intents (security check)
    - ✅ Crypto service with signature generation ready
-   - 🚧 Generate approval signatures for valid fulfillments
+   - 🚧 Wait for hub intent to be fulfilled by solver
+   - 🚧 After hub fulfillment, generate approval signatures for valid escrows
    - 🚧 Generate rejection signatures for invalid fulfillments
    - 🚧 Store signatures in cache
 4. Connect monitoring to API endpoints ✅

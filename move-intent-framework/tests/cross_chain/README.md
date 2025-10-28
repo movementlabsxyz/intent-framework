@@ -75,11 +75,13 @@ curl http://127.0.0.1:8081/v1
 Expect growing `block_height` and logs with executing transactions.
 
 ## Test Flow (High-Level)
-1. Deploy or ensure `aptos-intent` modules on both A and B.
-2. Create intent on Chain A (record intent-id).
-3. Perform vault action on Chain B to satisfy intent.
-4. Run monitoring service; it observes B and submits oracle fulfillment on A.
-5. Confirm intent transitions to Fulfilled, then Close it on A.
+1. Deploy `aptos-intent` modules on both Hub Chain (A) and Connected Chain (B).
+2. [Hub Chain] Create regular (non-oracle) intent requesting tokens.
+3. [Connected Chain] Create escrow with tokens locked (with verifier public key), linking to hub intent via intent_id.
+4. Start verifier service to monitor both chains and validate conditions.
+5. [Hub Chain] Solver fulfills the intent on Hub Chain (no verifier signature needed).
+6. Verifier observes hub fulfillment and generates approval signature for escrow release.
+7. [Connected Chain] Escrow can be released with verifier approval signature.
 
 ## Next
 - Add a script-based runner (`test_cross_chain_oracle_intent.ts` or `.py`) and minimal monitoring service stub.

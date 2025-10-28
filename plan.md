@@ -82,19 +82,34 @@ The script handles:
  
 
 ### Cross-chain Flow (Happy Path)
-1. Create intent on Chain A using existing oracle-intent entry functions.
-2. On Chain B, perform the action that will satisfy the intent (e.g., deposit to a vault).
-3. Monitoring service detects the vault state on Chain B meets criteria.
-4. Service submits an oracle attestation/fulfillment proof on Chain A referencing Chain B observation.
-5. Intent transitions to a fulfilled state on Chain A.
-6. Close the intent on Chain A once the fulfillment is confirmed on-chain.
+1. [Hub Chain] Alice creates regular (non-oracle) intent on Hub Chain requesting tokens.
+2. [Connected Chain] Alice creates escrow with tokens locked (with verifier public key), linking to the hub intent via intent_id.
+3. [Verifier Service] Monitoring service observes both chains:
+   - Detects intent creation on Hub Chain
+   - Detects escrow creation on Connected Chain  
+   - Validates cross-chain conditions match (amounts, metadata, expiry, non-revocability)
+4. [Hub Chain] Bob (solver) fulfills the intent on Hub Chain without verifier signature (regular fulfillment)
+5. [Hub Chain] Intent transitions to fulfilled state on Hub Chain
+6. [Verifier Service] Verifier detects solver fulfilled the hub intent, validates conditions, then signs approval signature for escrow release
+7. [Connected Chain] Escrow can now be released with verifier approval signature
 
-### Monitoring/Oracle Service Design
+**Note**: Hub Chain = Chain A (intent creation). Connected Chain = Chain B (escrow/vault). Verifier observes hub fulfillment first, then approves escrow release.
+
+### Monitoring/Oracle Service Design (Trusted Verifier)
 - Responsibilities:
-  - Watch Chain B for vault state updates relevant to specific intent IDs or filters.
-  - Determine satisfaction criteria (e.g., balance >= threshold, event emission).
-  - Produce an attestation payload for Chain A (e.g., signed message or on-chain oracle transaction per existing Move interface).
-  - Submit oracle transaction(s) on Chain A to fulfill/confirm the intent.
+  - Watch Hub Chain (Chain A) for intent creation events
+  - Watch Connected Chain (Chain B) for escrow creation events
+  - Validate that hub intent and escrow are properly linked via intent_id
+  - Check that cross-chain conditions match (amounts, metadata, expiry, non-revocalibility)
+  - Monitor when hub intent is fulfilled by solver
+  - After hub intent fulfillment, generate Ed25519 approval signature for escrow release
+  - Expose REST API for retrieval of verifier signatures
+- Current Implementation:
+  - Rust service in `trusted-verifier/`
+  - Monitors both chains via polling
+  - Validates cross-chain conditions before approval
+  - Waits for hub intent fulfillment before approving escrow release
+  - Emits approval/rejection signatures via API
 - Interfaces:
   - Config: RPC URLs for Chain A/B, accounts/keys, polling intervals, filters.
   - Inputs: intent-id on Chain A, vault address/collection on Chain B, satisfaction predicate.
@@ -105,19 +120,29 @@ The script handles:
   - Observability: structured logs and optional metrics.
 
 ### Test Orchestration Steps
-1. Boot Chain A and Chain B.
-2. Deploy or ensure `aptos-intent` modules are available on both chains.
-3. Initialize/fund test accounts and set up vault on Chain B.
-4. Create intent on Chain A (record intent-id).
-5. Trigger fulfillment condition on Chain B (e.g., deposit to vault).
-6. Run monitoring/oracle service; it observes Chain B and submits fulfillment on Chain A.
-7. Wait for Chain A to confirm fulfillment; assert state change.
-8. Close the intent on Chain A; assert closed/settled state and invariants.
+1. Boot Hub Chain (Chain A) and Connected Chain (Chain B) using Docker.
+2. Deploy `aptos-intent` modules to both chains via `setup-and-deploy.sh`.
+3. Initialize/fund Alice and Bob test accounts on both chains.
+4. **[Hub Chain]** Alice creates regular intent requesting tokens.
+5. **[Connected Chain]** Alice creates escrow with tokens locked, linking to hub intent via intent_id.
+6. **[Verifier Service]** Start verifier service to monitor both chains.
+7. **[Verifier Service]** Verifier detects and validates both intent and escrow match conditions.
+8. **[Hub Chain]** Bob (solver) fulfills intent on Hub Chain (regular fulfillment, no verifier signature needed).
+9. **[Verifier Service]** Verifier detects hub intent was fulfilled and generates approval signature for escrow release.
+10. Assert intent transitions to fulfilled state on Hub Chain.
+11. Assert escrow can be released with verifier approval signature.
 
 ### Success Criteria / Assertions
-- Intent on Chain A transitions through expected states: Created -> Fulfilled -> Closed.
-- Oracle transactions on Chain A contain references to Chain B observation (event or state root proof if applicable).
-- Vault state on Chain B matches expected post-condition.
+- Intent on Hub Chain transitions through expected states: Created -> Fulfilled.
+- Escrow on Connected Chain remains locked until verifier approval.
+- Verifier validates cross-chain conditions before approval:
+  - intent_id matches between hub intent and escrow
+  - source_amount in escrow >= desired_amount in hub intent
+  - metadata matches
+  - expiry_time matches
+  - both intent and escrow are non-revocalible
+- Oracle signature is NOT required for fulfillment on Hub Chain (regular intent fulfillment).
+- Oracle signature IS required for escrow release on Connected Chain.
 - No orphaned or dangling reservations remain.
 
 ### Implementation Notes

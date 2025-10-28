@@ -61,7 +61,16 @@ async fn main() -> Result<()> {
     info!("All components initialized successfully");
     
     // Start the REST API server
-    let api_server = api::ApiServer::new(config.clone(), monitor, validator, crypto_service);
+    let api_server = api::ApiServer::new(config.clone(), monitor.clone(), validator, crypto_service);
+    
+    // Start background monitoring
+    info!("Starting background event monitoring");
+    let monitor_for_background = monitor.clone();
+    tokio::spawn(async move {
+        if let Err(e) = monitor_for_background.start_monitoring().await {
+            eprintln!("Monitoring error: {}", e);
+        }
+    });
     
     // Run the service (this blocks until shutdown)
     api_server.run().await?;

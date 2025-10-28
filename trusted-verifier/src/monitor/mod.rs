@@ -79,6 +79,7 @@ pub struct EscrowEvent {
 /// This monitor runs continuously, polling both chains for new events and
 /// processing them according to the verifier's validation rules. It maintains
 /// an in-memory cache of recent events for API access.
+#[derive(Clone)]
 pub struct EventMonitor {
     /// Service configuration
     config: Arc<Config>,
@@ -426,7 +427,7 @@ impl EventMonitor {
                 }
                 
                 info!("Validation successful for escrow: {}", escrow_event.escrow_id);
-                Ok(())
+        Ok(())
             }
             None => {
                 Err(anyhow::anyhow!(

@@ -1,14 +1,16 @@
 #!/bin/bash
 
-echo "🎯 CROSS-CHAIN INTENT - COMPLETE FLOW"
+echo "======================================"
+echo "🎯 CROSS-CHAIN INTENT - SUBMISSION"
 echo "======================================"
 echo ""
-echo "Cross-chain escrow flow:"
+echo "This script submits cross-chain intents (Steps 1-3):"
 echo "  1. [HUB CHAIN] User creates intent requesting tokens"
 echo "  2. [CONNECTED CHAIN] User creates escrow with locked tokens"
 echo "  3. [HUB CHAIN] Solver fulfills intent on hub chain"
-echo "  4. [VERIFIER] Verifier validates cross-chain conditions"
-echo "  5. [CONNECTED CHAIN] Verifier releases escrow to solver"
+echo ""
+echo "For verifier monitoring (Steps 4-5), run:"
+echo "  ./trusted-verifier/tests/integration/run-cross-chain-verifier.sh"
 echo ""
 
 # Validate parameter
@@ -31,7 +33,7 @@ INTENT_ID="0x$(openssl rand -hex 32)"
 # Check if we should run setup or use existing networks
 if [ "$1" = "1" ]; then
     echo ""
-    echo "🚀 Step 0: Setting up chains and deploying contracts..."
+    echo "🚀 Step 0.1: Setting up chains and deploying contracts..."
     echo "========================================================"
     ./move-intent-framework/tests/cross_chain/setup-and-deploy.sh
 
@@ -49,6 +51,8 @@ else
     echo "   Use parameter '1' to run full setup: ./submit-cross-chain-intent.sh 1"
     echo ""
 fi
+
+# Note: Verifier monitoring will be handled separately
 
 # Get addresses
 CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
@@ -205,23 +209,26 @@ else
 fi
 
 echo ""
-echo "📝 STEP 4: [VERIFIER] Validates cross-chain conditions"
-echo "================================================="
-echo "   Verifier validates cross-chain conditions are met"
-echo "   - Verifier matches escrow.intent_id to hub_intent.intent_id"
-echo "   - Verifier validates solver fulfilled the intent on hub chain"
-echo "     (validates deposit amounts, metadata, and expiry)"
-echo "   ⚠️  TODO: Verifier monitoring and validation (not yet implemented)"
-
+echo "🎉 INTENT SUBMISSION COMPLETE!"
+echo "=============================="
 echo ""
-echo "📝 STEP 5: [CONNECTED CHAIN] Verifier releases escrow to solver"
-echo "================================================="
-echo "   Verifier releases escrow to solver on connected chain"
-echo "   - Verifier generates approval signature"
-echo "   - Escrow is released to solver on connected chain"
-echo "   ⚠️  TODO: Verifier approval and escrow release (not yet implemented)"
-
+echo "✅ Steps 1-3 completed successfully:"
+echo "   1. Intent created on Chain 1 (hub chain)"
+echo "   2. Escrow created on Chain 2 (connected chain) with locked tokens"
+echo "   3. Intent fulfilled on Chain 1 by Bob"
 echo ""
-echo "🎉 CROSS-CHAIN INTENT FLOW SCRIPT ENDED!"
-echo "====================================="
+echo "📋 Intent Details:"
+echo "   Intent ID: $INTENT_ID"
+if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
+    echo "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
+fi
+if [ -n "$ESCROW_ADDRESS" ] && [ "$ESCROW_ADDRESS" != "null" ]; then
+    echo "   Chain 2 Escrow: $ESCROW_ADDRESS"
+fi
+echo ""
+echo "🔍 Next Steps:"
+echo "   To monitor and verify these events with the trusted verifier, run:"
+echo "   ./trusted-verifier/tests/integration/run-cross-chain-verifier.sh"
+echo ""
+echo "✨ Script completed - intents are submitted and waiting for verification!"
 

@@ -27,11 +27,11 @@ aptos config delete-profile --profile intent-account-chain2 2>/dev/null || true
 
 # Configure Chain 1 (port 8080)
 echo "   - Configuring Chain 1 (port 8080)..."
-aptos init --profile intent-account-chain1 --network local --assume-yes
+printf "\n" | aptos init --profile intent-account-chain1 --network local --assume-yes
 
 # Configure Chain 2 (port 8082)
 echo "   - Configuring Chain 2 (port 8082)..."
-aptos init --profile intent-account-chain2 --network custom --rest-url http://127.0.0.1:8082 --faucet-url http://127.0.0.1:8083 --assume-yes
+printf "\n" | aptos init --profile intent-account-chain2 --network custom --rest-url http://127.0.0.1:8082 --faucet-url http://127.0.0.1:8083 --assume-yes
 
 echo ""
 echo "📦 Step 3: Deploying contracts to Chain 1..."

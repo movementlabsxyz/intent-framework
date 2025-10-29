@@ -32,56 +32,44 @@ fi
 echo "   - Getting Alice and Bob account addresses..."
 ALICE_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain1"].account')
 ALICE_CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain2"].account')
+BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1"].account')
+BOB_CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain2"].account')
 CHAIN1_DEPLOY_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
 CHAIN2_DEPLOY_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain2"].account')
 
 echo "   ✅ Alice Chain 1: $ALICE_CHAIN1_ADDRESS"
 echo "   ✅ Alice Chain 2: $ALICE_CHAIN2_ADDRESS"
+echo "   ✅ Bob Chain 1: $BOB_CHAIN1_ADDRESS"
+echo "   ✅ Bob Chain 2: $BOB_CHAIN2_ADDRESS"
 echo "   ✅ Chain 1 Deployer: $CHAIN1_DEPLOY_ADDRESS"
 echo "   ✅ Chain 2 Deployer: $CHAIN2_DEPLOY_ADDRESS"
 echo ""
 
-# Verify that the verifier.toml addresses match the deployed addresses
-echo "   - Verifying configuration matches deployed addresses..."
-VERIFIER_CHAIN1_ADDR=$(grep -A 5 "^\[hub_chain\]" trusted-verifier/config/verifier.toml | grep "intent_module_address" | sed 's/intent_module_address = "\(.*\)"/\1/')
-VERIFIER_CHAIN2_ADDR=$(grep -A 5 "^\[connected_chain\]" trusted-verifier/config/verifier.toml | grep "intent_module_address" | sed 's/intent_module_address = "\(.*\)"/\1/')
-
-# Remove 0x prefix for comparison
-VERIFIER_CHAIN1_ADDR=$(echo "$VERIFIER_CHAIN1_ADDR" | sed 's/^0x//')
-VERIFIER_CHAIN2_ADDR=$(echo "$VERIFIER_CHAIN2_ADDR" | sed 's/^0x//')
-CHAIN1_DEPLOY_ADDRESS=$(echo "$CHAIN1_DEPLOY_ADDRESS" | sed 's/^0x//')
-CHAIN2_DEPLOY_ADDRESS=$(echo "$CHAIN2_DEPLOY_ADDRESS" | sed 's/^0x//')
-
-if [ "$VERIFIER_CHAIN1_ADDR" != "$CHAIN1_DEPLOY_ADDRESS" ]; then
-    echo "   ❌ ERROR: Chain 1 address mismatch!"
-    echo "      Config: 0x$VERIFIER_CHAIN1_ADDR"
-    echo "      Deployed: 0x$CHAIN1_DEPLOY_ADDRESS"
-    echo ""
-    echo "   Run setup-and-deploy.sh first, then update verifier.toml with:"
-    echo "   intent_module_address = \"0x$CHAIN1_DEPLOY_ADDRESS\""
-    exit 1
-fi
-
-if [ "$VERIFIER_CHAIN2_ADDR" != "$CHAIN2_DEPLOY_ADDRESS" ]; then
-    echo "   ❌ ERROR: Chain 2 address mismatch!"
-    echo "      Config: 0x$VERIFIER_CHAIN2_ADDR"
-    echo "      Deployed: 0x$CHAIN2_DEPLOY_ADDRESS"
-    echo ""
-    echo "   Run setup-and-deploy.sh first, then update verifier.toml with:"
-    echo "   intent_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\""
-    exit 1
-fi
-
-echo "   ✅ Configuration addresses match deployed addresses"
-echo ""
-
-# Update verifier config with current account addresses
+# Update verifier config with current deployed addresses and account addresses
 echo "   - Updating verifier configuration..."
-# Update hub_chain known_accounts
-sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\"]|" trusted-verifier/config/verifier.toml
+
+# Update hub_chain intent_module_address
+sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_DEPLOY_ADDRESS\"|" trusted-verifier/config/verifier.toml
+
+# Update connected_chain intent_module_address
+sed -i "/\[connected_chain\]/,/\[verifier\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" trusted-verifier/config/verifier.toml
+
+# Update connected_chain escrow_module_address (same as intent_module_address)
+sed -i "/\[connected_chain\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" trusted-verifier/config/verifier.toml
+
+# Update hub_chain known_accounts (include both Alice and Bob - Bob fulfills intents)
+sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" trusted-verifier/config/verifier.toml
 
 # Update connected_chain known_accounts
 sed -i "/\[connected_chain\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" trusted-verifier/config/verifier.toml
+
+echo "   ✅ Updated verifier.toml with:"
+echo "      Chain 1 intent_module_address: 0x$CHAIN1_DEPLOY_ADDRESS"
+echo "      Chain 2 intent_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
+echo "      Chain 2 escrow_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
+echo "      Chain 1 known_accounts: [$ALICE_CHAIN1_ADDRESS, $BOB_CHAIN1_ADDRESS]"
+echo "      Chain 2 known_accounts: $ALICE_CHAIN2_ADDRESS"
+echo ""
 
 echo ""
 echo "🚀 Starting Trusted Verifier Service..."
@@ -132,8 +120,9 @@ VERIFIER_EVENTS=$(curl -s "http://127.0.0.1:3000/events")
 # Check if verifier has intent events
 INTENT_COUNT=$(echo "$VERIFIER_EVENTS" | jq -r '.data.intent_events | length' 2>/dev/null || echo "0")
 ESCROW_COUNT=$(echo "$VERIFIER_EVENTS" | jq -r '.data.escrow_events | length' 2>/dev/null || echo "0")
+FULFILLMENT_COUNT=$(echo "$VERIFIER_EVENTS" | jq -r '.data.fulfillment_events | length' 2>/dev/null || echo "0")
 
-if [ "$INTENT_COUNT" = "0" ] && [ "$ESCROW_COUNT" = "0" ]; then
+if [ "$INTENT_COUNT" = "0" ] && [ "$ESCROW_COUNT" = "0" ] && [ "$FULFILLMENT_COUNT" = "0" ]; then
     echo "   ⚠️  No events monitored yet"
     echo "   Verifier is running and waiting for events"
 else
@@ -166,6 +155,19 @@ else
             "     desired_amount: \(.desired_amount)",
             "     expiry_time: \(.expiry_time)",
             "     revocable: \(.revocable)",
+            "     timestamp: \(.timestamp)",
+            ""' 2>/dev/null || echo "     (Unable to parse events)"
+    fi
+    
+    if [ "$FULFILLMENT_COUNT" != "0" ]; then
+        echo "   ✅ Verifier has monitored $FULFILLMENT_COUNT fulfillment events:"
+        echo "$VERIFIER_EVENTS" | jq -r '.data.fulfillment_events[] | 
+            "     chain: \(.chain)",
+            "     intent_id: \(.intent_id)",
+            "     intent_address: \(.intent_address)",
+            "     solver: \(.solver)",
+            "     provided_metadata: \(.provided_metadata)",
+            "     provided_amount: \(.provided_amount)",
             "     timestamp: \(.timestamp)",
             ""' 2>/dev/null || echo "     (Unable to parse events)"
     fi

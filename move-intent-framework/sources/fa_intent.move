@@ -10,6 +10,7 @@ module aptos_intent::fa_intent {
     use aptos_framework::object::{Self, DeleteRef, ExtendRef, Object};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::coin;
+    use aptos_framework::timestamp;
 
     /// The token offered is not the desired fungible asset.
     const ENOT_DESIRED_TOKEN: u64 = 0;
@@ -51,6 +52,18 @@ module aptos_intent::fa_intent {
         issuer: address,
         expiry_time: u64,
         revocable: bool,
+    }
+
+    #[event]
+    /// Event emitted when a fungible asset limit order intent is fulfilled.
+    /// Contains details about who fulfilled the intent and what they provided.
+    struct LimitOrderFulfillmentEvent has store, drop {
+        intent_address: address,
+        intent_id: address,  // For cross-chain linking
+        solver: address,     // Who fulfilled the intent
+        provided_metadata: Object<Metadata>,
+        provided_amount: u64,
+        timestamp: u64,
     }
 
     /// Creates a fungible asset to fungible asset trading intent.
@@ -230,6 +243,52 @@ module aptos_intent::fa_intent {
     /// # Aborts
     /// - `ENOT_DESIRED_TOKEN`: If the received asset is not the desired token type
     /// - `EAMOUNT_NOT_MEET`: If the received amount is less than the required amount
+    /// Completes a receiving session with the provided fungible asset and emits fulfillment event.
+    /// 
+    /// # Arguments
+    /// - `session`: The trade session to complete
+    /// - `received_fa`: The fungible asset received
+    /// - `intent_address`: The address of the intent being fulfilled
+    /// - `solver`: The address of the solver who fulfilled the intent
+    public fun finish_fa_receiving_session_with_event(
+        session: TradeSession<FungibleAssetLimitOrder>,
+        received_fa: FungibleAsset,
+        intent_address: address,
+        solver: address,
+    ) {
+        let argument = intent::get_argument(&session);
+        
+        // Capture metadata and amount before depositing (received_fa doesn't have copy ability)
+        let provided_metadata = fungible_asset::metadata_from_asset(&received_fa);
+        let provided_amount = fungible_asset::amount(&received_fa);
+        
+        assert!(
+            provided_metadata == argument.desired_metadata,
+            error::invalid_argument(ENOT_DESIRED_TOKEN)
+        );
+        assert!(
+            provided_amount >= argument.desired_amount,
+            error::invalid_argument(EAMOUNT_NOT_MEET),
+        );
+
+        primary_fungible_store::deposit(argument.issuer, received_fa);
+        
+        // Emit fulfillment event
+        let timestamp = timestamp::now_seconds();
+        
+        event::emit(LimitOrderFulfillmentEvent {
+            intent_address,
+            intent_id: intent_address, // For regular intents, intent_id = intent_address
+            solver,
+            provided_metadata,
+            provided_amount,
+            timestamp,
+        });
+        
+        intent::finish_intent_session(session, FungibleAssetRecipientWitness {})
+    }
+    
+    /// Legacy version without event - kept for compatibility
     public fun finish_fa_receiving_session(
         session: TradeSession<FungibleAssetLimitOrder>,
         received_fa: FungibleAsset,
@@ -351,11 +410,14 @@ module aptos_intent::fa_intent {
         intent: Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
         payment_amount: u64,
     ) {
+        let intent_address = object::object_address(&intent);
+        let solver_address = signer::address_of(solver);
+        
         // 1. Start the session (this unlocks 0 tokens, but creates the session)
         let (unlocked_fa, session) = start_fa_offering_session(solver, intent);
         
         // Deposit the unlocked tokens (which are 0 for regular intents)
-        primary_fungible_store::deposit(signer::address_of(solver), unlocked_fa);
+        primary_fungible_store::deposit(solver_address, unlocked_fa);
         
         // 2. Withdraw the desired tokens from solver's account
         let aptos_metadata_opt = coin::paired_metadata<aptos_framework::aptos_coin::AptosCoin>();
@@ -364,8 +426,8 @@ module aptos_intent::fa_intent {
         
         let payment_fa = primary_fungible_store::withdraw(solver, aptos_metadata, payment_amount);
         
-        // 3. Finish the session by providing the payment tokens
-        finish_fa_receiving_session(session, payment_fa);
+        // 3. Finish the session by providing the payment tokens and emit fulfillment event
+        finish_fa_receiving_session_with_event(session, payment_fa, intent_address, solver_address);
     }
 
 }

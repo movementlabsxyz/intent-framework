@@ -16,7 +16,7 @@ use tokio::sync::RwLock;
 use tracing::{info, error};
 
 use crate::config::Config;
-use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, OracleLimitOrderEvent as AptosOracleLimitOrderEvent};
+use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, OracleLimitOrderEvent as AptosOracleLimitOrderEvent, LimitOrderFulfillmentEvent as AptosLimitOrderFulfillmentEvent};
 
 // ============================================================================
 // EVENT DATA STRUCTURES
@@ -82,6 +82,29 @@ pub struct EscrowEvent {
     pub timestamp: u64,
 }
 
+/// Fulfillment event from the hub chain.
+/// 
+/// This event is emitted when an intent is fulfilled by a solver.
+/// The verifier monitors these events to track when hub intents are completed,
+/// which triggers the approval workflow for escrow release on the connected chain.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FulfillmentEvent {
+    /// Chain where the fulfillment occurred (hub)
+    pub chain: String,
+    /// Unique identifier for the intent that was fulfilled
+    pub intent_id: String,
+    /// Address of the intent that was fulfilled
+    pub intent_address: String,
+    /// Address of the solver who fulfilled the intent
+    pub solver: String,
+    /// Metadata of the asset provided by the solver
+    pub provided_metadata: String,
+    /// Amount of the asset provided by the solver
+    pub provided_amount: u64,
+    /// Unix timestamp when the intent was fulfilled
+    pub timestamp: u64,
+}
+
 // ============================================================================
 // EVENT MONITOR IMPLEMENTATION
 // ============================================================================
@@ -103,6 +126,8 @@ pub struct EventMonitor {
     event_cache: Arc<RwLock<Vec<IntentEvent>>>,
     /// In-memory cache of recent escrow events
     escrow_cache: Arc<RwLock<Vec<EscrowEvent>>>,
+    /// In-memory cache of fulfillment events
+    fulfillment_cache: Arc<RwLock<Vec<FulfillmentEvent>>>,
 }
 
 impl EventMonitor {
@@ -136,6 +161,7 @@ impl EventMonitor {
             connected_client,
             event_cache: Arc::new(RwLock::new(Vec::new())),
             escrow_cache: Arc::new(RwLock::new(Vec::new())),
+            fulfillment_cache: Arc::new(RwLock::new(Vec::new())),
         })
     }
     
@@ -286,9 +312,33 @@ impl EventMonitor {
                 // Parse event type to check if it's an intent event
                 let event_type = event.r#type.clone();
                 
-                // Handle both LimitOrderEvent and OracleLimitOrderEvent
-                // Check if event has min_reported_value (OracleLimitOrderEvent) or not (LimitOrderEvent)
-                if event_type.contains("LimitOrderEvent") || event_type.contains("OracleLimitOrderEvent") {
+                // Handle LimitOrderEvent, OracleLimitOrderEvent, and LimitOrderFulfillmentEvent
+                if event_type.contains("LimitOrderFulfillmentEvent") {
+                    // Try to parse as fulfillment event
+                    let fulfillment_data_result: Result<AptosLimitOrderFulfillmentEvent, _> = serde_json::from_value(event.data.clone());
+                    
+                    if let Ok(data) = fulfillment_data_result {
+                        // Cache the fulfillment event
+                        {
+                            let mut fulfillment_cache = self.fulfillment_cache.write().await;
+                            // Check if this chain+intent_id combination already exists in the cache
+                            if !fulfillment_cache.iter().any(|cached| cached.intent_id == data.intent_id && cached.chain == "hub") {
+                                fulfillment_cache.push(FulfillmentEvent {
+                                    chain: "hub".to_string(),
+                                    intent_id: data.intent_id.clone(),
+                                    intent_address: data.intent_address.clone(),
+                                    solver: data.solver.clone(),
+                                    provided_metadata: serde_json::to_string(&data.provided_metadata).unwrap_or_default(),
+                                    provided_amount: data.provided_amount.parse::<u64>()
+                                        .context("Failed to parse provided_amount")?,
+                                    timestamp: data.timestamp.parse::<u64>()
+                                        .context("Failed to parse timestamp")?,
+                                });
+                            }
+                        }
+                        info!("Received fulfillment event for intent {} by solver {}", data.intent_id, data.solver);
+                    }
+                } else if event_type.contains("LimitOrderEvent") || event_type.contains("OracleLimitOrderEvent") {
                     // Try to parse as OracleLimitOrderEvent first (it has min_reported_value)
                     let data_result: Result<AptosOracleLimitOrderEvent, _> = serde_json::from_value(event.data.clone());
                     
@@ -497,5 +547,9 @@ impl EventMonitor {
     /// A vector containing all cached escrow events
     pub async fn get_cached_escrow_events(&self) -> Vec<EscrowEvent> {
         self.escrow_cache.read().await.clone()
+    }
+    
+    pub async fn get_cached_fulfillment_events(&self) -> Vec<FulfillmentEvent> {
+        self.fulfillment_cache.read().await.clone()
     }
 }

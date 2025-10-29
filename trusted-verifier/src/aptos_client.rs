@@ -488,6 +488,17 @@ pub struct OracleLimitOrderEvent {
     pub revocable: bool,
 }
 
+/// Represents a LimitOrderFulfillmentEvent emitted when an intent is fulfilled
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LimitOrderFulfillmentEvent {
+    pub intent_address: String,
+    pub intent_id: String,
+    pub solver: String,
+    pub provided_metadata: serde_json::Value,
+    pub provided_amount: String,
+    pub timestamp: String,
+}
+
 #[cfg(test)]
 mod tests {
     // Tests will be added in integration tests or separate test file

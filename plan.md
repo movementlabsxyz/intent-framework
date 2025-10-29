@@ -1,5 +1,10 @@
 ## Cross-chain Oracle Intents: Implementation Plan
 
+### Other TODOs
+
+- check if we can get rid of aptos-core subfolder for manual setup. we may not need this anymore.
+- can we make some of the sh scripts as rust bin
+
 ### Goals
 - Enable oracle-backed intents to be created on Chain A and fulfilled on Chain B, with settlement and closure on Chain A once fulfillment is confirmed.
 - Provide an automated service that monitors vault state on Chain B and submits oracle attestations on Chain A.

@@ -102,7 +102,7 @@ echo "   - Using intent_id: $INTENT_ID"
 # Create cross-chain request intent on Chain 1 using fa_intent module
 echo "   - Creating cross-chain request intent on Chain 1..."
 aptos move run --profile alice-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent::create_cross_chain_request_intent_entry" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_apt::create_cross_chain_request_intent_entry" \
     --args "u64:1000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" > /tmp/intent_creation.log 2>&1
 
 if [ $? -eq 0 ]; then
@@ -201,7 +201,7 @@ if [ -n "$INTENT_OBJECT_ADDRESS" ] && [ "$INTENT_OBJECT_ADDRESS" != "null" ]; th
     
     # Bob fulfills the intent by providing tokens
     aptos move run --profile bob-chain1 --assume-yes \
-        --function-id "0x${CHAIN1_ADDRESS}::fa_intent::fulfill_cross_chain_request_intent" \
+        --function-id "0x${CHAIN1_ADDRESS}::fa_intent_apt::fulfill_cross_chain_request_intent" \
         --args "address:$INTENT_OBJECT_ADDRESS" "u64:1000000"
     
     if [ $? -eq 0 ]; then

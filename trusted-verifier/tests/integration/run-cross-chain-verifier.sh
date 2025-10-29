@@ -1,8 +1,48 @@
 #!/bin/bash
 
+# Get the project root
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+cd "$PROJECT_ROOT"
+
+# Validate parameter
+if [ -z "$1" ] || ([ "$1" != "0" ] && [ "$1" != "1" ]); then
+    echo "🔍 CROSS-CHAIN VERIFIER - USAGE"
+    echo "=============================================="
+    echo ""
+    echo "Usage: $0 <parameter>"
+    echo ""
+    echo "Options:"
+    echo "  0: Run verifier only (use existing running networks)"
+    echo "  1: Run full setup + submit intents + verifier"
+    echo ""
+    echo "Examples:"
+    echo "  $0 0    # Run verifier on existing networks"
+    echo "  $0 1    # Setup, deploy, submit intents, then run verifier"
+    echo ""
+    exit 1
+fi
+
 echo "🔍 CROSS-CHAIN VERIFIER - STARTING MONITORING"
 echo "=============================================="
 echo ""
+
+# If option 1, run submit script first (which does setup + submit)
+if [ "$1" = "1" ]; then
+    echo "🚀 Step 0: Running setup and submitting intents..."
+    echo "================================================="
+    ./move-intent-framework/tests/cross_chain/submit-cross-chain-intent.sh 1
+    
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to setup and submit intents"
+        exit 1
+    fi
+    
+    echo ""
+    echo "✅ Setup and intent submission complete!"
+    echo ""
+fi
+
 echo "This script will:"
 echo "  1. Start the trusted verifier service"
 echo "  2. Monitor events on Chain 1 (hub) and Chain 2 (connected)"
@@ -10,11 +50,6 @@ echo "  3. Validate cross-chain conditions match"
 echo "  4. Wait for hub intent to be fulfilled by solver"
 echo "  5. Provide approval signatures for escrow release after hub fulfillment"
 echo ""
-
-# Get the project root
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
-cd "$PROJECT_ROOT"
 
 # Check if verifier is already running and stop it
 echo "   Checking for existing verifiers..."

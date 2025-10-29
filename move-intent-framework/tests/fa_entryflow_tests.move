@@ -47,6 +47,7 @@ module aptos_intent::fa_entryflow_tests {
             offerer_addr,
             option::none(),
             true, // revocable
+            option::none(), // No cross-chain intent_id for regular intents
         );
 
         move_to(offerer, PendingIntent { intent });

@@ -33,6 +33,7 @@ module aptos_intent::fa_intent {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         issuer: address,
+        intent_id: Option<address>, // Optional cross-chain intent_id for linking (None for regular intents)
     }
 
     /// Witness type for fungible asset intent completion.
@@ -88,6 +89,7 @@ module aptos_intent::fa_intent {
         issuer: address,
         reservation: Option<IntentReserved>,
         revocable: bool,
+        intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Capture metadata and amount before depositing
         let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
@@ -107,7 +109,7 @@ module aptos_intent::fa_intent {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
             FungibleStoreManager { extend_ref, delete_ref},
-            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer },
+            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id },
             expiry_time,
             issuer,
             FungibleAssetRecipientWitness {},
@@ -117,9 +119,15 @@ module aptos_intent::fa_intent {
 
         // Emit event after creating intent so we have the intent address
         let intent_addr = object::object_address(&intent_obj);
+        // Use intent_id from argument if present (cross-chain), otherwise use intent_address (regular)
+        let event_intent_id = if (option::is_some(&intent_id)) {
+            *option::borrow(&intent_id)
+        } else {
+            intent_addr
+        };
         event::emit(LimitOrderEvent {
             intent_address: intent_addr,
-            intent_id: intent_addr,  // For regular intents, intent_id = intent_address
+            intent_id: event_intent_id,
             source_metadata,
             source_amount,
             desired_metadata,
@@ -186,6 +194,7 @@ module aptos_intent::fa_intent {
             signer::address_of(account),
             reservation,
             true, // revocable by default for regular intents
+            option::none(), // No cross-chain intent_id for regular intents
         );
     }
 
@@ -276,9 +285,16 @@ module aptos_intent::fa_intent {
         // Emit fulfillment event
         let timestamp = timestamp::now_seconds();
         
+        // Use intent_id from argument if present (cross-chain), otherwise use intent_address (regular)
+        let fulfillment_intent_id = if (option::is_some(&argument.intent_id)) {
+            *option::borrow(&argument.intent_id)
+        } else {
+            intent_address
+        };
+        
         event::emit(LimitOrderFulfillmentEvent {
             intent_address,
-            intent_id: intent_address, // For regular intents, intent_id = intent_address
+            intent_id: fulfillment_intent_id,
             solver,
             provided_metadata,
             provided_amount,
@@ -344,6 +360,7 @@ module aptos_intent::fa_intent {
             option::none(), // Unreserved
             false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
                    // Ensures consistent safety guarantees for verifiers across chains
+            option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
         );
         
         // Override the event to emit with the provided intent_id

@@ -4,6 +4,16 @@
 
 - check if we can get rid of aptos-core subfolder for manual setup. we may not need this anymore.
 - can we make some of the sh scripts as rust bin
+- **Balance Discrepancy Investigation**
+  - Bob's balance decrease doesn't match expected amount when fulfilling intent with 100M tokens
+  - Event confirms `provided_amount: 100,000,000` was transferred
+  - But Bob's balance only decreases by 99,888,740 (less than 100M, not 100M + gas)
+  - Possible causes:
+    - Coin vs FA balance relationship on Aptos (coin balance shown vs FA transfers)
+    - Initial balance check timing/state issue
+    - Gas fees deducted from transfer amount (unusual behavior)
+  - Need to investigate how `aptos account balance` relates to FungibleAsset operations and why loss < transfer amount
+  - Location: `move-intent-framework/tests/cross_chain/submit-cross-chain-intent.sh`
 
 ### Goals
 - Enable oracle-backed intents to be created on Chain A and fulfilled on Chain B, with settlement and closure on Chain A once fulfillment is confirmed.

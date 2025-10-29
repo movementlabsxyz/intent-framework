@@ -9,6 +9,10 @@
 
 set -e
 
+# Expected funding amount in octas
+# Note: aptos init funds accounts with 100000000, then we fund again with 100000000 = 200000000 total
+EXPECTED_FUNDING_AMOUNT=200000000
+
 echo "🧪 Alice and Bob Account Testing - DUAL CHAINS"
 echo "=============================================="
 
@@ -145,9 +149,23 @@ if [ "$ALICE_TX_HASH" != "null" ] && [ -n "$ALICE_TX_HASH" ]; then
     
     if [ "$ALICE_FA_STORE" != "null" ] && [ -n "$ALICE_FA_STORE" ]; then
         ALICE_BALANCE=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_FA_STORE}/resources" | jq -r '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance')
+        
+        if [ -z "$ALICE_BALANCE" ] || [ "$ALICE_BALANCE" = "null" ]; then
+            echo "❌ ERROR: Failed to get Alice Chain 1 balance"
+            exit 1
+        fi
+        
+        if [ "$ALICE_BALANCE" != "$EXPECTED_FUNDING_AMOUNT" ]; then
+            echo "❌ ERROR: Alice Chain 1 balance mismatch"
+            echo "   Expected: $EXPECTED_FUNDING_AMOUNT Octas"
+            echo "   Got: $ALICE_BALANCE Octas"
+            exit 1
+        fi
+        
         echo "✅ Alice Chain 1 balance verified: $ALICE_BALANCE Octas"
     else
-        echo "⚠️  Could not verify Alice Chain 1 balance via FA store"
+        echo "❌ ERROR: Could not verify Alice Chain 1 balance via FA store"
+        exit 1
     fi
 else
     echo "❌ Failed to fund Alice account on Chain 1"
@@ -171,9 +189,23 @@ if [ "$BOB_TX_HASH" != "null" ] && [ -n "$BOB_TX_HASH" ]; then
     
     if [ "$BOB_FA_STORE" != "null" ] && [ -n "$BOB_FA_STORE" ]; then
         BOB_BALANCE=$(curl -s "http://127.0.0.1:8080/v1/accounts/${BOB_FA_STORE}/resources" | jq -r '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance')
+        
+        if [ -z "$BOB_BALANCE" ] || [ "$BOB_BALANCE" = "null" ]; then
+            echo "❌ ERROR: Failed to get Bob Chain 1 balance"
+            exit 1
+        fi
+        
+        if [ "$BOB_BALANCE" != "$EXPECTED_FUNDING_AMOUNT" ]; then
+            echo "❌ ERROR: Bob Chain 1 balance mismatch"
+            echo "   Expected: $EXPECTED_FUNDING_AMOUNT Octas"
+            echo "   Got: $BOB_BALANCE Octas"
+            exit 1
+        fi
+        
         echo "✅ Bob Chain 1 balance verified: $BOB_BALANCE Octas"
     else
-        echo "⚠️  Could not verify Bob Chain 1 balance via FA store"
+        echo "❌ ERROR: Could not verify Bob Chain 1 balance via FA store"
+        exit 1
     fi
 else
     echo "❌ Failed to fund Bob account on Chain 1"
@@ -197,9 +229,23 @@ if [ "$ALICE2_TX_HASH" != "null" ] && [ -n "$ALICE2_TX_HASH" ]; then
     
     if [ "$ALICE2_FA_STORE" != "null" ] && [ -n "$ALICE2_FA_STORE" ]; then
         ALICE2_BALANCE=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE2_FA_STORE}/resources" | jq -r '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance')
+        
+        if [ -z "$ALICE2_BALANCE" ] || [ "$ALICE2_BALANCE" = "null" ]; then
+            echo "❌ ERROR: Failed to get Alice Chain 2 balance"
+            exit 1
+        fi
+        
+        if [ "$ALICE2_BALANCE" != "$EXPECTED_FUNDING_AMOUNT" ]; then
+            echo "❌ ERROR: Alice Chain 2 balance mismatch"
+            echo "   Expected: $EXPECTED_FUNDING_AMOUNT Octas"
+            echo "   Got: $ALICE2_BALANCE Octas"
+            exit 1
+        fi
+        
         echo "✅ Alice Chain 2 balance verified: $ALICE2_BALANCE Octas"
     else
-        echo "⚠️  Could not verify Alice Chain 2 balance via FA store"
+        echo "❌ ERROR: Could not verify Alice Chain 2 balance via FA store"
+        exit 1
     fi
 else
     echo "❌ Failed to fund Alice account on Chain 2"
@@ -223,9 +269,23 @@ if [ "$BOB2_TX_HASH" != "null" ] && [ -n "$BOB2_TX_HASH" ]; then
     
     if [ "$BOB2_FA_STORE" != "null" ] && [ -n "$BOB2_FA_STORE" ]; then
         BOB2_BALANCE=$(curl -s "http://127.0.0.1:8082/v1/accounts/${BOB2_FA_STORE}/resources" | jq -r '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance')
+        
+        if [ -z "$BOB2_BALANCE" ] || [ "$BOB2_BALANCE" = "null" ]; then
+            echo "❌ ERROR: Failed to get Bob Chain 2 balance"
+            exit 1
+        fi
+        
+        if [ "$BOB2_BALANCE" != "$EXPECTED_FUNDING_AMOUNT" ]; then
+            echo "❌ ERROR: Bob Chain 2 balance mismatch"
+            echo "   Expected: $EXPECTED_FUNDING_AMOUNT Octas"
+            echo "   Got: $BOB2_BALANCE Octas"
+            exit 1
+        fi
+        
         echo "✅ Bob Chain 2 balance verified: $BOB2_BALANCE Octas"
     else
-        echo "⚠️  Could not verify Bob Chain 2 balance via FA store"
+        echo "❌ ERROR: Could not verify Bob Chain 2 balance via FA store"
+        exit 1
     fi
 else
     echo "❌ Failed to fund Bob account on Chain 2"

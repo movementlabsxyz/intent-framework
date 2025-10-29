@@ -159,32 +159,4 @@ module aptos_intent::intent_as_escrow {
         );
     }
 
-    // ============================================================================
-    // CLI-FRIENDLY WRAPPER FUNCTIONS
-    // ============================================================================
-
-    /// CLI-friendly wrapper for creating escrow with APT tokens.
-    /// Withdraws APT from the caller's primary FA store and forwards it to create_escrow.
-    public entry fun create_escrow_from_apt(
-        user: &signer,
-        amount_octas: u64,
-        verifier_public_key: vector<u8>, // 32 bytes
-        expiry_time: u64,
-        intent_id: address,
-    ) {
-        // Get APT's paired FA metadata (Object<Metadata>)
-        let metadata_opt = coin::paired_metadata<aptos_coin::AptosCoin>();
-        assert!(option::is_some(&metadata_opt), 9001);
-        let metadata = option::destroy_some(metadata_opt);
-
-        // Withdraw APT as a FungibleAsset from the caller's primary FA store
-        let fa: FungibleAsset = primary_fungible_store::withdraw(user, metadata, amount_octas);
-
-        // Build ed25519::UnvalidatedPublicKey correctly
-        let oracle_pk = ed25519::new_unvalidated_public_key_from_bytes(verifier_public_key);
-
-        // Call your existing internal function
-        create_escrow(user, fa, oracle_pk, expiry_time, intent_id);
-    }
-
 }

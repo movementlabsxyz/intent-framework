@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::config::Config;
-use crate::monitor::{IntentEvent, EscrowEvent};
+use crate::monitor::{IntentEvent, EscrowEvent, FulfillmentEvent};
 
 // ============================================================================
 // VALIDATION DATA STRUCTURES
@@ -179,6 +179,85 @@ impl CrossChainValidator {
         Ok(ValidationResult {
             valid: true,
             message: "Intent fulfillment validation successful".to_string(),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        })
+    }
+    
+    /// Validates that a fulfillment event satisfies the intent requirements.
+    /// 
+    /// This function checks that:
+    /// 1. The fulfilled amount matches the intent's desired amount
+    /// 2. The fulfilled metadata matches the intent's desired metadata
+    /// 3. The fulfillment occurred before the intent expired
+    /// 
+    /// # Arguments
+    /// 
+    /// * `intent` - The intent event from the hub chain
+    /// * `fulfillment` - The fulfillment event from the hub chain
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(ValidationResult)` - Validation result with detailed information
+    /// * `Err(anyhow::Error)` - Validation failed due to error
+    pub async fn validate_fulfillment(
+        &self,
+        intent: &IntentEvent,
+        fulfillment: &FulfillmentEvent,
+    ) -> Result<ValidationResult> {
+        info!("Validating fulfillment for intent: {}", intent.intent_id);
+        
+        // Verify fulfillment is for the same intent
+        if fulfillment.intent_id != intent.intent_id {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Fulfillment intent_id {} does not match intent intent_id {}",
+                    fulfillment.intent_id, intent.intent_id
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
+        // Validate the fulfillment's provided_amount matches the intent's desired_amount
+        if fulfillment.provided_amount != intent.desired_amount {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Fulfillment provided amount {} does not match intent desired amount {}",
+                    fulfillment.provided_amount, intent.desired_amount
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
+        // Validate the fulfillment's provided_metadata matches the intent's desired_metadata
+        if fulfillment.provided_metadata != intent.desired_metadata {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Fulfillment provided metadata '{}' does not match intent desired metadata '{}'",
+                    fulfillment.provided_metadata, intent.desired_metadata
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
+        // Validate fulfillment occurred before intent expired
+        if fulfillment.timestamp > intent.expiry_time {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Fulfillment occurred after intent expiry (fulfillment: {}, expiry: {})",
+                    fulfillment.timestamp, intent.expiry_time
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
+        // All validations passed
+        Ok(ValidationResult {
+            valid: true,
+            message: "Fulfillment validation successful".to_string(),
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
     }

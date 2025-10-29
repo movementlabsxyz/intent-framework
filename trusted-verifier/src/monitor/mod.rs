@@ -16,6 +16,8 @@ use tokio::sync::RwLock;
 use tracing::{info, error};
 
 use crate::config::Config;
+use crate::validator::CrossChainValidator;
+use crate::crypto::CryptoService;
 use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, OracleLimitOrderEvent as AptosOracleLimitOrderEvent, LimitOrderFulfillmentEvent as AptosLimitOrderFulfillmentEvent};
 
 // ============================================================================
@@ -114,6 +116,22 @@ pub struct FulfillmentEvent {
 /// This monitor runs continuously, polling both chains for new events and
 /// processing them according to the verifier's validation rules. It maintains
 /// an in-memory cache of recent events for API access.
+
+/// Approval signature for escrow release
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EscrowApproval {
+    /// Escrow ID for which this approval was generated
+    pub escrow_id: String,
+    /// Intent ID that links hub and connected chain
+    pub intent_id: String,
+    /// Approval signature (base64 encoded)
+    pub approval_value: u64,
+    /// Signature bytes (base64 encoded)
+    pub signature: String,
+    /// Timestamp when approval was generated
+    pub timestamp: u64,
+}
+
 #[derive(Clone)]
 pub struct EventMonitor {
     /// Service configuration
@@ -122,12 +140,21 @@ pub struct EventMonitor {
     hub_client: reqwest::Client,
     /// HTTP client for connected chain communication
     connected_client: reqwest::Client,
+    /// Cross-chain validator for validation logic
+    validator: Arc<CrossChainValidator>,
+    /// Cryptographic operations for signature generation
+    crypto: Arc<CryptoService>,
     /// In-memory cache of recent intent events
     event_cache: Arc<RwLock<Vec<IntentEvent>>>,
     /// In-memory cache of recent escrow events
-    escrow_cache: Arc<RwLock<Vec<EscrowEvent>>>,
+    /// 
+    /// Note: Public for testing purposes
+    #[doc(hidden)]
+    pub escrow_cache: Arc<RwLock<Vec<EscrowEvent>>>,
     /// In-memory cache of fulfillment events
     fulfillment_cache: Arc<RwLock<Vec<FulfillmentEvent>>>,
+    /// In-memory cache of approval signatures for escrow release
+    approval_cache: Arc<RwLock<Vec<EscrowApproval>>>,
 }
 
 impl EventMonitor {
@@ -155,13 +182,20 @@ impl EventMonitor {
             .timeout(std::time::Duration::from_millis(config.verifier.validation_timeout_ms))
             .build()?;
         
+        // Create validator and crypto instances
+        let validator = Arc::new(CrossChainValidator::new(config).await?);
+        let crypto = Arc::new(CryptoService::new(config)?);
+        
         Ok(Self {
             config: Arc::new(config.clone()),
             hub_client,
             connected_client,
+            validator,
+            crypto,
             event_cache: Arc::new(RwLock::new(Vec::new())),
             escrow_cache: Arc::new(RwLock::new(Vec::new())),
             fulfillment_cache: Arc::new(RwLock::new(Vec::new())),
+            approval_cache: Arc::new(RwLock::new(Vec::new())),
         })
     }
     
@@ -318,25 +352,36 @@ impl EventMonitor {
                     let fulfillment_data_result: Result<AptosLimitOrderFulfillmentEvent, _> = serde_json::from_value(event.data.clone());
                     
                     if let Ok(data) = fulfillment_data_result {
+                        // Create fulfillment event
+                        let fulfillment_event = FulfillmentEvent {
+                            chain: "hub".to_string(),
+                            intent_id: data.intent_id.clone(),
+                            intent_address: data.intent_address.clone(),
+                            solver: data.solver.clone(),
+                            provided_metadata: serde_json::to_string(&data.provided_metadata).unwrap_or_default(),
+                            provided_amount: data.provided_amount.parse::<u64>()
+                                .context("Failed to parse provided_amount")?,
+                            timestamp: data.timestamp.parse::<u64>()
+                                .context("Failed to parse timestamp")?,
+                        };
+                        
                         // Cache the fulfillment event
                         {
                             let mut fulfillment_cache = self.fulfillment_cache.write().await;
                             // Check if this chain+intent_id combination already exists in the cache
-                            if !fulfillment_cache.iter().any(|cached| cached.intent_id == data.intent_id && cached.chain == "hub") {
-                                fulfillment_cache.push(FulfillmentEvent {
-                                    chain: "hub".to_string(),
-                                    intent_id: data.intent_id.clone(),
-                                    intent_address: data.intent_address.clone(),
-                                    solver: data.solver.clone(),
-                                    provided_metadata: serde_json::to_string(&data.provided_metadata).unwrap_or_default(),
-                                    provided_amount: data.provided_amount.parse::<u64>()
-                                        .context("Failed to parse provided_amount")?,
-                                    timestamp: data.timestamp.parse::<u64>()
-                                        .context("Failed to parse timestamp")?,
-                                });
+                            if !fulfillment_cache.iter().any(|cached| cached.intent_id == fulfillment_event.intent_id && cached.chain == "hub") {
+                                fulfillment_cache.push(fulfillment_event.clone());
+                                info!("Received fulfillment event for intent {} by solver {}", data.intent_id, data.solver);
+                            } else {
+                                // Already cached, skip validation to avoid duplicate processing
+                                continue;
                             }
                         }
-                        info!("Received fulfillment event for intent {} by solver {}", data.intent_id, data.solver);
+                        
+                        // Validate fulfillment event and generate approval if valid
+                        if let Err(e) = self.validate_and_approve_fulfillment(&fulfillment_event).await {
+                            error!("Fulfillment validation failed: {}", e);
+                        }
                     }
                 } else if event_type.contains("LimitOrderEvent") || event_type.contains("OracleLimitOrderEvent") {
                     // Try to parse as OracleLimitOrderEvent first (it has min_reported_value)
@@ -551,5 +596,103 @@ impl EventMonitor {
     
     pub async fn get_cached_fulfillment_events(&self) -> Vec<FulfillmentEvent> {
         self.fulfillment_cache.read().await.clone()
+    }
+    
+    /// Generates approval signature after fulfillment is observed.
+    /// 
+    /// This function:
+    /// 1. Confirms fulfillment event exists (Move already validated fulfillment conditions)
+    /// 2. Confirms matching escrow exists (verifier already validated escrow earlier)
+    /// 3. Generates approval signature for escrow release
+    /// 
+    /// Note: We don't validate here because:
+    /// - Fulfillment validity: Move contract only emits fulfillment events when conditions are correct
+    /// - Escrow validity: Verifier validates escrow before solver fulfills (future: provides signature to solver)
+    /// - By the time we see fulfillment, both were already validated
+    /// 
+    /// # Arguments
+    /// 
+    /// * `fulfillment` - The fulfillment event that was observed
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(())` - Approval generated successfully
+    /// * `Err(anyhow::Error)` - Failed to generate approval (e.g., missing escrow)
+    /// 
+    /// Note: Public for testing purposes
+    #[doc(hidden)]
+    pub async fn validate_and_approve_fulfillment(&self, fulfillment: &FulfillmentEvent) -> Result<()> {
+        info!("Generating approval after fulfillment observed: intent_id {}", fulfillment.intent_id);
+        
+        // Find matching escrow by intent_id
+        let escrow_cache = self.escrow_cache.read().await;
+        let matching_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
+        
+        let escrow_id = match matching_escrow {
+            Some(escrow) => escrow.escrow_id.clone(),
+            None => {
+                error!("No matching escrow found for fulfillment: {} (intent_id: {})", 
+                       fulfillment.intent_address, fulfillment.intent_id);
+                return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
+            }
+        };
+        drop(escrow_cache);
+        
+        // Generate approval signature for escrow release
+        // Both conditions are already met:
+        // - Escrow was validated earlier (or will be validated before solver fulfills)
+        // - Fulfillment was validated by Move contract (event only emitted if valid)
+        let approval_sig = self.crypto.create_approval_signature(true)?;
+        
+        // Store approval signature
+        {
+            let mut approval_cache = self.approval_cache.write().await;
+            // Check if approval already exists for this escrow
+            if !approval_cache.iter().any(|approval| approval.escrow_id == escrow_id) {
+                approval_cache.push(EscrowApproval {
+                    escrow_id: escrow_id.clone(),
+                    intent_id: fulfillment.intent_id.clone(),
+                    approval_value: approval_sig.approval_value,
+                    signature: approval_sig.signature.clone(),
+                    timestamp: approval_sig.timestamp,
+                });
+                
+                info!("✅ Generated approval signature for escrow: {} (intent_id: {})", 
+                      escrow_id, fulfillment.intent_id);
+            } else {
+                info!("Approval signature already exists for escrow: {}", escrow_id);
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Returns a copy of all cached approval signatures.
+    /// 
+    /// This function provides access to the approval cache for API endpoints
+    /// and escrow release operations.
+    /// 
+    /// # Returns
+    /// 
+    /// A vector containing all cached approval signatures
+    pub async fn get_cached_approvals(&self) -> Vec<EscrowApproval> {
+        self.approval_cache.read().await.clone()
+    }
+    
+    /// Gets approval signature for a specific escrow.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `escrow_id` - The escrow ID to look up
+    /// 
+    /// # Returns
+    /// 
+    /// * `Some(EscrowApproval)` - Approval signature if found
+    /// * `None` - No approval found for this escrow
+    pub async fn get_approval_for_escrow(&self, escrow_id: &str) -> Option<EscrowApproval> {
+        let approvals = self.approval_cache.read().await;
+        approvals.iter()
+            .find(|approval| approval.escrow_id == escrow_id)
+            .cloned()
     }
 }

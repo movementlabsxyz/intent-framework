@@ -151,8 +151,21 @@ impl ApiServer {
         // Get cached events endpoint - returns all monitored events
         let events = warp::path("events")
             .and(warp::get())
-            .and(with_monitor(monitor))
+            .and(with_monitor(monitor.clone()))
             .and_then(get_events_handler);
+        
+        // Get approvals endpoint - returns all cached approval signatures
+        let approvals = warp::path("approvals")
+            .and(warp::get())
+            .and(with_monitor(monitor.clone()))
+            .and_then(get_approvals_handler);
+        
+        // Get approval for specific escrow endpoint
+        let approval_by_escrow = warp::path("approvals")
+            .and(warp::path::param())
+            .and(warp::get())
+            .and(with_monitor(monitor))
+            .and_then(get_approval_by_escrow_handler);
         
         // Create approval signature endpoint - creates approval/rejection signatures
         let approval = warp::path("approval")
@@ -168,7 +181,7 @@ impl ApiServer {
             .and_then(get_public_key_handler);
         
         // Combine all routes
-        health.or(events).or(approval).or(public_key)
+        health.or(events).or(approvals).or(approval_by_escrow).or(approval).or(public_key)
     }
 }
 
@@ -196,19 +209,22 @@ async fn get_events_handler(
     let intent_events = monitor.get_cached_events().await;
     let escrow_events = monitor.get_cached_escrow_events().await;
     let fulfillment_events = monitor.get_cached_fulfillment_events().await;
+    let approvals = monitor.get_cached_approvals().await;
     
-    // Return intent, escrow, and fulfillment events in a combined structure
+    // Return intent, escrow, fulfillment events, and approvals in a combined structure
     #[derive(Debug, Serialize)]
     struct CombinedEvents {
         intent_events: Vec<crate::monitor::IntentEvent>,
         escrow_events: Vec<crate::monitor::EscrowEvent>,
         fulfillment_events: Vec<crate::monitor::FulfillmentEvent>,
+        approvals: Vec<crate::monitor::EscrowApproval>,
     }
     
     let combined = CombinedEvents {
         intent_events,
         escrow_events,
         fulfillment_events,
+        approvals,
     };
     
     Ok(warp::reply::json(&ApiResponse {
@@ -216,6 +232,65 @@ async fn get_events_handler(
         data: Some(combined),
         error: None,
     }))
+}
+
+/// Handler for the approvals endpoint.
+/// 
+/// This function retrieves all cached approval signatures from the event monitor
+/// and returns them as a JSON response.
+/// 
+/// # Arguments
+/// 
+/// * `monitor` - The event monitor instance
+/// 
+/// # Returns
+/// 
+/// * `Ok(warp::Reply)` - JSON response with cached approvals
+/// * `Err(warp::Rejection)` - Failed to retrieve approvals
+async fn get_approvals_handler(
+    monitor: Arc<RwLock<EventMonitor>>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let monitor = monitor.read().await;
+    let approvals = monitor.get_cached_approvals().await;
+    
+    Ok(warp::reply::json(&ApiResponse {
+        success: true,
+        data: Some(approvals),
+        error: None,
+    }))
+}
+
+/// Handler for getting approval by escrow ID.
+/// 
+/// This function retrieves the approval signature for a specific escrow
+/// and returns it as a JSON response.
+/// 
+/// # Arguments
+/// 
+/// * `escrow_id` - The escrow ID to look up
+/// * `monitor` - The event monitor instance
+/// 
+/// # Returns
+/// 
+/// * `Ok(warp::Reply)` - JSON response with approval signature
+/// * `Err(warp::Rejection)` - Failed to retrieve approval
+async fn get_approval_by_escrow_handler(
+    escrow_id: String,
+    monitor: Arc<RwLock<EventMonitor>>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let monitor = monitor.read().await;
+    match monitor.get_approval_for_escrow(&escrow_id).await {
+        Some(approval) => Ok(warp::reply::json(&ApiResponse {
+            success: true,
+            data: Some(approval),
+            error: None,
+        })),
+        None => Ok(warp::reply::json(&ApiResponse::<crate::monitor::EscrowApproval> {
+            success: false,
+            data: None,
+            error: Some(format!("No approval found for escrow: {}", escrow_id)),
+        })),
+    }
 }
 
 /// Handler for the approval endpoint.

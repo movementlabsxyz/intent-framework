@@ -1,151 +1,67 @@
 ## Cross-chain Oracle Intents: Implementation Plan
 
-### Other TODOs
+## Overview
 
-- can we make some of the sh scripts as rust bin
-- **Balance Discrepancy Investigation**
-  - Bob's balance decrease doesn't match expected amount when fulfilling intent with 100M tokens
-  - Event confirms `provided_amount: 100,000,000` was transferred
-  - But Bob's balance only decreases by 99,888,740 (less than 100M, not 100M + gas)
-  - Possible causes:
-    - Coin vs FA balance relationship on Aptos (coin balance shown vs FA transfers)
-    - Initial balance check timing/state issue
-    - Gas fees deducted from transfer amount (unusual behavior)
-  - Need to investigate how `aptos account balance` relates to FungibleAsset operations and why loss < transfer amount
-  - Location: `move-intent-framework/tests/cross_chain/submit-cross-chain-intent.sh`
+This plan defines the cross-chain intent flow and supporting verifier needed to move assets from a connected chain to a hub chain under verifiable conditions.
 
-### Goals
-- Enable oracle-backed intents to be created on Chain A and fulfilled on Chain B, with settlement and closure on Chain A once fulfillment is confirmed.
-- Provide an automated service that monitors vault state on Chain B and submits oracle attestations on Chain A.
-- Add an end-to-end integration test that spins up two local Aptos nodes, executes the cross-chain flow, and asserts correctness.
-  - We will run two validator nodes (one per chain). Public full nodes (PFNs) are optional and not required for this test.
-
-### Integration Test Placement
-- Location: `move-intent-framework/tests/cross_chain/`
-  - Rationale: Keeps integration flows distinct from unit-style Move tests in `move-intent-framework/tests/` while living close to the Move package. The folder will contain test orchestration scripts (TypeScript or Python), config, and fixtures.
-- Artifacts:
-  - `move-intent-framework/tests/cross_chain/README.md` – how to run locally
-  - `move-intent-framework/tests/cross_chain/test_cross_chain_oracle_intent.(ts|py)` – orchestrates the flow
-  - `move-intent-framework/tests/cross_chain/docker-compose.yml` (optional) – if we dockerize nodes
-  - `move-intent-framework/tests/cross_chain/env/` – node configs, accounts, keys
-
-### Environment Setup (Two Aptos Validator Nodes)
-- Two independent localnet nodes (Chain A and Chain B). We will parameterize via distinct genesis/configs and unique ports.
-- Steps (high-level; details to follow once node instructions are provided):
-  1. Start Chain A node.
-  2. Start Chain B node.
-  3. Fund test accounts on both chains and publish the `aptos-intent` Move package if needed (or use existing published modules if baked into genesis).
-  4. Configure RPC endpoints in test runner and monitoring service.
-
-### Repository Integration: Movement Aptos-Core as Plain Clone
-- Use a plain clone of `aptos-core` (branch `l1-migration`) with commit pinning for reproducibility.
-
-Repository layout:
-- Docker-based localnets only; no local `aptos-core` checkout required.
-
-Setup:
-
-```bash
-# Use testing-infra Docker scripts; no aptos-core clone needed
-./testing-infra/setup-docker/setup-docker-chain.sh
-```
-
-Build enforcement:
-- `move-intent-framework/Move.toml` includes a build hook that runs `testing-infra/external/verify-aptos-pin.sh`
-- This ensures `aptos move test` fails if the wrong commit is checked out
-- Build hook runs automatically before any Move compilation/testing
-
-Use Docker-based localnets for multi-chain testing:
-
-```bash
-# Single chain
-./testing-infra/setup-docker/setup-docker-chain.sh
-
-# Multi-chain (two independent localnets)
-./testing-infra/setup-docker/setup-dual-chains.sh
-```
-
- 
-
- 
-
-### Cross-chain Flow (Happy Path)
-1. [Hub Chain] Alice creates regular (non-oracle) intent on Hub Chain requesting tokens.
-2. [Connected Chain] Alice creates escrow with tokens locked (with verifier public key), linking to the hub intent via intent_id.
-3. [Verifier Service] Monitoring service observes both chains:
-   - Detects intent creation on Hub Chain
-   - Detects escrow creation on Connected Chain  
-   - Validates cross-chain conditions match (amounts, metadata, expiry, non-revocability)
-4. [Hub Chain] Bob (solver) fulfills the intent on Hub Chain without verifier signature (regular fulfillment)
-5. [Hub Chain] Intent transitions to fulfilled state on Hub Chain
-6. [Verifier Service] Verifier detects solver fulfilled the hub intent, validates conditions, then signs approval signature for escrow release
-7. [Connected Chain] Escrow is released with the verifier approval signature (auto-released by test harness)
+- **Hub chain**: hosts regular (non-oracle) request intents from users (e.g., Alice).
+- Connected chain: holds escrows (oracle-based) that lock funds and reference the hub intent via a shared `intent_id`.
+- **Verifier**: observes hub intent creation and fulfillment plus connected-chain escrows, links them by `intent_id`, and produces an approval signature to release escrow after hub fulfillment is observed.
+- **Tooling**: Docker localnets for two chains, Move modules for intents/escrows, and a Rust verifier with REST API and auto-escrow-release integration script.
 
 **Note**: Hub Chain = Chain A (intent creation). Connected Chain = Chain B (escrow/vault). Verifier observes hub fulfillment first, then approves escrow release.
 
-### Monitoring/Oracle Service Design (Trusted Verifier)
-- Responsibilities:
-  - Watch Hub Chain (Chain A) for intent creation events
-  - Watch Connected Chain (Chain B) for escrow creation events
-  - Validate that hub intent and escrow are properly linked via intent_id
-  - Check that cross-chain conditions match (amounts, metadata, expiry, non-revocalibility)
-  - Monitor when hub intent is fulfilled by solver
-  - After hub intent fulfillment, generate Ed25519 approval signature for escrow release
-  - Expose REST API for retrieval of verifier signatures and approvals
-  - Provide approvals used by the test harness to automatically submit `complete_escrow_from_apt` on the connected chain
-- Current Implementation:
-  - Rust service in `trusted-verifier/`
-  - Monitors both chains via polling
-  - Validates cross-chain conditions before approval
-  - Waits for hub intent fulfillment before approving escrow release
-  - Emits approval/rejection signatures via API
-  - Test orchestration script consumes approvals and auto-submits escrow release transaction
-- Interfaces:
-  - Config: RPC URLs for Chain A/B, accounts/keys, polling intervals, filters.
-  - Inputs: intent-id on Chain A, vault address/collection on Chain B, satisfaction predicate.
-  - Outputs: transaction hashes on Chain A for attestation and close actions; logs/metrics.
-- Reliability:
-  - Idempotent submissions; retry with backoff.
-  - Persistence for last observed B state and A submission status.
-  - Observability: structured logs and optional metrics.
 
-### Test Orchestration Steps
-1. Boot Hub Chain (Chain A) and Connected Chain (Chain B) using Docker.
-2. Deploy `aptos-intent` modules to both chains via `setup-and-deploy.sh`.
-3. Initialize/fund Alice and Bob test accounts on both chains.
-4. **[Hub Chain]** Alice creates regular intent requesting tokens.
-5. **[Connected Chain]** Alice creates escrow with tokens locked, linking to hub intent via intent_id.
-6. **[Verifier Service]** Start verifier service to monitor both chains.
-7. **[Verifier Service]** Verifier detects and validates both intent and escrow match conditions.
-8. **[Hub Chain]** Bob (solver) fulfills intent on Hub Chain (regular fulfillment, no verifier signature needed).
-9. **[Verifier Service]** Verifier detects hub intent was fulfilled and generates approval signature for escrow release.
-10. **[Connected Chain]** Test harness submits `complete_escrow_from_apt` using verifier approval (automatic release).
-11. Assert intent transitions to fulfilled state on Hub Chain.
-12. Assert escrow is released with verifier approval signature.
-13. Assert balances reflect expected movements on both chains (before/after checks).
+## Future Work
 
-### Success Criteria / Assertions
-- Intent on Hub Chain transitions through expected states: Created -> Fulfilled.
-- Escrow on Connected Chain remains locked until verifier approval.
-- Verifier validates cross-chain conditions before approval:
-  - intent_id matches between hub intent and escrow
-  - source_amount in escrow >= desired_amount in hub intent
-  - metadata matches
-  - expiry_time matches
-  - both intent and escrow are non-revocalible
-- Oracle signature is NOT required for fulfillment on Hub Chain (regular intent fulfillment).
-- Oracle signature IS required for escrow release on Connected Chain.
-- Auto-release path: Upon approval availability, escrow release transaction succeeds end-to-end.
-- Initial and final balances are printed and differences align with transfers and gas on each chain.
-- No orphaned or dangling reservations remain.
+### Testing
+1. Add a minimal cross-chain test runner under `tests/cross_chain`:
+  - Language: TypeScript (Aptos TS SDK) or Python (aptos-sdk)
+  - Inputs: hub/connected REST URLs, profiles/keys, deployed module addrs
+  - Flow: start from running Docker localnets → deploy modules → create intent (hub) → create escrow (connected) → start verifier → fulfill intent (hub) → await approval → release escrow (connected)
+  - Assertions: event linkage via `intent_id`, escrow released, before/after balances, no rejected intents
+  - Outputs: JSON summary (tx hashes, intent_id, escrow_id, balance diffs)
+2. investigate Balance Discrepancy
+   - Bob's balance decrease doesn't match expected amount when fulfilling intent with 100M tokens
+   - Event confirms `provided_amount: 100,000,000` was transferred
+   - But Bob's balance only decreases by 99,888,740 (less than 100M, not 100M + gas)
+   - Possible causes: Coin vs FA balance accounting; initial capture timing; gas treatment
+   - Investigate how `aptos account balance` relates to FA operations and why loss < transfer amount
+   - Location: `move-intent-framework/tests/cross_chain/submit-cross-chain-intent.sh`
+3. Convert shell scripts into Rust binaries where practical
 
-### Implementation Notes
-- We already have oracle intent Move code; prefer using its public entry points and events for assertions.
-- Start with a polling-based monitor; add event/websocket subscriptions later if available.
-- Keep keys and secrets in test-only configs; never commit real secrets.
+### test-infra
 
-### Next Steps
-- Finalize node bootstrapping instructions (ports, genesis, module publish) for both chains.
-- Scaffold `tests/cross_chain` with a minimal runner (TypeScript using `aptos` SDK or Python using `aptos-sdk`), plus configuration.
-- Implement the monitoring/oracle service as a simple CLI/daemon colocated in `tests/cross_chain` for now; later extract to `tools/oracle-service` if needed.
+### Documentation
+1. Finalize node bootstrapping instructions (ports, genesis, module publish) for both chains
+
+### Move-intent-framework
+
+### Trusted Verifier
+
+1. Add end-to-end tests
+   - Test complete cross-chain scenarios
+   - Test with multiple intents
+   - Test timeout scenarios
+2. Performance testing
+   - Load testing the API
+   - Stress testing event monitoring
+   - Memory usage monitoring
+3. Verifier documentation
+   - Add docs under `trusted-verifier/docs/` (overview, setup/usage, API)
+   - Link from root and verifier plans
+4. Plan/documentation cleanup
+   - Fix typos in root `plan.md` (non-revocable/non-revocability)
+   - Cross-link new verifier docs
+5. Balance discrepancy investigation (coordinate with scripts)
+6. Validation hardening
+   - Add metadata and timeout checks
+   - Support multiple concurrent intents robustly
+7. Add "ok" endpoint for a given `intent_id` to signal escrow is satisfied so solver can commit on hub
+8. Correct test fixture requiring 1 token; should be 0
+9. Improve event discovery (currently polls known accounts via `/v1/accounts/{address}/transactions`)
+   - Incomplete coverage (misses unlisted accounts)
+   - Manual configuration (requires prelisting emitters)
+   - Not scalable (unsuitable for many users)
+10. Implement the monitoring/oracle service as a simple CLI/daemon colocated in `tests/cross_chain` for now; later extract to `tools/oracle-service` if needed
 

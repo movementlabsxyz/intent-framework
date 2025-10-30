@@ -41,14 +41,13 @@
 - Use a plain clone of `aptos-core` (branch `l1-migration`) with commit pinning for reproducibility.
 
 Repository layout:
-- Path: `testing-infra/external/movement-aptos-core` (external dependency; Movement fork of aptos-core)
-- Lock file: `testing-infra/external/movement-aptos-core.lock` (pinned commit SHA)
-- Verification: `testing-infra/external/verify-aptos-pin.sh` (enforces correct commit)
+- Docker-based localnets only; no local `aptos-core` checkout required.
 
-Setup and pinning:
+Setup:
 
 ```bash
-bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
+# Use testing-infra Docker scripts; no aptos-core clone needed
+./testing-infra/setup-docker/setup-docker-chain.sh
 ```
 
 Build enforcement:

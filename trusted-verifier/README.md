@@ -47,8 +47,6 @@ A trusted verifier service that monitors escrow deposit events and triggers acti
 
 **Aptos Integration**: This project uses a pinned version of `aptos-core` for stable Rust compatibility:
 - **Pinned to**: `aptos-framework-v1.37.0` (SHA: `a10a3c02f16a2114ad065db6b4a525f0382e96a6`)
-- **Verification**: Run `./testing-infra/external/verify-aptos-pin.sh` to ensure pin integrity
-- **Updates**: Use `./testing-infra/external/triage-aptos-pin.sh` to find compatible newer versions
 
 ## Overview
 

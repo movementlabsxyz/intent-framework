@@ -13,7 +13,7 @@ echo "======================"
 echo "🔍 Checking if Chain A is running..."
 if ! curl -s http://127.0.0.1:8010/v1/ledger/info > /dev/null; then
     echo "❌ Error: Chain A is not running on port 8010"
-    echo "Please run ./infra/setup-chain-a.sh first"
+    echo "Please run ./testing-infra/setup-chain-a.sh first"
     exit 1
 fi
 
@@ -23,7 +23,7 @@ echo "✅ Chain A is running"
 echo "🔍 Checking if faucet is running..."
 if ! curl -s http://127.0.0.1:8011/healthy > /dev/null; then
     echo "❌ Error: Faucet is not running on port 8011"
-    echo "Please run ./infra/setup-chain-a.sh first"
+    echo "Please run ./testing-infra/setup-chain-a.sh first"
     exit 1
 fi
 

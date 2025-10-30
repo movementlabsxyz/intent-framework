@@ -2,8 +2,8 @@
 set -euo pipefail
 
 REPO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../../.. && pwd)"
-AP_DIR="$REPO_ROOT_DIR/infra/external/aptos-core"
-LOCK_FILE="$REPO_ROOT_DIR/infra/external/aptos-core.lock"
+AP_DIR="$REPO_ROOT_DIR/testing-infra/external/aptos-core"
+LOCK_FILE="$REPO_ROOT_DIR/testing-infra/external/aptos-core.lock"
 
 echo "[setup] Repo root: $REPO_ROOT_DIR"
 
@@ -25,7 +25,7 @@ if [ -d "$AP_DIR/.git" ]; then
   git -C "$AP_DIR" submodule update --init --recursive
 else
   echo "[setup] Cloning external/aptos-core..."
-  mkdir -p "$REPO_ROOT_DIR/infra/external"
+  mkdir -p "$REPO_ROOT_DIR/testing-infra/external"
   git clone https://github.com/aptos-labs/aptos-core.git "$AP_DIR"
   
   # Check if lock file exists and has a valid commit

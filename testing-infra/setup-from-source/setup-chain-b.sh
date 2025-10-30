@@ -12,11 +12,11 @@
 # 6. Starts the faucet service
 # 7. Tests both services
 # 8. Creates and funds alice-chain-b and bob-chain-b test accounts
-# 9. Ready for testing (run ./infra/test-chain-b.sh to test accounts and transfers)
+# 9. Ready for testing (run ./testing-infra/test-chain-b.sh to test accounts and transfers)
 
 set -e
 
-CHAIN_DIR="./infra/.aptos/chain-b"
+CHAIN_DIR="./testing-infra/.aptos/chain-b"
 NODE_CONFIG="$CHAIN_DIR/0/node.yaml"
 
 echo "🔧 Setting up Chain B..."
@@ -72,7 +72,7 @@ fi
 
 # Start Chain B manually
 echo "🚀 Starting Chain B on port 8020..."
-RUST_LOG=warn infra/external/aptos-core/target/release/aptos-node -f "$NODE_CONFIG" > "$CHAIN_DIR/node.log" 2>&1 &
+RUST_LOG=warn testing-infra/external/aptos-core/target/release/aptos-node -f "$NODE_CONFIG" > "$CHAIN_DIR/node.log" 2>&1 &
 NODE_PID=$!
 
 # Wait for node to start
@@ -81,7 +81,7 @@ sleep 10
 
 # Start Faucet Service
 echo "🚰 Starting Faucet Service on port 8021..."
-infra/external/aptos-core/target/release/aptos-faucet-service run-simple \
+testing-infra/external/aptos-core/target/release/aptos-faucet-service run-simple \
     --node-url http://127.0.0.1:8020 \
     --listen-port 8021 \
     --key-file-path "$CHAIN_DIR/mint.key" \

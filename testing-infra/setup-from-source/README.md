@@ -17,10 +17,10 @@ This setup provides:
 
 ```bash
 # Build Movement's aptos-core fork
-./infra/setup-from-source/build_aptos_from_source.sh
+./testing-infra/setup-from-source/build_aptos_from_source.sh
 ```
 
-**Build Output**: Binaries are created in `infra/external/aptos-core/target/release/`:
+**Build Output**: Binaries are created in `testing-infra/external/aptos-core/target/release/`:
 - `aptos-node` - Main Aptos node binary
 - `aptos-faucet-service` - Faucet service binary
 
@@ -28,19 +28,19 @@ This setup provides:
 
 ```bash
 # Setup Chain A (requires build step first)
-./infra/setup-from-source/setup-chain-a.sh
+./testing-infra/setup-from-source/setup-chain-a.sh
 
 # Setup Chain B  
-./infra/setup-from-source/setup-chain-b.sh
+./testing-infra/setup-from-source/setup-chain-b.sh
 
 # Test Chain A
-./infra/setup-from-source/test-chain-a.sh
+./testing-infra/setup-from-source/test-chain-a.sh
 ```
 
 ## Directory Structure
 
 ```
-infra/setup-from-source/
+testing-infra/setup-from-source/
 ├── build_aptos_from_source.sh  # Build Movement's aptos-core fork
 ├── setup-chain-a.sh            # Chain A setup script
 ├── setup-chain-b.sh            # Chain B setup script
@@ -83,7 +83,7 @@ Install required system packages:
 
 ```bash
 # Install system dependencies
-sudo apt install -y $(cat infra/setup-from-source/requirements.txt)
+sudo apt install -y $(cat testing-infra/setup-from-source/requirements.txt)
 ```
 
 ## Known Limitations

@@ -8,10 +8,10 @@
 # Purpose:
 # - The official aptos-sdk on crates.io is broken/yanked
 # - We need a stable, pinned version of aptos-core for the trusted-verifier
-# - This script finds compatible commits and updates infra/external/aptos-core.lock
+# - This script finds compatible commits and updates testing-infra/external/aptos-core.lock
 #
 # Usage:
-#   ./infra/external/triage-aptos-pin.sh
+#   ./testing-infra/external/triage-aptos-pin.sh
 #
 # What it does:
 # 1. Tests multiple Aptos framework versions (v1.35.0, v1.36.0, v1.37.0, etc.)
@@ -22,7 +22,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
-AP_DIR="$REPO_ROOT/infra/external/aptos-core"
+AP_DIR="$REPO_ROOT/testing-infra/external/aptos-core"
 
 log() { printf "%b\n" "$*"; }
 
@@ -86,8 +86,8 @@ if [ -n "${PICK:-}" ]; then
   GOOD_SHA=$(git rev-parse HEAD)
   echo "✅ picked $PICK ($GOOD_SHA)"
   cd "$REPO_ROOT"
-  echo "$GOOD_SHA" > infra/external/aptos-core.lock
-  "$REPO_ROOT/infra/external/verify-aptos-pin.sh"
+  echo "$GOOD_SHA" > testing-infra/external/aptos-core.lock
+  "$REPO_ROOT/testing-infra/external/verify-aptos-pin.sh"
 else
   echo "❌ no good pin found"
   exit 1

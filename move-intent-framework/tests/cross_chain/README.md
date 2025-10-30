@@ -33,13 +33,13 @@ Use the modern Aptos CLI approach to set up both Chain A and Chain B.
 Use the automated single validator script for more control:
 1. **Chain A (Port 8080)**:
    ```bash
-   ./infra/single-validator/run_local_validator.sh
+   ./testing-infra/single-validator/run_local_validator.sh
    ```
 
 2. **Chain B (Port 8081)**:
    ```bash
    # Modify the script to use different ports, or run manually:
-   # Copy infra/single-validator/work/validator_node.yaml to chainB/
+   # Copy testing-infra/single-validator/work/validator_node.yaml to chainB/
    # Edit ports: 8080->8081, 6180->6182, etc.
    # Run: aptos-node -f chainB/validator_node.yaml
    ```

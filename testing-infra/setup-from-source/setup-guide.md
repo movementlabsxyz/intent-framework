@@ -13,7 +13,7 @@ Install required system packages:
 
 ```bash
 # Install system dependencies
-sudo apt install -y $(cat infra/setup-from-source/requirements.txt)
+sudo apt install -y $(cat testing-infra/setup-from-source/requirements.txt)
 ```
 
 Required packages:
@@ -45,20 +45,20 @@ For running multiple chains in parallel with custom ports, use the manual setup 
 ### Quick Start
 ```bash
 # Setup Chain A (ports 8010/8011)
-./infra/setup-chain-a.sh
+./testing-infra/setup-chain-a.sh
 
 # Test Chain A
-./infra/test-chain-a.sh
+./testing-infra/test-chain-a.sh
 ```
 
 ### Manual Setup Process
 1. **Generate config files** (one-time):
    ```bash
-   aptos node run-localnet --with-faucet --force-restart --assume-yes --test-dir ./infra/.aptos/chain-a
+   aptos node run-localnet --with-faucet --force-restart --assume-yes --test-dir ./testing-infra/.aptos/chain-a
    # Stop immediately after config generation (Ctrl+C)
    ```
 
-2. **Modify ports** in `./infra/.aptos/chain-a/0/node.yaml`:
+2. **Modify ports** in `./testing-infra/.aptos/chain-a/0/node.yaml`:
    ```yaml
    api:
      address: "0.0.0.0:8010"  # Change from 8080
@@ -70,15 +70,15 @@ For running multiple chains in parallel with custom ports, use the manual setup 
 
 3. **Start validator**:
    ```bash
-   RUST_LOG=warn infra/external/aptos-core/target/release/aptos-node -f ./infra/.aptos/chain-a/0/node.yaml
+   RUST_LOG=warn testing-infra/external/aptos-core/target/release/aptos-node -f ./testing-infra/.aptos/chain-a/0/node.yaml
    ```
 
 4. **Start faucet**:
    ```bash
-   infra/external/aptos-core/target/release/aptos-faucet-service run-simple \
+   testing-infra/external/aptos-core/target/release/aptos-faucet-service run-simple \
      --node-url http://127.0.0.1:8010 \
      --listen-port 8011 \
-     --key-file-path ./infra/.aptos/chain-a/mint.key \
+     --key-file-path ./testing-infra/.aptos/chain-a/mint.key \
      --chain-id 4
    ```
 
@@ -91,7 +91,7 @@ For running multiple chains in parallel with custom ports, use the manual setup 
 ### Automated Scripts
 The manual setup includes automated scripts for reliability:
 
-**`infra/setup-chain-a.sh`** - Complete Chain A setup:
+**`testing-infra/setup-chain-a.sh`** - Complete Chain A setup:
 - Cleans up existing processes and data
 - Generates fresh config files
 - Modifies ports to 8010/8011
@@ -99,7 +99,7 @@ The manual setup includes automated scripts for reliability:
 - Creates and funds test accounts (alice, bob)
 - Verifies initial balances
 
-**`infra/test-chain-a.sh`** - Dedicated testing:
+**`testing-infra/test-chain-a.sh`** - Dedicated testing:
 - Checks if Chain A is running
 - Creates fresh test accounts
 - Tests token transfers between accounts
@@ -109,10 +109,10 @@ The manual setup includes automated scripts for reliability:
 **Usage:**
 ```bash
 # Setup Chain A
-./infra/setup-chain-a.sh
+./testing-infra/setup-chain-a.sh
 
 # Test Chain A (can run multiple times)
-./infra/test-chain-a.sh
+./testing-infra/test-chain-a.sh
 ```
 
 **Benefits:**
@@ -261,11 +261,11 @@ This includes:
   ```bash
   bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
   ```
-- Builds/tests run a verification hook via `move-intent-framework/Move.toml` that checks `infra/external/aptos-core` HEAD against the lock file `infra/external/aptos-core.lock`.
+- Builds/tests run a verification hook via `move-intent-framework/Move.toml` that checks `testing-infra/external/aptos-core` HEAD against the lock file `testing-infra/external/aptos-core.lock`.
   - If they differ, the build exits non-zero with a clear message.
 - To update the pinned commit intentionally:
   ```bash
-  git -C infra/external/aptos-core rev-parse HEAD > infra/external/aptos-core.lock
+  git -C testing-infra/external/aptos-core rev-parse HEAD > testing-infra/external/aptos-core.lock
   ```
   Commit the updated lock file.
 

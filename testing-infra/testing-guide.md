@@ -113,7 +113,7 @@ pkill -f faucet || true
 rm -rf ~/.aptos/ .aptos/
 
 # 2. Start local testnet (Docker or manual)
-# Docker: ./infra/setup-docker/setup-docker-chain.sh
+# Docker: ./testing-infra/setup-docker/setup-docker-chain.sh
 # Manual: aptos node run-localnet --with-faucet --force-restart --assume-yes
 
 # 3. Create Alice account (non-interactive)

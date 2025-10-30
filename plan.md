@@ -42,9 +42,9 @@
 - Use a plain clone of `aptos-core` (branch `l1-migration`) with commit pinning for reproducibility.
 
 Repository layout:
-- Path: `infra/external/movement-aptos-core` (external dependency; Movement fork of aptos-core)
-- Lock file: `infra/external/movement-aptos-core.lock` (pinned commit SHA)
-- Verification: `infra/external/verify-aptos-pin.sh` (enforces correct commit)
+- Path: `testing-infra/external/movement-aptos-core` (external dependency; Movement fork of aptos-core)
+- Lock file: `testing-infra/external/movement-aptos-core.lock` (pinned commit SHA)
+- Verification: `testing-infra/external/verify-aptos-pin.sh` (enforces correct commit)
 
 Setup and pinning:
 
@@ -53,19 +53,19 @@ Setup and pinning:
 bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
 
 # Manual setup
-git clone --branch l1-migration https://github.com/movementlabsxyz/aptos-core.git infra/external/movement-aptos-core
-git -C infra/external/movement-aptos-core submodule update --init --recursive
-git -C infra/external/movement-aptos-core rev-parse HEAD > infra/external/movement-aptos-core.lock
+git clone --branch l1-migration https://github.com/movementlabsxyz/aptos-core.git testing-infra/external/movement-aptos-core
+git -C testing-infra/external/movement-aptos-core submodule update --init --recursive
+git -C testing-infra/external/movement-aptos-core rev-parse HEAD > testing-infra/external/movement-aptos-core.lock
 ```
 
 Build enforcement:
-- `move-intent-framework/Move.toml` includes a build hook that runs `infra/external/verify-aptos-pin.sh`
+- `move-intent-framework/Move.toml` includes a build hook that runs `testing-infra/external/verify-aptos-pin.sh`
 - This ensures `aptos move test` fails if the wrong commit is checked out
 - Build hook runs automatically before any Move compilation/testing
 
 Run a single local validator using the automated script:
 ```bash
-./infra/single-validator/run_local_validator.sh
+./testing-infra/single-validator/run_local_validator.sh
 ```
 
 #### Automated Node Setup (Current Implementation)
@@ -73,16 +73,16 @@ The single validator setup is now fully automated:
 
 ```bash
 # Single validator (Chain A)
-./infra/single-validator/run_local_validator.sh
+./testing-infra/single-validator/run_local_validator.sh
 
 # For Chain B, modify ports in validator_node.yaml and run manually
 # Or extend the script to support multiple validators
 ```
 
 Key files created:
-- `infra/single-validator/work/validator-identity.yaml` - Combined validator identity with all keys
-- `infra/single-validator/work/validator_node.yaml` - Configured node config
-- `infra/single-validator/work/data/` - Genesis files and validator data
+- `testing-infra/single-validator/work/validator-identity.yaml` - Combined validator identity with all keys
+- `testing-infra/single-validator/work/validator_node.yaml` - Configured node config
+- `testing-infra/single-validator/work/data/` - Genesis files and validator data
 
 The script handles:
 1. Cloning/updating Movement aptos-core

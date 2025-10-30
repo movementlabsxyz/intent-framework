@@ -2,8 +2,8 @@
 set -euo pipefail
 
 REPO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)"
-LOCK_FILE="$REPO_ROOT_DIR/infra/external/aptos-core.lock"
-AP_DIR="$REPO_ROOT_DIR/infra/external/aptos-core"
+LOCK_FILE="$REPO_ROOT_DIR/testing-infra/external/aptos-core.lock"
+AP_DIR="$REPO_ROOT_DIR/testing-infra/external/aptos-core"
 
 if [ ! -f "$LOCK_FILE" ]; then
   echo "[verify] Lock file missing: $LOCK_FILE" >&2

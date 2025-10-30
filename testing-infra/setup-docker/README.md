@@ -7,16 +7,16 @@ This directory contains Docker-based setups for running Aptos localnet, providin
 ### Single Chain Setup
 ```bash
 # Start a single Aptos localnet
-./infra/setup-docker/setup-docker-chain.sh
+./testing-infra/setup-docker/setup-docker-chain.sh
 ```
 
 ### Dual Chain Setup
 ```bash
 # Start two independent Aptos chains for cross-chain testing
-./infra/setup-docker/setup-dual-chains.sh
+./testing-infra/setup-docker/setup-dual-chains.sh
 
 # Stop both chains when done
-./infra/setup-docker/stop-dual-chains.sh
+./testing-infra/setup-docker/stop-dual-chains.sh
 ```
 
 ## Single Chain Setup
@@ -38,13 +38,13 @@ This setup follows the single-validator approach with `aptos node run-localnet -
 ### Management
 ```bash
 # Stop the localnet
-docker-compose -f infra/setup-docker/docker-compose.yml down
+docker-compose -f testing-infra/setup-docker/docker-compose.yml down
 
 # View logs
-docker-compose -f infra/setup-docker/docker-compose.yml logs -f
+docker-compose -f testing-infra/setup-docker/docker-compose.yml logs -f
 
 # Restart
-docker-compose -f infra/setup-docker/docker-compose.yml restart
+docker-compose -f testing-infra/setup-docker/docker-compose.yml restart
 ```
 
 ## Dual Chain Setup
@@ -68,15 +68,15 @@ Perfect for testing cross-chain interactions, bridge protocols, and multi-chain 
 ### Management
 ```bash
 # Stop both chains (recommended)
-./infra/setup-docker/stop-dual-chains.sh
+./testing-infra/setup-docker/stop-dual-chains.sh
 
 # Stop individual chains
-docker-compose -f infra/setup-docker/docker-compose.yml down
-docker-compose -f infra/setup-docker/docker-compose-chain2.yml down
+docker-compose -f testing-infra/setup-docker/docker-compose.yml down
+docker-compose -f testing-infra/setup-docker/docker-compose-chain2.yml down
 
 # View logs
-docker-compose -f infra/setup-docker/docker-compose.yml logs -f
-docker-compose -f infra/setup-docker/docker-compose-chain2.yml logs -f
+docker-compose -f testing-infra/setup-docker/docker-compose.yml logs -f
+docker-compose -f testing-infra/setup-docker/docker-compose-chain2.yml logs -f
 ```
 
 ## Files
@@ -133,7 +133,7 @@ Run the complete Alice and Bob account testing script:
 
 ```bash
 # Test account creation, funding, and transfers
-./infra/setup-docker/test-alice-bob.sh
+./testing-infra/setup-docker/test-alice-bob.sh
 ```
 
 This script will:

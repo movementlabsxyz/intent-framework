@@ -1,5 +1,5 @@
-infra/external/aptos-core/
-infra/external/movement-aptos-core/
+testing-infra/external/aptos-core/
+testing-infra/external/movement-aptos-core/
 
-infra/single-validator/work/data/
-infra/.aptos/
+testing-infra/single-validator/work/data/
+testing-infra/.aptos/

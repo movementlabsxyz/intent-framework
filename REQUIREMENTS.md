@@ -65,7 +65,7 @@ The system is designed with the following principles:
 - **Security First**: Escrow operations require non-revocable intents; witness system prevents condition bypass
 - **Modular Design**: Clear separation between generic framework and concrete implementations
 
-## 3. Functional Requirements
+## 3. Functional Requirements and Data Structures
 
 This section specifies the functional capabilities and behaviors that the system must support, including the operations it must perform, the features it must provide, and how it must respond to user actions and system events.
 

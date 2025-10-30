@@ -106,7 +106,7 @@ The script handles:
 4. [Hub Chain] Bob (solver) fulfills the intent on Hub Chain without verifier signature (regular fulfillment)
 5. [Hub Chain] Intent transitions to fulfilled state on Hub Chain
 6. [Verifier Service] Verifier detects solver fulfilled the hub intent, validates conditions, then signs approval signature for escrow release
-7. [Connected Chain] Escrow can now be released with verifier approval signature
+7. [Connected Chain] Escrow is released with the verifier approval signature (auto-released by test harness)
 
 **Note**: Hub Chain = Chain A (intent creation). Connected Chain = Chain B (escrow/vault). Verifier observes hub fulfillment first, then approves escrow release.
 
@@ -118,13 +118,15 @@ The script handles:
   - Check that cross-chain conditions match (amounts, metadata, expiry, non-revocalibility)
   - Monitor when hub intent is fulfilled by solver
   - After hub intent fulfillment, generate Ed25519 approval signature for escrow release
-  - Expose REST API for retrieval of verifier signatures
+  - Expose REST API for retrieval of verifier signatures and approvals
+  - Provide approvals used by the test harness to automatically submit `complete_escrow_from_apt` on the connected chain
 - Current Implementation:
   - Rust service in `trusted-verifier/`
   - Monitors both chains via polling
   - Validates cross-chain conditions before approval
   - Waits for hub intent fulfillment before approving escrow release
   - Emits approval/rejection signatures via API
+  - Test orchestration script consumes approvals and auto-submits escrow release transaction
 - Interfaces:
   - Config: RPC URLs for Chain A/B, accounts/keys, polling intervals, filters.
   - Inputs: intent-id on Chain A, vault address/collection on Chain B, satisfaction predicate.
@@ -144,8 +146,10 @@ The script handles:
 7. **[Verifier Service]** Verifier detects and validates both intent and escrow match conditions.
 8. **[Hub Chain]** Bob (solver) fulfills intent on Hub Chain (regular fulfillment, no verifier signature needed).
 9. **[Verifier Service]** Verifier detects hub intent was fulfilled and generates approval signature for escrow release.
-10. Assert intent transitions to fulfilled state on Hub Chain.
-11. Assert escrow can be released with verifier approval signature.
+10. **[Connected Chain]** Test harness submits `complete_escrow_from_apt` using verifier approval (automatic release).
+11. Assert intent transitions to fulfilled state on Hub Chain.
+12. Assert escrow is released with verifier approval signature.
+13. Assert balances reflect expected movements on both chains (before/after checks).
 
 ### Success Criteria / Assertions
 - Intent on Hub Chain transitions through expected states: Created -> Fulfilled.
@@ -158,6 +162,8 @@ The script handles:
   - both intent and escrow are non-revocalible
 - Oracle signature is NOT required for fulfillment on Hub Chain (regular intent fulfillment).
 - Oracle signature IS required for escrow release on Connected Chain.
+- Auto-release path: Upon approval availability, escrow release transaction succeeds end-to-end.
+- Initial and final balances are printed and differences align with transfers and gas on each chain.
 - No orphaned or dangling reservations remain.
 
 ### Implementation Notes

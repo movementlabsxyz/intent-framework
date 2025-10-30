@@ -6,7 +6,7 @@
 //! - Data structures and validation logic
 
 use trusted_verifier::crypto::CryptoService;
-use trusted_verifier::config::Config;
+use super::build_test_config;
 
 // Crypto service tests
 
@@ -14,9 +14,10 @@ use trusted_verifier::config::Config;
 /// Why: Ensure each verifier instance has a unique cryptographic identity to prevent key collisions
 #[test]
 fn test_unique_key_generation() {
-    let config = Config::default();
-    let service1 = CryptoService::new(&config).unwrap();
-    let service2 = CryptoService::new(&config).unwrap();
+    let config1 = build_test_config();
+    let config2 = build_test_config();
+    let service1 = CryptoService::new(&config1).unwrap();
+    let service2 = CryptoService::new(&config2).unwrap();
     
     let public_key1 = service1.get_public_key();
     let public_key2 = service2.get_public_key();
@@ -29,7 +30,7 @@ fn test_unique_key_generation() {
 /// Why: Cryptographic signatures are the core security mechanism - must work correctly
 #[test]
 fn test_signature_creation_and_verification() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     // Create an approval signature
@@ -46,7 +47,7 @@ fn test_signature_creation_and_verification() {
 /// Why: Prevent signature replay attacks - signatures must be tied to specific messages
 #[test]
 fn test_signature_verification_fails_for_wrong_message() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     // Create signature for approval (value: 1)
@@ -63,7 +64,7 @@ fn test_signature_verification_fails_for_wrong_message() {
 /// Why: Approval and rejection must be cryptographically distinct to prevent confusion
 #[test]
 fn test_approval_and_rejection_signatures_differ() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     let approval_sig = service.create_approval_signature(true).unwrap();
@@ -79,7 +80,7 @@ fn test_approval_and_rejection_signatures_differ() {
 /// Why: Escrow operations require cryptographic authorization - signatures must be valid
 #[test]
 fn test_escrow_approval_signature() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     // Create escrow approval signature
@@ -96,7 +97,7 @@ fn test_escrow_approval_signature() {
 /// Why: Public key must remain constant for the same instance for external verification
 #[test]
 fn test_public_key_consistency() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     let public_key1 = service.get_public_key();
@@ -110,7 +111,7 @@ fn test_public_key_consistency() {
 /// Why: Timestamps enable replay attack prevention and audit trail for approval decisions
 #[test]
 fn test_signature_contains_timestamp() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     let signature_data = service.create_approval_signature(true).unwrap();
@@ -127,7 +128,7 @@ fn test_signature_contains_timestamp() {
 /// Why: Approval value (1) must be correct for downstream systems to authorize transactions
 #[test]
 fn test_approval_value_true() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     let sig = service.create_approval_signature(true).unwrap();
@@ -138,7 +139,7 @@ fn test_approval_value_true() {
 /// Why: Rejection value (0) must be correct to properly deny invalid transactions
 #[test]
 fn test_approval_value_false() {
-    let config = Config::default();
+    let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
     let sig = service.create_approval_signature(false).unwrap();

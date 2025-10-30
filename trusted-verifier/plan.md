@@ -120,3 +120,15 @@
    - Load testing the API
    - Stress testing event monitoring
    - Memory usage monitoring
+3. Verifier documentation
+   - Add docs under `trusted-verifier/docs/` (overview, setup/usage, API)
+   - Link from root and verifier plans
+4. Plan/documentation cleanup
+   - Fix typos in root `plan.md` (non-revocable/non-revocability)
+   - Cross-link new verifier docs
+5. Balance discrepancy investigation
+   - Investigate FA vs coin balances and initial capture timing
+   - Document findings and update scripts accordingly
+6. Validation hardening
+   - Add metadata and timeout checks
+   - Support multiple concurrent intents robustly

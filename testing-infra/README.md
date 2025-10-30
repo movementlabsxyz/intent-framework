@@ -1,34 +1,56 @@
 # Infrastructure Setup
 
-This directory contains infrastructure setup options for running Aptos chains for development and testing.
+This directory contains infrastructure setup for running chains for development and testing.
 
-## Shared Resources
+## Resources
 
-- **[Testing Guide](./testing-guide.md)** - Common testing and validation commands for both Docker and manual setups
+- [Testing Guide](./testing-guide.md) - Testing and validation commands
 
-## Setup Options
+## Setup
 
-### 🐳 Docker Setup 
-**Easy, isolated, and reproducible**
+- Platform: Linux (AMD64) only
+- Location: [`setup-docker/`](./setup-docker/)
+- Best for: Quick development, testing, CI/CD, multi-chain testing
+- Features: Fresh start every time, no system dependencies, dual-chain support
 
-⚠️ **Warning**: This script does not work on Apple Silicon Macs (M1/M2) - Linux AMD64 architecture only
+### Quick start
 
-- **Location**: [`setup-docker/`](./setup-docker/)
-- **Best for**: Quick development, testing, CI/CD, cross-chain testing
-- **Features**: Fresh start every time, no system dependencies, dual-chain support
-- **Platform**: Linux only (AMD64 architecture) - not compatible with Apple Silicon Macs
-- **Documentation**: [`setup-docker/README.md`](./setup-docker/README.md)
-- **Testing**: [`test-alice-bob.sh`](./setup-docker/test-alice-bob.sh) - Complete Alice and Bob account testing
-- **Dual Chain**: [`setup-dual-chains.sh`](./setup-docker/setup-dual-chains.sh) - Two independent chains for cross-chain testing
-- **Stop Dual Chain**: [`stop-dual-chains.sh`](./setup-docker/stop-dual-chains.sh) - Clean shutdown for both chains
+```bash
+# Single chain
+./testing-infra/setup-docker/setup-docker-chain.sh
 
-### 🔧 Manual Setup (From Source)
-**Full control and customization**
+# Single-chain quick test (accounts, funding, transfer)
+./testing-infra/setup-docker/test-alice-bob.sh
 
-⚠️ **Warning**: Cannot run multi-chain setup (port conflicts) - use Docker for dual-chain testing
+# Multi-chain (two independent localnets)
+./testing-infra/setup-docker/setup-dual-chains.sh
 
-- **Location**: [`setup-from-source/`](./setup-from-source/)
-- **Best for**: Custom configurations
-- **Features**: Single validator, full control
-- **Limitations**: Cannot run multi-chain (port conflicts), CLI funding issues
-- **Documentation**: [`setup-from-source/README.md`](./setup-from-source/README.md)
+# Stop both chains
+./testing-infra/setup-docker/stop-dual-chains.sh
+```
+
+### Endpoints
+
+- Chain 1: REST http://127.0.0.1:8080 • Faucet http://127.0.0.1:8081
+- Chain 2: REST http://127.0.0.1:8082 • Faucet http://127.0.0.1:8083
+
+### Management
+
+```bash
+# Single chain logs / stop / restart
+docker-compose -f testing-infra/setup-docker/docker-compose.yml logs -f
+docker-compose -f testing-infra/setup-docker/docker-compose.yml down
+docker-compose -f testing-infra/setup-docker/docker-compose.yml restart
+
+# Multi-chain logs / stop
+docker-compose -f testing-infra/setup-docker/docker-compose.yml logs -f
+docker-compose -f testing-infra/setup-docker/docker-compose-chain2.yml logs -f
+./testing-infra/setup-docker/stop-dual-chains.sh
+```
+
+## Setup with source code (deprecated)
+
+Manual "setup from source" was removed.
+
+- Last commit with manual setup: `5a8e453dfbaef22c513a5293169591f4d48c736f`
+- Reason: Could not support multi‑chain due to hard‑coded port conflicts.

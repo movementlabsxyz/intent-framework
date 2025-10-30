@@ -2,7 +2,6 @@
 
 ### Other TODOs
 
-- check if we can get rid of aptos-core subfolder for manual setup. we may not need this anymore.
 - can we make some of the sh scripts as rust bin
 - **Balance Discrepancy Investigation**
   - Bob's balance decrease doesn't match expected amount when fulfilling intent with 100M tokens
@@ -49,13 +48,7 @@ Repository layout:
 Setup and pinning:
 
 ```bash
-# Automated setup (recommended)
 bash move-intent-framework/tests/cross_chain/setup_aptos_core.sh
-
-# Manual setup
-git clone --branch l1-migration https://github.com/movementlabsxyz/aptos-core.git testing-infra/external/movement-aptos-core
-git -C testing-infra/external/movement-aptos-core submodule update --init --recursive
-git -C testing-infra/external/movement-aptos-core rev-parse HEAD > testing-infra/external/movement-aptos-core.lock
 ```
 
 Build enforcement:
@@ -63,34 +56,15 @@ Build enforcement:
 - This ensures `aptos move test` fails if the wrong commit is checked out
 - Build hook runs automatically before any Move compilation/testing
 
-Run a single local validator using the automated script:
-```bash
-./testing-infra/single-validator/run_local_validator.sh
-```
-
-#### Automated Node Setup (Current Implementation)
-The single validator setup is now fully automated:
+Use Docker-based localnets for multi-chain testing:
 
 ```bash
-# Single validator (Chain A)
-./testing-infra/single-validator/run_local_validator.sh
+# Single chain
+./testing-infra/setup-docker/setup-docker-chain.sh
 
-# For Chain B, modify ports in validator_node.yaml and run manually
-# Or extend the script to support multiple validators
+# Multi-chain (two independent localnets)
+./testing-infra/setup-docker/setup-dual-chains.sh
 ```
-
-Key files created:
-- `testing-infra/single-validator/work/validator-identity.yaml` - Combined validator identity with all keys
-- `testing-infra/single-validator/work/validator_node.yaml` - Configured node config
-- `testing-infra/single-validator/work/data/` - Genesis files and validator data
-
-The script handles:
-1. Cloning/updating Movement aptos-core
-2. Building aptos-node (with caching)
-3. Generating validator identity files
-4. Running `aptos genesis set-validator-configuration`
-5. Starting the validator node
-6. Waiting for REST API readiness
 
  
 

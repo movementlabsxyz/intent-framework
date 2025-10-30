@@ -7,14 +7,10 @@ This service monitors a hub chain and a connected chain, links intents and escro
 ```
 trusted-verifier/
 └── src/
-    ├── monitor/                  # polls both chains for module events and caches them (intents, escrows, fulfillments)
-    │   └── mod.rs                # cache + approval storage; exposed via API
-    ├── validator/                # minimal validation (linking by intent_id, non‑revocable checks); detailed checks deferred to Move
-    │   └── mod.rs                # cross-chain linking and safety checks
-    ├── crypto/                   # Ed25519 key handling, approval signature creation (message is BCS of approval_value)
-    │   └── mod.rs                # get public key, verify signatures
+    ├── monitor/                  # polls both chains for module events, cache + approval storage; exposed via API
+    ├── validator/                # validation (linking by intent_id, non‑revocable checks)
+    ├── crypto/                   # Ed25519 key handling, approval signature creation 
     ├── api/                      # REST endpoints for health, events, approvals, public key
-    │   └── mod.rs                # /health, /events, /approvals, /approval (POST), /public-key
     ├── aptos_client.rs           # REST client for chain RPC
     ├── config/mod.rs             # TOML config structures and loader
     ├── lib.rs                    # library entry

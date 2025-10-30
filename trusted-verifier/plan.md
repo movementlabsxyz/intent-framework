@@ -23,3 +23,4 @@
    - Add metadata and timeout checks
    - Support multiple concurrent intents robustly
 7. Verifier delivers an "ok" endpoint for a given intent_id signalling that the escrow to satisfy the request intent is satisfied. This gives the solver the knowledge that it can commit to the intent on the hub chain.
+8. one of the intents requires in one of the fields 1 token. this is a mistake and should be 0.

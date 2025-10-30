@@ -6,7 +6,7 @@ For information on the Move-part of the implementation, see the [move-intent-fra
 
 ## Requirements
 
-See the full system and product requirements in [REQUIREMENTS](REQUIREMENTS.md).
+See the product requirements in [requirements](docs/requirements.md).
 
 ## License
 

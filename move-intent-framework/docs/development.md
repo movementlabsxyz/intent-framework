@@ -29,7 +29,7 @@ This document covers development setup, testing, configuration, and dependencies
 
 Run all tests with:
 ```bash
-aptos move test --dev
+aptos move test --dev --named-addresses aptos_intent=0x123
 ```
 
 ### Test Structure
@@ -56,13 +56,13 @@ The test suite includes:
 
 ```bash
 # Run only intent tests
-aptos move test --dev --filter intent_tests
+aptos move test --dev --named-addresses aptos_intent=0x123 --filter intent_tests
 
 # Run only fungible asset tests
-aptos move test --dev --filter fa_tests
+aptos move test --dev --named-addresses aptos_intent=0x123 --filter fa_tests
 
 # Run only reservation tests
-aptos move test --dev --filter intent_reservation_tests
+aptos move test --dev --named-addresses aptos_intent=0x123 --filter intent_reservation_tests
 ```
 
 ## Configuration

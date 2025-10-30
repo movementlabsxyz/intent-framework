@@ -15,7 +15,6 @@ use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 use base64::{Engine as _, engine::general_purpose};
-use rand::Rng;
 
 use crate::config::Config;
 
@@ -69,16 +68,34 @@ impl CryptoService {
     /// 
     /// * `Ok(CryptoService)` - Successfully created crypto service
     /// * `Err(anyhow::Error)` - Failed to create crypto service
-    pub fn new(_config: &Config) -> Result<Self> {
-        // TODO: Load actual private key from config
-        // For now, generate a new key pair for development
-        let mut rng = rand::rngs::OsRng;
-        let mut secret_key_bytes = [0u8; 32];
-        rng.fill(&mut secret_key_bytes);
+    pub fn new(config: &Config) -> Result<Self> {
+        // Load private key from config
+        let private_key_b64 = &config.verifier.private_key;
+        let private_key_bytes = general_purpose::STANDARD.decode(private_key_b64)?;
+        
+        if private_key_bytes.len() != 32 {
+            return Err(anyhow::anyhow!("Invalid private key length: expected 32 bytes, got {}", private_key_bytes.len()));
+        }
+        
+        let secret_key_bytes: [u8; 32] = private_key_bytes.try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to convert private key to array"))?;
+        
         let signing_key = SigningKey::from_bytes(&secret_key_bytes);
         let verifying_key = signing_key.verifying_key();
         
-        info!("Crypto service initialized with new key pair");
+        // Verify public key matches config
+        let expected_public_key_b64 = &config.verifier.public_key;
+        let actual_public_key_b64 = general_purpose::STANDARD.encode(verifying_key.to_bytes());
+        
+        if actual_public_key_b64 != *expected_public_key_b64 {
+            return Err(anyhow::anyhow!(
+                "Public key mismatch: config has {}, but private key corresponds to {}",
+                expected_public_key_b64,
+                actual_public_key_b64
+            ));
+        }
+        
+        info!("Crypto service initialized with key pair from config");
         
         Ok(Self {
             signing_key,
@@ -103,8 +120,8 @@ impl CryptoService {
     pub fn create_approval_signature(&self, approve: bool) -> Result<ApprovalSignature> {
         let approval_value: u64 = if approve { 1 } else { 0 };
         
-        // Create signature over the approval value
-        let message = approval_value.to_le_bytes();
+        // Create signature over the approval value using BCS encoding (to match Move contract)
+        let message = bcs::to_bytes(&approval_value)?;
         let signature = self.signing_key.sign(&message);
         
         info!("Created {} signature for approval value: {}", 
@@ -134,8 +151,8 @@ impl CryptoService {
     pub fn create_escrow_approval_signature(&self, approve: bool) -> Result<ApprovalSignature> {
         let approval_value: u64 = if approve { 1 } else { 0 };
         
-        // Create signature over the approval value
-        let message = approval_value.to_le_bytes();
+        // Create signature over the approval value using BCS encoding (to match Move contract)
+        let message = bcs::to_bytes(&approval_value)?;
         let signature = self.signing_key.sign(&message);
         
         info!("Created {} signature for escrow completion", 

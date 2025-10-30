@@ -80,7 +80,7 @@ echo "   - Expiry time: $EXPIRY_TIME"
 DUMMY_INTENT_ID="0x0000000000000000000000000000000000000000000000000000000000000001"
 echo "   - Creating escrow intent using Alice's account..."
 aptos move run --profile alice-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --function-id "0x${CHAIN1_ADDRESS}::intent_as_escrow_apt::create_escrow_from_apt" \
     --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${DUMMY_INTENT_ID}"
 
 if [ $? -eq 0 ]; then
@@ -95,7 +95,7 @@ echo "🎯 Step 3: Creating escrow intent using Bob's account on Chain 1..."
 # Submit escrow intent using Bob's account on Chain 1
 echo "   - Creating escrow intent using Bob's account..."
 aptos move run --profile bob-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --function-id "0x${CHAIN1_ADDRESS}::intent_as_escrow_apt::create_escrow_from_apt" \
     --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${DUMMY_INTENT_ID}"
 
 if [ $? -eq 0 ]; then
@@ -110,7 +110,7 @@ echo "🎯 Step 4: Creating escrow intent using Alice's account on Chain 2..."
 # Submit escrow intent using Alice's account on Chain 2
 echo "   - Creating escrow intent using Alice's account..."
 aptos move run --profile alice-chain2 --assume-yes \
-    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_apt::create_escrow_from_apt" \
     --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${DUMMY_INTENT_ID}"
 
 if [ $? -eq 0 ]; then
@@ -125,7 +125,7 @@ echo "🎯 Step 5: Creating escrow intent using Bob's account on Chain 2..."
 # Submit escrow intent using Bob's account on Chain 2
 echo "   - Creating escrow intent using Bob's account..."
 aptos move run --profile bob-chain2 --assume-yes \
-    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow::create_escrow_from_apt" \
+    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_apt::create_escrow_from_apt" \
     --args "u64:1000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${DUMMY_INTENT_ID}"
 
 if [ $? -eq 0 ]; then

@@ -15,11 +15,11 @@ echo "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
 # Stop any existing Docker containers
 echo "🧹 Stopping any existing Docker containers..."
-docker-compose -f infra/setup-docker/docker-compose.yml down 2>/dev/null || true
+docker-compose -f testing-infra/single-chain/docker-compose.yml down 2>/dev/null || true
 
 # Start fresh Docker localnet
 echo "🚀 Starting fresh Docker Aptos localnet..."
-./infra/setup-docker/setup-docker-chain.sh
+./testing-infra/single-chain/setup-docker-chain.sh
 
 # Wait for services to be fully ready
 echo "⏳ Waiting for services to be fully ready..."
@@ -224,7 +224,7 @@ fi
 
 #echo ""
 #echo "🧹 Cleaning up Docker containers..."
-# docker-compose -f infra/setup-docker/docker-compose.yml down
+# docker-compose -f testing-infra/single-chain/docker-compose.yml down
 
 echo ""
 echo "🎯 Alice and Bob testing ended!"

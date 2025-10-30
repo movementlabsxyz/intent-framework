@@ -4,7 +4,7 @@
 //! without requiring external services.
 
 use trusted_verifier::monitor::{IntentEvent, EscrowEvent, FulfillmentEvent, EventMonitor};
-use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config};
+use super::build_test_config;
 
 // ============================================================================
 // TESTS
@@ -128,37 +128,4 @@ fn is_safe_for_escrow(event: &IntentEvent) -> bool {
     !event.revocable
 }
 
-/// Creates a test configuration for EventMonitor unit tests
-/// Why: Provide a minimal valid config structure for testing without external dependencies
-fn build_test_config() -> Config {
-    Config {
-        hub_chain: ChainConfig {
-            name: "hub".to_string(),
-            rpc_url: "http://127.0.0.1:18080".to_string(),
-            chain_id: 1,
-            intent_module_address: "0x1".to_string(),
-            escrow_module_address: None,
-            known_accounts: Some(vec!["0x1".to_string()]),
-        },
-        connected_chain: ChainConfig {
-            name: "connected".to_string(),
-            rpc_url: "http://127.0.0.1:18082".to_string(),
-            chain_id: 2,
-            intent_module_address: "0x2".to_string(),
-            escrow_module_address: Some("0x2".to_string()),
-            known_accounts: Some(vec!["0x2".to_string()]),
-        },
-        verifier: VerifierConfig {
-            private_key: "TEST_PRIVATE_KEY_BASE64".to_string(),
-            public_key: "TEST_PUBLIC_KEY_BASE64".to_string(),
-            polling_interval_ms: 1000,
-            validation_timeout_ms: 1000,
-        },
-        api: ApiConfig { 
-            host: "127.0.0.1".to_string(), 
-            port: 3999, 
-            cors_origins: vec![] 
-        },
-    }
-}
 

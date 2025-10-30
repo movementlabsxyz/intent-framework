@@ -5,16 +5,16 @@ echo "=========================="
 
 # Stop any existing containers
 echo "🧹 Stopping existing containers..."
-docker-compose -f infra/setup-docker/docker-compose.yml -p aptos-chain1 down 2>/dev/null || true
-docker-compose -f infra/setup-docker/docker-compose-chain2.yml -p aptos-chain2 down 2>/dev/null || true
+docker-compose -f testing-infra/single-chain/docker-compose.yml -p aptos-chain1 down 2>/dev/null || true
+docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down 2>/dev/null || true
 
 echo ""
 echo "🚀 Starting Chain 1 (ports 8080/8081)..."
-docker-compose -f infra/setup-docker/docker-compose.yml -p aptos-chain1 up -d
+docker-compose -f testing-infra/single-chain/docker-compose.yml -p aptos-chain1 up -d
 
 echo ""
 echo "🚀 Starting Chain 2 (ports 8082/8083)..."
-docker-compose -f infra/setup-docker/docker-compose-chain2.yml -p aptos-chain2 up -d
+docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 up -d
 
 echo ""
 echo "⏳ Waiting for both chains to start (this may take 2-3 minutes)..."
@@ -77,11 +77,11 @@ echo "     Faucet:          http://127.0.0.1:8083"
 
 echo ""
 echo "📋 Management Commands:"
-echo "   Stop Chain 1:    docker-compose -f infra/setup-docker/docker-compose.yml -p aptos-chain1 down"
-echo "   Stop Chain 2:    docker-compose -f infra/setup-docker/docker-compose-chain2.yml -p aptos-chain2 down"
-echo "   Stop Both:       ./infra/setup-docker/stop-dual-chains.sh"
-echo "   Logs Chain 1:    docker-compose -f infra/setup-docker/docker-compose.yml -p aptos-chain1 logs -f"
-echo "   Logs Chain 2:    docker-compose -f infra/setup-docker/docker-compose-chain2.yml -p aptos-chain2 logs -f"
+echo "   Stop Chain 1:    docker-compose -f testing-infra/single-chain/docker-compose.yml -p aptos-chain1 down"
+echo "   Stop Chain 2:    docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down"
+echo "   Stop Both:       ./testing-infra/multi-chain/stop-dual-chains.sh"
+echo "   Logs Chain 1:    docker-compose -f testing-infra/single-chain/docker-compose.yml -p aptos-chain1 logs -f"
+echo "   Logs Chain 2:    docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 logs -f"
 
 echo ""
 echo "🎉 Dual-chain setup complete!"

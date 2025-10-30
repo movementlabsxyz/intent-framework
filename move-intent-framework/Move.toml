@@ -6,12 +6,14 @@ authors = []
 [addresses]
 aptos_intent = "_"
 
-[dev-addresses]
-aptos_intent = "0x123"
-
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-framework.git"
-rev = "mainnet"
+rev = "a10a3c02f16a2114ad065db6b4a525f0382e96a6"
 subdir = "aptos-framework"
 
 [dev-dependencies]
+
+[dev-dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "a10a3c02f16a2114ad065db6b4a525f0382e96a6"
+subdir = "aptos-framework"

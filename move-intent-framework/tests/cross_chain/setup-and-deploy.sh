@@ -9,7 +9,7 @@ cd /home/ap/code/movement/intent-framework
 echo ""
 echo "🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts..."
 echo " ============================================="
-./infra/setup-docker/setup-dual-chains-and-test-alice-bob.sh
+./testing-infra/multi-chain/setup-dual-chains-and-test-alice-bob.sh
 
 if [ $? -ne 0 ]; then
     echo "❌ Failed to setup dual chains with Alice and Bob accounts"
@@ -40,7 +40,7 @@ CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account
 
 echo "   - Deploying to Chain 1 with address: $CHAIN1_ADDRESS"
 cd move-intent-framework
-aptos move publish --profile intent-account-chain1 --named-addresses aptos_intent=$CHAIN1_ADDRESS --assume-yes
+aptos move publish --dev --profile intent-account-chain1 --named-addresses aptos_intent=$CHAIN1_ADDRESS --assume-yes
 
 if [ $? -eq 0 ]; then
     echo "   ✅ Chain 1 deployment successful!"
@@ -57,7 +57,7 @@ CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account
 
 echo "   - Deploying to Chain 2 with address: $CHAIN2_ADDRESS"
 cd move-intent-framework
-aptos move publish --profile intent-account-chain2 --named-addresses aptos_intent=$CHAIN2_ADDRESS --assume-yes
+aptos move publish --dev --profile intent-account-chain2 --named-addresses aptos_intent=$CHAIN2_ADDRESS --assume-yes
 
 if [ $? -eq 0 ]; then
     echo "   ✅ Chain 2 deployment successful!"
@@ -93,7 +93,7 @@ echo "   Fund Chain 1 account:   curl -X POST \"http://127.0.0.1:8081/mint?addre
 echo "   Fund Chain 2 account:   curl -X POST \"http://127.0.0.1:8083/mint?address=<ADDRESS>&amount=100000000\""
 echo ""
 echo "📋 Useful commands:"
-echo "   Stop chains:     ./infra/setup-docker/stop-dual-chains.sh"
+echo "   Stop chains:     ./testing-infra/multi-chain/stop-dual-chains.sh"
 echo "   View Chain 1:    aptos config show-profiles --profile intent-account-chain1"
 echo "   View Chain 2:    aptos config show-profiles --profile intent-account-chain2"
 

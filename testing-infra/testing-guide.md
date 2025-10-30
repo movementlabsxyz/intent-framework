@@ -1,10 +1,10 @@
-# Aptos Localnet Testing Guide
+# Localnet Testing Guide
 
-This guide contains common testing and validation commands that work with both Docker and manual Aptos localnet setups.
+This guide contains testing and validation commands for Docker-based localnets.
 
-## Dual-Chain Testing
+## Multi-Chain Testing
 
-### Service Health Checks for Dual Chains
+### Service Health Checks for Multiple Chains
 ```bash
 # Chain 1 (ports 8080/8081)
 curl -s http://127.0.0.1:8080/v1/ledger/info
@@ -15,7 +15,7 @@ curl -s http://127.0.0.1:8082/v1/ledger/info
 curl -s http://127.0.0.1:8083/
 ```
 
-### Dual-Chain Account Funding
+### Multi-Chain Account Funding
 ```bash
 # Fund account on Chain 1
 curl -X POST "http://127.0.0.1:8081/mint?address=<ACCOUNT_ADDRESS>&amount=100000000"
@@ -24,7 +24,7 @@ curl -X POST "http://127.0.0.1:8081/mint?address=<ACCOUNT_ADDRESS>&amount=100000
 curl -X POST "http://127.0.0.1:8083/mint?address=<ACCOUNT_ADDRESS>&amount=100000000"
 ```
 
-### Cross-Chain Balance Verification
+### Multi-Chain Balance Verification
 ```bash
 # Check balance on Chain 1
 curl -s "http://127.0.0.1:8080/v1/accounts/<FA_STORE_ADDRESS>/resources" | jq '.[] | select(.type=="0x1::fungible_asset::FungibleStore").data.balance'
@@ -112,9 +112,8 @@ pkill -f "aptos node" || true
 pkill -f faucet || true
 rm -rf ~/.aptos/ .aptos/
 
-# 2. Start local testnet (Docker or manual)
-# Docker: ./infra/setup-docker/setup-docker-chain.sh
-# Manual: aptos node run-localnet --with-faucet --force-restart --assume-yes
+# 2. Start local testnet (Docker)
+# Docker: ./testing-infra/single-chain/setup-docker-chain.sh
 
 # 3. Create Alice account (non-interactive)
 printf "\n" | aptos init --profile alice --network local --assume-yes
@@ -168,12 +167,3 @@ lsof -i :8081
 pkill -f "aptos node"
 pkill -f faucet
 ```
-
-## Usage Notes
-
-- **Docker Setup**: Uses `aptoslabs/tools:nightly` image with host networking
-- **Manual Setup**: Uses locally built binaries from source
-- **Fresh Start**: Both setups provide clean state on each restart
-- **Endpoints**: Both use the same ports (8080 for API, 8081 for faucet)
-
-This guide provides common testing patterns that work regardless of whether you're using Docker or manual setup.

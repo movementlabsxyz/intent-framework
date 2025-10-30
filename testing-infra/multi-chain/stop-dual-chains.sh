@@ -10,10 +10,10 @@ echo "🛑 STOPPING DUAL-CHAIN SETUP"
 echo "============================="
 
 echo "🧹 Stopping Chain 1..."
-docker-compose -f infra/setup-docker/docker-compose.yml -p aptos-chain1 down
+docker-compose -f testing-infra/single-chain/docker-compose.yml -p aptos-chain1 down
 
 echo "🧹 Stopping Chain 2..."
-docker-compose -f infra/setup-docker/docker-compose-chain2.yml -p aptos-chain2 down
+docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down
 
 echo ""
 echo "🧹 Cleaning up Aptos CLI profiles..."

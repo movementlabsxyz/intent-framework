@@ -85,7 +85,7 @@ nix-shell
 pub  # This runs: aptos move publish --named-addresses aptos_intent=$intent
 
 # 5. Verify deployment
-aptos move test --dev
+aptos move test --dev --named-addresses aptos_intent=0x123
 ```
 
 **Note**: The `pub` command deploys to whatever network your Aptos CLI is configured for. For local development, you must first configure Aptos CLI to point to your local Docker chain (port 8080) using `aptos init --profile local --network local`.

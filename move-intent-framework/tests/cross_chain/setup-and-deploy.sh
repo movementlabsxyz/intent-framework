@@ -40,7 +40,7 @@ CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account
 
 echo "   - Deploying to Chain 1 with address: $CHAIN1_ADDRESS"
 cd move-intent-framework
-aptos move publish --profile intent-account-chain1 --named-addresses aptos_intent=$CHAIN1_ADDRESS --assume-yes
+aptos move publish --dev --profile intent-account-chain1 --named-addresses aptos_intent=$CHAIN1_ADDRESS --assume-yes
 
 if [ $? -eq 0 ]; then
     echo "   ✅ Chain 1 deployment successful!"
@@ -57,7 +57,7 @@ CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account
 
 echo "   - Deploying to Chain 2 with address: $CHAIN2_ADDRESS"
 cd move-intent-framework
-aptos move publish --profile intent-account-chain2 --named-addresses aptos_intent=$CHAIN2_ADDRESS --assume-yes
+aptos move publish --dev --profile intent-account-chain2 --named-addresses aptos_intent=$CHAIN2_ADDRESS --assume-yes
 
 if [ $? -eq 0 ]; then
     echo "   ✅ Chain 2 deployment successful!"

@@ -73,7 +73,7 @@ Deploy the Intent Framework to an Aptos network:
 
 ```bash
 # 1. Setup local chain (optional)
-./testing-infra/setup-docker/setup-docker-chain.sh
+./testing-infra/single-chain/setup-docker-chain.sh
 
 # 2. Configure Aptos CLI to use local chain (port 8080)
 aptos init --profile local --network local

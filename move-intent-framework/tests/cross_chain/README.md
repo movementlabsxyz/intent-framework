@@ -11,13 +11,13 @@ Use the Docker-based localnets from `testing-infra` to run Hub and Connected cha
 
 ```bash
 # Single chain
-./testing-infra/setup-docker/setup-docker-chain.sh
+./testing-infra/single-chain/setup-docker-chain.sh
 
 # Multi-chain (two independent localnets)
-./testing-infra/setup-docker/setup-dual-chains.sh
+./testing-infra/multi-chain/setup-dual-chains.sh
 
 # Stop both chains
-./testing-infra/setup-docker/stop-dual-chains.sh
+./testing-infra/multi-chain/stop-dual-chains.sh
 ```
 
 

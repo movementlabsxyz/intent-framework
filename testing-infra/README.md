@@ -17,16 +17,16 @@ This directory contains infrastructure setup for running chains for development 
 
 ```bash
 # Single chain
-./testing-infra/setup-docker/setup-docker-chain.sh
+./testing-infra/single-chain/setup-docker-chain.sh
 
 # Single-chain quick test (accounts, funding, transfer)
-./testing-infra/setup-docker/test-alice-bob.sh
+./testing-infra/single-chain/test-alice-bob.sh
 
 # Multi-chain (two independent localnets)
-./testing-infra/setup-docker/setup-dual-chains.sh
+./testing-infra/multi-chain/setup-dual-chains.sh
 
 # Stop both chains
-./testing-infra/setup-docker/stop-dual-chains.sh
+./testing-infra/multi-chain/stop-dual-chains.sh
 ```
 
 ### Endpoints
@@ -38,14 +38,14 @@ This directory contains infrastructure setup for running chains for development 
 
 ```bash
 # Single chain logs / stop / restart
-docker-compose -f testing-infra/setup-docker/docker-compose.yml logs -f
-docker-compose -f testing-infra/setup-docker/docker-compose.yml down
-docker-compose -f testing-infra/setup-docker/docker-compose.yml restart
+docker-compose -f testing-infra/single-chain/docker-compose.yml logs -f
+docker-compose -f testing-infra/single-chain/docker-compose.yml down
+docker-compose -f testing-infra/single-chain/docker-compose.yml restart
 
 # Multi-chain logs / stop
-docker-compose -f testing-infra/setup-docker/docker-compose.yml logs -f
-docker-compose -f testing-infra/setup-docker/docker-compose-chain2.yml logs -f
-./testing-infra/setup-docker/stop-dual-chains.sh
+docker-compose -f testing-infra/single-chain/docker-compose.yml logs -f
+docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml logs -f
+./testing-infra/multi-chain/stop-dual-chains.sh
 ```
 
 ## Setup with source code (deprecated)

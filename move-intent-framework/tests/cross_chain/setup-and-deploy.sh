@@ -9,7 +9,7 @@ cd /home/ap/code/movement/intent-framework
 echo ""
 echo "🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts..."
 echo " ============================================="
-./testing-infra/setup-docker/setup-dual-chains-and-test-alice-bob.sh
+./testing-infra/multi-chain/setup-dual-chains-and-test-alice-bob.sh
 
 if [ $? -ne 0 ]; then
     echo "❌ Failed to setup dual chains with Alice and Bob accounts"
@@ -93,7 +93,7 @@ echo "   Fund Chain 1 account:   curl -X POST \"http://127.0.0.1:8081/mint?addre
 echo "   Fund Chain 2 account:   curl -X POST \"http://127.0.0.1:8083/mint?address=<ADDRESS>&amount=100000000\""
 echo ""
 echo "📋 Useful commands:"
-echo "   Stop chains:     ./testing-infra/setup-docker/stop-dual-chains.sh"
+echo "   Stop chains:     ./testing-infra/multi-chain/stop-dual-chains.sh"
 echo "   View Chain 1:    aptos config show-profiles --profile intent-account-chain1"
 echo "   View Chain 2:    aptos config show-profiles --profile intent-account-chain2"
 

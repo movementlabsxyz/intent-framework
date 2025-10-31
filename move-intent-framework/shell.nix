@@ -3,8 +3,8 @@ with import <nixpkgs> { };
 pkgs.mkShell {
   buildInputs = [
     jq
+    nodejs
     nodePackages.nodemon
-    nodejs_18
     (callPackage ../aptos.nix { })
   ];
 

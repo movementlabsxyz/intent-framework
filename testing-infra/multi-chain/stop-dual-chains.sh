@@ -1,29 +1,31 @@
 #!/bin/bash
 
-# Get the script directory and project root
+# Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+source "$SCRIPT_DIR/../common.sh"
 
+# Setup project root and logging
+setup_project_root
+setup_logging "stop-dual-chains"
 cd "$PROJECT_ROOT"
 
-echo "🛑 STOPPING DUAL-CHAIN SETUP"
-echo "============================="
+log "🛑 STOPPING DUAL-CHAIN SETUP"
+log "============================="
 
-echo "🧹 Stopping Chain 1..."
+log "🧹 Stopping Chain 1..."
 docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 down
 
-echo "🧹 Stopping Chain 2..."
+log "🧹 Stopping Chain 2..."
 docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down
 
-echo ""
-echo "🧹 Cleaning up Aptos CLI profiles..."
-aptos config delete-profile --profile alice-chain1 2>/dev/null || true
-aptos config delete-profile --profile bob-chain1 2>/dev/null || true
-aptos config delete-profile --profile alice-chain2 2>/dev/null || true
-aptos config delete-profile --profile bob-chain2 2>/dev/null || true
-aptos config delete-profile --profile intent-account-chain1 2>/dev/null || true
-aptos config delete-profile --profile intent-account-chain2 2>/dev/null || true
+log ""
+log "🧹 Cleaning up Aptos CLI profiles..."
+aptos config delete-profile --profile alice-chain1 >> "$LOG_FILE" 2>&1 || true
+aptos config delete-profile --profile bob-chain1 >> "$LOG_FILE" 2>&1 || true
+aptos config delete-profile --profile alice-chain2 >> "$LOG_FILE" 2>&1 || true
+aptos config delete-profile --profile bob-chain2 >> "$LOG_FILE" 2>&1 || true
+aptos config delete-profile --profile intent-account-chain1 >> "$LOG_FILE" 2>&1 || true
+aptos config delete-profile --profile intent-account-chain2 >> "$LOG_FILE" 2>&1 || true
 
-echo ""
-echo "✅ Both chains stopped!"
-echo "   All containers, volumes, and CLI profiles cleaned up"
+log ""
+log_and_echo "✅ Both chains stopped and all accounts cleaned up!"

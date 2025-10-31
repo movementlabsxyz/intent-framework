@@ -1,25 +1,13 @@
 #!/bin/bash
 
-# Change to the project directory first
-cd /home/ap/code/movement/intent-framework
-PROJECT_ROOT="$(pwd)"
+# Source common utilities
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPT_DIR/../../common.sh"
 
-# Setup logging - redirect all output (echo and commands) to log file
-LOG_DIR="$PROJECT_ROOT/tmp/intent-framework-logs"
-mkdir -p "$LOG_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="$LOG_DIR/setup-and-deploy_${TIMESTAMP}.log"
-
-# Helper function to print important messages to terminal (also logs them)
-log_and_echo() {
-    echo "$@"
-    echo "$@" >> "$LOG_FILE"
-}
-
-# Helper function to write only to log file (not terminal)
-log() {
-    echo "$@" >> "$LOG_FILE"
-}
+# Setup project root and logging
+setup_project_root
+setup_logging "setup-and-deploy"
+cd "$PROJECT_ROOT"
 
 log "🚀 APTOS INTENT FRAMEWORK - SETUP AND DEPLOY"
 log "============================================="

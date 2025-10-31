@@ -1,26 +1,13 @@
 #!/bin/bash
 
-# Get the project root first
+# Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+source "$SCRIPT_DIR/../../common.sh"
+
+# Setup project root and logging
+setup_project_root
+setup_logging "verifier_and_escrow_release"
 cd "$PROJECT_ROOT"
-
-# Setup logging - only log() and log_and_echo() write to log file
-LOG_DIR="$PROJECT_ROOT/tmp/intent-framework-logs"
-mkdir -p "$LOG_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="$LOG_DIR/verifier_${TIMESTAMP}.log"
-
-# Helper function to print important messages to terminal (also logs them)
-log_and_echo() {
-    echo "$@"
-    echo "$@" >> "$LOG_FILE"
-}
-
-# Helper function to write only to log file (not terminal)
-log() {
-    echo "$@" >> "$LOG_FILE"
-}
 
 # Validate parameter
 if [ -z "$1" ] || ([ "$1" != "0" ] && [ "$1" != "1" ]); then
@@ -98,24 +85,9 @@ log "   ✅ Chain 1 Deployer: $CHAIN1_DEPLOY_ADDRESS"
 log "   ✅ Chain 2 Deployer: $CHAIN2_DEPLOY_ADDRESS"
 log ""
 
-# Check initial balances
+# Check and display initial balances using common function
 log "   - Checking initial balances..."
-log ""
-log "   💰 Initial Balances:"
-log "   ====================="
-
-ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-BOB_CHAIN1_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-
-log "   Chain 1 (Hub):"
-log "      Alice: $ALICE_CHAIN1_BALANCE Octas"
-log "      Bob:   $BOB_CHAIN1_BALANCE Octas"
-log "   Chain 2 (Connected):"
-log "      Alice: $ALICE_CHAIN2_BALANCE Octas"
-log "      Bob:   $BOB_CHAIN2_BALANCE Octas"
-log ""
+display_balances
 
 # Update verifier config with current deployed addresses and account addresses
 log "   - Updating verifier configuration..."
@@ -415,44 +387,8 @@ else
     log "      curl -s http://127.0.0.1:3000/approvals | jq"
 fi
 
-# Check final balances
-log_and_echo ""
-log_and_echo "   💰 Final Balances:"
-log_and_echo "   ==================="
-
-FINAL_ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-FINAL_ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-FINAL_BOB_CHAIN1_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-FINAL_BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-
-ALICE_CHAIN1_DIFF=$(($FINAL_ALICE_CHAIN1_BALANCE - $ALICE_CHAIN1_BALANCE))
-BOB_CHAIN1_DIFF=$(($FINAL_BOB_CHAIN1_BALANCE - $BOB_CHAIN1_BALANCE))
-ALICE_CHAIN2_DIFF=$(($FINAL_ALICE_CHAIN2_BALANCE - $ALICE_CHAIN2_BALANCE))
-BOB_CHAIN2_DIFF=$(($FINAL_BOB_CHAIN2_BALANCE - $BOB_CHAIN2_BALANCE))
-
-log_and_echo "   Chain 1 (Hub):"
-if [ $ALICE_CHAIN1_DIFF -ge 0 ]; then
-    log_and_echo "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas (+$ALICE_CHAIN1_DIFF)"
-else
-    log_and_echo "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas ($ALICE_CHAIN1_DIFF)"
-fi
-if [ $BOB_CHAIN1_DIFF -ge 0 ]; then
-    log_and_echo "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas (+$BOB_CHAIN1_DIFF)"
-else
-    log_and_echo "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas ($BOB_CHAIN1_DIFF)"
-fi
-log_and_echo "   Chain 2 (Connected):"
-if [ $ALICE_CHAIN2_DIFF -ge 0 ]; then
-    log_and_echo "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas (+$ALICE_CHAIN2_DIFF)"
-else
-    log_and_echo "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas ($ALICE_CHAIN2_DIFF)"
-fi
-if [ $BOB_CHAIN2_DIFF -ge 0 ]; then
-    log_and_echo "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas (+$BOB_CHAIN2_DIFF)"
-else
-    log_and_echo "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas ($BOB_CHAIN2_DIFF)"
-fi
-log_and_echo ""
+# Check final balances using common function
+display_balances
 
 log_and_echo ""
 log_and_echo "📝 Useful commands:"

@@ -1,25 +1,13 @@
 #!/bin/bash
 
-# Get project root first
+# Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+source "$SCRIPT_DIR/../../common.sh"
 
-# Setup logging - redirect all output (echo and commands) to log file
-LOG_DIR="$PROJECT_ROOT/tmp/intent-framework-logs"
-mkdir -p "$LOG_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="$LOG_DIR/submit-intent_${TIMESTAMP}.log"
-
-# Helper function to print important messages to terminal (also logs them)
-log_and_echo() {
-    echo "$@"
-    echo "$@" >> "$LOG_FILE"
-}
-
-# Helper function to write only to log file (not terminal)
-log() {
-    echo "$@" >> "$LOG_FILE"
-}
+# Setup project root and logging
+setup_project_root
+setup_logging "submit-intent"
+cd "$PROJECT_ROOT"
 
 log "======================================"
 log "🎯 CROSS-CHAIN INTENT - SUBMISSION"
@@ -144,23 +132,9 @@ log "   Oracle public key: $ORACLE_PUBLIC_KEY"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Intent ID (for hub & escrow): $INTENT_ID"
 
-# Check initial balances
+# Check and display initial balances using common function
 log ""
-log "   💰 Initial Balances:"
-log "   ====================="
-
-ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-BOB_CHAIN1_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-
-log "   Chain 1 (Hub):"
-log "      Alice: $ALICE_CHAIN1_BALANCE Octas"
-log "      Bob:   $BOB_CHAIN1_BALANCE Octas"
-log "   Chain 2 (Connected):"
-log "      Alice: $ALICE_CHAIN2_BALANCE Octas"
-log "      Bob:   $BOB_CHAIN2_BALANCE Octas"
-log ""
+display_balances
 
 log ""
 log "📝 STEP 1: [HUB CHAIN] Alice creates intent requesting tokens"
@@ -320,7 +294,7 @@ fi
 if [ -n "$ESCROW_ADDRESS" ] && [ "$ESCROW_ADDRESS" != "null" ]; then
     log "   Chain 2 Escrow: $ESCROW_ADDRESS"
 fi
-# Check final balances
+# Check final balances using common function
 # TODO: BALANCE DISCREPANCY INVESTIGATION
 # Bob's balance decrease doesn't match expected amount when fulfilling with 100M:
 # - Event shows provided_amount: 100,000,000 (correct)
@@ -330,43 +304,7 @@ fi
 #   2. Initial balance check captured wrong timing/state
 #   3. Gas fees being deducted from transfer amount (unusual)
 # Needs investigation to understand coin vs FA balance relationship and why loss < transfer amount
-log ""
-log "   💰 Final Balances:"
-log "   ==================="
-
-FINAL_ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-FINAL_ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-FINAL_BOB_CHAIN1_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-FINAL_BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-
-ALICE_CHAIN1_DIFF=$(($FINAL_ALICE_CHAIN1_BALANCE - $ALICE_CHAIN1_BALANCE))
-ALICE_CHAIN2_DIFF=$(($FINAL_ALICE_CHAIN2_BALANCE - $ALICE_CHAIN2_BALANCE))
-BOB_CHAIN1_DIFF=$(($FINAL_BOB_CHAIN1_BALANCE - $BOB_CHAIN1_BALANCE))
-BOB_CHAIN2_DIFF=$(($FINAL_BOB_CHAIN2_BALANCE - $BOB_CHAIN2_BALANCE))
-
-log "   Chain 1 (Hub):"
-if [ $ALICE_CHAIN1_DIFF -ge 0 ]; then
-    log "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas (+$ALICE_CHAIN1_DIFF)"
-else
-    log "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas ($ALICE_CHAIN1_DIFF)"
-fi
-if [ $BOB_CHAIN1_DIFF -ge 0 ]; then
-    log "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas (+$BOB_CHAIN1_DIFF)"
-else
-    log "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas ($BOB_CHAIN1_DIFF)"
-fi
-log "   Chain 2 (Connected):"
-if [ $ALICE_CHAIN2_DIFF -ge 0 ]; then
-    log "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas (+$ALICE_CHAIN2_DIFF)"
-else
-    log "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas ($ALICE_CHAIN2_DIFF)"
-fi
-if [ $BOB_CHAIN2_DIFF -ge 0 ]; then
-    log "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas (+$BOB_CHAIN2_DIFF)"
-else
-    log "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas ($BOB_CHAIN2_DIFF)"
-fi
-log ""
+display_balances
 
 log ""
 log "🔍 Next Steps:"

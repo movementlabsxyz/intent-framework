@@ -9,26 +9,14 @@
 
 set -e
 
-# Get project root (this script is typically run from project root)
+# Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+source "$SCRIPT_DIR/../common.sh"
 
-# Setup logging - redirect all output (echo and commands) to log file
-LOG_DIR="$PROJECT_ROOT/tmp/intent-framework-logs"
-mkdir -p "$LOG_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="$LOG_DIR/setup-dual-chains_${TIMESTAMP}.log"
-
-# Helper function to print important messages to terminal (also logs them)
-log_and_echo() {
-    echo "$@"
-    echo "$@" >> "$LOG_FILE"
-}
-
-# Helper function to write only to log file (not terminal)
-log() {
-    echo "$@" >> "$LOG_FILE"
-}
+# Setup project root and logging
+setup_project_root
+setup_logging "setup-dual-chains"
+cd "$PROJECT_ROOT"
 
 # Expected funding amount in octas
 # Note: aptos init funds accounts with 100000000, then we fund again with 100000000 = 200000000 total
@@ -325,16 +313,8 @@ fi
 
 log_and_echo "✅ Accounts funded"
 
-log_and_echo ""
-log_and_echo "   💰 Initial Balances:"
-log_and_echo "   ====================="
-log_and_echo "   Chain 1 (Hub):"
-log_and_echo "      Alice: $ALICE_BALANCE Octas"
-log_and_echo "      Bob:   $BOB_BALANCE Octas"
-log_and_echo "   Chain 2 (Connected):"
-log_and_echo "      Alice: $ALICE2_BALANCE Octas"
-log_and_echo "      Bob:   $BOB2_BALANCE Octas"
-log_and_echo ""
+# Display initial balances using common function (variables already set above)
+display_balances
 
 log ""
 log "% - - - - - - - - - - - SUMMARY - - - - - - - - - - - -"

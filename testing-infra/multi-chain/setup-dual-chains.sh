@@ -1,25 +1,13 @@
 #!/bin/bash
 
-# Get project root (this script is typically run from project root)
+# Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
+source "$SCRIPT_DIR/../common.sh"
 
-# Setup logging - only log() and log_and_echo() write to log file
-LOG_DIR="$PROJECT_ROOT/tmp/intent-framework-logs"
-mkdir -p "$LOG_DIR"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="$LOG_DIR/setup-dual-chains_${TIMESTAMP}.log"
-
-# Helper function to print important messages to terminal (also logs them)
-log_and_echo() {
-    echo "$@"
-    echo "$@" >> "$LOG_FILE"
-}
-
-# Helper function to write only to log file (not terminal)
-log() {
-    echo "$@" >> "$LOG_FILE"
-}
+# Setup project root and logging
+setup_project_root
+setup_logging "setup-dual-chains"
+cd "$PROJECT_ROOT"
 
 log "🔗 DUAL-CHAIN APTOS SETUP"
 log "=========================="

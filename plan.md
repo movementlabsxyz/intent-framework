@@ -39,6 +39,10 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
 
 ### Trusted Verifier
 
+0. Fix chain_id configuration in verifier_testing.toml
+   - Currently both hub_chain and connected_chain have chain_id = 4
+   - They should have different chain_ids since they are separate chains
+   - This needs to be fixed to correctly identify which chain is which
 1. Add end-to-end tests
    - Test complete cross-chain scenarios
    - Test with multiple intents

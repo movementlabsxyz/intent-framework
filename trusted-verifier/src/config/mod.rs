@@ -95,11 +95,13 @@ impl Config {
     /// - `Ok(Config)` - Successfully loaded configuration
     /// - `Err(anyhow::Error)` - Failed to load configuration or file doesn't exist
     pub fn load() -> anyhow::Result<Self> {
-        let config_path = "config/verifier.toml";
+        // Check for custom config path via environment variable (for tests)
+        let config_path = std::env::var("VERIFIER_CONFIG_PATH")
+            .unwrap_or_else(|_| "config/verifier.toml".to_string());
         
-        if std::path::Path::new(config_path).exists() {
+        if std::path::Path::new(&config_path).exists() {
             // Load existing configuration
-            let content = std::fs::read_to_string(config_path)?;
+            let content = std::fs::read_to_string(&config_path)?;
             let config: Config = toml::from_str(&content)?;
             Ok(config)
         } else {

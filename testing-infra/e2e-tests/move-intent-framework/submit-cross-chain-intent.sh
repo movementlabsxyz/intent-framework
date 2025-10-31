@@ -89,21 +89,24 @@ log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 cd move-intent-framework
 
 # Load oracle public key from verifier config (base64 encoded, needs to be converted to hex)
-VERIFIER_CONFIG="${PROJECT_ROOT}/trusted-verifier/config/verifier.toml"
+# Use verifier_testing.toml for tests - required, panic if not found
+VERIFIER_TESTING_CONFIG="${PROJECT_ROOT}/trusted-verifier/config/verifier_testing.toml"
 
-if [ ! -f "$VERIFIER_CONFIG" ]; then
-    log_and_echo "❌ ERROR: verifier.toml not found at: $VERIFIER_CONFIG"
-    log_and_echo "   The verifier configuration is required for escrow creation."
-    log_and_echo "   Please ensure trusted-verifier/config/verifier.toml exists."
+if [ ! -f "$VERIFIER_TESTING_CONFIG" ]; then
+    log_and_echo "❌ ERROR: verifier_testing.toml not found at $VERIFIER_TESTING_CONFIG"
+    log_and_echo "   Tests require trusted-verifier/config/verifier_testing.toml to exist"
     exit 1
 fi
 
-VERIFIER_PUBLIC_KEY_B64=$(grep "^public_key" "$VERIFIER_CONFIG" | cut -d'"' -f2)
+# Export config path for Rust code to use (if called)
+export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
+
+VERIFIER_PUBLIC_KEY_B64=$(grep "^public_key" "$VERIFIER_TESTING_CONFIG" | cut -d'"' -f2)
 
 if [ -z "$VERIFIER_PUBLIC_KEY_B64" ]; then
-    log_and_echo "❌ ERROR: Could not find public_key in verifier.toml"
+    log_and_echo "❌ ERROR: Could not find public_key in verifier_testing.toml"
     log_and_echo "   The verifier public key is required for escrow creation."
-    log_and_echo "   Please ensure verifier.toml has a valid public_key field."
+    log_and_echo "   Please ensure verifier_testing.toml has a valid public_key field."
     exit 1
 fi
 
@@ -111,10 +114,10 @@ fi
 ORACLE_PUBLIC_KEY_HEX=$(echo "$VERIFIER_PUBLIC_KEY_B64" | base64 -d 2>/dev/null | xxd -p -c 1000 | tr -d '\n')
 
 if [ -z "$ORACLE_PUBLIC_KEY_HEX" ] || [ ${#ORACLE_PUBLIC_KEY_HEX} -ne 64 ]; then
-    log_and_echo "❌ ERROR: Invalid public key format in verifier.toml"
+    log_and_echo "❌ ERROR: Invalid public key format in verifier_testing.toml"
     log_and_echo "   Expected: base64-encoded 32-byte Ed25519 public key"
     log_and_echo "   Got: $VERIFIER_PUBLIC_KEY_B64"
-    log_and_echo "   Please ensure the public_key in verifier.toml is valid base64 and decodes to 32 bytes (64 hex chars)."
+    log_and_echo "   Please ensure the public_key in verifier_testing.toml is valid base64 and decodes to 32 bytes (64 hex chars)."
     exit 1
 fi
 

@@ -1,0 +1,38 @@
+# Trusted Verifier Configuration
+# 
+# This file contains all configuration settings for the trusted verifier service.
+
+# Hub Chain Configuration
+# The hub chain is where intents are created and monitored
+[hub_chain]
+name = "Hub Chain"
+rpc_url = "http://127.0.0.1:8080"
+chain_id = 4
+intent_module_address = "0x5356da71664746e09dd523a0266495de377789e832a473bc8a0036dcaa206ced"
+known_accounts = ["60b86168c7e55f7a887bb54bddd1a8fe1dea265a659e5d071d0b355b7ca6a115", "5082bef946a5655014c9990ffa6bf62da47d058cf4c52ff00d8bcd904ea1c4d2"]
+
+# Connected Chain Configuration  
+# The connected chain is where escrow events occur and are monitored
+[connected_chain]
+name = "Connected Chain"
+rpc_url = "http://127.0.0.1:8082"
+chain_id = 4
+intent_module_address = "0xb094d0207248b131db343fc94dc3ae6d358a1cd13a7853ba38962a47a28522d9"
+escrow_module_address = "0xb094d0207248b131db343fc94dc3ae6d358a1cd13a7853ba38962a47a28522d9"
+known_accounts = ["015464c3e7afe79e959132148cfa0b3b2782de4cc8a1898bcee08228055ba4c3"]
+
+# Verifier Configuration
+# Cryptographic keys and timing parameters for the verifier
+[verifier]
+private_key = "lNqeNsdkUB4+UR9EihzMErmY2inmVnhNAJC2y2SDpSs="
+public_key = "NfUiwrwfjQR0kKZgUmbGLkwKrsT1+Z1FJSBMVjZ5dTc="
+polling_interval_ms = 2000
+validation_timeout_ms = 30000
+
+# API Server Configuration
+# HTTP server settings for the REST API
+[api]
+host = "127.0.0.1"
+port = 3000
+cors_origins = ["http://localhost:3000"]
+

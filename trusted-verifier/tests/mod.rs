@@ -1,11 +1,6 @@
-//! Unit tests module
+//! Shared test helpers for unit tests
 //!
-//! This module contains unit tests that don't require external services.
-
-pub mod crypto_tests;
-pub mod config_tests;
-pub mod monitor_tests;
-pub mod cross_chain_tests;
+//! This module provides helper functions used by unit tests.
 
 // ---------------------------------------------------------------------------
 // Shared test helpers

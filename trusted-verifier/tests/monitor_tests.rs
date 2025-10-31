@@ -4,7 +4,9 @@
 //! without requiring external services.
 
 use trusted_verifier::monitor::{IntentEvent, EscrowEvent, FulfillmentEvent, EventMonitor};
-use super::build_test_config;
+#[path = "mod.rs"]
+mod test_helpers;
+use test_helpers::build_test_config;
 
 // ============================================================================
 // TESTS

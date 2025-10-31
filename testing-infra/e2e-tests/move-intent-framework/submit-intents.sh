@@ -22,7 +22,7 @@ if [ "$1" = "1" ]; then
     echo ""
     echo "🚀 Step 0: Setting up chains and deploying contracts..."
     echo "========================================================"
-    ./move-intent-framework/tests/cross_chain/setup-and-deploy.sh
+    ./testing-infra/e2e-tests/move-intent-framework/setup-and-deploy.sh
 
     if [ $? -ne 0 ]; then
         echo "❌ Failed to setup chains and deploy contracts"

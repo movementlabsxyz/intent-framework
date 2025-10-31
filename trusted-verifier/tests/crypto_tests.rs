@@ -6,7 +6,10 @@
 //! - Data structures and validation logic
 
 use trusted_verifier::crypto::CryptoService;
-use super::build_test_config;
+
+#[path = "mod.rs"]
+mod test_helpers;
+use test_helpers::build_test_config;
 
 // Crypto service tests
 

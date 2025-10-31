@@ -15,7 +15,7 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
 ## Future Work
 
 ### Testing
-1. Add a minimal cross-chain test runner under `tests/cross_chain`:
+1. Add a minimal cross-chain test runner under `testing-infra/e2e-tests/move-intent-framework`:
   - Language: TypeScript (Aptos TS SDK) or Python (aptos-sdk)
   - Inputs: hub/connected REST URLs, profiles/keys, deployed module addrs
   - Flow: start from running Docker localnets → deploy modules → create intent (hub) → create escrow (connected) → start verifier → fulfill intent (hub) → await approval → release escrow (connected)
@@ -27,7 +27,7 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
    - But Bob's balance only decreases by 99,888,740 (less than 100M, not 100M + gas)
    - Possible causes: Coin vs FA balance accounting; initial capture timing; gas treatment
    - Investigate how `aptos account balance` relates to FA operations and why loss < transfer amount
-   - Location: `move-intent-framework/tests/cross_chain/submit-cross-chain-intent.sh`
+   - Location: `testing-infra/e2e-tests/move-intent-framework/submit-cross-chain-intent.sh`
 3. Convert shell scripts into Rust binaries where practical
 
 ### test-infra
@@ -63,5 +63,5 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
    - Incomplete coverage (misses unlisted accounts)
    - Manual configuration (requires prelisting emitters)
    - Not scalable (unsuitable for many users)
-10. Implement the monitoring/oracle service as a simple CLI/daemon colocated in `tests/cross_chain` for now; later extract to `tools/oracle-service` if needed
+10. Implement the monitoring/oracle service as a simple CLI/daemon colocated in `testing-infra/e2e-tests/move-intent-framework` for now; later extract to `tools/oracle-service` if needed
 

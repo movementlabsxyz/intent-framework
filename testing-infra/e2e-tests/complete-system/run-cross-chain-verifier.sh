@@ -31,7 +31,7 @@ echo ""
 if [ "$1" = "1" ]; then
     echo "🚀 Step 0: Running setup and submitting intents..."
     echo "================================================="
-    ./move-intent-framework/tests/cross_chain/submit-cross-chain-intent.sh 1
+    ./testing-infra/e2e-tests/move-intent-framework/submit-cross-chain-intent.sh 1
     
     if [ $? -ne 0 ]; then
         echo "❌ Failed to setup and submit intents"

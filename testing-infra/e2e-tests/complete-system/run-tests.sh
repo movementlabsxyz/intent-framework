@@ -99,4 +99,7 @@ echo "============================================================"
 
 echo ""
 echo "✅ All E2E tests completed!"
+echo ""
+echo "🧹 Cleaning up Docker chains..."
+./testing-infra/multi-chain/stop-dual-chains.sh
 

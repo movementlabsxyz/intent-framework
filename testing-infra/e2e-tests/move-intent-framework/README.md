@@ -10,10 +10,10 @@ This directory contains orchestration scripts and docs to run a cross-chain test
 Use the Docker-based localnets from `testing-infra` to run Hub and Connected chains.
 
 ```bash
-# Single chain
-./testing-infra/single-chain/setup-docker-chain.sh
+# Multi-chain (two independent localnets with Alice and Bob accounts)
+./testing-infra/multi-chain/setup-dual-chains-and-test-alice-bob.sh
 
-# Multi-chain (two independent localnets)
+# Or setup chains only
 ./testing-infra/multi-chain/setup-dual-chains.sh
 
 # Stop both chains

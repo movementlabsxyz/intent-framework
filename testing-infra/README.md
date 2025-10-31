@@ -16,13 +16,10 @@ This directory contains infrastructure setup for running chains for development 
 ### Quick start
 
 ```bash
-# Single chain
-./testing-infra/single-chain/setup-docker-chain.sh
+# Multi-chain (two independent localnets with Alice and Bob accounts)
+./testing-infra/multi-chain/setup-dual-chains-and-test-alice-bob.sh
 
-# Single-chain quick test (accounts, funding, transfer)
-./testing-infra/single-chain/test-alice-bob.sh
-
-# Multi-chain (two independent localnets)
+# Or setup chains only
 ./testing-infra/multi-chain/setup-dual-chains.sh
 
 # Stop both chains

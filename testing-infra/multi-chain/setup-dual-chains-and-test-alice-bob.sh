@@ -44,7 +44,7 @@ log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
 # Stop any existing Docker containers
 log "🧹 Stopping any existing Docker containers..."
-docker-compose -f testing-infra/single-chain/docker-compose.yml down 2>/dev/null || true
+docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml down 2>/dev/null || true
 docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml down 2>/dev/null || true
 
 # Start fresh Docker localnets (both chains)

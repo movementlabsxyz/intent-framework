@@ -16,7 +16,7 @@ These tests require the Aptos Docker chains to be running. The chains are starte
 
 ```bash
 # From project root:
-./testing-infra/e2e-tests/complete-system/run-tests.sh
+./testing-infra/e2e-tests/run-tests.sh
 ```
 
 The script will:

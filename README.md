@@ -21,7 +21,7 @@ cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent
 cd trusted-verifier && cargo test --locked && cd ..
 
 # E2E integration tests (requires Docker)
-./testing-infra/e2e-tests/complete-system/run-tests.sh
+./testing-infra/e2e-tests/run-tests.sh
 ```
 
 ## License

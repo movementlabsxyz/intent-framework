@@ -236,8 +236,16 @@ if [ $? -eq 0 ]; then
         log "     ✅ Locked amount: $LOCKED_AMOUNT tokens"
         log "     ✅ Desired amount: $DESIRED_AMOUNT tokens"
         
-          # Verify intent_id matches
-          if [ "$ESCROW_INTENT_ID" = "$INTENT_ID" ]; then
+          # Verify intent_id matches (normalize hex strings for comparison)
+          # Remove 0x prefix and convert to lowercase, then compare
+          NORMALIZED_INTENT_ID=$(echo "$INTENT_ID" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//' | sed 's/^0*//')
+          NORMALIZED_ESCROW_INTENT_ID=$(echo "$ESCROW_INTENT_ID" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//' | sed 's/^0*//')
+          
+          # If normalization results in empty string, restore at least one zero
+          [ -z "$NORMALIZED_INTENT_ID" ] && NORMALIZED_INTENT_ID="0"
+          [ -z "$NORMALIZED_ESCROW_INTENT_ID" ] && NORMALIZED_ESCROW_INTENT_ID="0"
+          
+          if [ "$NORMALIZED_INTENT_ID" = "$NORMALIZED_ESCROW_INTENT_ID" ]; then
               log "     ✅ Intent IDs match - correct cross-chain link!"
           else
               log_and_echo "     ❌ ERROR: Intent IDs don't match!"

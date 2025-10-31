@@ -156,7 +156,12 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     
     if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
         log_and_echo "   ❌ Verifier failed to start after $MAX_RETRIES seconds"
-        log_and_echo "   Check logs: tail -f $VERIFIER_LOG"
+        log_and_echo "   Verifier log:"
+        if [ -f "$VERIFIER_LOG" ]; then
+            log_and_echo "   $(cat "$VERIFIER_LOG")"
+        else
+            log_and_echo "   Log file not found at: $VERIFIER_LOG"
+        fi
         exit 1
     fi
 done

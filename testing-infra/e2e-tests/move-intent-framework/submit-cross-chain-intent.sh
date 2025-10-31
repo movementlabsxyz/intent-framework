@@ -1,34 +1,56 @@
 #!/bin/bash
 
-echo "======================================"
-echo "🎯 CROSS-CHAIN INTENT - SUBMISSION"
-echo "======================================"
-echo ""
-echo "This script submits cross-chain intents (Steps 1-3):"
-echo "  1. [HUB CHAIN] User creates intent requesting tokens"
-echo "  2. [CONNECTED CHAIN] User creates escrow with locked tokens"
-echo "  3. [HUB CHAIN] Solver fulfills intent on hub chain"
-echo ""
-echo "For verifier monitoring and approval (Steps 4-6), run:"
-echo "  ./testing-infra/e2e-tests/complete-system/run-cross-chain-verifier.sh"
-echo ""
-echo "The verifier will:"
-echo "  4. Monitor both chains for intents and escrows"
-echo "  5. Wait for hub intent to be fulfilled"
-echo "  6. Sign approval for escrow release on connected chain"
-echo ""
+# Get project root first
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+
+# Setup logging - redirect all output (echo and commands) to log file
+LOG_DIR="$PROJECT_ROOT/tmp/intent-framework-logs"
+mkdir -p "$LOG_DIR"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_FILE="$LOG_DIR/submit-intent_${TIMESTAMP}.log"
+
+# Helper function to print important messages to terminal (also logs them)
+log_and_echo() {
+    echo "$@"
+    echo "$@" >> "$LOG_FILE"
+}
+
+# Helper function to write only to log file (not terminal)
+log() {
+    echo "$@" >> "$LOG_FILE"
+}
+
+log "======================================"
+log "🎯 CROSS-CHAIN INTENT - SUBMISSION"
+log "======================================"
+log_and_echo "📝 All output logged to: $LOG_FILE"
+log ""
+log "This script submits cross-chain intents (Steps 1-3):"
+log "  1. [HUB CHAIN] User creates intent requesting tokens"
+log "  2. [CONNECTED CHAIN] User creates escrow with locked tokens"
+log "  3. [HUB CHAIN] Solver fulfills intent on hub chain"
+log ""
+log "For verifier monitoring and approval (Steps 4-6), run:"
+log "  ./testing-infra/e2e-tests/complete-system/run-cross-chain-verifier.sh"
+log ""
+log "The verifier will:"
+log "  4. Monitor both chains for intents and escrows"
+log "  5. Wait for hub intent to be fulfilled"
+log "  6. Sign approval for escrow release on connected chain"
+log ""
 
 # Validate parameter
 if [ -z "$1" ] || ([ "$1" != "0" ] && [ "$1" != "1" ]); then
-    echo "❌ Error: Invalid parameter!"
-    echo ""
-    echo "Usage: $0 <parameter>"
-    echo "  Parameter 0: Use existing running networks (skip setup)"
-    echo "  Parameter 1: Run full setup and deploy contracts"
-    echo ""
-    echo "Examples:"
-    echo "  $0 0    # Use existing networks"
-    echo "  $0 1    # Run full setup"
+    log_and_echo "❌ Error: Invalid parameter!"
+    log_and_echo ""
+    log_and_echo "Usage: $0 <parameter>"
+    log_and_echo "  Parameter 0: Use existing running networks (skip setup)"
+    log_and_echo "  Parameter 1: Run full setup and deploy contracts"
+    log_and_echo ""
+    log_and_echo "Examples:"
+    log_and_echo "  $0 0    # Use existing networks"
+    log_and_echo "  $0 1    # Run full setup"
     exit 1
 fi
 
@@ -37,24 +59,24 @@ INTENT_ID="0x$(openssl rand -hex 32)"
 
 # Check if we should run setup or use existing networks
 if [ "$1" = "1" ]; then
-    echo ""
-    echo "🚀 Step 0.1: Setting up chains and deploying contracts..."
-    echo "========================================================"
+    log ""
+    log "🚀 Step 0.1: Setting up chains and deploying contracts..."
+    log "========================================================"
     ./testing-infra/e2e-tests/move-intent-framework/setup-and-deploy.sh
 
     if [ $? -ne 0 ]; then
-        echo "❌ Failed to setup chains and deploy contracts"
+        log_and_echo "❌ Failed to setup chains and deploy contracts"
         exit 1
     fi
 
-    echo ""
-    echo "✅ Chains setup and contracts deployed successfully!"
-    echo ""
+    log ""
+    log "✅ Chains setup and contracts deployed successfully!"
+    log ""
 else
-    echo ""
-    echo "⚡ Using existing running networks (skipping setup)"
-    echo "   Use parameter '1' to run full setup: ./submit-cross-chain-intent.sh 1"
-    echo ""
+    log ""
+    log "⚡ Using existing running networks (skipping setup)"
+    log "   Use parameter '1' to run full setup: ./submit-cross-chain-intent.sh 1"
+    log ""
 fi
 
 # Note: Verifier monitoring will be handled separately
@@ -68,17 +90,13 @@ ALICE_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-ch
 BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1"].account')
 ALICE_CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain2"].account')
 
-echo ""
-echo "📋 Chain Information:"
-echo "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
-echo "   Connected Chain (Chain 2): $CHAIN2_ADDRESS"
-echo "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
-echo "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
-echo "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
-
-# Save current directory to go back to project root
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+log ""
+log "📋 Chain Information:"
+log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
+log "   Connected Chain (Chain 2): $CHAIN2_ADDRESS"
+log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
+log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
+log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 
 cd move-intent-framework
 
@@ -86,18 +104,18 @@ cd move-intent-framework
 VERIFIER_CONFIG="${PROJECT_ROOT}/trusted-verifier/config/verifier.toml"
 
 if [ ! -f "$VERIFIER_CONFIG" ]; then
-    echo "❌ ERROR: verifier.toml not found at: $VERIFIER_CONFIG"
-    echo "   The verifier configuration is required for escrow creation."
-    echo "   Please ensure trusted-verifier/config/verifier.toml exists."
+    log_and_echo "❌ ERROR: verifier.toml not found at: $VERIFIER_CONFIG"
+    log_and_echo "   The verifier configuration is required for escrow creation."
+    log_and_echo "   Please ensure trusted-verifier/config/verifier.toml exists."
     exit 1
 fi
 
 VERIFIER_PUBLIC_KEY_B64=$(grep "^public_key" "$VERIFIER_CONFIG" | cut -d'"' -f2)
 
 if [ -z "$VERIFIER_PUBLIC_KEY_B64" ]; then
-    echo "❌ ERROR: Could not find public_key in verifier.toml"
-    echo "   The verifier public key is required for escrow creation."
-    echo "   Please ensure verifier.toml has a valid public_key field."
+    log_and_echo "❌ ERROR: Could not find public_key in verifier.toml"
+    log_and_echo "   The verifier public key is required for escrow creation."
+    log_and_echo "   Please ensure verifier.toml has a valid public_key field."
     exit 1
 fi
 
@@ -105,99 +123,101 @@ fi
 ORACLE_PUBLIC_KEY_HEX=$(echo "$VERIFIER_PUBLIC_KEY_B64" | base64 -d 2>/dev/null | xxd -p -c 1000 | tr -d '\n')
 
 if [ -z "$ORACLE_PUBLIC_KEY_HEX" ] || [ ${#ORACLE_PUBLIC_KEY_HEX} -ne 64 ]; then
-    echo "❌ ERROR: Invalid public key format in verifier.toml"
-    echo "   Expected: base64-encoded 32-byte Ed25519 public key"
-    echo "   Got: $VERIFIER_PUBLIC_KEY_B64"
-    echo "   Please ensure the public_key in verifier.toml is valid base64 and decodes to 32 bytes (64 hex chars)."
+    log_and_echo "❌ ERROR: Invalid public key format in verifier.toml"
+    log_and_echo "   Expected: base64-encoded 32-byte Ed25519 public key"
+    log_and_echo "   Got: $VERIFIER_PUBLIC_KEY_B64"
+    log_and_echo "   Please ensure the public_key in verifier.toml is valid base64 and decodes to 32 bytes (64 hex chars)."
     exit 1
 fi
 
 ORACLE_PUBLIC_KEY="0x${ORACLE_PUBLIC_KEY_HEX}"
-echo "   ✅ Loaded verifier public key from config (32 bytes)"
+log "   ✅ Loaded verifier public key from config (32 bytes)"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
 # Generate a random intent_id upfront (for cross-chain linking)
 INTENT_ID="0x$(openssl rand -hex 32)"
 
-echo ""
-echo "🔑 Configuration:"
-echo "   Oracle public key: $ORACLE_PUBLIC_KEY"
-echo "   Expiry time: $EXPIRY_TIME"
-echo "   Intent ID (for hub & escrow): $INTENT_ID"
+log ""
+log "🔑 Configuration:"
+log "   Oracle public key: $ORACLE_PUBLIC_KEY"
+log "   Expiry time: $EXPIRY_TIME"
+log "   Intent ID (for hub & escrow): $INTENT_ID"
 
 # Check initial balances
-echo ""
-echo "   💰 Initial Balances:"
-echo "   ====================="
+log ""
+log "   💰 Initial Balances:"
+log "   ====================="
 
 ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
 ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
 BOB_CHAIN1_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
 BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
 
-echo "   Chain 1 (Hub):"
-echo "      Alice: $ALICE_CHAIN1_BALANCE Octas"
-echo "      Bob:   $BOB_CHAIN1_BALANCE Octas"
-echo "   Chain 2 (Connected):"
-echo "      Alice: $ALICE_CHAIN2_BALANCE Octas"
-echo "      Bob:   $BOB_CHAIN2_BALANCE Octas"
-echo ""
+log "   Chain 1 (Hub):"
+log "      Alice: $ALICE_CHAIN1_BALANCE Octas"
+log "      Bob:   $BOB_CHAIN1_BALANCE Octas"
+log "   Chain 2 (Connected):"
+log "      Alice: $ALICE_CHAIN2_BALANCE Octas"
+log "      Bob:   $BOB_CHAIN2_BALANCE Octas"
+log ""
 
-echo ""
-echo "📝 STEP 1: [HUB CHAIN] Alice creates intent requesting tokens"
-echo "================================================="
-echo "   User creates intent on hub chain requesting tokens from solver"
-echo "   - Alice creates intent on Chain 1 (hub chain)"
-echo "   - Intent requests 100000000 tokens to be provided by solver"
-echo "   - Using intent_id: $INTENT_ID"
+log ""
+log "📝 STEP 1: [HUB CHAIN] Alice creates intent requesting tokens"
+log "================================================="
+log "   User creates intent on hub chain requesting tokens from solver"
+log "   - Alice creates intent on Chain 1 (hub chain)"
+log "   - Intent requests 100000000 tokens to be provided by solver"
+log "   - Using intent_id: $INTENT_ID"
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
-echo "   - Creating cross-chain request intent on Chain 1..."
+log "   - Creating cross-chain request intent on Chain 1..."
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_apt::create_cross_chain_request_intent_entry" \
-    --args "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" > /tmp/intent_creation.log 2>&1
+    --args "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    echo "     ✅ Intent created on Chain 1!"
+    log "     ✅ Intent created on Chain 1!"
     
     # Verify intent was stored on-chain by checking Alice's latest transaction
     sleep 2
-    echo "     - Verifying intent stored on-chain..."
+    log "     - Verifying intent stored on-chain..."
     HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("LimitOrderEvent")) | .data.intent_address' | head -n 1)
     
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-        echo "     ✅ Hub intent stored at: $HUB_INTENT_ADDRESS"
+        log "     ✅ Hub intent stored at: $HUB_INTENT_ADDRESS"
+        log_and_echo "✅ Intent created"
     else
-        echo "     ⚠️  Could not verify hub intent address"
+        log_and_echo "     ❌ ERROR: Could not verify hub intent address"
+        exit 1
     fi
 else
-    echo "     ❌ Intent creation failed on Chain 1!"
-    cat /tmp/intent_creation.log
+    log_and_echo "     ❌ Intent creation failed on Chain 1!"
+    log_and_echo "   See log file for details: $LOG_FILE"
     exit 1
 fi
 
-echo ""
-echo "📝 STEP 2: [CONNECTED CHAIN] Alice creates escrow intent with locked tokens"
-echo "================================================="
-echo "   User creates escrow on connected chain WITH tokens locked in it"
-echo "   - Alice locks 100000000 tokens in escrow on Chain 2 (connected chain)"
-echo "   - User provides hub chain intent_id when creating escrow"
-echo "   - Using intent_id from hub chain: $INTENT_ID"
+log ""
+log "📝 STEP 2: [CONNECTED CHAIN] Alice creates escrow intent with locked tokens"
+log "================================================="
+log "   User creates escrow on connected chain WITH tokens locked in it"
+log "   - Alice locks 100000000 tokens in escrow on Chain 2 (connected chain)"
+log "   - User provides hub chain intent_id when creating escrow"
+log "   - Using intent_id from hub chain: $INTENT_ID"
 
 # Submit escrow intent using Alice's account on Chain 2 (connected chain)
-echo "   - Creating escrow intent on Chain 2..."
+log "   - Creating escrow intent on Chain 2..."
 aptos move run --profile alice-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_apt::create_escrow_from_apt" \
-    --args "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}"
+    --args "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    echo "     ✅ Escrow intent created on Chain 2!"
+    log "     ✅ Escrow intent created on Chain 2!"
     
     # Verify escrow was stored on-chain and check locked amount
     sleep 2
-    echo "     - Verifying escrow stored on-chain with locked tokens..."
+    log "     - Verifying escrow stored on-chain with locked tokens..."
     
     # Extract event data directly without piping through head
     ESCROW_ADDRESS=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
@@ -211,77 +231,86 @@ if [ $? -eq 0 ]; then
     
     if [ -n "$ESCROW_ADDRESS" ] && [ "$ESCROW_ADDRESS" != "null" ]; then
         
-        echo "     ✅ Escrow stored at: $ESCROW_ADDRESS"
-        echo "     ✅ Intent ID link: $ESCROW_INTENT_ID (should match: $INTENT_ID)"
-        echo "     ✅ Locked amount: $LOCKED_AMOUNT tokens"
-        echo "     ✅ Desired amount: $DESIRED_AMOUNT tokens"
+        log "     ✅ Escrow stored at: $ESCROW_ADDRESS"
+        log "     ✅ Intent ID link: $ESCROW_INTENT_ID (should match: $INTENT_ID)"
+        log "     ✅ Locked amount: $LOCKED_AMOUNT tokens"
+        log "     ✅ Desired amount: $DESIRED_AMOUNT tokens"
         
-        # Verify intent_id matches
-        if [ "$ESCROW_INTENT_ID" = "$INTENT_ID" ]; then
-            echo "     ✅ Intent IDs match - correct cross-chain link!"
-        else
-            echo "     ⚠️  Intent IDs don't match!"
-        fi
+          # Verify intent_id matches
+          if [ "$ESCROW_INTENT_ID" = "$INTENT_ID" ]; then
+              log "     ✅ Intent IDs match - correct cross-chain link!"
+          else
+              log_and_echo "     ❌ ERROR: Intent IDs don't match!"
+              log_and_echo "        Expected: $INTENT_ID"
+              log_and_echo "        Got: $ESCROW_INTENT_ID"
+              exit 1
+          fi
         
         # Verify locked amount matches expected
         if [ "$LOCKED_AMOUNT" = "100000000" ]; then
-            echo "     ✅ Escrow has correct locked amount (100000000 tokens)"
+            log "     ✅ Escrow has correct locked amount (100000000 tokens)"
         else
-            echo "     ⚠️  Escrow has unexpected locked amount: $LOCKED_AMOUNT"
+            log "     ⚠️  Escrow has unexpected locked amount: $LOCKED_AMOUNT"
         fi
+        
+        log_and_echo "✅ Escrow created"
     else
-        echo "     ⚠️  Could not verify escrow from events"
+        log_and_echo "     ❌ ERROR: Could not verify escrow from events"
+        exit 1
     fi
 else
-    echo "     ❌ Escrow intent creation failed!"
+    log_and_echo "     ❌ Escrow intent creation failed!"
     exit 1
 fi
 
-echo ""
-echo "📝 STEP 3: [HUB CHAIN] Bob fulfills intent on hub chain"
-echo "================================================="
-echo "   Solver monitors escrow event on connected chain and fulfills intent on hub chain"
-echo "   - Solver sees escrow event on connected chain"
-echo "   - Bob sees intent with ID: $INTENT_ID"
-echo "   - Bob provides 100000000 tokens on hub chain to fulfill the intent"
+log ""
+log "📝 STEP 3: [HUB CHAIN] Bob fulfills intent on hub chain"
+log "================================================="
+log "   Solver monitors escrow event on connected chain and fulfills intent on hub chain"
+log "   - Solver sees escrow event on connected chain"
+log "   - Bob sees intent with ID: $INTENT_ID"
+log "   - Bob provides 100000000 tokens on hub chain to fulfill the intent"
 
 # TODO: We need to get the actual intent object address from Step 1
 # For now, we'll need to extract it from the transaction event
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
 
 if [ -n "$INTENT_OBJECT_ADDRESS" ] && [ "$INTENT_OBJECT_ADDRESS" != "null" ]; then
-    echo "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
+    log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
     
     # Bob fulfills the intent by providing tokens
     aptos move run --profile bob-chain1 --assume-yes \
         --function-id "0x${CHAIN1_ADDRESS}::fa_intent_apt::fulfill_cross_chain_request_intent" \
-        --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000"
+        --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
     
     if [ $? -eq 0 ]; then
-        echo "     ✅ Bob successfully fulfilled the intent!"
+        log "     ✅ Bob successfully fulfilled the intent!"
+        log_and_echo "✅ Intent fulfilled"
     else
-        echo "     ❌ Intent fulfillment failed!"
+        log_and_echo "     ❌ Intent fulfillment failed!"
+        exit 1
     fi
 else
-    echo "     ⚠️  Could not get intent object address, skipping fulfillment"
+    log_and_echo "     ⚠️  Could not get intent object address, skipping fulfillment"
+    exit 1
 fi
 
-echo ""
-echo "🎉 INTENT SUBMISSION COMPLETE!"
-echo "=============================="
-echo ""
-echo "✅ Steps 1-3 completed successfully:"
-echo "   1. Intent created on Chain 1 (hub chain)"
-echo "   2. Escrow created on Chain 2 (connected chain) with locked tokens"
-echo "   3. Intent fulfilled on Chain 1 by Bob"
-echo ""
-echo "📋 Intent Details:"
-echo "   Intent ID: $INTENT_ID"
+log ""
+log "🎉 INTENT SUBMISSION COMPLETE!"
+log "=============================="
+log ""
+log "✅ Steps 1-3 completed successfully:"
+log "   1. Intent created on Chain 1 (hub chain)"
+log "   2. Escrow created on Chain 2 (connected chain) with locked tokens"
+log "   3. Intent fulfilled on Chain 1 by Bob"
+log ""
+log "📋 Intent Details:"
+log "   Intent ID: $INTENT_ID"
 if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-    echo "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
+    log "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
 fi
 if [ -n "$ESCROW_ADDRESS" ] && [ "$ESCROW_ADDRESS" != "null" ]; then
-    echo "   Chain 2 Escrow: $ESCROW_ADDRESS"
+    log "   Chain 2 Escrow: $ESCROW_ADDRESS"
 fi
 # Check final balances
 # TODO: BALANCE DISCREPANCY INVESTIGATION
@@ -293,9 +322,9 @@ fi
 #   2. Initial balance check captured wrong timing/state
 #   3. Gas fees being deducted from transfer amount (unusual)
 # Needs investigation to understand coin vs FA balance relationship and why loss < transfer amount
-echo ""
-echo "   💰 Final Balances:"
-echo "   ==================="
+log ""
+log "   💰 Final Balances:"
+log "   ==================="
 
 FINAL_ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
 FINAL_ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
@@ -307,34 +336,34 @@ ALICE_CHAIN2_DIFF=$(($FINAL_ALICE_CHAIN2_BALANCE - $ALICE_CHAIN2_BALANCE))
 BOB_CHAIN1_DIFF=$(($FINAL_BOB_CHAIN1_BALANCE - $BOB_CHAIN1_BALANCE))
 BOB_CHAIN2_DIFF=$(($FINAL_BOB_CHAIN2_BALANCE - $BOB_CHAIN2_BALANCE))
 
-echo "   Chain 1 (Hub):"
+log "   Chain 1 (Hub):"
 if [ $ALICE_CHAIN1_DIFF -ge 0 ]; then
-    echo "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas (+$ALICE_CHAIN1_DIFF)"
+    log "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas (+$ALICE_CHAIN1_DIFF)"
 else
-    echo "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas ($ALICE_CHAIN1_DIFF)"
+    log "      Alice: $FINAL_ALICE_CHAIN1_BALANCE Octas ($ALICE_CHAIN1_DIFF)"
 fi
 if [ $BOB_CHAIN1_DIFF -ge 0 ]; then
-    echo "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas (+$BOB_CHAIN1_DIFF)"
+    log "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas (+$BOB_CHAIN1_DIFF)"
 else
-    echo "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas ($BOB_CHAIN1_DIFF)"
+    log "      Bob:   $FINAL_BOB_CHAIN1_BALANCE Octas ($BOB_CHAIN1_DIFF)"
 fi
-echo "   Chain 2 (Connected):"
+log "   Chain 2 (Connected):"
 if [ $ALICE_CHAIN2_DIFF -ge 0 ]; then
-    echo "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas (+$ALICE_CHAIN2_DIFF)"
+    log "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas (+$ALICE_CHAIN2_DIFF)"
 else
-    echo "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas ($ALICE_CHAIN2_DIFF)"
+    log "      Alice: $FINAL_ALICE_CHAIN2_BALANCE Octas ($ALICE_CHAIN2_DIFF)"
 fi
 if [ $BOB_CHAIN2_DIFF -ge 0 ]; then
-    echo "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas (+$BOB_CHAIN2_DIFF)"
+    log "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas (+$BOB_CHAIN2_DIFF)"
 else
-    echo "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas ($BOB_CHAIN2_DIFF)"
+    log "      Bob:   $FINAL_BOB_CHAIN2_BALANCE Octas ($BOB_CHAIN2_DIFF)"
 fi
-echo ""
+log ""
 
-echo ""
-echo "🔍 Next Steps:"
-echo "   To monitor and verify these events with the trusted verifier, run:"
-echo "   ./testing-infra/e2e-tests/complete-system/run-cross-chain-verifier.sh"
-echo ""
-echo "✨ Script completed - intents are submitted and waiting for verification!"
+log ""
+log "🔍 Next Steps:"
+log "   To monitor and verify these events with the trusted verifier, run:"
+log "   ./testing-infra/e2e-tests/complete-system/run-cross-chain-verifier.sh"
+log ""
+log "✨ Script completed - intents are submitted and waiting for verification!"
 

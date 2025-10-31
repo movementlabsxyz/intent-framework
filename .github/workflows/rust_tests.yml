@@ -1,0 +1,19 @@
+name: "Rust Tests"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  rust-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Nix
+        uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      - name: Run Rust tests
+        run: nix develop --command 'cd trusted-verifier && cargo test --locked'
+

@@ -143,7 +143,7 @@ log "   ✅ Verifier started with PID: $VERIFIER_PID"
 # Wait for verifier to be ready
 log "   - Waiting for verifier to initialize..."
 RETRY_COUNT=0
-MAX_RETRIES=30
+MAX_RETRIES=90
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if curl -s -f "http://127.0.0.1:3000/health" > /dev/null 2>&1; then

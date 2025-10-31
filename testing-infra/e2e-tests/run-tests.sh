@@ -84,7 +84,7 @@ EOF
 
 # Run the tests from trusted-verifier directory
 cd trusted-verifier
-cargo test --test integration_test_e2e --locked
+cargo test --test integration_test_e2e
 
 # Clean up temporary test file
 cd ..

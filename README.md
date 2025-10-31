@@ -18,7 +18,7 @@ nix develop
 ```
 # Unit tests (no Docker required)
 cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123 && cd ..
-cd trusted-verifier && cargo test --locked && cd ..
+cd trusted-verifier && cargo test && cd ..
 
 # E2E integration tests (requires Docker)
 ./testing-infra/e2e-tests/run-tests.sh

@@ -367,7 +367,7 @@ else
             PAYMENT_AMOUNT=1  # Placeholder amount
             
             aptos move run --profile bob-chain2 --assume-yes \
-                --function-id "0x${CHAIN2_DEPLOY_ADDRESS}::intent_as_escrow_apt::complete_escrow_from_apt" \
+                --function-id "0x${CHAIN2_DEPLOY_ADDRESS}::intent_as_escrow_apt::complete_escrow_from_fa" \
                 --args "address:${ESCROW_ID}" "u64:${PAYMENT_AMOUNT}" "u64:${APPROVAL_VALUE}" "hex:${SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
             
             TX_EXIT_CODE=$?

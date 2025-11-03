@@ -35,6 +35,11 @@ module aptos_intent::fa_intent {
         intent_id: Option<address>, // Optional cross-chain intent_id for linking (None for regular intents)
     }
 
+    /// Getter for desired_metadata to allow access from other modules
+    public fun get_desired_metadata(order: &FungibleAssetLimitOrder): Object<Metadata> {
+        order.desired_metadata
+    }
+
     /// Witness type for fungible asset intent completion.
     /// Empty struct that can only be created after verifying trading conditions.
     struct FungibleAssetRecipientWitness has drop {}

@@ -32,7 +32,7 @@ What the script does
 1) Starts/validates chains, funds accounts, deploys modules
 2) Submits hub intent, creates connected‑chain escrow, fulfills hub intent
 3) Starts verifier (background), waits for events
-4) Polls `/approvals` and calls `complete_escrow_from_apt` with the approval
+4) Polls `/approvals` and calls `complete_escrow_from_fa` with the approval
 5) Prints initial/final balances and diffs on both chains
 
 ## Event linkage
@@ -51,7 +51,7 @@ What the script does
 2) Connected: Alice creates escrow (non‑revocable), includes verifier public key, links `intent_id`
 3) Hub: Bob fulfills the intent
 4) Verifier: observes fulfillment + escrow, generates approval (signature over BCS(u64=1))
-5) Script: submits `complete_escrow_from_apt` on connected chain with approval
+5) Script: submits `complete_escrow_from_fa` on connected chain with approval
 
 Notes
 - Fulfillment correctness is enforced by Move; the verifier does not re‑validate fulfillment details

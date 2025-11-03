@@ -147,11 +147,23 @@ log "   - Alice creates intent on Chain 1 (hub chain)"
 log "   - Intent requests 100000000 tokens to be provided by solver"
 log "   - Using intent_id: $INTENT_ID"
 
+# Get APT metadata addresses for both chains
+# Note: For custom FAs (FAAlice/FABob), these should be replaced with your custom FA metadata addresses
+log "   - Getting APT metadata addresses..."
+# APT metadata is typically at 0x1, but we need to query the actual metadata object address
+# For local test chains, we'll use a placeholder that should work, or create test FAs
+# TODO: Replace with actual FA metadata addresses for custom tokens (FAAlice/FABob)
+SOURCE_FA_METADATA_CHAIN1="0x1"  # Placeholder - replace with actual FA metadata address
+DESIRED_FA_METADATA_CHAIN1="0x1"  # Placeholder - replace with actual FA metadata address
+SOURCE_FA_METADATA_CHAIN2="0x1"  # Placeholder - replace with actual FA metadata address
+
 # Create cross-chain request intent on Chain 1 using fa_intent module
 log "   - Creating cross-chain request intent on Chain 1..."
+log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN1"
+log "     Desired FA metadata: $DESIRED_FA_METADATA_CHAIN1"
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_apt::create_cross_chain_request_intent_entry" \
-    --args "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"
@@ -185,9 +197,10 @@ log "   - Using intent_id from hub chain: $INTENT_ID"
 
 # Submit escrow intent using Alice's account on Chain 2 (connected chain)
 log "   - Creating escrow intent on Chain 2..."
+log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN2"
 aptos move run --profile alice-chain2 --assume-yes \
-    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_apt::create_escrow_from_apt" \
-    --args "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
+    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_apt::create_escrow_from_fa" \
+    --args "address:${SOURCE_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Escrow intent created on Chain 2!"

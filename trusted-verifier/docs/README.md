@@ -28,7 +28,7 @@ trusted-verifier/
 2) Connected: Alice creates escrow (non‑revocable), includes verifier public key, links `intent_id` (emits `OracleLimitOrderEvent`)
 3) Hub: Bob fulfills the intent (emits `LimitOrderFulfillmentEvent`)
 4) Verifier: observes fulfillment + escrow, generates approval signature (BCS(u64=1))
-5) Script: submits `complete_escrow_from_apt` on connected chain with approval signature
+5) Script: submits `complete_escrow_from_fa` on connected chain with approval signature
 
 
 ```mermaid
@@ -49,5 +49,5 @@ sequenceDiagram
     Hub->>Verifier: (observe) FulfillmentEvent
 
     Verifier->>Bob: approval signature for escrow releaase
-    Bob->>Connected: complete_escrow_from_apt(escrow_id, approval)
+    Bob->>Connected: complete_escrow_from_fa(escrow_id, approval)
 ```

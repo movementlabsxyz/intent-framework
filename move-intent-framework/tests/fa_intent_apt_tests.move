@@ -1,7 +1,6 @@
 #[test_only]
 module aptos_intent::fa_intent_apt_tests {
     use std::signer;
-    use std::option;
     use aptos_framework::timestamp;
     use aptos_framework::object;
     use aptos_framework::primary_fungible_store;
@@ -11,15 +10,8 @@ module aptos_intent::fa_intent_apt_tests {
     // TESTS
     // ============================================================================
 
-    // DO NOT DELETE - This test is kept to document the limitation
-    // 
-    // This test FAILS because:
-    // 1. create_cross_chain_request_intent() is hardcoded to use APT metadata
-    // 2. In Move unit tests, coin::paired_metadata<AptosCoin>() returns None
-    // 3. The function cannot be tested with generic tokens in unit tests
-    //
-    // Actual cross-chain fulfillment is verified via submit-cross-chain-intent.sh (E2E test)
     #[test(
+        aptos_framework = @0x1,
         requestor = @0xcafe,
         solver = @0xdead
     )]
@@ -28,19 +20,25 @@ module aptos_intent::fa_intent_apt_tests {
     /// has 0 tokens locked on the hub chain (tokens are in escrow on a different chain).
     /// This is Step 3 of the cross-chain escrow flow.
     fun test_fulfill_cross_chain_request_intent(
+        aptos_framework: &signer,
         requestor: &signer,
         solver: &signer,
     ) {
-        let aptos_metadata_opt = aptos_framework::coin::paired_metadata<aptos_framework::aptos_coin::AptosCoin>();
-        assert!(option::is_some(&aptos_metadata_opt), 9001);
-        let aptos_metadata = option::destroy_some(aptos_metadata_opt);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        
+        // Create test fungible assets for cross-chain swap
+        // Source FA (locked on connected chain) and desired FA (requested on hub chain)
+        let (source_metadata, _) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (desired_metadata, _desired_mint_ref) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
-        let dummy_intent_id = @0x123;
+        let dummy_intent_id = @0x1234;
         let intent_address = fa_intent_apt::create_cross_chain_request_intent(
             requestor,
-            1000, // Wants 1000 tokens from solver
+            source_metadata,
+            desired_metadata,
+            100, // Wants 100 tokens from solver
             timestamp::now_seconds() + 3600,
             dummy_intent_id,
         );
@@ -57,45 +55,46 @@ module aptos_intent::fa_intent_apt_tests {
         fa_intent_apt::fulfill_cross_chain_request_intent(
             solver,
             intent_obj,
-            1000, // Provides 1000 tokens
+            100, // Provides 100 tokens
         );
         
         // Verify requestor received the tokens
-        assert!(primary_fungible_store::balance(signer::address_of(requestor), aptos_metadata) == 1000);
+        assert!(primary_fungible_store::balance(signer::address_of(requestor), desired_metadata) == 100);
         
-        // Verify solver's balance decreased
-        assert!(primary_fungible_store::balance(signer::address_of(solver), aptos_metadata) == 999000);
+        // Verify solver's balance decreased (100 - 100 = 0)
+        assert!(primary_fungible_store::balance(signer::address_of(solver), desired_metadata) == 0);
     }
 
-    // DO NOT DELETE - This test documents expected behavior
-    //
-    // This test FAILS in unit tests because:
-    // 1. create_cross_chain_request_intent() is hardcoded to use APT metadata
-    // 2. In Move unit tests, coin::paired_metadata<AptosCoin>() returns None
-    // 3. The function cannot be tested with generic tokens in unit tests
-    //
-    // Expected behavior (verified via E2E): Fulfillment fails with EAMOUNT_NOT_MEET
-    // when provided_amount < desired_amount
-    //
-    // Actual validation is in fa_intent::finish_fa_receiving_session_with_event()
-    // which asserts: provided_amount >= argument.desired_amount
     #[test(
+        aptos_framework = @0x1,
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    #[expected_failure(abort_code = 9001, location = aptos_intent::fa_intent_apt_tests)] // Fails early due to APT metadata limitation
+    #[expected_failure(abort_code = 65537, location = aptos_intent::fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
+    /// Test: Cross-chain request intent fulfillment with insufficient amount
+    /// Verifies that fulfillment fails when provided_amount < desired_amount.
+    ///
+    /// Expected behavior: Fulfillment fails with EAMOUNT_NOT_MEET when provided_amount < desired_amount.
+    ///
+    /// Actual validation is in fa_intent::finish_fa_receiving_session_with_event()
+    /// which asserts: provided_amount >= argument.desired_amount
     fun test_fulfill_cross_chain_request_intent_insufficient_amount(
+        aptos_framework: &signer,
         requestor: &signer,
         solver: &signer,
     ) {
-        let aptos_metadata_opt = aptos_framework::coin::paired_metadata<aptos_framework::aptos_coin::AptosCoin>();
-        assert!(option::is_some(&aptos_metadata_opt), 9001);
-        let _aptos_metadata = option::destroy_some(aptos_metadata_opt);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        
+        // Create test fungible assets for cross-chain swap
+        let (source_metadata, _) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (desired_metadata, _desired_mint_ref) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent wanting 1000 tokens
         let dummy_intent_id = @0x123;
         let intent_address = fa_intent_apt::create_cross_chain_request_intent(
             requestor,
+            source_metadata,
+            desired_metadata,
             1000, // Wants 1000 tokens
             timestamp::now_seconds() + 3600,
             dummy_intent_id,
@@ -104,12 +103,12 @@ module aptos_intent::fa_intent_apt_tests {
         // Convert address to object reference
         let intent_obj = object::address_to_object(intent_address);
         
-        // Solver tries to fulfill with insufficient amount (500 < 1000)
+        // Solver tries to fulfill with insufficient amount (50 < 1000)
         // This should fail with EAMOUNT_NOT_MEET
         fa_intent_apt::fulfill_cross_chain_request_intent(
             solver,
             intent_obj,
-            500, // Provides only 500 tokens (insufficient!)
+            50, // Provides only 50 tokens (insufficient! Needs 1000)
         );
     }
 

@@ -111,12 +111,12 @@ Response
 ## Usage in Escrow Release
 
 1) Poll `/approvals` until an approval with your `escrow_id` appears
-2) Submit connected‑chain entry: `complete_escrow_from_apt(escrow_id, approval_value, signature)`
+2) Submit connected‑chain entry: `complete_escrow_from_fa(escrow_id, approval_value, signature)`
 
 In the integration script this is automated (bob‑chain2 profile):
 ```
 aptos move run --profile bob-chain2 --assume-yes \
-  --function-id "0x<connected_module_address>::intent_as_escrow_apt::complete_escrow_from_apt" \
+  --function-id "0x<connected_module_address>::intent_as_escrow_apt::complete_escrow_from_fa" \
   --args "address:<escrow_id>" "u64:<approval_value>" "hex:<signature_hex>"
 ```
 

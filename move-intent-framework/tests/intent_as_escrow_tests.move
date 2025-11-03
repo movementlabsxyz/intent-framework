@@ -4,7 +4,6 @@ module aptos_intent::intent_as_escrow_tests {
     use std::bcs;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
-    use aptos_framework::fungible_asset::FungibleAsset;
     use aptos_intent::intent_as_escrow;
     use aptos_intent::fa_intent_with_oracle;
     use aptos_intent::fa_test_utils::register_and_mint_tokens;
@@ -169,15 +168,15 @@ module aptos_intent::intent_as_escrow_tests {
         aptos_framework = @0x1,
         user = @0xcafe
     )]
-    /// Test the CLI-friendly wrapper function for creating escrow with APT tokens
-    fun test_create_escrow_from_apt(
+    /// Test the CLI-friendly wrapper function for creating escrow with any fungible asset
+    fun test_create_escrow_from_fa(
         aptos_framework: &signer,
         user: &signer,
     ) {
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
-        // Create test APT-like metadata for testing (since real APT isn't available in tests)
-        let (apt_metadata, _) = register_and_mint_tokens(aptos_framework, user, 100);
+        // Create test fungible asset metadata for testing
+        let (fa_metadata, _) = register_and_mint_tokens(aptos_framework, user, 100);
         
         // Generate verifier key pair
         let (_, validated_pk) = ed25519::generate_keys();
@@ -186,22 +185,18 @@ module aptos_intent::intent_as_escrow_tests {
         // Convert to vector<u8> for the wrapper function
         let verifier_public_key_bytes = ed25519::unvalidated_public_key_to_bytes(&verifier_public_key);
         
-        // Test the core logic: withdraw APT-like tokens and create escrow
-        // (We can't test the full wrapper because it requires real APT metadata)
-        let fa: FungibleAsset = primary_fungible_store::withdraw(user, apt_metadata, 50);
-        let oracle_pk = ed25519::new_unvalidated_public_key_from_bytes(verifier_public_key_bytes);
-        
-        // Test creating escrow with the withdrawn tokens
-        let _escrow_intent = intent_as_escrow::create_escrow(
+        // Test the wrapper function: create escrow from FA
+        aptos_intent::intent_as_escrow_apt::create_escrow_from_fa(
             user,
-            fa,
-            oracle_pk,
+            fa_metadata,
+            50,
+            verifier_public_key_bytes,
             timestamp::now_seconds() + 3600,
             @0x1, // dummy intent_id for testing
         );
         
         // Verify user's balance decreased by 50
-        assert!(primary_fungible_store::balance(signer::address_of(user), apt_metadata) == 50);
+        assert!(primary_fungible_store::balance(signer::address_of(user), fa_metadata) == 50);
         
         // Verify escrow intent was created (it should exist)
         // Note: We can't easily verify the escrow intent object without more complex checks

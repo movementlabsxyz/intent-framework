@@ -34,9 +34,6 @@ module aptos_intent::intent_as_escrow {
     use std::error;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
     use aptos_framework::object::Object;
-    use aptos_framework::primary_fungible_store;
-    use aptos_framework::aptos_coin;
-    use aptos_framework::coin;
     use aptos_intent::fa_intent_with_oracle;
     use aptos_intent::intent::{TradeIntent, TradeSession};
     use aptos_std::ed25519;

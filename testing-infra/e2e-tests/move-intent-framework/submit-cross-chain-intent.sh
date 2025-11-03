@@ -86,8 +86,6 @@ log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 
-cd move-intent-framework
-
 # Load oracle public key from verifier config (base64 encoded, needs to be converted to hex)
 # Use verifier_testing.toml for tests - required, panic if not found
 VERIFIER_TESTING_CONFIG="${PROJECT_ROOT}/trusted-verifier/config/verifier_testing.toml"
@@ -147,15 +145,53 @@ log "   - Alice creates intent on Chain 1 (hub chain)"
 log "   - Intent requests 100000000 tokens to be provided by solver"
 log "   - Using intent_id: $INTENT_ID"
 
-# Get APT metadata addresses for both chains
-# Note: For custom FAs (FAAlice/FABob), these should be replaced with your custom FA metadata addresses
+# Get APT metadata addresses for both chains using helper function
 log "   - Getting APT metadata addresses..."
-# APT metadata is typically at 0x1, but we need to query the actual metadata object address
-# For local test chains, we'll use a placeholder that should work, or create test FAs
-# TODO: Replace with actual FA metadata addresses for custom tokens (FAAlice/FABob)
-SOURCE_FA_METADATA_CHAIN1="0x1"  # Placeholder - replace with actual FA metadata address
-DESIRED_FA_METADATA_CHAIN1="0x1"  # Placeholder - replace with actual FA metadata address
-SOURCE_FA_METADATA_CHAIN2="0x1"  # Placeholder - replace with actual FA metadata address
+
+# Get APT metadata on Chain 1
+log "     Getting APT metadata on Chain 1..."
+aptos move run --profile alice-chain1 --assume-yes \
+    --function-id "0x${CHAIN1_ADDRESS}::test_fa_helper::get_apt_metadata_address" \
+    >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    sleep 2
+    APT_METADATA_CHAIN1=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" | \
+        jq -r '.[0].events[] | select(.type | contains("APTMetadataAddressEvent")) | .data.metadata' | head -n 1)
+    if [ -n "$APT_METADATA_CHAIN1" ] && [ "$APT_METADATA_CHAIN1" != "null" ]; then
+        log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
+        SOURCE_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+        DESIRED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+    else
+        log_and_echo "     ❌ Failed to extract APT metadata from Chain 1 transaction"
+        exit 1
+    fi
+else
+    log_and_echo "     ❌ Failed to get APT metadata on Chain 1"
+    exit 1
+fi
+
+# Get APT metadata on Chain 2
+log "     Getting APT metadata on Chain 2..."
+aptos move run --profile alice-chain2 --assume-yes \
+    --function-id "0x${CHAIN2_ADDRESS}::test_fa_helper::get_apt_metadata_address" \
+    >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    sleep 2
+    APT_METADATA_CHAIN2=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
+        jq -r '.[0].events[] | select(.type | contains("APTMetadataAddressEvent")) | .data.metadata' | head -n 1)
+    if [ -n "$APT_METADATA_CHAIN2" ] && [ "$APT_METADATA_CHAIN2" != "null" ]; then
+        log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
+        SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+    else
+        log_and_echo "     ❌ Failed to extract APT metadata from Chain 2 transaction"
+        exit 1
+    fi
+else
+    log_and_echo "     ❌ Failed to get APT metadata on Chain 2"
+    exit 1
+fi
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
 log "   - Creating cross-chain request intent on Chain 1..."

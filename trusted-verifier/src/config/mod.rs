@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 /// This structure holds configuration for:
 /// - Hub chain connection details
 /// - Connected chain connection details  
+/// - EVM chain configuration (optional, for mixed-chain flows)
 /// - Verifier cryptographic keys and settings
 /// - API server configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,6 +23,9 @@ pub struct Config {
     pub hub_chain: ChainConfig,
     /// Connected chain configuration (where escrow events occur)
     pub connected_chain: ChainConfig,
+    /// EVM chain configuration (optional, for escrow on EVM)
+    #[serde(default)]
+    pub evm_chain: Option<EvmChainConfig>,
     /// Verifier-specific configuration (keys, timeouts, etc.)
     pub verifier: VerifierConfig,
     /// API server configuration (host, port, CORS settings)
@@ -46,6 +50,21 @@ pub struct ChainConfig {
     pub escrow_module_address: Option<String>,
     /// Known test accounts to poll for events
     pub known_accounts: Option<Vec<String>>,
+}
+
+/// Configuration for an EVM-compatible chain (Ethereum, Hardhat, etc.)
+/// 
+/// Used when escrows are hosted on EVM chains instead of Move-based chains.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvmChainConfig {
+    /// RPC endpoint URL for EVM chain communication
+    pub rpc_url: String,
+    /// Address of the IntentVault contract
+    pub vault_address: String,
+    /// Chain ID (e.g., 31337 for Hardhat, 1 for Ethereum mainnet)
+    pub chain_id: u64,
+    /// Verifier address (ECDSA public key as Ethereum address)
+    pub verifier_address: String,
 }
 
 /// Verifier-specific configuration including cryptographic keys and timing parameters.
@@ -146,9 +165,10 @@ impl Config {
             },
             api: ApiConfig {
                 host: "127.0.0.1".to_string(),
-                port: 3000,
-                cors_origins: vec!["http://localhost:3000".to_string()],
+                port: 3333,
+                cors_origins: vec!["http://localhost:3333".to_string()],
             },
+            evm_chain: None, // Optional EVM chain configuration
         }
     }
 }

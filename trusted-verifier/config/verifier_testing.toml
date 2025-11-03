@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 4
-intent_module_address = "0x7888efeeea6f3dc637a4e950c1dc7083146a847036122e619b8e8f9856175ca9"
-known_accounts = ["f2d4bb1cea6728fbf5b5609cce938af871345b9dcb458824e0b807f921fb0c51", "53a65b46627be017cad52f9facd24a4c296a785846f8268b8b45af33184c2ae8"]
+intent_module_address = "0xb6ab0c9cc8d5412e4dfcdb36f104ed1c5ab57a387a8b6115760034eb92d67b44"
+known_accounts = ["25035ca431630226a621715bd4afdee0c6187c066e96e68aa6ea7bbb6f3d369d", "8f1628d2db14a553134bc729bc6a587214025226cd64a365c6179b9580c5389d"]
 
 # Connected Chain Configuration  
 # The connected chain is where escrow events occur and are monitored
@@ -23,6 +23,12 @@ known_accounts = ["0421838b03f4a1c428c6f307b15a0d76dceab2ac931b42c5b5293382171c7
 
 # Verifier Configuration
 # Cryptographic keys and timing parameters for the verifier
+[evm_chain]
+rpc_url = "http://127.0.0.1:8545"
+vault_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+chain_id = 31337
+verifier_address = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+
 [verifier]
 private_key = "lNqeNsdkUB4+UR9EihzMErmY2inmVnhNAJC2y2SDpSs="
 public_key = "NfUiwrwfjQR0kKZgUmbGLkwKrsT1+Z1FJSBMVjZ5dTc="
@@ -33,6 +39,6 @@ validation_timeout_ms = 30000
 # HTTP server settings for the REST API
 [api]
 host = "127.0.0.1"
-port = 3000
-cors_origins = ["http://localhost:3000"]
+port = 3333
+cors_origins = ["http://localhost:3333"]
 

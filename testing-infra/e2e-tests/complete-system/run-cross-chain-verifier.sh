@@ -146,7 +146,7 @@ RETRY_COUNT=0
 MAX_RETRIES=90
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -s -f "http://127.0.0.1:3000/health" > /dev/null 2>&1; then
+    if curl -s -f "http://127.0.0.1:3333/health" > /dev/null 2>&1; then
         log "   ✅ Verifier is ready!"
         break
     fi
@@ -177,7 +177,7 @@ log ""
 log "📋 Verifier Status:"
 log "========================================"
 
-VERIFIER_EVENTS=$(curl -s "http://127.0.0.1:3000/events")
+VERIFIER_EVENTS=$(curl -s "http://127.0.0.1:3333/events")
 
 # Check if verifier has intent events
 INTENT_COUNT=$(echo "$VERIFIER_EVENTS" | jq -r '.data.intent_events | length' 2>/dev/null || echo "0")
@@ -295,7 +295,7 @@ log ""
 log "🔍 Verifier is now monitoring:"
 log "   - Chain 1 (hub) at http://127.0.0.1:8080"
 log "   - Chain 2 (connected) at http://127.0.0.1:8082"
-log "   - API available at http://127.0.0.1:3000"
+log "   - API available at http://127.0.0.1:3333"
 log ""
 
 # Start automatic escrow release monitoring
@@ -317,7 +317,7 @@ else
     
     # Function to check for new approvals and release escrows
     check_and_release_escrows() {
-        APPROVALS_RESPONSE=$(curl -s "http://127.0.0.1:3000/approvals")
+        APPROVALS_RESPONSE=$(curl -s "http://127.0.0.1:3333/approvals")
         
         if [ $? -ne 0 ]; then
             return 1
@@ -401,7 +401,7 @@ else
     log ""
     log "   ℹ️  The verifier will continue monitoring in the background"
     log "      To manually check and release escrows, use:"
-    log "      curl -s http://127.0.0.1:3000/approvals | jq"
+    log "      curl -s http://127.0.0.1:3333/approvals | jq"
 fi
 
 # Check final balances using common function
@@ -409,9 +409,9 @@ display_balances
 
 log_and_echo ""
 log_and_echo "📝 Useful commands:"
-log_and_echo "   View events:      curl -s http://127.0.0.1:3000/events | jq"
-log_and_echo "   View approvals:  curl -s http://127.0.0.1:3000/approvals | jq"
-log_and_echo "   Health check:     curl -s http://127.0.0.1:3000/health"
+log_and_echo "   View events:      curl -s http://127.0.0.1:3333/events | jq"
+log_and_echo "   View approvals:  curl -s http://127.0.0.1:3333/approvals | jq"
+log_and_echo "   Health check:     curl -s http://127.0.0.1:3333/health"
 log_and_echo "   View logs:        tail -f $VERIFIER_LOG"
 log_and_echo "   Stop verifier:    kill $VERIFIER_PID"
 log_and_echo ""

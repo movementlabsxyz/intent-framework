@@ -1,6 +1,6 @@
 # Trusted Verifier API
 
-Base URL: `http://<host>:<port>` (defaults to `127.0.0.1:3000`)
+Base URL: `http://<host>:<port>` (defaults to `127.0.0.1:3333`)
 
 All responses share the shape:
 
@@ -18,7 +18,7 @@ Health check.
 
 Example
 ```
-curl -s http://127.0.0.1:3000/health
+curl -s http://127.0.0.1:3333/health
 ```
 
 ## GET /public-key
@@ -82,7 +82,7 @@ Approval item
 
 Example
 ```
-curl -s http://127.0.0.1:3000/approvals | jq
+curl -s http://127.0.0.1:3333/approvals | jq
 ```
 
 ## POST /approval

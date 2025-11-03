@@ -37,5 +37,5 @@ validation_timeout_ms = 30000                        # Timeout for validation op
 # HTTP server settings for the REST API
 [api]
 host = "127.0.0.1"                                    # Host address to bind the API server to
-port = 3000                                           # Port number to bind the API server to
-cors_origins = ["http://localhost:3000"]              # Allowed CORS origins for cross-origin requests
+port = 3333                                           # Port number to bind the API server to
+cors_origins = ["http://localhost:3333"]              # Allowed CORS origins for cross-origin requests

@@ -51,6 +51,7 @@ pub fn build_test_config() -> Config {
             port: 3999,
             cors_origins: vec![],
         },
+        evm_chain: None, // No EVM chain for unit tests
     }
 }
 

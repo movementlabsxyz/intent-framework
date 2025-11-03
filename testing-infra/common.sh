@@ -68,8 +68,9 @@ log() {
 # Fetch and display balances
 # Usage: display_balances
 # Fetches balances from aptos CLI and displays them on both terminal and log file
+# Also shows EVM chain balances if EVM chain is running
 display_balances() {
-    # Fetch balances
+    # Fetch Aptos balances
     local alice1=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
     local alice2=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
     local bob1=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
@@ -82,6 +83,53 @@ display_balances() {
     log_and_echo "   Chain 2 (Connected):"
     log_and_echo "      Alice: $alice2 Octas"
     log_and_echo "      Bob:   $bob2 Octas"
+    
+    # Fetch EVM balances if EVM chain is running
+    if curl -s -X POST http://127.0.0.1:8545 \
+        -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+        >/dev/null 2>&1; then
+        cd "$PROJECT_ROOT/evm-intent-framework"
+        
+        local alice_evm=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+const hre = require('hardhat');
+(async () => {
+  const signers = await hre.ethers.getSigners();
+  const balance = await hre.ethers.provider.getBalance(signers[0].address);
+  console.log(balance.toString());
+})();
+EOF" 2>/dev/null | tail -1 | tr -d '\n' || echo "0")
+        
+        local solver_evm=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+const hre = require('hardhat');
+(async () => {
+  const signers = await hre.ethers.getSigners();
+  const balance = await hre.ethers.provider.getBalance(signers[1].address);
+  console.log(balance.toString());
+})();
+EOF" 2>/dev/null | tail -1 | tr -d '\n' || echo "0")
+        
+        cd "$PROJECT_ROOT"
+        
+        # Always show Chain 3 (EVM) header when EVM chain is running
+        log_and_echo "   Chain 3 (EVM):"
+        
+        # Format EVM balances (show both ETH and wei)
+        if [ "$alice_evm" != "0" ] && [ -n "$alice_evm" ]; then
+            local alice_eth=$(echo "scale=4; $alice_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
+            log_and_echo "      Alice (Acc 0): ${alice_eth} ETH"
+        else
+            log_and_echo "      Alice (Acc 0): 0 ETH"
+        fi
+        
+        if [ "$solver_evm" != "0" ] && [ -n "$solver_evm" ]; then
+            local solver_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
+            log_and_echo "      Solver (Acc 1): ${solver_eth} ETH"
+        else
+            log_and_echo "      Solver (Acc 1): 0 ETH"
+        fi
+    fi
+    
     log_and_echo ""
 }
 

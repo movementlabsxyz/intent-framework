@@ -1,0 +1,16 @@
+{
+  "name": "evm-intent-framework",
+  "version": "0.1.0",
+  "description": "EVM vault for cross-chain intents with verifier signature verification",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "hardhat": "^2.22.0"
+  }
+}
+

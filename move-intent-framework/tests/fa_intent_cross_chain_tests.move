@@ -1,10 +1,10 @@
 #[test_only]
-module aptos_intent::fa_intent_apt_tests {
+module aptos_intent::fa_intent_cross_chain_tests {
     use std::signer;
     use aptos_framework::timestamp;
     use aptos_framework::object;
     use aptos_framework::primary_fungible_store;
-    use aptos_intent::fa_intent_apt;
+    use aptos_intent::fa_intent_cross_chain;
 
     // ============================================================================
     // TESTS
@@ -34,7 +34,7 @@ module aptos_intent::fa_intent_apt_tests {
         // Requestor creates a cross-chain request intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
         let dummy_intent_id = @0x1234;
-        let intent_address = fa_intent_apt::create_cross_chain_request_intent(
+        let intent_address = fa_intent_cross_chain::create_cross_chain_request_intent(
             requestor,
             source_metadata,
             desired_metadata,
@@ -52,7 +52,7 @@ module aptos_intent::fa_intent_apt_tests {
         // Solver fulfills the intent using the entry function
         // Note: This calls start_fa_offering_session (unlocks 0 tokens), 
         // withdraws payment tokens, and finishes the session
-        fa_intent_apt::fulfill_cross_chain_request_intent(
+        fa_intent_cross_chain::fulfill_cross_chain_request_intent(
             solver,
             intent_obj,
             100, // Provides 100 tokens
@@ -91,7 +91,7 @@ module aptos_intent::fa_intent_apt_tests {
         
         // Requestor creates a cross-chain request intent wanting 1000 tokens
         let dummy_intent_id = @0x123;
-        let intent_address = fa_intent_apt::create_cross_chain_request_intent(
+        let intent_address = fa_intent_cross_chain::create_cross_chain_request_intent(
             requestor,
             source_metadata,
             desired_metadata,
@@ -105,7 +105,7 @@ module aptos_intent::fa_intent_apt_tests {
         
         // Solver tries to fulfill with insufficient amount (50 < 1000)
         // This should fail with EAMOUNT_NOT_MEET
-        fa_intent_apt::fulfill_cross_chain_request_intent(
+        fa_intent_cross_chain::fulfill_cross_chain_request_intent(
             solver,
             intent_obj,
             50, // Provides only 50 tokens (insufficient! Needs 1000)

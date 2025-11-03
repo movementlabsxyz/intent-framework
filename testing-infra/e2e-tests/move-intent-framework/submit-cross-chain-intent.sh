@@ -198,7 +198,7 @@ log "   - Creating cross-chain request intent on Chain 1..."
 log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN1"
 log "     Desired FA metadata: $DESIRED_FA_METADATA_CHAIN1"
 aptos move run --profile alice-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_apt::create_cross_chain_request_intent_entry" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
     --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
@@ -235,7 +235,7 @@ log "   - Using intent_id from hub chain: $INTENT_ID"
 log "   - Creating escrow intent on Chain 2..."
 log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN2"
 aptos move run --profile alice-chain2 --assume-yes \
-    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_apt::create_escrow_from_fa" \
+    --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
     --args "address:${SOURCE_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
@@ -314,7 +314,7 @@ if [ -n "$INTENT_OBJECT_ADDRESS" ] && [ "$INTENT_OBJECT_ADDRESS" != "null" ]; th
     
     # Bob fulfills the intent by providing tokens
     aptos move run --profile bob-chain1 --assume-yes \
-        --function-id "0x${CHAIN1_ADDRESS}::fa_intent_apt::fulfill_cross_chain_request_intent" \
+        --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::fulfill_cross_chain_request_intent" \
         --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
     
     if [ $? -eq 0 ]; then

@@ -1,4 +1,4 @@
-module aptos_intent::fa_intent_apt {
+module aptos_intent::fa_intent_cross_chain {
     use std::signer;
     use std::option;
     use aptos_framework::primary_fungible_store;

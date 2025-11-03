@@ -116,7 +116,7 @@ Response
 In the integration script this is automated (bob‑chain2 profile):
 ```
 aptos move run --profile bob-chain2 --assume-yes \
-  --function-id "0x<connected_module_address>::intent_as_escrow_apt::complete_escrow_from_fa" \
+  --function-id "0x<connected_module_address>::intent_as_escrow_entry::complete_escrow_from_fa" \
   --args "address:<escrow_id>" "u64:<approval_value>" "hex:<signature_hex>"
 ```
 

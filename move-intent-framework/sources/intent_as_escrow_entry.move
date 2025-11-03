@@ -1,4 +1,4 @@
-module aptos_intent::intent_as_escrow_apt {
+module aptos_intent::intent_as_escrow_entry {
     use std::signer;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::Object;

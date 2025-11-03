@@ -186,7 +186,7 @@ module aptos_intent::intent_as_escrow_tests {
         let verifier_public_key_bytes = ed25519::unvalidated_public_key_to_bytes(&verifier_public_key);
         
         // Test the wrapper function: create escrow from FA
-        aptos_intent::intent_as_escrow_apt::create_escrow_from_fa(
+        aptos_intent::intent_as_escrow_entry::create_escrow_from_fa(
             user,
             fa_metadata,
             50,

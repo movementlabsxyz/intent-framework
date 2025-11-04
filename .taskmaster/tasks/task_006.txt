@@ -1,0 +1,45 @@
+# Task ID: 6
+# Title: Phase 6: Cleanup & Documentation (Low Risk)
+# Status: pending
+# Dependencies: 5
+# Priority: low
+# Description: Finalize migration, update docs, remove shell scripts
+# Details:
+Complete the migration by updating documentation, adding backward compatibility if needed, and cleaning up old shell scripts.
+
+# Test Strategy:
+Run full test suite with Python-only setup, verify all documentation is accurate
+
+# Subtasks:
+## 1. Update documentation [pending]
+### Dependencies: 5
+### Description: Update README files to reference Python scripts
+### Details:
+Updates needed:
+- README files in testing-infra/
+- Python setup instructions
+- Requirements and dependencies
+- Examples of running Python scripts
+- Migration notes
+
+## 2. Add shell script wrappers OR deprecate shell scripts [pending]
+### Dependencies: 6.1
+### Description: Decide on backward compatibility approach
+### Details:
+Two options:
+A) Create thin .sh wrappers that call Python scripts for backward compatibility
+B) Deprecate .sh files entirely and update all references
+
+Discuss with team which approach to take.
+
+## 3. Remove common.sh, finalize Python-only setup [pending]
+### Dependencies: 6.2
+### Description: Complete migration by removing shell utilities
+### Details:
+Final steps:
+- Remove common.sh
+- Ensure all scripts use common.py
+- Remove any remaining shell dependencies
+- Update .gitignore if needed
+- Final verification
+

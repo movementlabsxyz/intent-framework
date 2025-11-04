@@ -1,0 +1,48 @@
+# Task ID: 3
+# Title: Phase 3: Simple Setup Scripts (Medium Risk)
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: Convert straightforward setup scripts without complex orchestration
+# Details:
+Convert setup scripts that have straightforward logic and don't call other scripts. These are more complex than teardown but still relatively isolated.
+
+# Test Strategy:
+For each script: run setup, verify services are healthy, run corresponding teardown
+
+# Subtasks:
+## 1. Convert deploy-vault.sh to Python (83 lines) [pending]
+### Dependencies: 2
+### Description: Create testing-infra/e2e-tests-evm/deploy_vault.py
+### Details:
+Convert deploy-vault.sh (83 lines) to Python.
+
+Features:
+- Deploy vault contract
+- Verify deployment
+- Logging via common.py
+
+## 2. Convert setup-dual-chains.sh to Python (99 lines) [pending]
+### Dependencies: 3.1
+### Description: Create testing-infra/connected-chain-apt/setup_dual_chains.py
+### Details:
+Convert setup-dual-chains.sh (99 lines) to Python.
+
+Features:
+- Docker compose setup for both chains
+- Health checks
+- Profile creation
+- Logging via common.py
+
+## 3. Convert setup-evm-chain.sh to Python (151 lines) [pending]
+### Dependencies: 3.2
+### Description: Create testing-infra/connected-chain-evm/setup_evm_chain.py
+### Details:
+Convert setup-evm-chain.sh (151 lines) to Python.
+
+Features:
+- Start Hardhat node
+- Docker setup for EVM chain
+- RPC health checks
+- Logging via common.py
+

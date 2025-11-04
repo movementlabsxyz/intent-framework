@@ -1,0 +1,39 @@
+# Task ID: 1
+# Title: Phase 1: Foundation & Utilities
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Create Python infrastructure alongside shell scripts
+# Details:
+Set up Python utilities module and requirements to support the migration. This phase creates the foundation without breaking existing shell scripts.
+
+# Test Strategy:
+Import common.py in Python REPL, verify all functions work correctly
+
+# Subtasks:
+## 1. Create Python utilities module (common.py) [pending]
+### Dependencies: None
+### Description: Create testing-infra/common.py with Python equivalents of common.sh functions
+### Details:
+Functions to implement:
+- setup_project_root()
+- setup_logging()
+- log() and log_and_echo()
+- display_balances()
+- get_aptos_address()
+- fund_and_verify_account()
+
+Keep common.sh for backward compatibility during migration.
+
+## 2. Add Python requirements file [pending]
+### Dependencies: 1.1
+### Description: Create testing-infra/requirements.txt with dependencies
+### Details:
+Add required packages:
+- requests (for HTTP calls)
+- subprocess (builtin)
+- json (builtin)
+- pathlib (builtin)
+
+Add Python virtual env to .gitignore
+

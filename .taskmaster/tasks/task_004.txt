@@ -1,0 +1,73 @@
+# Task ID: 4
+# Title: Phase 4: Complex Setup & Orchestration (Higher Risk)
+# Status: pending
+# Dependencies: 3
+# Priority: medium
+# Description: Convert scripts that call other scripts or have complex logic
+# Details:
+These scripts orchestrate multiple operations and may call other scripts. Require careful testing to ensure all dependencies work correctly.
+
+# Test Strategy:
+Full integration testing with all dependent scripts, verify end-to-end flows work correctly
+
+# Subtasks:
+## 1. Convert setup-and-test-alice-bob.sh to Python (177 lines) [pending]
+### Dependencies: 3
+### Description: Create testing-infra/connected-chain-evm/setup_and_test_alice_bob.py
+### Details:
+Convert setup-and-test-alice-bob.sh (177 lines) to Python.
+
+Features:
+- Orchestrates setup and testing
+- Alice/Bob account funding
+- Balance verification
+- Transaction testing
+
+## 2. Convert setup-and-deploy.sh to Python (112 lines) [pending]
+### Dependencies: 4.1
+### Description: Create testing-infra/e2e-tests-apt/setup_and_deploy.py
+### Details:
+Convert setup-and-deploy.sh (112 lines) to Python.
+
+Features:
+- Chain setup
+- Contract deployment
+- Profile initialization
+- Verification
+
+## 3. Convert setup-and-deploy-evm.sh to Python (198 lines) [pending]
+### Dependencies: 4.2
+### Description: Create testing-infra/e2e-tests-evm/setup_and_deploy_evm.py
+### Details:
+Convert setup-and-deploy-evm.sh (198 lines) to Python.
+
+Features:
+- EVM chain setup
+- Contract deployment
+- Account initialization
+- Verification
+
+## 4. Convert setup-dual-chains-and-test-alice-bob.sh to Python (202 lines) [pending]
+### Dependencies: 4.3
+### Description: Create testing-infra/connected-chain-apt/setup_dual_chains_and_test_alice_bob.py
+### Details:
+Convert setup-dual-chains-and-test-alice-bob.sh (202 lines) to Python.
+
+Features:
+- Dual chain setup
+- Alice/Bob testing on both chains
+- Cross-chain balance verification
+- Integration testing
+
+## 5. Convert release-evm-escrow.sh to Python (214 lines) [pending]
+### Dependencies: 4.4
+### Description: Create testing-infra/e2e-tests-evm/release_evm_escrow.py
+### Details:
+Convert release-evm-escrow.sh (214 lines) to Python.
+
+Features:
+- Escrow release logic
+- Event monitoring
+- Balance verification
+- State transitions
+

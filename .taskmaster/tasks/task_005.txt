@@ -1,0 +1,79 @@
+# Task ID: 5
+# Title: Phase 5: Test Runners & Critical Scripts (Highest Risk)
+# Status: pending
+# Dependencies: 4
+# Priority: high
+# Description: Convert complex orchestration scripts that call multiple other scripts
+# Details:
+Most complex scripts that orchestrate entire test flows. These are critical to the testing infrastructure and require comprehensive testing.
+
+# Test Strategy:
+Full E2E test suite must pass for each conversion. Run multiple times to ensure reliability.
+
+# Subtasks:
+## 1. Convert run-tests.sh (APT) to Python (110 lines) [pending]
+### Dependencies: 4
+### Description: Create testing-infra/e2e-tests-apt/run_tests.py
+### Details:
+Convert run-tests.sh (110 lines - APT) to Python.
+
+Features:
+- Orchestrates full E2E test flow
+- Calls setup, deploy, and test scripts
+- Updates verifier configs
+- Runs Rust integration tests
+- Cleanup
+
+## 2. Convert run-tests.sh (EVM) to Python (254 lines) [pending]
+### Dependencies: 5.1
+### Description: Create testing-infra/e2e-tests-evm/run_tests.py
+### Details:
+Convert run-tests.sh (254 lines - EVM) to Python.
+
+Features:
+- EVM E2E test orchestration
+- Multiple script coordination
+- Contract deployment verification
+- Test execution
+- Cleanup
+
+## 3. Convert submit-cross-chain-intent.sh to Python (367 lines) [pending]
+### Dependencies: 5.2
+### Description: Create testing-infra/e2e-tests-apt/submit_cross_chain_intent.py
+### Details:
+Convert submit-cross-chain-intent.sh (367 lines) to Python.
+
+Features:
+- Cross-chain intent submission
+- Multi-chain coordination
+- Event monitoring
+- State verification
+- Complex error handling
+
+## 4. Convert submit-cross-chain-intent-evm.sh to Python (341 lines) [pending]
+### Dependencies: 5.3
+### Description: Create testing-infra/e2e-tests-evm/submit_cross_chain_intent_evm.py
+### Details:
+Convert submit-cross-chain-intent-evm.sh (341 lines) to Python.
+
+Features:
+- EVM cross-chain intent submission
+- Event monitoring
+- Web3 interactions
+- State verification
+
+## 5. Convert run-cross-chain-verifier.sh to Python (507 lines) [pending]
+### Dependencies: 5.4
+### Description: Create testing-infra/e2e-tests-apt/run_cross_chain_verifier.py
+### Details:
+Convert run-cross-chain-verifier.sh (507 lines) to Python.
+
+This is the most complex script with extensive logic. Consider breaking into smaller functions/modules.
+
+Features:
+- Full verifier flow orchestration
+- Multi-chain coordination
+- Event monitoring
+- State verification
+- Complex error handling
+

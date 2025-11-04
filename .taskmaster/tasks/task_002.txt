@@ -1,0 +1,37 @@
+# Task ID: 2
+# Title: Phase 2: Teardown Scripts (Low Risk)
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Convert smallest, safest scripts - pure cleanup operations
+# Details:
+Start with teardown scripts as they are the simplest and safest to convert. These scripts only perform cleanup operations and have minimal complexity.
+
+# Test Strategy:
+Run Python version after setting up chains, verify chains stop cleanly and all cleanup completes
+
+# Subtasks:
+## 1. Convert stop-dual-chains.sh to Python (31 lines) [pending]
+### Dependencies: 1
+### Description: Create testing-infra/connected-chain-apt/stop_dual_chains.py
+### Details:
+Convert stop-dual-chains.sh (31 lines) to Python.
+
+Features:
+- Docker compose down for both chains
+- Cleanup Aptos CLI profiles (alice-chain1, bob-chain1, alice-chain2, bob-chain2, intent-account-chain1, intent-account-chain2)
+- Logging via common.py
+
+Keep .sh version with deprecation notice during migration.
+
+## 2. Convert stop-evm-chain.sh to Python (62 lines) [pending]
+### Dependencies: 2.1
+### Description: Create testing-infra/connected-chain-evm/stop_evm_chain.py
+### Details:
+Convert stop-evm-chain.sh (62 lines) to Python.
+
+Features:
+- Stop Hardhat node
+- Docker cleanup for EVM chain
+- Logging via common.py
+

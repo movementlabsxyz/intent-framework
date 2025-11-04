@@ -1,0 +1,351 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Phase 1: Foundation & Utilities",
+        "description": "Create Python infrastructure alongside shell scripts",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [],
+        "details": "Set up Python utilities module and requirements to support the migration. This phase creates the foundation without breaking existing shell scripts.",
+        "testStrategy": "Import common.py in Python REPL, verify all functions work correctly",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Python utilities module (common.py)",
+            "description": "Create testing-infra/common.py with Python equivalents of common.sh functions",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [],
+            "details": "Functions to implement:\n- setup_project_root()\n- setup_logging()\n- log() and log_and_echo()\n- display_balances()\n- get_aptos_address()\n- fund_and_verify_account()\n\nKeep common.sh for backward compatibility during migration.",
+            "testStrategy": "Import common.py in Python REPL, test each function individually",
+            "subtasks": []
+          },
+          {
+            "id": 2,
+            "title": "Add Python requirements file",
+            "description": "Create testing-infra/requirements.txt with dependencies",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Add required packages:\n- requests (for HTTP calls)\n- subprocess (builtin)\n- json (builtin)\n- pathlib (builtin)\n\nAdd Python virtual env to .gitignore",
+            "testStrategy": "Run 'pip install -r requirements.txt' and verify all dependencies install successfully",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Phase 2: Teardown Scripts (Low Risk)",
+        "description": "Convert smallest, safest scripts - pure cleanup operations",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "details": "Start with teardown scripts as they are the simplest and safest to convert. These scripts only perform cleanup operations and have minimal complexity.",
+        "testStrategy": "Run Python version after setting up chains, verify chains stop cleanly and all cleanup completes",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Convert stop-dual-chains.sh to Python (31 lines)",
+            "description": "Create testing-infra/connected-chain-apt/stop_dual_chains.py",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "1"
+            ],
+            "details": "Convert stop-dual-chains.sh (31 lines) to Python.\n\nFeatures:\n- Docker compose down for both chains\n- Cleanup Aptos CLI profiles (alice-chain1, bob-chain1, alice-chain2, bob-chain2, intent-account-chain1, intent-account-chain2)\n- Logging via common.py\n\nKeep .sh version with deprecation notice during migration.",
+            "testStrategy": "1. Set up dual chains using shell script\n2. Run Python stop_dual_chains.py\n3. Verify both chains stopped\n4. Verify all profiles deleted",
+            "subtasks": []
+          },
+          {
+            "id": 2,
+            "title": "Convert stop-evm-chain.sh to Python (62 lines)",
+            "description": "Create testing-infra/connected-chain-evm/stop_evm_chain.py",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Convert stop-evm-chain.sh (62 lines) to Python.\n\nFeatures:\n- Stop Hardhat node\n- Docker cleanup for EVM chain\n- Logging via common.py",
+            "testStrategy": "1. Set up EVM chain using shell script\n2. Run Python stop_evm_chain.py\n3. Verify EVM chain stopped\n4. Verify all Docker containers cleaned up",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Phase 3: Simple Setup Scripts (Medium Risk)",
+        "description": "Convert straightforward setup scripts without complex orchestration",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "2"
+        ],
+        "details": "Convert setup scripts that have straightforward logic and don't call other scripts. These are more complex than teardown but still relatively isolated.",
+        "testStrategy": "For each script: run setup, verify services are healthy, run corresponding teardown",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Convert deploy-vault.sh to Python (83 lines)",
+            "description": "Create testing-infra/e2e-tests-evm/deploy_vault.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "2"
+            ],
+            "details": "Convert deploy-vault.sh (83 lines) to Python.\n\nFeatures:\n- Deploy vault contract\n- Verify deployment\n- Logging via common.py",
+            "testStrategy": "1. Setup EVM chain\n2. Run deploy_vault.py\n3. Verify vault deployed successfully\n4. Check contract address is valid",
+            "subtasks": []
+          },
+          {
+            "id": 2,
+            "title": "Convert setup-dual-chains.sh to Python (99 lines)",
+            "description": "Create testing-infra/connected-chain-apt/setup_dual_chains.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Convert setup-dual-chains.sh (99 lines) to Python.\n\nFeatures:\n- Docker compose setup for both chains\n- Health checks\n- Profile creation\n- Logging via common.py",
+            "testStrategy": "1. Run setup_dual_chains.py\n2. Check both chains are healthy (curl endpoints)\n3. Verify profiles created\n4. Run stop_dual_chains.py for cleanup",
+            "subtasks": []
+          },
+          {
+            "id": 3,
+            "title": "Convert setup-evm-chain.sh to Python (151 lines)",
+            "description": "Create testing-infra/connected-chain-evm/setup_evm_chain.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Convert setup-evm-chain.sh (151 lines) to Python.\n\nFeatures:\n- Start Hardhat node\n- Docker setup for EVM chain\n- RPC health checks\n- Logging via common.py",
+            "testStrategy": "1. Run setup_evm_chain.py\n2. Verify Hardhat RPC responding (curl http://127.0.0.1:8545)\n3. Check eth_blockNumber works\n4. Run stop_evm_chain.py for cleanup",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Phase 4: Complex Setup & Orchestration (Higher Risk)",
+        "description": "Convert scripts that call other scripts or have complex logic",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "3"
+        ],
+        "details": "These scripts orchestrate multiple operations and may call other scripts. Require careful testing to ensure all dependencies work correctly.",
+        "testStrategy": "Full integration testing with all dependent scripts, verify end-to-end flows work correctly",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Convert setup-and-test-alice-bob.sh to Python (177 lines)",
+            "description": "Create testing-infra/connected-chain-evm/setup_and_test_alice_bob.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "3"
+            ],
+            "details": "Convert setup-and-test-alice-bob.sh (177 lines) to Python.\n\nFeatures:\n- Orchestrates setup and testing\n- Alice/Bob account funding\n- Balance verification\n- Transaction testing",
+            "testStrategy": "1. Run setup_and_test_alice_bob.py\n2. Verify Alice and Bob accounts funded\n3. Check balance transfers work\n4. Verify final balances are correct",
+            "subtasks": []
+          },
+          {
+            "id": 2,
+            "title": "Convert setup-and-deploy.sh to Python (112 lines)",
+            "description": "Create testing-infra/e2e-tests-apt/setup_and_deploy.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Convert setup-and-deploy.sh (112 lines) to Python.\n\nFeatures:\n- Chain setup\n- Contract deployment\n- Profile initialization\n- Verification",
+            "testStrategy": "1. Run setup_and_deploy.py\n2. Verify chains running\n3. Check contracts deployed\n4. Verify profiles exist with correct addresses",
+            "subtasks": []
+          },
+          {
+            "id": 3,
+            "title": "Convert setup-and-deploy-evm.sh to Python (198 lines)",
+            "description": "Create testing-infra/e2e-tests-evm/setup_and_deploy_evm.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Convert setup-and-deploy-evm.sh (198 lines) to Python.\n\nFeatures:\n- EVM chain setup\n- Contract deployment\n- Account initialization\n- Verification",
+            "testStrategy": "1. Run setup_and_deploy_evm.py\n2. Verify EVM chain running\n3. Check all contracts deployed\n4. Verify accounts have correct balances",
+            "subtasks": []
+          },
+          {
+            "id": 4,
+            "title": "Convert setup-dual-chains-and-test-alice-bob.sh to Python (202 lines)",
+            "description": "Create testing-infra/connected-chain-apt/setup_dual_chains_and_test_alice_bob.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "4.3"
+            ],
+            "details": "Convert setup-dual-chains-and-test-alice-bob.sh (202 lines) to Python.\n\nFeatures:\n- Dual chain setup\n- Alice/Bob testing on both chains\n- Cross-chain balance verification\n- Integration testing",
+            "testStrategy": "1. Run setup_dual_chains_and_test_alice_bob.py\n2. Verify both chains running\n3. Check Alice/Bob accounts on both chains\n4. Verify cross-chain transfers work\n5. Check final balances correct",
+            "subtasks": []
+          },
+          {
+            "id": 5,
+            "title": "Convert release-evm-escrow.sh to Python (214 lines)",
+            "description": "Create testing-infra/e2e-tests-evm/release_evm_escrow.py",
+            "status": "pending",
+            "priority": "medium",
+            "dependencies": [
+              "4.4"
+            ],
+            "details": "Convert release-evm-escrow.sh (214 lines) to Python.\n\nFeatures:\n- Escrow release logic\n- Event monitoring\n- Balance verification\n- State transitions",
+            "testStrategy": "1. Setup escrow scenario\n2. Run release_evm_escrow.py\n3. Verify escrow released\n4. Check balances updated correctly\n5. Verify events emitted",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Phase 5: Test Runners & Critical Scripts (Highest Risk)",
+        "description": "Convert complex orchestration scripts that call multiple other scripts",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "4"
+        ],
+        "details": "Most complex scripts that orchestrate entire test flows. These are critical to the testing infrastructure and require comprehensive testing.",
+        "testStrategy": "Full E2E test suite must pass for each conversion. Run multiple times to ensure reliability.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Convert run-tests.sh (APT) to Python (110 lines)",
+            "description": "Create testing-infra/e2e-tests-apt/run_tests.py",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "4"
+            ],
+            "details": "Convert run-tests.sh (110 lines - APT) to Python.\n\nFeatures:\n- Orchestrates full E2E test flow\n- Calls setup, deploy, and test scripts\n- Updates verifier configs\n- Runs Rust integration tests\n- Cleanup",
+            "testStrategy": "1. Run run_tests.py\n2. Verify all E2E tests pass\n3. Check verifier config updated correctly\n4. Verify cleanup completes\n5. Run multiple times for reliability",
+            "subtasks": []
+          },
+          {
+            "id": 2,
+            "title": "Convert run-tests.sh (EVM) to Python (254 lines)",
+            "description": "Create testing-infra/e2e-tests-evm/run_tests.py",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Convert run-tests.sh (254 lines - EVM) to Python.\n\nFeatures:\n- EVM E2E test orchestration\n- Multiple script coordination\n- Contract deployment verification\n- Test execution\n- Cleanup",
+            "testStrategy": "1. Run run_tests.py\n2. Verify all EVM E2E tests pass\n3. Check contracts deployed correctly\n4. Verify cleanup completes\n5. Run multiple times for reliability",
+            "subtasks": []
+          },
+          {
+            "id": 3,
+            "title": "Convert submit-cross-chain-intent.sh to Python (367 lines)",
+            "description": "Create testing-infra/e2e-tests-apt/submit_cross_chain_intent.py",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "Convert submit-cross-chain-intent.sh (367 lines) to Python.\n\nFeatures:\n- Cross-chain intent submission\n- Multi-chain coordination\n- Event monitoring\n- State verification\n- Complex error handling",
+            "testStrategy": "1. Setup dual chains\n2. Run submit_cross_chain_intent.py\n3. Verify intent submitted on chain 1\n4. Check intent received on chain 2\n5. Verify state transitions correct\n6. Check events emitted properly",
+            "subtasks": []
+          },
+          {
+            "id": 4,
+            "title": "Convert submit-cross-chain-intent-evm.sh to Python (341 lines)",
+            "description": "Create testing-infra/e2e-tests-evm/submit_cross_chain_intent_evm.py",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "5.3"
+            ],
+            "details": "Convert submit-cross-chain-intent-evm.sh (341 lines) to Python.\n\nFeatures:\n- EVM cross-chain intent submission\n- Event monitoring\n- Web3 interactions\n- State verification",
+            "testStrategy": "1. Setup EVM and APT chains\n2. Run submit_cross_chain_intent_evm.py\n3. Verify intent submitted on EVM\n4. Check intent received on APT chain\n5. Verify cross-chain state consistency",
+            "subtasks": []
+          },
+          {
+            "id": 5,
+            "title": "Convert run-cross-chain-verifier.sh to Python (507 lines)",
+            "description": "Create testing-infra/e2e-tests-apt/run_cross_chain_verifier.py",
+            "status": "pending",
+            "priority": "high",
+            "dependencies": [
+              "5.4"
+            ],
+            "details": "Convert run-cross-chain-verifier.sh (507 lines) to Python.\n\nThis is the most complex script with extensive logic. Consider breaking into smaller functions/modules.\n\nFeatures:\n- Full verifier flow orchestration\n- Multi-chain coordination\n- Event monitoring\n- State verification\n- Complex error handling",
+            "testStrategy": "1. Setup all chains\n2. Run run_cross_chain_verifier.py\n3. Verify verifier processes intents correctly\n4. Check all state transitions\n5. Verify cross-chain consistency\n6. Run complete E2E flow multiple times",
+            "subtasks": []
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Phase 6: Cleanup & Documentation (Low Risk)",
+        "description": "Finalize migration, update docs, remove shell scripts",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          "5"
+        ],
+        "details": "Complete the migration by updating documentation, adding backward compatibility if needed, and cleaning up old shell scripts.",
+        "testStrategy": "Run full test suite with Python-only setup, verify all documentation is accurate",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update documentation",
+            "description": "Update README files to reference Python scripts",
+            "status": "pending",
+            "priority": "low",
+            "dependencies": [
+              "5"
+            ],
+            "details": "Updates needed:\n- README files in testing-infra/\n- Python setup instructions\n- Requirements and dependencies\n- Examples of running Python scripts\n- Migration notes",
+            "testStrategy": "1. Review all documentation\n2. Follow setup instructions from scratch\n3. Verify examples work\n4. Check links and references",
+            "subtasks": []
+          },
+          {
+            "id": 2,
+            "title": "Add shell script wrappers OR deprecate shell scripts",
+            "description": "Decide on backward compatibility approach",
+            "status": "pending",
+            "priority": "low",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Two options:\nA) Create thin .sh wrappers that call Python scripts for backward compatibility\nB) Deprecate .sh files entirely and update all references\n\nDiscuss with team which approach to take.",
+            "testStrategy": "If wrappers: verify .sh files correctly call Python versions\nIf deprecation: verify no broken references remain",
+            "subtasks": []
+          },
+          {
+            "id": 3,
+            "title": "Remove common.sh, finalize Python-only setup",
+            "description": "Complete migration by removing shell utilities",
+            "status": "pending",
+            "priority": "low",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Final steps:\n- Remove common.sh\n- Ensure all scripts use common.py\n- Remove any remaining shell dependencies\n- Update .gitignore if needed\n- Final verification",
+            "testStrategy": "1. Remove common.sh\n2. Run full test suite with Python-only setup\n3. Verify no shell dependencies remain\n4. Check all scripts work correctly\n5. Run complete E2E tests",
+            "subtasks": []
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-11-04T17:51:37.141Z",
+      "updated": "2025-11-04T17:51:37.143Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

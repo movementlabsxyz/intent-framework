@@ -41,12 +41,14 @@ For detailed flow descriptions and implementation details, see:
 
 1. **Enter Development Environment**
    ```bash
-   nix-shell  # Uses [shell.nix](shell.nix)
+   # From project root
+   nix develop
    ```
 
 2. **Run Tests**
    ```bash
-   test  # Auto-runs tests on file changes
+   # From project root
+   nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123"
    ```
 
 ### Deployment
@@ -60,11 +62,14 @@ Deploy the Intent Framework to an Aptos network:
 # 2. Configure Aptos CLI to use local chain (port 8080)
 aptos init --profile local --network local
 
-# 3. Enter dev environment
-nix-shell
+# 3. Enter dev environment (from project root)
+nix develop
 
 # 4. Deploy to current network
-pub  # This runs: aptos move publish --named-addresses aptos_intent=$intent
+# Get your account address
+INTENT=$(aptos config show-profiles | jq -r '.Result.default.account')
+# Deploy
+aptos move publish --named-addresses aptos_intent=0x$INTENT --skip-fetch-latest-git-deps
 
 # 5. Verify deployment
 aptos move test --dev --named-addresses aptos_intent=0x123

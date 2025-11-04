@@ -42,8 +42,8 @@ log ""
 log "⏳ Waiting for Hardhat node to be ready..."
 
 # Wait for node to be ready (check if port 8545 is responding)
-# Increased timeout to 60 seconds for CI environments
-for i in {1..60}; do
+# Timeout set to 180 seconds (3 minutes) for CI environments
+for i in {1..180}; do
     if curl -s -X POST http://127.0.0.1:8545 \
         -H "Content-Type: application/json" \
         -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
@@ -51,7 +51,7 @@ for i in {1..60}; do
         log "   ✅ Hardhat node ready!"
         break
     fi
-    if [ $i -eq 60 ]; then
+    if [ $i -eq 180 ]; then
         log_and_echo "   ❌ Timeout waiting for Hardhat node"
         kill "$HARDHAT_PID" 2>/dev/null || true
         exit 1

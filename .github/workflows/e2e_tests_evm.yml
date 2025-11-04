@@ -1,4 +1,4 @@
-name: "E2E Integration Tests"
+name: "E2E Integration Tests (EVM Mixed-Chain)"
 on:
   pull_request:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  e2e-tests:
+  e2e-tests-evm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,6 +21,6 @@ jobs:
           sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
       
-      - name: Run E2E integration tests
-        run: nix develop --command bash -c './testing-infra/e2e-tests/run-tests.sh'
+      - name: Run E2E integration tests with EVM (mixed-chain)
+        run: nix develop --command bash -c './testing-infra/e2e-tests-evm/run-tests-with-evm.sh'
 

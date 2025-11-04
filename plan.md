@@ -5,67 +5,57 @@
 This plan defines the cross-chain intent flow and supporting verifier needed to move assets from a connected chain to a hub chain under verifiable conditions.
 
 - **Hub chain**: hosts regular (non-oracle) request intents from users (e.g., Alice).
-- Connected chain: holds escrows (oracle-based) that lock funds and reference the hub intent via a shared `intent_id`.
+- **Connected chain**: holds escrows (oracle-based) that lock funds and reference the hub intent via a shared `intent_id`.
 - **Verifier**: observes hub intent creation and fulfillment plus connected-chain escrows, links them by `intent_id`, and produces an approval signature to release escrow after hub fulfillment is observed.
-- **Tooling**: Docker localnets for two chains, Move modules for intents/escrows, and a Rust verifier with REST API and auto-escrow-release integration script.
+- **Tooling**: Docker localnets for Aptos chains, Hardhat for EVM chain, Move modules for intents/escrows, Solidity contracts for EVM escrows, and a Rust verifier with REST API and auto-escrow-release integration scripts.
 
-**Note**: Hub Chain = Chain A (intent creation). Connected Chain = Chain B (escrow/vault). Verifier observes hub fulfillment first, then approves escrow release.
-
+**Note**: Hub Chain = Chain 1 (intent creation). Connected Chain = Chain 2 (Aptos escrow) or Chain 3 (EVM escrow). Verifier observes hub fulfillment first, then approves escrow release.
 
 ## Future Work
 
 ### Testing
-1. Add a minimal cross-chain test runner under `testing-infra/e2e-tests/move-intent-framework`:
-  - Language: TypeScript (Aptos TS SDK) or Python (aptos-sdk)
-  - Inputs: hub/connected REST URLs, profiles/keys, deployed module addrs
-  - Flow: start from running Docker localnets → deploy modules → create intent (hub) → create escrow (connected) → start verifier → fulfill intent (hub) → await approval → release escrow (connected)
-  - Assertions: event linkage via `intent_id`, escrow released, before/after balances, no rejected intents
-  - Outputs: JSON summary (tx hashes, intent_id, escrow_id, balance diffs)
-2. investigate Balance Discrepancy
+1. **Balance Discrepancy Investigation**
    - Bob's balance decrease doesn't match expected amount when fulfilling intent with 100M tokens
    - Event confirms `provided_amount: 100,000,000` was transferred
-   - But Bob's balance only decreases by 99,888,740 (less than 100M, not 100M + gas)
+   - But Bob's balance only decreases by ~99.9M (less than 100M, not 100M + gas)
    - Possible causes: Coin vs FA balance accounting; initial capture timing; gas treatment
    - Investigate how `aptos account balance` relates to FA operations and why loss < transfer amount
-   - Location: `testing-infra/e2e-tests/move-intent-framework/submit-cross-chain-intent.sh`
-3. Convert shell scripts into Rust binaries where practical
+   - Location: `testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh`
 
-### test-infra
+2. **Test Improvements**
+   - Add timeout scenario tests
+   - Test with multiple concurrent intents
+   - Add negative test cases (rejected intents, failed fulfillments)
+   - Convert shell scripts into Rust binaries where practical
 
 ### Documentation
 1. Finalize node bootstrapping instructions (ports, genesis, module publish) for both chains
+2. Add more comprehensive API documentation
+3. Add troubleshooting guide for common issues
 
 ### Move-intent-framework
+- Add more intent types and use cases
+- Optimize gas costs
 
 ### Trusted Verifier
-
-0. Fix chain_id configuration in verifier_testing.toml
-   - Currently both hub_chain and connected_chain have chain_id = 4
-   - They should have different chain_ids since they are separate chains
-   - This needs to be fixed to correctly identify which chain is which
-1. Add end-to-end tests
-   - Test complete cross-chain scenarios
-   - Test with multiple intents
-   - Test timeout scenarios
-2. Performance testing
+1. **Performance Testing**
    - Load testing the API
    - Stress testing event monitoring
    - Memory usage monitoring
-3. Verifier documentation
-   - Add docs under `trusted-verifier/docs/` (overview, setup/usage, API)
-   - Link from root and verifier plans
-4. Plan/documentation cleanup
-   - Fix typos in root `plan.md` (non-revocable/non-revocability)
-   - Cross-link new verifier docs
-5. Balance discrepancy investigation (coordinate with scripts)
-6. Validation hardening
+
+2. **Validation Hardening**
    - Add metadata and timeout checks
    - Support multiple concurrent intents robustly
-7. Add "ok" endpoint for a given `intent_id` to signal escrow is satisfied so solver can commit on hub
-8. Correct test fixture requiring 1 token; should be 0
-9. Improve event discovery (currently polls known accounts via `/v1/accounts/{address}/transactions`)
+   - Improve error handling and reporting
+
+3. **Event Discovery Improvements**
+   - Currently polls known accounts via `/v1/accounts/{address}/transactions`
    - Incomplete coverage (misses unlisted accounts)
    - Manual configuration (requires prelisting emitters)
    - Not scalable (unsuitable for many users)
-10. Implement the monitoring/oracle service as a simple CLI/daemon colocated in `testing-infra/e2e-tests/move-intent-framework` for now; later extract to `tools/oracle-service` if needed
+   - Consider using event streams or indexer integration
 
+4. **Feature Enhancements**
+   - Add "ok" endpoint for a given `intent_id` to signal escrow is satisfied so solver can commit on hub
+   - Add support for more chain types
+   - Add metrics and observability

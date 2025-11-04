@@ -3,6 +3,7 @@
 A framework for creating conditional trading intents with the following components
 
 - [move-intent-framework](move-intent-framework/README.md)
+- [evm-intent-framework](evm-intent-framework/README.md)
 - [trusted verifier](trusted-verifier/docs/README.md)
 
 ## Quick start

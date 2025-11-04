@@ -19,10 +19,27 @@ pkill -f "hardhat node" || true
 sleep 2
 
 log ""
+log "📦 Installing npm dependencies..."
+cd evm-intent-framework
+
+# Install dependencies if node_modules doesn't exist
+if [ ! -d "node_modules" ]; then
+    log "   Running npm install..."
+    nix develop -c bash -c "npm install" >> "$LOG_FILE" 2>&1
+    if [ $? -ne 0 ]; then
+        log_and_echo "   ❌ ERROR: npm install failed"
+        log_and_echo "   Check log file for details: $LOG_FILE"
+        exit 1
+    fi
+    log "   ✅ Dependencies installed"
+else
+    log "   ✅ Dependencies already installed"
+fi
+
+log ""
 log "🚀 Starting Hardhat node on port 8545..."
 
 # Start Hardhat node in background (run in nix develop)
-cd evm-intent-framework
 nix develop -c bash -c "npx hardhat node --port 8545" > "$LOG_FILE" 2>&1 &
 HARDHAT_PID=$!
 

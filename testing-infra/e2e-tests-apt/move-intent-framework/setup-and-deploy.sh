@@ -16,7 +16,7 @@ log_and_echo "📝 All output logged to: $LOG_FILE"
 log ""
 log "🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts..."
 log " ============================================="
-./testing-infra/multi-chain/setup-dual-chains-and-test-alice-bob.sh
+./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
 
 if [ $? -ne 0 ]; then
     log_and_echo "❌ Failed to setup dual chains with Alice and Bob accounts"
@@ -104,7 +104,7 @@ log "   Fund Chain 1 account:   curl -X POST \"http://127.0.0.1:8081/mint?addres
 log "   Fund Chain 2 account:   curl -X POST \"http://127.0.0.1:8083/mint?address=<ADDRESS>&amount=100000000\""
 log ""
 log "📋 Useful commands:"
-log "   Stop chains:     ./testing-infra/multi-chain/stop-dual-chains.sh"
+log "   Stop chains:     ./testing-infra/connected-chain-apt/stop-dual-chains.sh"
 log "   View Chain 1:    aptos config show-profiles --profile intent-account-chain1"
 log "   View Chain 2:    aptos config show-profiles --profile intent-account-chain2"
 

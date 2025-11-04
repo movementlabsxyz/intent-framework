@@ -11,13 +11,13 @@ Use the Docker-based localnets from `testing-infra` to run Hub and Connected cha
 
 ```bash
 # Multi-chain (two independent localnets with Alice and Bob accounts)
-./testing-infra/multi-chain/setup-dual-chains-and-test-alice-bob.sh
+./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
 
 # Or setup chains only
-./testing-infra/multi-chain/setup-dual-chains.sh
+./testing-infra/connected-chain-apt/setup-dual-chains.sh
 
 # Stop both chains
-./testing-infra/multi-chain/stop-dual-chains.sh
+./testing-infra/connected-chain-apt/stop-dual-chains.sh
 ```
 
 

@@ -17,13 +17,13 @@ This directory contains infrastructure setup for running chains for development 
 
 ```bash
 # Multi-chain (two independent localnets with Alice and Bob accounts)
-./testing-infra/multi-chain/setup-dual-chains-and-test-alice-bob.sh
+./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
 
 # Or setup chains only
-./testing-infra/multi-chain/setup-dual-chains.sh
+./testing-infra/connected-chain-apt/setup-dual-chains.sh
 
 # Stop both chains
-./testing-infra/multi-chain/stop-dual-chains.sh
+./testing-infra/connected-chain-apt/stop-dual-chains.sh
 ```
 
 ### Endpoints
@@ -35,11 +35,11 @@ This directory contains infrastructure setup for running chains for development 
 
 ```bash
 # Multi-chain logs / stop
-docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 logs -f
-docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 logs -f
-docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 down
-docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down
-./testing-infra/multi-chain/stop-dual-chains.sh
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 logs -f
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 logs -f
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down
+./testing-infra/connected-chain-apt/stop-dual-chains.sh
 ```
 
 ## Setup with source code (deprecated)

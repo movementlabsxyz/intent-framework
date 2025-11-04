@@ -18,7 +18,7 @@ if ! curl -s -X POST http://127.0.0.1:8545 \
     -H "Content-Type: application/json" \
     -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
     >/dev/null 2>&1; then
-    log_and_echo "❌ Hardhat node is not running. Please run testing-infra/evm-chain/setup-evm-chain.sh first"
+    log_and_echo "❌ Hardhat node is not running. Please run testing-infra/connected-chain-evm/setup-evm-chain.sh first"
     exit 1
 fi
 

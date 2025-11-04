@@ -13,10 +13,10 @@ log "🛑 STOPPING DUAL-CHAIN SETUP"
 log "============================="
 
 log "🧹 Stopping Chain 1..."
-docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 down
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down
 
 log "🧹 Stopping Chain 2..."
-docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down
 
 log ""
 log "🧹 Cleaning up Aptos CLI profiles..."

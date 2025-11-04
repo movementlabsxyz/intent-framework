@@ -16,7 +16,7 @@ log_and_echo "📝 All output logged to: $LOG_FILE"
 log ""
 log "🔗 Step 1: Setting up EVM Chain (Hardhat node)..."
 log " ============================================="
-./testing-infra/evm-chain/setup-evm-chain.sh
+./testing-infra/connected-chain-evm/setup-evm-chain.sh
 
 if [ $? -ne 0 ]; then
     log_and_echo "❌ Failed to setup EVM chain"
@@ -192,7 +192,7 @@ log "📡 API Examples:"
 log "   Check EVM Chain:    curl -X POST http://127.0.0.1:8545 -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}'"
 log ""
 log "📋 Useful commands:"
-log "   Stop EVM chain:  ./testing-infra/evm-chain/stop-evm-chain.sh"
+log "   Stop EVM chain:  ./testing-infra/connected-chain-evm/stop-evm-chain.sh"
 
 log ""
 log "✨ EVM setup and deployment script completed!"

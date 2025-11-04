@@ -28,11 +28,11 @@ log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
 # Stop any existing Hardhat node
 log "🧹 Stopping any existing Hardhat node..."
-./testing-infra/e2e-tests-evm/evm-chain/stop-evm-chain.sh
+./testing-infra/connected-chain-evm/stop-evm-chain.sh
 
 # Start fresh Hardhat node
 log "🚀 Starting fresh Hardhat EVM node..."
-./testing-infra/e2e-tests-evm/evm-chain/setup-evm-chain.sh
+./testing-infra/connected-chain-evm/setup-evm-chain.sh
 
 # Wait for node to be fully ready
 log "⏳ Waiting for node to be fully ready..."
@@ -171,7 +171,7 @@ log "   Alice (Acc 0): $ALICE_ADDRESS"
 log "   Bob (Acc 1):   $BOB_ADDRESS"
 log ""
 log "📋 Useful commands:"
-log "   Stop chain:    ./testing-infra/e2e-tests-evm/evm-chain/stop-evm-chain.sh"
+log "   Stop chain:    ./testing-infra/connected-chain-evm/stop-evm-chain.sh"
 log ""
 log "✨ Script completed!"
 

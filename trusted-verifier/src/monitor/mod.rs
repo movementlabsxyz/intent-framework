@@ -625,21 +625,29 @@ impl EventMonitor {
     pub async fn validate_and_approve_fulfillment(&self, fulfillment: &FulfillmentEvent) -> Result<()> {
         info!("Generating approval after fulfillment observed: intent_id {}", fulfillment.intent_id);
         
+        // Check if this is an Aptos escrow by looking in the escrow cache
+        // Aptos escrows are monitored and cached, EVM escrows are not
+        let escrow_cache = self.escrow_cache.read().await;
+        let matching_aptos_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
+        
         // Determine if this is an EVM escrow or Aptos escrow
-        let is_evm_escrow = self.config.evm_chain.is_some();
+        // If we found it in Aptos escrow cache, it's Aptos; otherwise, if EVM is configured, it's EVM
+        let is_evm_escrow = matching_aptos_escrow.is_none() && self.config.evm_chain.is_some();
         
         // For EVM escrows, escrow_id is the intent_id (vault is keyed by intent_id)
-        // For Aptos escrows, we need to find the escrow in the cache
+        // For Aptos escrows, we use the escrow object address from the cache
         let escrow_id = if is_evm_escrow {
             // EVM: Use intent_id as escrow_id (vault key)
+            drop(escrow_cache);
             fulfillment.intent_id.clone()
         } else {
-            // Aptos: Find matching escrow in cache
-            let escrow_cache = self.escrow_cache.read().await;
-            let matching_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
-            
-            match matching_escrow {
-                Some(escrow) => escrow.escrow_id.clone(),
+            // Aptos: Use escrow object address from cache
+            match matching_aptos_escrow {
+                Some(escrow) => {
+                    let escrow_id = escrow.escrow_id.clone();
+                    drop(escrow_cache);
+                    escrow_id
+                },
                 None => {
                     drop(escrow_cache);
                     error!("No matching escrow found for fulfillment: {} (intent_id: {})", 

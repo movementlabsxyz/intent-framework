@@ -10,14 +10,14 @@ This directory contains scripts to set up and test the EVM intent vault on a loc
 
 ```bash
 # Run all E2E tests (starts chain, deploys, tests, cleans up)
-./testing-infra/e2e-tests-evm/run-tests-with-evm.sh
+./testing-infra/e2e-tests-evm/run-tests.sh
 ```
 
 ## Manual Setup
 
 ```bash
 # Start EVM chain
-./testing-infra/e2e-tests-evm/setup-evm-chain.sh
+./testing-infra/connected-chain-evm/setup-evm-chain.sh
 
 # Deploy vault contract
 ./testing-infra/e2e-tests-evm/deploy-vault.sh
@@ -27,7 +27,7 @@ cd evm-intent-framework
 npx hardhat test --network localhost
 
 # Stop chain when done
-./testing-infra/e2e-tests-evm/stop-evm-chain.sh
+./testing-infra/connected-chain-evm/stop-evm-chain.sh
 ```
 
 ## Components
@@ -43,7 +43,7 @@ npx hardhat test --network localhost
 - Sets verifier address to second Hardhat account
 - Outputs contract address for use in tests
 
-### `run-tests-with-evm.sh`
+### `run-tests.sh`
 - Complete test runner:
   1. Starts EVM chain
   2. Deploys contract

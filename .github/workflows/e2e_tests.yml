@@ -22,5 +22,5 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
       
       - name: Run E2E integration tests
-        run: nix develop --command bash -c './testing-infra/e2e-tests/run-tests.sh'
+        run: nix develop --command bash -c './testing-infra/e2e-tests-apt/run-tests.sh'
 

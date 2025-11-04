@@ -15,16 +15,16 @@ log_and_echo "📝 All output logged to: $LOG_FILE"
 
 # Stop any existing containers
 log "🧹 Stopping existing containers..."
-docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 down 2>/dev/null || true
-docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down 2>/dev/null || true
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down 2>/dev/null || true
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down 2>/dev/null || true
 
 log ""
 log "🚀 Starting Chain 1 (ports 8080/8081)..."
-docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 up -d
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 up -d
 
 log ""
 log "🚀 Starting Chain 2 (ports 8082/8083)..."
-docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 up -d
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 up -d
 
 log ""
 log "⏳ Waiting for both chains to start (this may take 2-3 minutes)..."
@@ -87,11 +87,11 @@ log "     Faucet:          http://127.0.0.1:8083"
 
 log ""
 log "📋 Management Commands:"
-log "   Stop Chain 1:    docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 down"
-log "   Stop Chain 2:    docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 down"
-log "   Stop Both:       ./testing-infra/multi-chain/stop-dual-chains.sh"
-log "   Logs Chain 1:    docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml -p aptos-chain1 logs -f"
-log "   Logs Chain 2:    docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml -p aptos-chain2 logs -f"
+log "   Stop Chain 1:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down"
+log "   Stop Chain 2:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down"
+log "   Stop Both:       ./testing-infra/connected-chain-apt/stop-dual-chains.sh"
+log "   Logs Chain 1:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 logs -f"
+log "   Logs Chain 2:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 logs -f"
 
 log ""
 log "🎉 Dual-chain setup complete!"

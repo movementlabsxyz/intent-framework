@@ -20,7 +20,7 @@ log "  2. [CONNECTED CHAIN] User creates escrow with locked tokens"
 log "  3. [HUB CHAIN] Solver fulfills intent on hub chain"
 log ""
 log "For verifier monitoring and approval (Steps 4-6), run:"
-log "  ./testing-infra/e2e-tests/complete-system/run-cross-chain-verifier.sh"
+log "  ./testing-infra/e2e-tests-apt/complete-system/run-cross-chain-verifier.sh"
 log ""
 log "The verifier will:"
 log "  4. Monitor both chains for intents and escrows"
@@ -50,7 +50,7 @@ if [ "$1" = "1" ]; then
     log ""
     log "🚀 Step 0.1: Setting up chains and deploying contracts..."
     log "========================================================"
-    ./testing-infra/e2e-tests/move-intent-framework/setup-and-deploy.sh
+    ./testing-infra/e2e-tests-apt/move-intent-framework/setup-and-deploy.sh
 
     if [ $? -ne 0 ]; then
         log_and_echo "❌ Failed to setup chains and deploy contracts"
@@ -361,7 +361,7 @@ display_balances
 log ""
 log "🔍 Next Steps:"
 log "   To monitor and verify these events with the trusted verifier, run:"
-log "   ./testing-infra/e2e-tests/complete-system/run-cross-chain-verifier.sh"
+log "   ./testing-infra/e2e-tests-apt/complete-system/run-cross-chain-verifier.sh"
 log ""
 log "✨ Script completed - intents are submitted and waiting for verification!"
 

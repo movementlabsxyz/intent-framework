@@ -32,12 +32,12 @@ log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
 # Stop any existing Docker containers
 log "🧹 Stopping any existing Docker containers..."
-docker-compose -f testing-infra/multi-chain/docker-compose-chain1.yml down 2>/dev/null || true
-docker-compose -f testing-infra/multi-chain/docker-compose-chain2.yml down 2>/dev/null || true
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml down 2>/dev/null || true
+docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml down 2>/dev/null || true
 
 # Start fresh Docker localnets (both chains)
 log "🚀 Starting fresh Docker Aptos localnets (dual chains)..."
-./testing-infra/multi-chain/setup-dual-chains.sh
+./testing-infra/connected-chain-apt/setup-dual-chains.sh
 
 # Wait for services to be fully ready
 log "⏳ Waiting for services to be fully ready..."
@@ -194,7 +194,7 @@ log "   Fund Chain 1 account:    curl -X POST \"http://127.0.0.1:8081/mint?addre
 log "   Fund Chain 2 account:    curl -X POST \"http://127.0.0.1:8083/mint?address=<ADDRESS>&amount=100000000\""
 log ""
 log "📋 Useful Commands:"
-log "   Stop chains:     ./testing-infra/multi-chain/stop-dual-chains.sh"
+log "   Stop chains:     ./testing-infra/connected-chain-apt/stop-dual-chains.sh"
 log "   View profiles:   aptos config show-profiles"
 log "   Test Chain 1:    aptos account balance --profile alice"
 log "   Test Chain 2:    aptos account balance --profile alice-chain2"

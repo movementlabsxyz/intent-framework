@@ -30,8 +30,8 @@ nix develop -c bash -c "cd evm-intent-framework && npm test"
 Run from project root:
 
 ```bash
-nix develop -c bash -c "./testing-infra/e2e-tests/run-tests.sh"
-nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests-with-evm.sh"
+nix develop -c bash -c "./testing-infra/e2e-tests-apt/run-tests.sh"
+nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests.sh"
 ```
 
 ## License

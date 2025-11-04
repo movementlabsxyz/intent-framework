@@ -28,11 +28,11 @@ log_and_echo "=================================================="
 
 # Stop EVM chain (Hardhat node)
 log_and_echo "   - Stopping EVM chain..."
-./testing-infra/evm-chain/stop-evm-chain.sh
+./testing-infra/connected-chain-evm/stop-evm-chain.sh
 
 # Stop Aptos chains
 log_and_echo "   - Stopping Aptos chains..."
-./testing-infra/multi-chain/stop-dual-chains.sh
+./testing-infra/connected-chain-apt/stop-dual-chains.sh
 
 # Stop any existing verifier processes
 log "   - Stopping any existing verifier processes..."
@@ -55,7 +55,7 @@ fi
 
 log_and_echo ""
 log_and_echo "📦 Setting up Aptos chains..."
-./testing-infra/e2e-tests/move-intent-framework/setup-and-deploy.sh
+./testing-infra/e2e-tests-apt/move-intent-framework/setup-and-deploy.sh
 
 if [ $? -ne 0 ]; then
     log_and_echo "❌ Failed to setup Aptos chains"
@@ -247,8 +247,8 @@ fi
 log_and_echo ""
 log_and_echo "🧹 Step 4: Cleaning up chains..."
 log_and_echo "================================"
-./testing-infra/evm-chain/stop-evm-chain.sh
-./testing-infra/multi-chain/stop-dual-chains.sh
+./testing-infra/connected-chain-evm/stop-evm-chain.sh
+./testing-infra/connected-chain-apt/stop-dual-chains.sh
 
 log_and_echo ""
 log_and_echo "✅ All E2E tests completed!"

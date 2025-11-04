@@ -22,5 +22,5 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
       
       - name: Run E2E integration tests with EVM (mixed-chain)
-        run: nix develop --command bash -c './testing-infra/e2e-tests-evm/run-tests-with-evm.sh'
+        run: nix develop --command bash -c './testing-infra/e2e-tests-evm/run-tests.sh'
 

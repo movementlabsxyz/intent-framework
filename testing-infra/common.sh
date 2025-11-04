@@ -26,7 +26,7 @@ setup_project_root() {
     # Scripts in testing-infra/*/* need to go up 2 levels
     # Scripts in testing-infra/* need to go up 1 level
     if [[ "$script_dir" == *"/testing-infra/"*"/"* ]]; then
-        # Script is in a subdirectory (e.g., testing-infra/e2e-tests/move-intent-framework/)
+        # Script is in a subdirectory (e.g., testing-infra/e2e-tests-apt/move-intent-framework/)
         PROJECT_ROOT="$( cd "$script_dir/../../.." && pwd )"
     else
         # Script is directly in testing-infra/

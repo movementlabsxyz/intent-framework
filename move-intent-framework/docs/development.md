@@ -14,13 +14,15 @@ This document covers development setup, testing, configuration, and dependencies
 1. **Enter Development Environment**
 
    ```bash
-   nix-shell  # Uses [shell.nix](shell.nix)
+   # From project root
+   nix develop
    ```
 
 2. **Run Tests**
 
    ```bash
-   test  # Auto-runs tests on file changes
+   # From project root
+   nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123"
    ```
 
 ## Testing
@@ -95,19 +97,15 @@ subdir = "aptos-framework"
 - **Dev Address**: `0x123` for testing
 - **Dependencies**: Aptos Framework from mainnet branch
 
-### shell.nix
+### Development Environment
 
-The [`shell.nix`](../shell.nix) file provides:
+The development environment is provided via the root [`flake.nix`](../../flake.nix), which includes:
+- Rust toolchain
+- Aptos CLI (via [`aptos.nix`](../../aptos.nix))
+- Node.js and npm
+- Other development tools
 
-- **Development Environment**: Nix-based reproducible environment
-- **Convenient Aliases**: Short commands for common tasks
-- **Tool Versions**: Specific versions of development tools
-
-**Available Commands:**
-- `test` - Run tests with auto-reload
-- `build` - Build the project
-- `fmt` - Format code
-- `lint` - Run linters
+Enter the environment with `nix develop` from the project root.
 
 ## Dependencies
 
@@ -119,8 +117,7 @@ The [`shell.nix`](../shell.nix) file provides:
 
 ### Aptos CLI
 
-- **Version**: v4.3.0
-- **Source**: Defined in [aptos.nix](../../aptos.nix)
+- **Source**: Defined in [aptos.nix](../../aptos.nix) (version is managed there)
 - **Purpose**: Development, testing, and deployment
 
 ### Key Framework Modules Used
@@ -132,13 +129,67 @@ The [`shell.nix`](../shell.nix) file provides:
 - `aptos_std::signer` - Signer utilities
 - `aptos_std::timestamp` - Time management
 
+## Deployment
+
+### Local Chain Setup
+
+Deploy the Intent Framework to a local Aptos network:
+
+```bash
+# 1. Setup local chain (optional)
+./testing-infra/connected-chain-apt/setup-dual-chains.sh
+
+# 2. Configure Aptos CLI to use local chain (port 8080)
+aptos init --profile local --network local
+
+# 3. Enter dev environment (from project root)
+nix develop
+
+# 4. Deploy to current network
+# Get your account address
+INTENT=$(aptos config show-profiles | jq -r '.Result.default.account')
+# Deploy
+aptos move publish --named-addresses aptos_intent=0x$INTENT --skip-fetch-latest-git-deps
+
+# 5. Verify deployment
+aptos move test --dev --named-addresses aptos_intent=0x123
+```
+
+**Note**: The deploy command publishes to whatever network your Aptos CLI is configured for. For local development, you must first configure Aptos CLI to point to your local Docker chain (port 8080) using `aptos init --profile local --network local`.
+
+### Multiple Chains
+
+If you have multiple chains running (e.g., port 8080 and 8082), you can create separate profiles:
+
+```bash
+# Chain 1 (port 8080)
+aptos init --profile local --network local
+
+# Chain 2 (port 8082) 
+aptos init --profile local2 --network local --rest-url http://127.0.0.1:8082
+
+# Deploy to specific chain
+aptos move publish --profile local --named-addresses aptos_intent=0x<your_address>
+aptos move publish --profile local2 --named-addresses aptos_intent=0x<your_address>
+```
+
+### Manual Deployment
+
+```bash
+# Get your account address
+aptos config show-profiles | jq -r '.Result.default.account'
+
+# Deploy with your address
+aptos move publish --named-addresses aptos_intent=0x<your_address> --skip-fetch-latest-git-deps
+```
+
 ## Development Workflow
 
 ### 1. Making Changes
 
-1. Enter the development environment: `nix-shell`
+1. Enter the development environment: `nix develop` (from project root)
 2. Make your changes to source files
-3. Tests run automatically on file changes
+3. Run tests to verify changes
 4. Fix any test failures
 5. Commit your changes
 

@@ -51,55 +51,7 @@ For detailed flow descriptions and implementation details, see:
    nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123"
    ```
 
-### Deployment
-
-Deploy the Intent Framework to an Aptos network:
-
-```bash
-# 1. Setup local chain (optional)
-./testing-infra/single-chain/setup-docker-chain.sh
-
-# 2. Configure Aptos CLI to use local chain (port 8080)
-aptos init --profile local --network local
-
-# 3. Enter dev environment (from project root)
-nix develop
-
-# 4. Deploy to current network
-# Get your account address
-INTENT=$(aptos config show-profiles | jq -r '.Result.default.account')
-# Deploy
-aptos move publish --named-addresses aptos_intent=0x$INTENT --skip-fetch-latest-git-deps
-
-# 5. Verify deployment
-aptos move test --dev --named-addresses aptos_intent=0x123
-```
-
-**Note**: The `pub` command deploys to whatever network your Aptos CLI is configured for. For local development, you must first configure Aptos CLI to point to your local Docker chain (port 8080) using `aptos init --profile local --network local`.
-
-**Multiple chains**: If you have multiple chains running (e.g., port 8080 and 8082), you can create separate profiles:
-```bash
-# Chain 1 (port 8080)
-aptos init --profile local --network local
-
-# Chain 2 (port 8082) 
-aptos init --profile local2 --network local --rest-url http://127.0.0.1:8082
-
-# Deploy to specific chain
-aptos move publish --profile local --named-addresses aptos_intent=0x<your_address>
-aptos move publish --profile local2 --named-addresses aptos_intent=0x<your_address>
-```
-
-**Manual deployment:**
-```bash
-# Get your account address
-aptos config show-profiles | jq -r '.Result.default.account'
-
-# Deploy with your address
-aptos move publish --named-addresses aptos_intent=0x<your_address>
-```
-
-For complete development setup, testing, and configuration details, see [Development Guide](docs/development.md).
+For complete development setup, testing, deployment, and configuration details, see [Development Guide](docs/development.md).
 
 ## Project Structure
 
@@ -120,6 +72,5 @@ move-intent-framework/
 │   ├── intent_as_escrow.move  # Simplified escrow abstraction
 │   └── intent_reservation.move # Reservation system
 ├── tests/                      # Test modules
-├── Move.toml                   # Package configuration
-└── shell.nix                  # Development environment
+└── Move.toml                   # Package configuration
 ```

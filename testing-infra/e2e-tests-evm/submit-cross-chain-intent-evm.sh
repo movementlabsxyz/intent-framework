@@ -160,11 +160,11 @@ log ""
 display_balances
 
 log ""
-log "📝 STEP 1: [HUB CHAIN] Alice creates intent requesting tokens"
+log "📝 STEP 1: [HUB CHAIN] Alice creates intent requesting APT"
 log "================================================="
-log "   User creates intent on hub chain requesting tokens from solver"
+log "   User creates intent on hub chain requesting APT from solver"
 log "   - Alice creates intent on Chain 1 (hub chain)"
-log "   - Intent requests 100000000 tokens to be provided by solver"
+log "   - Intent requests 1 APT to be provided by solver (1000 ETH for 1 APT)"
 log "   - Using intent_id: $INTENT_ID"
 
 # Get APT metadata addresses for Chain 1 using helper function
@@ -194,12 +194,15 @@ else
 fi
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
+# 1 APT = 100000000 Octas (Aptos has 8 decimals)
+APT_AMOUNT_OCTAS="100000000"
 log "   - Creating cross-chain request intent on Chain 1..."
 log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN1"
 log "     Desired FA metadata: $DESIRED_FA_METADATA_CHAIN1"
+log "     Amount: 1 APT ($APT_AMOUNT_OCTAS Octas)"
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
-    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:${APT_AMOUNT_OCTAS}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"
@@ -224,29 +227,15 @@ else
 fi
 
 log ""
-log "📝 STEP 2: [EVM CHAIN] Alice creates escrow with locked tokens"
+log "📝 STEP 2: [EVM CHAIN] Alice creates escrow with locked ETH"
 log "================================================="
-log "   User creates escrow on EVM chain WITH tokens locked in it"
-log "   - Alice locks 100000000 tokens in escrow on Chain 3 (EVM)"
+log "   User creates escrow on EVM chain WITH ETH locked in it"
+log "   - Alice locks 1000 ETH in escrow on Chain 3 (EVM)"
 log "   - User provides hub chain intent_id when creating escrow"
 log "   - Using intent_id from hub chain: $INTENT_ID"
+log "   - Exchange rate: 1000 ETH = 1 APT"
 
-# Deploy token if needed and get token address
 cd evm-intent-framework
-log "   - Deploying test token (MockERC20)..."
-TOKEN_DEPLOY_OUTPUT=$(nix develop -c bash -c "npx hardhat run scripts/deploy-token.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
-TOKEN_ADDRESS=$(echo "$TOKEN_DEPLOY_OUTPUT" | grep -i "MockERC20 deployed to" | awk '{print $NF}' | tr -d '\n')
-
-if [ -z "$TOKEN_ADDRESS" ]; then
-    TOKEN_ADDRESS=$(echo "$TOKEN_DEPLOY_OUTPUT" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
-fi
-
-if [ -z "$TOKEN_ADDRESS" ]; then
-    log_and_echo "     ❌ Failed to deploy token"
-    exit 1
-fi
-
-log "     ✅ Token deployed at: $TOKEN_ADDRESS"
 
 # Convert intent_id from Aptos format to EVM uint256
 # Intent ID is already in hex format (0x...), just need to remove 0x and pad to 64 chars
@@ -257,64 +246,52 @@ INTENT_ID_EVM="0x$INTENT_ID_HEX"
 
 log "     Intent ID (EVM): $INTENT_ID_EVM"
 
-# Mint tokens to Alice (Hardhat account 0)
-log "   - Minting tokens to Alice..."
-nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const token = await hre.ethers.getContractAt('MockERC20', '$TOKEN_ADDRESS');
-  const amount = hre.ethers.parseEther('100000000');
-  await token.mint(signers[0].address, amount);
-  console.log('Minted', amount.toString(), 'tokens to', signers[0].address);
-})();
-EOF" 2>&1 | tee -a "$LOG_FILE"
-
-# Initialize vault for this intent
-log "   - Initializing vault for intent..."
+# Initialize vault for this intent with ETH (address(0))
+log "   - Initializing vault for intent (ETH vault)..."
 EXPIRY_TIME_EVM=$(date -d "+1 hour" +%s)
-nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const vault = await hre.ethers.getContractAt('IntentVault', '$VAULT_ADDRESS');
-  const intentId = BigInt('$INTENT_ID_EVM');
-  const expiry = $EXPIRY_TIME_EVM;
-  await vault.connect(signers[0]).initializeVault(intentId, '$TOKEN_ADDRESS', expiry);
-  console.log('Vault initialized for intent:', intentId.toString());
-})();
-EOF" 2>&1 | tee -a "$LOG_FILE"
+INIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && VAULT_ADDRESS='$VAULT_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' EXPIRY_TIME_EVM='$EXPIRY_TIME_EVM' npx hardhat run scripts/initialize-vault-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+INIT_EXIT_CODE=$?
 
-# Deposit tokens into vault
-log "   - Depositing tokens into vault..."
-AMOUNT_EVM="100000000000000000000000000"  # 100000000 tokens with 18 decimals
-nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const token = await hre.ethers.getContractAt('MockERC20', '$TOKEN_ADDRESS');
-  const vault = await hre.ethers.getContractAt('IntentVault', '$VAULT_ADDRESS');
-  const intentId = BigInt('$INTENT_ID_EVM');
-  const amount = BigInt('$AMOUNT_EVM');
-  
-  // Approve vault to spend tokens
-  await token.connect(signers[0]).approve(vault.target, amount);
-  console.log('Approved vault to spend tokens');
-  
-  // Deposit tokens
-  await vault.connect(signers[0]).deposit(intentId, amount);
-  console.log('Deposited', amount.toString(), 'tokens into vault');
-})();
-EOF" 2>&1 | tee -a "$LOG_FILE"
-
-if [ $? -eq 0 ]; then
-    log "     ✅ Escrow created on Chain 3 (EVM)!"
-    log_and_echo "✅ Escrow created"
-else
-    log_and_echo "     ❌ Escrow creation failed on Chain 3!"
+# Check if initialization was successful
+if [ $INIT_EXIT_CODE -ne 0 ]; then
+    log_and_echo "     ❌ ERROR: Vault initialization failed!"
+    log_and_echo "   Initialization output: $INIT_OUTPUT"
     log_and_echo "   See log file for details: $LOG_FILE"
     exit 1
 fi
+
+# Verify initialization succeeded by checking for success message
+if ! echo "$INIT_OUTPUT" | grep -qi "Vault initialized for intent"; then
+    log_and_echo "     ❌ ERROR: Vault initialization did not complete successfully"
+    log_and_echo "   Initialization output: $INIT_OUTPUT"
+    log_and_echo "   Expected to see 'Vault initialized for intent (ETH)' in output"
+    exit 1
+fi
+
+# Deposit 1000 ETH into vault
+log "   - Depositing 1000 ETH into vault..."
+ETH_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH = 1000 * 10^18 wei
+DEPOSIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && VAULT_ADDRESS='$VAULT_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' ETH_AMOUNT_WEI='$ETH_AMOUNT_WEI' npx hardhat run scripts/deposit-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+DEPOSIT_EXIT_CODE=$?
+
+# Check if deposit was successful
+if [ $DEPOSIT_EXIT_CODE -ne 0 ]; then
+    log_and_echo "     ❌ ERROR: ETH deposit failed!"
+    log_and_echo "   Deposit output: $DEPOSIT_OUTPUT"
+    log_and_echo "   See log file for details: $LOG_FILE"
+    exit 1
+fi
+
+# Verify deposit succeeded by checking for success message
+if ! echo "$DEPOSIT_OUTPUT" | grep -qi "Deposited.*wei.*ETH.*vault"; then
+    log_and_echo "     ❌ ERROR: ETH deposit did not complete successfully"
+    log_and_echo "   Deposit output: $DEPOSIT_OUTPUT"
+    log_and_echo "   Expected to see 'Deposited ... wei (ETH) into vault' in output"
+    exit 1
+fi
+
+log "     ✅ Escrow created on Chain 3 (EVM)!"
+log_and_echo "✅ Escrow created"
 
 cd ..
 
@@ -323,7 +300,7 @@ log "📝 STEP 3: [HUB CHAIN] Bob fulfills intent on hub chain"
 log "================================================="
 log "   Solver monitors escrow event on EVM chain and fulfills intent on hub chain"
 log "   - Bob sees intent with ID: $INTENT_ID"
-log "   - Bob provides 100000000 tokens on hub chain to fulfill the intent"
+log "   - Bob provides 1 APT ($APT_AMOUNT_OCTAS Octas) on hub chain to fulfill the intent"
 
 # Get the intent object address from Step 1
 if [ -z "$HUB_INTENT_ADDRESS" ] || [ "$HUB_INTENT_ADDRESS" = "null" ]; then
@@ -334,10 +311,10 @@ fi
 log "   - Intent object address: $HUB_INTENT_ADDRESS"
 log "   - Fulfilling intent..."
 
-# Bob fulfills the intent by providing tokens
+# Bob fulfills the intent by providing 1 APT
 aptos move run --profile bob-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::fulfill_cross_chain_request_intent" \
-    --args "address:$HUB_INTENT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
+    --args "address:$HUB_INTENT_ADDRESS" "u64:${APT_AMOUNT_OCTAS}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Bob successfully fulfilled the intent!"
@@ -357,8 +334,8 @@ log "Next steps:"
 log "  1. Run verifier to monitor and approve: ./testing-infra/e2e-tests-evm/release-evm-escrow.sh"
 log ""
 log "Summary:"
-log "   ✅ Intent created on Chain 1 (Aptos hub)"
-log "   ✅ Escrow created on Chain 3 (EVM)"
-log "   ✅ Intent fulfilled on Chain 1 (Aptos hub)"
-log "   ⏳ Waiting for verifier approval to release escrow on Chain 3"
+log "   ✅ Intent created on Chain 1 (Aptos hub): Requesting 1 APT"
+log "   ✅ Escrow created on Chain 3 (EVM): 1000 ETH locked"
+log "   ✅ Intent fulfilled on Chain 1 (Aptos hub): Bob provided 1 APT"
+log "   ⏳ Waiting for verifier approval to release 1000 ETH escrow on Chain 3"
 

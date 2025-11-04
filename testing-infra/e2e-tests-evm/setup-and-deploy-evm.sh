@@ -55,14 +55,62 @@ log "   ✅ Bob address: $BOB_ADDRESS"
 
 # Verify balances (Hardhat default accounts should have 10000 ETH each = 10000000000000000000000 wei)
 log "   - Getting Alice balance..."
-ALICE_BALANCE=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-alice-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | head -1 | tr -d '\n')
+ALICE_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-alice-balance.js --network localhost" 2>&1)
+# Extract balance - look for a line that's purely numeric (the balance) and take the last one
+# This handles cases where there might be line numbers or other numeric output
+ALICE_BALANCE=$(echo "$ALICE_BALANCE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
+
+# Check if the script failed (error messages would indicate failure)
+if echo "$ALICE_BALANCE_OUTPUT" | grep -qi "error\|cannot connect\|ECONNREFUSED"; then
+    log_and_echo "❌ ERROR: Failed to get Alice balance - Hardhat node may not be ready"
+    log_and_echo "   Error output: $ALICE_BALANCE_OUTPUT"
+    exit 1
+fi
+
+log "   DEBUG: Alice balance extracted: '$ALICE_BALANCE'"
 
 log "   - Getting Bob balance..."
-BOB_BALANCE=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-bob-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | head -1 | tr -d '\n')
+BOB_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-bob-balance.js --network localhost" 2>&1)
+# Extract balance - look for a line that's purely numeric (the balance) and take the last one
+BOB_BALANCE=$(echo "$BOB_BALANCE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
 
+# Check if the script failed (error messages would indicate failure)
+if echo "$BOB_BALANCE_OUTPUT" | grep -qi "error\|cannot connect\|ECONNREFUSED"; then
+    log_and_echo "❌ ERROR: Failed to get Bob balance - Hardhat node may not be ready"
+    log_and_echo "   Error output: $BOB_BALANCE_OUTPUT"
+    exit 1
+fi
+
+log "   DEBUG: Bob balance extracted: '$BOB_BALANCE'"
+
+# Panic if we can't get balances
 if [ -z "$ALICE_BALANCE" ] || [ -z "$BOB_BALANCE" ]; then
     log_and_echo "❌ ERROR: Failed to get EVM account balances"
+    log_and_echo "   Alice balance output: $ALICE_BALANCE_OUTPUT"
+    log_and_echo "   Bob balance output: $BOB_BALANCE_OUTPUT"
     log_and_echo "   EVM chain may not be responding properly"
+    exit 1
+fi
+
+# Panic if balances are 0 (Hardhat default accounts should have 10000 ETH each)
+# Use explicit string comparison and check for empty as well
+if [ -z "$ALICE_BALANCE" ] || [ "$ALICE_BALANCE" = "0" ] || [ "$ALICE_BALANCE" = "" ]; then
+    log_and_echo "❌ ERROR: Alice (Account 0) has ZERO or empty balance on EVM chain"
+    log_and_echo "   Balance extracted: '$ALICE_BALANCE'"
+    log_and_echo "   Balance output: $ALICE_BALANCE_OUTPUT"
+    log_and_echo "   Address: $ALICE_ADDRESS"
+    log_and_echo "   Hardhat default accounts should have 10000 ETH each"
+    log_and_echo "   EVM chain may not be properly initialized"
+    exit 1
+fi
+
+if [ -z "$BOB_BALANCE" ] || [ "$BOB_BALANCE" = "0" ] || [ "$BOB_BALANCE" = "" ]; then
+    log_and_echo "❌ ERROR: Bob (Account 1) has ZERO or empty balance on EVM chain"
+    log_and_echo "   Balance extracted: '$BOB_BALANCE'"
+    log_and_echo "   Balance output: $BOB_BALANCE_OUTPUT"
+    log_and_echo "   Address: $BOB_ADDRESS"
+    log_and_echo "   Hardhat default accounts should have 10000 ETH each"
+    log_and_echo "   EVM chain may not be properly initialized"
     exit 1
 fi
 
@@ -73,16 +121,16 @@ MIN_BALANCE="1000000000000000000"
 ALICE_SUFFICIENT=$(echo "$ALICE_BALANCE $MIN_BALANCE" | awk '{if ($1 >= $2) print "1"; else print "0"}')
 BOB_SUFFICIENT=$(echo "$BOB_BALANCE $MIN_BALANCE" | awk '{if ($1 >= $2) print "1"; else print "0"}')
 
-if [ -z "$ALICE_BALANCE" ] || [ "$ALICE_BALANCE" = "0" ] || [ "$ALICE_SUFFICIENT" = "0" ]; then
-    log_and_echo "❌ ERROR: Alice (Account 0) balance insufficient or zero"
+if [ "$ALICE_SUFFICIENT" = "0" ]; then
+    log_and_echo "❌ ERROR: Alice (Account 0) balance insufficient"
     log_and_echo "   Balance: $ALICE_BALANCE wei"
     log_and_echo "   Required: At least 1 ETH ($MIN_BALANCE wei)"
     log_and_echo "   Address: $ALICE_ADDRESS"
     exit 1
 fi
 
-if [ -z "$BOB_BALANCE" ] || [ "$BOB_BALANCE" = "0" ] || [ "$BOB_SUFFICIENT" = "0" ]; then
-    log_and_echo "❌ ERROR: Bob (Account 1) balance insufficient or zero"
+if [ "$BOB_SUFFICIENT" = "0" ]; then
+    log_and_echo "❌ ERROR: Bob (Account 1) balance insufficient"
     log_and_echo "   Balance: $BOB_BALANCE wei"
     log_and_echo "   Required: At least 1 ETH ($MIN_BALANCE wei)"
     log_and_echo "   Address: $BOB_ADDRESS"

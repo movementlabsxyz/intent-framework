@@ -23,6 +23,24 @@ log_and_echo "=========================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 log_and_echo ""
 
+log_and_echo "🧹 Cleaning up any existing chains and processes..."
+log_and_echo "=================================================="
+
+# Stop EVM chain (Hardhat node)
+log_and_echo "   - Stopping EVM chain..."
+./testing-infra/evm-chain/stop-evm-chain.sh
+
+# Stop Aptos chains
+log_and_echo "   - Stopping Aptos chains..."
+./testing-infra/multi-chain/stop-dual-chains.sh
+
+# Stop any existing verifier processes
+log "   - Stopping any existing verifier processes..."
+pkill -f "trusted-verifier" || true
+
+log_and_echo "✅ Cleanup complete"
+log_and_echo ""
+
 log_and_echo "🚀 Step 0: Setting up chains and deploying contracts..."
 log_and_echo "======================================================"
 
@@ -70,23 +88,6 @@ fi
 
 log_and_echo "   EVM Vault: $VAULT_ADDRESS"
 
-# Get verifier address (Hardhat account 1)
-cd evm-intent-framework
-VERIFIER_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  console.log(signers[1].address);
-})();
-EOF" 2>/dev/null | tail -1 | tr -d '\n')
-cd ..
-
-if [ -z "$VERIFIER_ADDRESS" ]; then
-    VERIFIER_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"  # Hardhat default account 1
-fi
-
-log_and_echo "   EVM Verifier: $VERIFIER_ADDRESS"
-
 # Use verifier_testing.toml for tests - required, panic if not found
 VERIFIER_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
 
@@ -95,6 +96,25 @@ if [ ! -f "$VERIFIER_TESTING_CONFIG" ]; then
     log_and_echo "   Tests require trusted-verifier/config/verifier_testing.toml to exist"
     exit 1
 fi
+
+# Get verifier Ethereum address from config (derived from ECDSA public key)
+log "   - Computing verifier Ethereum address from config..."
+VERIFIER_ADDRESS=$(cd "$PROJECT_ROOT/trusted-verifier" && VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG" cargo run --bin get_verifier_eth_address 2>/dev/null | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+
+if [ -z "$VERIFIER_ADDRESS" ]; then
+    log_and_echo "   ⚠️  Warning: Could not compute verifier Ethereum address from config"
+    log_and_echo "   Falling back to Hardhat account 1 (Bob)"
+    # Get Hardhat account 1 as fallback
+    cd evm-intent-framework
+    VERIFIER_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && npx hardhat run scripts/get-bob-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+    cd ..
+    
+    if [ -z "$VERIFIER_ADDRESS" ]; then
+        VERIFIER_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"  # Hardhat default account 1
+    fi
+fi
+
+log_and_echo "   EVM Verifier: $VERIFIER_ADDRESS"
 
 # Export config path for Rust code to use (absolute path so tests can find it)
 export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
@@ -146,6 +166,8 @@ fi
 
 log_and_echo ""
 log_and_echo "✅ Intents submitted successfully!"
+log_and_echo ""
+display_balances
 log_and_echo ""
 
 log_and_echo "🚀 Step 2: Running verifier service to monitor and release escrow..."
@@ -209,6 +231,8 @@ log_and_echo "=================================="
 ./testing-infra/e2e-tests-evm/release-evm-escrow.sh
 
 log_and_echo ""
+display_balances
+log_and_echo ""
 log_and_echo "✅ E2E test flow completed!"
 log_and_echo ""
 
@@ -228,11 +252,3 @@ log_and_echo "================================"
 
 log_and_echo ""
 log_and_echo "✅ All E2E tests completed!"
-log_and_echo ""
-log_and_echo "📋 Test Summary:"
-log_and_echo "   ✅ Chains setup and contracts deployed"
-log_and_echo "   ✅ Intent created on Chain 1 (Aptos hub)"
-log_and_echo "   ✅ Escrow created on Chain 3 (EVM)"
-log_and_echo "   ✅ Intent fulfilled on Chain 1"
-log_and_echo "   ✅ Verifier monitored and approved escrow"
-log_and_echo "   ✅ Escrow released on Chain 3 (EVM)"

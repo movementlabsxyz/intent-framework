@@ -91,23 +91,12 @@ display_balances() {
         >/dev/null 2>&1; then
         cd "$PROJECT_ROOT/evm-intent-framework"
         
-        local alice_evm=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const balance = await hre.ethers.provider.getBalance(signers[0].address);
-  console.log(balance.toString());
-})();
-EOF" 2>/dev/null | tail -1 | tr -d '\n' || echo "0")
+        # Use the actual script files instead of inline heredoc (Hardhat doesn't support inline scripts)
+        local alice_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && npx hardhat run scripts/get-alice-balance.js --network localhost" 2>&1)
+        local alice_evm=$(echo "$alice_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
         
-        local solver_evm=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const balance = await hre.ethers.provider.getBalance(signers[1].address);
-  console.log(balance.toString());
-})();
-EOF" 2>/dev/null | tail -1 | tr -d '\n' || echo "0")
+        local solver_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && npx hardhat run scripts/get-bob-balance.js --network localhost" 2>&1)
+        local solver_evm=$(echo "$solver_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
         
         cd "$PROJECT_ROOT"
         
@@ -123,10 +112,10 @@ EOF" 2>/dev/null | tail -1 | tr -d '\n' || echo "0")
         fi
         
         if [ "$solver_evm" != "0" ] && [ -n "$solver_evm" ]; then
-            local solver_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
-            log_and_echo "      Solver (Acc 1): ${solver_eth} ETH"
+            local bob_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
+            log_and_echo "      Bob (Acc 1): ${bob_eth} ETH"
         else
-            log_and_echo "      Solver (Acc 1): 0 ETH"
+            log_and_echo "      Bob (Acc 1): 0 ETH"
         fi
     fi
     

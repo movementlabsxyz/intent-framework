@@ -20,6 +20,7 @@ use sha3::{Keccak256, Digest};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 use base64::{Engine as _, engine::general_purpose};
+use hex;
 
 use crate::config::Config;
 
@@ -278,9 +279,10 @@ impl CryptoService {
         // Convert GenericArray to [u8; 32] for signing
         let hash_array: [u8; 32] = final_hash.into();
         
-        // Sign with ECDSA (creates compact signature: r || s, 64 bytes)
-        use k256::ecdsa::signature::DigestSigner;
-        let signature: EcdsaSignature = self.ecdsa_signing_key.sign_digest(Keccak256::new_with_prefix(&prefixed_message));
+        // Sign with ECDSA using precomputed hash (creates compact signature: r || s, 64 bytes)
+        use k256::ecdsa::signature::hazmat::PrehashSigner;
+        let signature: EcdsaSignature = self.ecdsa_signing_key.sign_prehash(&hash_array)
+            .map_err(|e| anyhow::anyhow!("Failed to sign precomputed hash: {}", e))?;
         
         // Extract r and s from signature (each 32 bytes, total 64 bytes)
         let sig_bytes = signature.to_bytes();
@@ -323,5 +325,37 @@ impl CryptoService {
               intent_id, approval_value);
         
         Ok(final_sig)
+    }
+    
+    /// Derives the Ethereum address from the ECDSA public key.
+    /// 
+    /// The Ethereum address is computed as:
+    /// keccak256(uncompressed_public_key)[12:32] (last 20 bytes)
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(String)` - Ethereum address as hex string (with 0x prefix)
+    /// * `Err(anyhow::Error)` - Failed to derive address
+    pub fn get_ethereum_address(&self) -> Result<String> {
+        let verifying_key = self.ecdsa_signing_key.verifying_key();
+        let public_key_point = verifying_key.to_encoded_point(false); // Uncompressed format
+        let public_key_bytes = public_key_point.as_bytes();
+        
+        // Remove the 0x04 prefix (uncompressed point indicator) - we want just the coordinates
+        // Uncompressed format: 0x04 || x (32 bytes) || y (32 bytes) = 65 bytes total
+        if public_key_bytes.len() != 65 || public_key_bytes[0] != 0x04 {
+            return Err(anyhow::anyhow!("Invalid public key format: expected 65 bytes with 0x04 prefix"));
+        }
+        
+        // Hash the public key (without the 0x04 prefix)
+        let mut hasher = Keccak256::new();
+        hasher.update(&public_key_bytes[1..]); // Skip the 0x04 prefix
+        let hash = hasher.finalize();
+        
+        // Ethereum address is the last 20 bytes of the hash
+        let address_bytes = &hash[12..32];
+        let address_hex = format!("0x{}", hex::encode(address_bytes));
+        
+        Ok(address_hex)
     }
 }

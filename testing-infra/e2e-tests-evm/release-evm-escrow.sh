@@ -95,41 +95,91 @@ check_and_release_escrows() {
             continue
         fi
         
+        # Get Bob's balance before claiming (to verify funds were received)
+        log "   - Getting Bob's balance before claim..."
+        cd evm-intent-framework
+        BOB_BALANCE_BEFORE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && npx hardhat run scripts/get-bob-balance.js --network localhost" 2>&1)
+        BOB_BALANCE_BEFORE=$(echo "$BOB_BALANCE_BEFORE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
+        cd ..
+        
+        if [ -z "$BOB_BALANCE_BEFORE" ]; then
+            log_and_echo "   ❌ ERROR: Failed to get Bob's balance before claim"
+            log_and_echo "   Balance output: $BOB_BALANCE_BEFORE_OUTPUT"
+            exit 1
+        fi
+        
+        log "   - Bob's balance before claim: $BOB_BALANCE_BEFORE wei"
+        
         # Submit escrow release transaction on EVM
         cd evm-intent-framework
         
         log "   - Calling IntentVault.claim() on EVM..."
-        CLAIM_OUTPUT=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const vault = await hre.ethers.getContractAt('IntentVault', '$VAULT_ADDRESS');
-  const intentId = BigInt('$INTENT_ID_EVM');
-  const approvalValue = 1;
-  const signature = '0x$SIGNATURE_HEX';
-  
-  try {
-    const tx = await vault.connect(signers[1]).claim(intentId, approvalValue, signature);
-    const receipt = await tx.wait();
-    console.log('Claim transaction hash:', receipt.hash);
-    console.log('Escrow released successfully!');
-  } catch (error) {
-    console.error('Error claiming escrow:', error.message);
-    process.exit(1);
-  }
-})();
-EOF" 2>&1 | tee -a "$LOG_FILE")
+        CLAIM_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && VAULT_ADDRESS='$VAULT_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' SIGNATURE_HEX='$SIGNATURE_HEX' npx hardhat run scripts/claim-escrow.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
         
         TX_EXIT_CODE=$?
         cd ..
         
-        if [ $TX_EXIT_CODE -eq 0 ]; then
-            log "   ✅ Escrow released successfully on EVM chain!"
-            RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
-        else
-            log "   ❌ Failed to release escrow on EVM chain"
-            log "      See log file for details: $LOG_FILE"
+        if [ $TX_EXIT_CODE -ne 0 ]; then
+            log_and_echo "   ❌ ERROR: Failed to release escrow on EVM chain"
+            log_and_echo "   Claim output: $CLAIM_OUTPUT"
+            log_and_echo "   See log file for details: $LOG_FILE"
+            exit 1
         fi
+        
+        # Verify claim succeeded by checking for success message
+        if ! echo "$CLAIM_OUTPUT" | grep -qi "Escrow released successfully"; then
+            log_and_echo "   ❌ ERROR: Escrow claim did not complete successfully"
+            log_and_echo "   Claim output: $CLAIM_OUTPUT"
+            log_and_echo "   Expected to see 'Escrow released successfully' in output"
+            exit 1
+        fi
+        
+        # Wait a bit for transaction to be processed
+        sleep 2
+        
+        # Get Bob's balance after claiming (to verify funds were received)
+        log "   - Getting Bob's balance after claim..."
+        cd evm-intent-framework
+        BOB_BALANCE_AFTER_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && npx hardhat run scripts/get-bob-balance.js --network localhost" 2>&1)
+        BOB_BALANCE_AFTER=$(echo "$BOB_BALANCE_AFTER_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
+        cd ..
+        
+        if [ -z "$BOB_BALANCE_AFTER" ]; then
+            log_and_echo "   ❌ ERROR: Failed to get Bob's balance after claim"
+            log_and_echo "   Balance output: $BOB_BALANCE_AFTER_OUTPUT"
+            exit 1
+        fi
+        
+        log "   - Bob's balance after claim: $BOB_BALANCE_AFTER wei"
+        
+        # Calculate balance increase
+        # Expected: Bob should receive 1000 ETH = 1000000000000000000000 wei (minus gas fees)
+        EXPECTED_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH
+        BALANCE_INCREASE=$(echo "$BOB_BALANCE_AFTER $BOB_BALANCE_BEFORE" | awk '{print $1 - $2}')
+        
+        log "   - Balance increase: $BALANCE_INCREASE wei"
+        log "   - Expected: ~$EXPECTED_AMOUNT_WEI wei (1000 ETH minus gas)"
+        
+        # Check if balance increased by at least 99% of expected (allowing for gas fees)
+        MIN_EXPECTED=$(echo "$EXPECTED_AMOUNT_WEI" | awk '{print int($1 * 0.99)}')
+        
+        # Use awk for numeric comparison
+        SUFFICIENT_INCREASE=$(echo "$BALANCE_INCREASE $MIN_EXPECTED" | awk '{if ($1 >= $2) print "1"; else print "0"}')
+        
+        if [ "$SUFFICIENT_INCREASE" = "0" ] || [ -z "$BALANCE_INCREASE" ] || [ "$BALANCE_INCREASE" = "0" ]; then
+            log_and_echo "   ❌ ERROR: Bob did not receive the escrow funds!"
+            log_and_echo "   Bob's balance before: $BOB_BALANCE_BEFORE wei"
+            log_and_echo "   Bob's balance after:  $BOB_BALANCE_AFTER wei"
+            log_and_echo "   Balance increase:    $BALANCE_INCREASE wei"
+            log_and_echo "   Expected increase:   ~$EXPECTED_AMOUNT_WEI wei (1000 ETH)"
+            log_and_echo "   Minimum expected:     $MIN_EXPECTED wei (99% of 1000 ETH)"
+            log_and_echo "   Escrow release FAILED - Bob did not receive funds!"
+            exit 1
+        fi
+        
+        log "   ✅ Escrow released successfully on EVM chain!"
+        log "   ✅ Bob received $BALANCE_INCREASE wei (expected ~$EXPECTED_AMOUNT_WEI wei)"
+        RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
     done
 }
 
@@ -146,7 +196,16 @@ for i in {1..10}; do
 done
 
 log ""
+# Check if any escrows were released
+if [ -z "$RELEASED_ESCROWS" ]; then
+    log_and_echo "❌ ERROR: No escrows were released!"
+    log_and_echo "   The verifier may not have approved the escrow, or the claim failed"
+    log_and_echo "   Check verifier logs and approvals API"
+    exit 1
+fi
+
 log "✅ Escrow release monitoring complete!"
+log "   Released escrows: $RELEASED_ESCROWS"
 log ""
 log "📝 Useful commands:"
 log "   View approvals:  curl -s http://127.0.0.1:3333/approvals | jq"

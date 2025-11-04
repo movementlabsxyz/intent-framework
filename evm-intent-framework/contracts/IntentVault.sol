@@ -53,7 +53,7 @@ contract IntentVault {
     /**
      * @notice Initialize a new vault for a specific intent
      * @param intentId Unique intent identifier
-     * @param token ERC20 token address to be deposited
+     * @param token ERC20 token address to be deposited (use address(0) for ETH)
      * @param expiry Expiry timestamp (can be 0 for no expiry)
      */
     function initializeVault(
@@ -61,7 +61,6 @@ contract IntentVault {
         address token,
         uint256 expiry
     ) external {
-        require(token != address(0), "Invalid token address");
         require(vaults[intentId].maker == address(0), "Vault already initialized");
 
         vaults[intentId] = Vault({
@@ -76,11 +75,11 @@ contract IntentVault {
     }
 
     /**
-     * @notice Deposit tokens into vault
+     * @notice Deposit tokens or ETH into vault
      * @param intentId Intent identifier
-     * @param amount Amount of tokens to deposit
+     * @param amount Amount of tokens/ETH to deposit
      */
-    function deposit(uint256 intentId, uint256 amount) external {
+    function deposit(uint256 intentId, uint256 amount) external payable {
         Vault storage vault = vaults[intentId];
         
         require(vault.maker != address(0), "Vault not initialized");
@@ -88,10 +87,16 @@ contract IntentVault {
         
         require(amount > 0, "Amount must be greater than 0");
         
-        // Transfer tokens from user to vault
-        IERC20(vault.token).safeTransferFrom(msg.sender, address(this), amount);
-        
-        vault.amount += amount;
+        if (vault.token == address(0)) {
+            // ETH deposit
+            require(msg.value == amount, "ETH amount mismatch");
+            vault.amount += amount;
+        } else {
+            // ERC20 token deposit
+            require(msg.value == 0, "ETH not accepted for token vault");
+            IERC20(vault.token).safeTransferFrom(msg.sender, address(this), amount);
+            vault.amount += amount;
+        }
         
         emit DepositMade(intentId, msg.sender, amount, vault.amount);
     }
@@ -129,8 +134,14 @@ contract IntentVault {
         vault.isClaimed = true;
         vault.amount = 0;
         
-        // Transfer tokens to solver (msg.sender)
-        IERC20(token).safeTransfer(msg.sender, amount);
+        // Transfer tokens or ETH to solver (msg.sender)
+        if (token == address(0)) {
+            // ETH transfer
+            payable(msg.sender).transfer(amount);
+        } else {
+            // ERC20 token transfer
+            IERC20(token).safeTransfer(msg.sender, amount);
+        }
         
         emit VaultClaimed(intentId, msg.sender, amount);
     }
@@ -153,8 +164,14 @@ contract IntentVault {
         vault.amount = 0;
         vault.isClaimed = true;
         
-        // Transfer tokens back to maker
-        IERC20(token).safeTransfer(vault.maker, amount);
+        // Transfer tokens or ETH back to maker
+        if (token == address(0)) {
+            // ETH transfer
+            payable(vault.maker).transfer(amount);
+        } else {
+            // ERC20 token transfer
+            IERC20(token).safeTransfer(vault.maker, amount);
+        }
         
         emit VaultCancelled(intentId, vault.maker, amount);
     }

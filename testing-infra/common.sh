@@ -62,6 +62,7 @@ log_and_echo() {
 
 # Helper function to write only to log file (not terminal)
 log() {
+    echo "$@"
     [ -n "$LOG_FILE" ] && echo "$@" >> "$LOG_FILE"
 }
 

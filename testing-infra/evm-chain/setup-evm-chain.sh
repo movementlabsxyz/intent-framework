@@ -44,15 +44,67 @@ log "⏳ Waiting for Hardhat node to be ready..."
 # Wait for node to be ready (check if port 8545 is responding)
 # Timeout set to 180 seconds (3 minutes) for CI environments
 for i in {1..180}; do
-    if curl -s -X POST http://127.0.0.1:8545 \
+    CURL_RESPONSE=$(curl -s -X POST http://127.0.0.1:8545 \
         -H "Content-Type: application/json" \
         -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-        >/dev/null 2>&1; then
+        2>&1)
+    CURL_EXIT_CODE=$?
+    
+    if [ $CURL_EXIT_CODE -eq 0 ] && echo "$CURL_RESPONSE" | grep -q '"result"'; then
         log "   ✅ Hardhat node ready!"
         break
     fi
+    
+    # Log progress every 30 seconds
+    if [ $((i % 30)) -eq 0 ]; then
+        log "   Still waiting... (${i}/180 seconds)"
+        if [ $CURL_EXIT_CODE -ne 0 ]; then
+            log "   Curl error (exit code: $CURL_EXIT_CODE): $CURL_RESPONSE"
+        elif [ -n "$CURL_RESPONSE" ]; then
+            log "   Curl response: $CURL_RESPONSE"
+        fi
+    fi
+    
     if [ $i -eq 180 ]; then
-        log_and_echo "   ❌ Timeout waiting for Hardhat node"
+        log_and_echo "   ❌ Timeout waiting for Hardhat node (180 seconds)"
+        log_and_echo "   Checking process status..."
+        if ps -p "$HARDHAT_PID" > /dev/null 2>&1; then
+            log_and_echo "   Process $HARDHAT_PID is still running"
+        else
+            log_and_echo "   Process $HARDHAT_PID is not running (may have crashed)"
+        fi
+        log_and_echo "   Last 50 lines of Hardhat log:"
+        if [ -f "$LOG_FILE" ]; then
+            tail -50 "$LOG_FILE" | while IFS= read -r line; do
+                log_and_echo "   $line"
+            done
+        else
+            log_and_echo "   Log file not found: $LOG_FILE"
+        fi
+        log_and_echo "   Checking if port 8545 is in use:"
+        if command -v lsof > /dev/null 2>&1; then
+            if lsof -i :8545 > /dev/null 2>&1; then
+                log_and_echo "   Port 8545 is in use by:"
+                lsof -i :8545 | while IFS= read -r line; do
+                    log_and_echo "   $line"
+                done
+            else
+                log_and_echo "   Port 8545 is not in use (according to lsof)"
+            fi
+        elif command -v ss > /dev/null 2>&1; then
+            if ss -tuln | grep -q ':8545'; then
+                log_and_echo "   Port 8545 appears to be in use (according to ss):"
+                ss -tulnp | grep ':8545' | while IFS= read -r line; do
+                    log_and_echo "   $line"
+                done
+            else
+                log_and_echo "   Port 8545 is not in use (according to ss)"
+            fi
+        else
+            log_and_echo "   Cannot check port status (lsof/ss not available)"
+        fi
+        log_and_echo "   Final curl test response:"
+        log_and_echo "   $CURL_RESPONSE"
         kill "$HARDHAT_PID" 2>/dev/null || true
         exit 1
     fi

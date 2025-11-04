@@ -55,7 +55,7 @@ fi
 
 log_and_echo ""
 log_and_echo "📦 Setting up Aptos chains..."
-./testing-infra/e2e-tests-apt/move-intent-framework/setup-and-deploy.sh
+./testing-infra/e2e-tests-apt/setup-and-deploy.sh
 
 if [ $? -ne 0 ]; then
     log_and_echo "❌ Failed to setup Aptos chains"

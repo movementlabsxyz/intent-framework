@@ -2,7 +2,7 @@
 
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/../../common.sh"
+source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -36,7 +36,7 @@ log ""
 if [ "$1" = "1" ]; then
     log "🚀 Step 0: Running setup and submitting intents..."
     log "================================================="
-    ./testing-infra/e2e-tests-apt/move-intent-framework/submit-cross-chain-intent.sh 1
+    ./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh 1
     
     if [ $? -ne 0 ]; then
         log_and_echo "❌ Failed to setup and submit intents"

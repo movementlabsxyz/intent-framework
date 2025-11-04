@@ -16,7 +16,7 @@ log_and_echo "📝 All output logged to: $LOG_FILE"
 # Check if verifier is running
 if ! curl -s http://127.0.0.1:3333/health >/dev/null 2>&1; then
     log_and_echo "❌ Verifier is not running. Please start it first:"
-    log_and_echo "   ./testing-infra/e2e-tests-apt/complete-system/run-cross-chain-verifier.sh"
+    log_and_echo "   ./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh"
     exit 1
 fi
 

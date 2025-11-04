@@ -1,22 +1,17 @@
-# Infrastructure Setup
+# Testing Infrastructure
 
-This directory contains infrastructure setup for running chains for development and testing.
+Infrastructure setup for running chains for development and testing.
 
 ## Resources
 
 - [Testing Guide](./testing-guide.md) - Testing and validation commands
 
-## Setup
+## Chain Setup
 
-- Platform: Linux (AMD64) only
-- Location: [`setup-docker/`](./setup-docker/)
-- Best for: Quick development, testing, CI/CD, multi-chain testing
-- Features: Fresh start every time, no system dependencies, dual-chain support
-
-### Quick start
+### Aptos Chains (Docker)
 
 ```bash
-# Multi-chain (two independent localnets with Alice and Bob accounts)
+# Multi-chain setup (two independent localnets with Alice and Bob accounts)
 ./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
 
 # Or setup chains only
@@ -26,25 +21,45 @@ This directory contains infrastructure setup for running chains for development 
 ./testing-infra/connected-chain-apt/stop-dual-chains.sh
 ```
 
-### Endpoints
-
+**Endpoints:**
 - Chain 1: REST http://127.0.0.1:8080 • Faucet http://127.0.0.1:8081
 - Chain 2: REST http://127.0.0.1:8082 • Faucet http://127.0.0.1:8083
 
-### Management
+### EVM Chain (Hardhat)
 
 ```bash
-# Multi-chain logs / stop
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 logs -f
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 logs -f
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down
-./testing-infra/connected-chain-apt/stop-dual-chains.sh
+# Start EVM chain
+./testing-infra/connected-chain-evm/setup-evm-chain.sh
+
+# Stop EVM chain
+./testing-infra/connected-chain-evm/stop-evm-chain.sh
 ```
 
-## Setup with source code (deprecated)
+**Endpoints:**
+- EVM Chain: RPC http://127.0.0.1:8545, Chain ID: 31337
 
-Manual "setup from source" was removed.
+### Verifier API
 
-- Last commit with manual setup: `5a8e453dfbaef22c513a5293169591f4d48c736f`
-- Reason: Could not support multi‑chain due to hard‑coded port conflicts.
+- API: http://127.0.0.1:3333
+- Port: 3333 (configurable in `trusted-verifier/config/verifier_testing.toml`)
+
+## Test Accounts
+
+### Aptos Chains
+
+Both Chain 1 and Chain 2 use the same test accounts:
+- **Alice**: Creates intents and escrows
+- **Bob**: Fulfills intents and claims escrows
+- Funded with 200,000,000 Octas (2 APT) each during setup
+
+### EVM Chain
+
+Hardhat provides 20 test accounts, each with 10000 ETH:
+- Account 0 (Alice): `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
+- Account 1 (Bob): `0x70997970C51812dc3A010C7d01b50e0d17dc79C8`
+- Private keys are deterministic from mnemonic: `test test test test test test test test test test test junk`
+
+## E2E Tests
+
+- **[Aptos E2E Tests](./e2e-tests-apt/README.md)** - Tests Aptos-only cross-chain intents (Chain 1 → Chain 2)
+- **[EVM E2E Tests](./e2e-tests-evm/README.md)** - Tests mixed-chain intents (Aptos Chain 1 → EVM Chain 3)

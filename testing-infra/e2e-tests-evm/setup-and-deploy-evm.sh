@@ -35,10 +35,10 @@ sleep 2
 EVM_DIR="$PROJECT_ROOT/evm-intent-framework"
 
 log "   - Getting Alice address (Account 0)..."
-ALICE_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-alice-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+ALICE_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
 
 log "   - Getting Bob address (Account 1)..."
-BOB_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-bob-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+BOB_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
 
 if [ -z "$ALICE_ADDRESS" ] || [ -z "$BOB_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Failed to get EVM account addresses"
@@ -55,7 +55,7 @@ log "   ✅ Bob address: $BOB_ADDRESS"
 
 # Verify balances (Hardhat default accounts should have 10000 ETH each = 10000000000000000000000 wei)
 log "   - Getting Alice balance..."
-ALICE_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-alice-balance.js --network localhost" 2>&1)
+ALICE_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
 # Extract balance - look for a line that's purely numeric (the balance) and take the last one
 # This handles cases where there might be line numbers or other numeric output
 ALICE_BALANCE=$(echo "$ALICE_BALANCE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
@@ -70,7 +70,7 @@ fi
 log "   DEBUG: Alice balance extracted: '$ALICE_BALANCE'"
 
 log "   - Getting Bob balance..."
-BOB_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && npx hardhat run scripts/get-bob-balance.js --network localhost" 2>&1)
+BOB_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
 # Extract balance - look for a line that's purely numeric (the balance) and take the last one
 BOB_BALANCE=$(echo "$BOB_BALANCE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
 

@@ -106,7 +106,7 @@ if [ -z "$VERIFIER_ADDRESS" ]; then
     log_and_echo "   Falling back to Hardhat account 1 (Bob)"
     # Get Hardhat account 1 as fallback
     cd evm-intent-framework
-    VERIFIER_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && npx hardhat run scripts/get-bob-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+    VERIFIER_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
     cd ..
     
     if [ -z "$VERIFIER_ADDRESS" ]; then

@@ -25,8 +25,57 @@ import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, get_aptos_address, display_balances,
-    PROJECT_ROOT, LOG_FILE
+    LOG_FILE
 )
+
+
+def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
+    """
+    Update a TOML file section, matching sed's behavior with range patterns.
+    
+    sed pattern: /\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = "0xADDRESS"|
+    This means: from [hub_chain] to [connected_chain] (inclusive), update the key.
+    
+    Args:
+        config_content: The TOML file content
+        start_section: Section header to start from (e.g., "[hub_chain]")
+        end_section: Section header to end at (e.g., "[connected_chain]")
+        key: Key to update (e.g., "intent_module_address")
+        value: New value
+    
+    Returns:
+        Updated config content
+    """
+    lines = config_content.split('\n')
+    result = []
+    in_section = False
+    
+    for line in lines:
+        # Check if we're entering the start section
+        if line.strip() == start_section:
+            in_section = True
+            result.append(line)
+            continue
+        
+        # Check if we've reached the end section (or any other section)
+        if in_section and line.strip().startswith('['):
+            # If this is the end section, we're done matching after this line
+            if end_section and line.strip() == end_section:
+                # Still process this line, but stop matching after
+                result.append(line)
+                in_section = False
+                continue
+            elif line.strip() != start_section:
+                # We've moved to a different section (not the end section), stop matching
+                in_section = False
+        
+        # If we're in the section and this line matches the key, replace it
+        if in_section and line.strip().startswith(key + ' ='):
+            result.append(f'{key} = {value}')
+        else:
+            result.append(line)
+    
+    return '\n'.join(result)
 
 
 def stop_verifier_processes():
@@ -48,7 +97,7 @@ def is_process_running(pid: int) -> bool:
 
 def get_evm_vault_address() -> str:
     """Extract EVM vault address from deployment logs."""
-    log_dir = PROJECT_ROOT / "tmp" / "intent-framework-logs"
+    log_dir = common.PROJECT_ROOT / "tmp" / "intent-framework-logs"
 
     if not log_dir.exists():
         return ""
@@ -57,9 +106,16 @@ def get_evm_vault_address() -> str:
         try:
             with open(log_file, 'r') as f:
                 content = f.read()
-                match = re.search(r'IntentVault deployed to\s+(0x[a-fA-F0-9]{40})', content, re.IGNORECASE)
-                if match:
-                    return match.group(1)
+                # Try multiple patterns to match both shell and Python script output
+                patterns = [
+                    r'IntentVault deployed to\s+(0x[a-fA-F0-9]{40})',
+                    r'Contract Address:\s+(0x[a-fA-F0-9]{40})',
+                    r'✅ IntentVault deployed successfully!.*?Contract Address:\s+(0x[a-fA-F0-9]{40})',
+                ]
+                for pattern in patterns:
+                    match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        return match.group(1)
         except:
             pass
 
@@ -68,7 +124,7 @@ def get_evm_vault_address() -> str:
 
 def get_verifier_eth_address(config_path: Path) -> str:
     """Compute verifier Ethereum address from config."""
-    verifier_dir = PROJECT_ROOT / "trusted-verifier"
+    verifier_dir = common.PROJECT_ROOT / "trusted-verifier"
 
     result = run_command(
         f"cd {verifier_dir} && VERIFIER_CONFIG_PATH='{config_path}' cargo run --bin get_verifier_eth_address 2>/dev/null",
@@ -86,10 +142,10 @@ def get_verifier_eth_address(config_path: Path) -> str:
 
 def get_hardhat_account_address(account_index: int) -> str:
     """Get Hardhat account address."""
-    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+    evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
 
     result = run_command(
-        f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c "
+        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
         f"\"cd '{evm_dir}' && ACCOUNT_INDEX={account_index} npx hardhat run scripts/get-account-address.js --network localhost\" 2>&1",
         check=False
     )
@@ -151,13 +207,13 @@ def main():
 
     # Stop EVM chain
     log_and_echo("   - Stopping EVM chain...")
-    stop_evm_script = PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
-    run_command(f"python3 {stop_evm_script}", check=False, capture_output=False)
+    stop_evm_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
+    run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
 
     # Stop Aptos chains
     log_and_echo("   - Stopping Aptos chains...")
-    stop_apt_script = PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "stop_dual_chains.py"
-    run_command(f"python3 {stop_apt_script}", check=False, capture_output=False)
+    stop_apt_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "stop_dual_chains.py"
+    run_command(f"python3 -u {stop_apt_script}", check=False, capture_output=False)
 
     # Stop any existing verifier processes
     log("   - Stopping any existing verifier processes...")
@@ -171,7 +227,7 @@ def main():
 
     # Setup EVM chain first
     log_and_echo("📦 Setting up EVM chain...")
-    setup_evm_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "setup_and_deploy_evm.py"
+    setup_evm_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "setup_and_deploy_evm.py"
     result = run_command(f"python3 -u {setup_evm_script}", check=False, capture_output=False)
 
     if result.returncode != 0:
@@ -180,7 +236,7 @@ def main():
 
     log_and_echo("")
     log_and_echo("📦 Setting up Aptos chains...")
-    setup_apt_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "setup_and_deploy.py"
+    setup_apt_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "setup_and_deploy.py"
     result = run_command(f"python3 -u {setup_apt_script}", check=False, capture_output=False)
 
     if result.returncode != 0:
@@ -214,13 +270,25 @@ def main():
     vault_address = get_evm_vault_address()
 
     if not vault_address:
-        log_and_echo("❌ ERROR: Could not extract EVM vault address")
+        log_dir = common.PROJECT_ROOT / "tmp" / "intent-framework-logs"
+        log_and_echo("❌ ERROR: Could not extract EVM vault address from deployment logs")
+        log_and_echo(f"   Check deployment logs in: {log_dir}")
+        if log_dir.exists():
+            log_files = list(log_dir.glob("deploy-vault*.log"))
+            if log_files:
+                log_and_echo(f"   Found {len(log_files)} deploy-vault log file(s)")
+                log_and_echo(f"   Most recent: {log_files[0]}")
+            else:
+                log_and_echo("   No deploy-vault log files found")
+                log_and_echo("   EVM vault deployment may not have completed successfully")
+        else:
+            log_and_echo("   Log directory does not exist - EVM setup may have failed")
         sys.exit(1)
 
     log_and_echo(f"   EVM Vault: {vault_address}")
 
     # Use verifier_testing.toml for tests
-    verifier_testing_config = PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    verifier_testing_config = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
 
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
@@ -245,13 +313,14 @@ def main():
     with open(verifier_testing_config, 'r') as f:
         config_content = f.read()
 
-    # Update module addresses in verifier_testing.toml
-    # Update hub_chain.intent_module_address
-    config_content = re.sub(
-        r'(\[hub_chain\].*?)(intent_module_address = )[^\n]*',
-        rf'\1\2"0x{chain1_address}"',
+    # Update module addresses in verifier_testing.toml using section-aware replacement
+    # This matches sed's behavior: /\[hub_chain\]/,/\[connected_chain\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[hub_chain]",
+        "[connected_chain]",
+        "intent_module_address",
+        f'"0x{chain1_address}"'
     )
 
     # Update or add EVM chain section
@@ -262,11 +331,12 @@ def main():
     bob_chain1 = get_aptos_address("bob-chain1") or ""
 
     if alice_chain1 and bob_chain1:
-        config_content = re.sub(
-            r'(\[hub_chain\].*?)(known_accounts = )[^\n]*',
-            rf'\1\2["{alice_chain1}", "{bob_chain1}"]',
+        config_content = update_toml_section(
             config_content,
-            flags=re.DOTALL
+            "[hub_chain]",
+            "[connected_chain]",
+            "known_accounts",
+            f'["{alice_chain1}", "{bob_chain1}"]'
         )
 
     # Write updated config
@@ -280,7 +350,7 @@ def main():
     log_and_echo("===========================================")
 
     # Call submit-cross-chain-intent-evm.sh (not yet converted)
-    submit_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "submit-cross-chain-intent-evm.sh"
+    submit_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "submit-cross-chain-intent-evm.sh"
     result = run_command(f"bash {submit_script} 0", check=False, capture_output=False)
 
     if result.returncode != 0:
@@ -312,8 +382,8 @@ def main():
         log_and_echo("   ✅ No existing verifier processes")
 
     # Start verifier in background
-    verifier_dir = PROJECT_ROOT / "trusted-verifier"
-    verifier_log = PROJECT_ROOT / "tmp" / "intent-framework-logs" / "verifier-evm.log"
+    verifier_dir = common.PROJECT_ROOT / "trusted-verifier"
+    verifier_log = common.PROJECT_ROOT / "tmp" / "intent-framework-logs" / "verifier-evm.log"
     verifier_log.parent.mkdir(parents=True, exist_ok=True)
 
     log_and_echo("   Starting verifier service...")
@@ -366,7 +436,7 @@ def main():
     log_and_echo("==================================")
 
     # Call release-evm-escrow.py (already converted)
-    release_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "release_evm_escrow.py"
+    release_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "release_evm_escrow.py"
     result = run_command(f"python3 -u {release_script}", check=False, capture_output=False)
 
     log_and_echo("")

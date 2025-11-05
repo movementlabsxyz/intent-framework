@@ -118,8 +118,8 @@ def test_transfer() -> bool:
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
-  const alice = signers[0];
-  const bob = signers[1];
+  const alice = signers[1]; // Account 1
+  const bob = signers[2]; // Account 2
 
   const amount = hre.ethers.parseEther('1.0'); // 1 ETH
 
@@ -187,23 +187,25 @@ def main():
 
     log("")
     log("📋 Hardhat Default Accounts:")
-    log("   Alice = Account 0 (signer index 0)")
-    log("   Bob   = Account 1 (signer index 1)")
-    log("   Verifier = Account 1 (signer index 1)")
+    log("   Deployer = Account 0 (signer index 0)")
+    log("   Alice    = Account 1 (signer index 1)")
+    log("   Bob      = Account 2 (signer index 2)")
 
     # Get account addresses
     log("")
-    log("🔍 Getting Alice and Bob addresses...")
+    log("🔍 Getting Deployer, Alice and Bob addresses...")
 
-    alice_address = get_hardhat_address(0)
-    bob_address = get_hardhat_address(1)
+    deployer_address = get_hardhat_address(0)
+    alice_address = get_hardhat_address(1)
+    bob_address = get_hardhat_address(2)
 
-    if not alice_address or not bob_address:
+    if not deployer_address or not alice_address or not bob_address:
         log_and_echo("❌ Error: Failed to get account addresses")
         os._exit(1)
 
-    log(f"   ✅ Alice (Account 0): {alice_address}")
-    log(f"   ✅ Bob (Account 1):   {bob_address}")
+    log(f"   ✅ Deployer (Account 0): {deployer_address}")
+    log(f"   ✅ Alice (Account 1):    {alice_address}")
+    log(f"   ✅ Bob (Account 2):      {bob_address}")
 
     log("")
     log("% - - - - - - - - - - - BALANCES - - - - - - - - - - - -")

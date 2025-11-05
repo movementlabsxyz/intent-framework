@@ -41,7 +41,7 @@ pkill -f "trusted-verifier" || true
 log_and_echo "✅ Cleanup complete"
 log_and_echo ""
 
-log_and_echo "🚀 Step 0: Setting up chains and deploying contracts..."
+log_and_echo "🚀 Setting up chains and deploying contracts..."
 log_and_echo "======================================================"
 
 # Setup EVM chain first
@@ -102,16 +102,11 @@ log "   - Computing verifier Ethereum address from config..."
 VERIFIER_ADDRESS=$(cd "$PROJECT_ROOT/trusted-verifier" && VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG" cargo run --bin get_verifier_eth_address 2>/dev/null | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
 
 if [ -z "$VERIFIER_ADDRESS" ]; then
-    log_and_echo "   ⚠️  Warning: Could not compute verifier Ethereum address from config"
-    log_and_echo "   Falling back to Hardhat account 1 (Bob)"
-    # Get Hardhat account 1 as fallback
-    cd evm-intent-framework
-    VERIFIER_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
-    cd ..
-    
-    if [ -z "$VERIFIER_ADDRESS" ]; then
-        VERIFIER_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"  # Hardhat default account 1
-    fi
+    log_and_echo "❌ ERROR: Could not compute verifier Ethereum address from config"
+    log_and_echo "   The verifier address is required for proper signature verification"
+    log_and_echo "   Check that trusted-verifier/config/verifier_testing.toml exists and has valid keys"
+    log_and_echo "   Run: cargo run --bin get_verifier_eth_address in trusted-verifier directory"
+    exit 1
 fi
 
 log_and_echo "   EVM Verifier: $VERIFIER_ADDRESS"
@@ -155,7 +150,7 @@ fi
 log_and_echo "✅ Updated verifier_testing.toml with deployed addresses"
 log_and_echo ""
 
-log_and_echo "📝 Step 1: Submitting mixed-chain intents..."
+log_and_echo "📝 Submitting mixed-chain intents..."
 log_and_echo "==========================================="
 ./testing-infra/e2e-tests-evm/submit-cross-chain-intent-evm.sh 0
 
@@ -170,7 +165,7 @@ log_and_echo ""
 display_balances
 log_and_echo ""
 
-log_and_echo "🚀 Step 2: Running verifier service to monitor and release escrow..."
+log_and_echo "🚀 Running verifier service to monitor and release escrow..."
 log_and_echo "================================================================"
 log_and_echo "   The verifier will:"
 log_and_echo "   1. Monitor Chain 1 (Aptos hub) for intents and fulfillments"
@@ -226,7 +221,7 @@ else
 fi
 
 log_and_echo ""
-log_and_echo "🔓 Step 3: Releasing EVM escrow..."
+log_and_echo "🔓 Releasing EVM escrow..."
 log_and_echo "=================================="
 ./testing-infra/e2e-tests-evm/release-evm-escrow.sh
 
@@ -245,7 +240,7 @@ if [ -n "$VERIFIER_PID" ] && ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
 fi
 
 log_and_echo ""
-log_and_echo "🧹 Step 4: Cleaning up chains..."
+log_and_echo "🧹 Cleaning up chains..."
 log_and_echo "================================"
 ./testing-infra/connected-chain-evm/stop-evm-chain.sh
 ./testing-infra/connected-chain-apt/stop-dual-chains.sh

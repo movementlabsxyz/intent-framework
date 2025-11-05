@@ -48,7 +48,7 @@ INTENT_ID="0x$(openssl rand -hex 32)"
 # Check if we should run setup or use existing networks
 if [ "$1" = "1" ]; then
     log ""
-    log "🚀 Step 0.1: Setting up chains and deploying contracts..."
+    log "🚀 Setting up chains and deploying contracts..."
     log "========================================================"
     ./testing-infra/e2e-tests-apt/setup-and-deploy.sh
 
@@ -305,7 +305,7 @@ log "   - Solver sees escrow event on connected chain"
 log "   - Bob sees intent with ID: $INTENT_ID"
 log "   - Bob provides 100000000 tokens on hub chain to fulfill the intent"
 
-# TODO: We need to get the actual intent object address from Step 1
+# TODO: We need to get the actual intent object address from the intent creation transaction
 # For now, we'll need to extract it from the transaction event
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
 

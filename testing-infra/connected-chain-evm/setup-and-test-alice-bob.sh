@@ -54,16 +54,16 @@ log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
 log ""
 log "📋 Hardhat Default Accounts:"
-log "   Alice = Account 0 (signer index 0)"
-log "   Bob   = Account 1 (signer index 1)"
-log "   Verifier = Account 1 (signer index 1)"
+log "   Deployer = Account 0 (signer index 0)"
+log "   Alice    = Account 1 (signer index 1)"
+log "   Bob      = Account 2 (signer index 2)"
 
 # Get account addresses using Hardhat
 cd evm-intent-framework
 log ""
-log "🔍 Getting Alice and Bob addresses..."
+log "🔍 Getting Deployer, Alice and Bob addresses..."
 
-ALICE_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+DEPLOYER_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
@@ -71,7 +71,7 @@ const hre = require('hardhat');
 })();
 EOF" 2>/dev/null | tail -1 | tr -d '\n')
 
-BOB_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+ALICE_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
@@ -79,15 +79,24 @@ const hre = require('hardhat');
 })();
 EOF" 2>/dev/null | tail -1 | tr -d '\n')
 
+BOB_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+const hre = require('hardhat');
+(async () => {
+  const signers = await hre.ethers.getSigners();
+  console.log(signers[2].address);
+})();
+EOF" 2>/dev/null | tail -1 | tr -d '\n')
+
 cd ..
 
-if [ -z "$ALICE_ADDRESS" ] || [ -z "$BOB_ADDRESS" ]; then
+if [ -z "$DEPLOYER_ADDRESS" ] || [ -z "$ALICE_ADDRESS" ] || [ -z "$BOB_ADDRESS" ]; then
     log_and_echo "❌ Error: Failed to get account addresses"
     exit 1
 fi
 
-log "   ✅ Alice (Account 0): $ALICE_ADDRESS"
-log "   ✅ Bob (Account 1):   $BOB_ADDRESS"
+log "   ✅ Deployer (Account 0): $DEPLOYER_ADDRESS"
+log "   ✅ Alice (Account 1):    $ALICE_ADDRESS"
+log "   ✅ Bob (Account 2):      $BOB_ADDRESS"
 
 log ""
 log "% - - - - - - - - - - - BALANCES - - - - - - - - - - - -"
@@ -98,7 +107,7 @@ log ""
 log "💰 Checking initial balances..."
 
 cd evm-intent-framework
-ALICE_BALANCE=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+DEPLOYER_BALANCE=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
@@ -107,7 +116,7 @@ const hre = require('hardhat');
 })();
 EOF" 2>/dev/null | tail -1 | tr -d '\n')
 
-BOB_BALANCE=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+ALICE_BALANCE=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
@@ -116,10 +125,20 @@ const hre = require('hardhat');
 })();
 EOF" 2>/dev/null | tail -1 | tr -d '\n')
 
+BOB_BALANCE=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
+const hre = require('hardhat');
+(async () => {
+  const signers = await hre.ethers.getSigners();
+  const balance = await hre.ethers.provider.getBalance(signers[2].address);
+  console.log(balance.toString());
+})();
+EOF" 2>/dev/null | tail -1 | tr -d '\n')
+
 cd ..
 
-log "   Alice balance: $ALICE_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
-log "   Bob balance:   $BOB_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
+log "   Deployer balance: $DEPLOYER_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
+log "   Alice balance:    $ALICE_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
+log "   Bob balance:      $BOB_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
 
 log ""
 log "% - - - - - - - - - - - TEST TRANSFER - - - - - - - - - - - -"
@@ -134,8 +153,8 @@ TRANSFER_RESULT=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
-  const alice = signers[0];
-  const bob = signers[1];
+  const alice = signers[1]; // Account 1
+  const bob = signers[2]; // Account 2
   
   const amount = hre.ethers.parseEther('1.0'); // 1 ETH
   

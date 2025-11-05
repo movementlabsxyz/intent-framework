@@ -34,7 +34,7 @@ log ""
 
 # If option 1, run submit script first (which does setup + submit)
 if [ "$1" = "1" ]; then
-    log "🚀 Step 0: Running setup and submitting intents..."
+    log "🚀 Running setup and submitting intents..."
     log "================================================="
     ./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh 1
     

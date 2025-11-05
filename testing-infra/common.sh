@@ -93,11 +93,14 @@ display_balances() {
         cd "$PROJECT_ROOT/evm-intent-framework"
         
         # Use the actual script files instead of inline heredoc (Hardhat doesn't support inline scripts)
-        local alice_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+        local alice_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
         local alice_evm=$(echo "$alice_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
         
-        local solver_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-        local solver_evm=$(echo "$solver_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
+        local bob_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+        local bob_evm=$(echo "$bob_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
+        
+        local deployer_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+        local deployer_evm=$(echo "$deployer_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
         
         cd "$PROJECT_ROOT"
         
@@ -107,16 +110,23 @@ display_balances() {
         # Format EVM balances (show both ETH and wei)
         if [ "$alice_evm" != "0" ] && [ -n "$alice_evm" ]; then
             local alice_eth=$(echo "scale=4; $alice_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
-            log_and_echo "      Alice (Acc 0): ${alice_eth} ETH"
+            log_and_echo "      Alice (Acc 1):   ${alice_eth} ETH"
         else
-            log_and_echo "      Alice (Acc 0): 0 ETH"
+            log_and_echo "      Alice (Acc 1):   0 ETH"
         fi
         
-        if [ "$solver_evm" != "0" ] && [ -n "$solver_evm" ]; then
-            local bob_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
-            log_and_echo "      Bob (Acc 1): ${bob_eth} ETH"
+        if [ "$bob_evm" != "0" ] && [ -n "$bob_evm" ]; then
+            local bob_eth=$(echo "scale=4; $bob_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
+            log_and_echo "      Bob (Acc 2):     ${bob_eth} ETH"
         else
-            log_and_echo "      Bob (Acc 1): 0 ETH"
+            log_and_echo "      Bob (Acc 2):     0 ETH"
+        fi
+        
+        if [ "$deployer_evm" != "0" ] && [ -n "$deployer_evm" ]; then
+            local deployer_eth=$(echo "scale=4; $deployer_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
+            log_and_echo "      Deployer (Acc 0): ${deployer_eth} ETH"
+        else
+            log_and_echo "      Deployer (Acc 0): 0 ETH"
         fi
     fi
     

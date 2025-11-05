@@ -160,7 +160,7 @@ def main():
     )
 
     log("")
-    log("⏳ Waiting for both chains to start (this may take 2-3 minutes)...")
+    log("⏳ Waiting for both chains to start ...")
 
     # Wait for Chain 1
     if not wait_for_chain(1, 8080, 8081):

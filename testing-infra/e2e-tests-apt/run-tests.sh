@@ -16,7 +16,7 @@ echo "🧪 E2E Integration Tests Runner"
 echo "================================"
 echo ""
 
-echo "🚀 Step 0: Setting up chains, deploying contracts, and submitting intents..."
+echo "🚀 Setting up chains, deploying contracts, and submitting intents..."
 echo "========================================================================"
 ./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh 1
 
@@ -98,7 +98,7 @@ rm -f "$INTEGRATION_TEST_FILE"
 echo ""
 echo "✅ E2E integration tests completed!"
 echo ""
-echo "🚀 Step 2: Running verifier service to test end-to-end flow..."
+echo "🚀 Running verifier service to test end-to-end flow..."
 echo "============================================================"
 ./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh 0
 

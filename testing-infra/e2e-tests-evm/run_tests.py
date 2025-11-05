@@ -217,7 +217,7 @@ def main():
     log_and_echo("✅ Cleanup complete")
     log_and_echo("")
 
-    log_and_echo("🚀 Step 0: Setting up chains and deploying contracts...")
+    log_and_echo("🚀 Setting up chains and deploying contracts...")
     log_and_echo("======================================================")
 
     # Set up config file (get path and clean up any old config)
@@ -357,7 +357,7 @@ def main():
     log_and_echo("✅ Updated verifier_testing.toml with deployed addresses")
     log_and_echo("")
 
-    log_and_echo("📝 Step 1: Submitting mixed-chain intents...")
+    log_and_echo("📝 Submitting mixed-chain intents...")
     log_and_echo("===========================================")
 
     # Call submit-cross-chain-intent-evm.py (already converted)
@@ -376,7 +376,7 @@ def main():
     display_balances()
     log_and_echo("")
 
-    log_and_echo("🚀 Step 2: Running verifier service to monitor and release escrow...")
+    log_and_echo("🚀 Running verifier service to monitor and release escrow...")
     log_and_echo("================================================================")
     log_and_echo("   The verifier will:")
     log_and_echo("   1. Monitor Chain 1 (Aptos hub) for intents and fulfillments")
@@ -445,7 +445,7 @@ def main():
         log_and_echo("   ⚠️  Verifier health check failed")
 
     log_and_echo("")
-    log_and_echo("🔓 Step 3: Releasing EVM escrow...")
+    log_and_echo("🔓 Releasing EVM escrow...")
     log_and_echo("==================================")
 
     # Call release-evm-escrow.py (already converted)
@@ -511,7 +511,7 @@ def main():
         log_and_echo("   ✅ Verifier stopped")
 
     log_and_echo("")
-    log_and_echo("🧹 Step 4: Cleaning up chains...")
+    log_and_echo("🧹 Cleaning up chains...")
     log_and_echo("================================")
 
     if not stop_evm_chain_if_running():

@@ -98,7 +98,7 @@ check_and_release_escrows() {
         # Get Bob's balance before claiming (to verify funds were received)
         log "   - Getting Bob's balance before claim..."
         cd evm-intent-framework
-        BOB_BALANCE_BEFORE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+        BOB_BALANCE_BEFORE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
         BOB_BALANCE_BEFORE=$(echo "$BOB_BALANCE_BEFORE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
         cd ..
         
@@ -140,7 +140,7 @@ check_and_release_escrows() {
         # Get Bob's balance after claiming (to verify funds were received)
         log "   - Getting Bob's balance after claim..."
         cd evm-intent-framework
-        BOB_BALANCE_AFTER_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+        BOB_BALANCE_AFTER_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
         BOB_BALANCE_AFTER=$(echo "$BOB_BALANCE_AFTER_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
         cd ..
         

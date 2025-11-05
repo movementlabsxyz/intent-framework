@@ -47,7 +47,7 @@ INTENT_ID="0x$(openssl rand -hex 32)"
 # Check if we should run setup or use existing networks
 if [ "$1" = "1" ]; then
     log ""
-    log "🚀 Step 0.1: Setting up chains and deploying contracts..."
+    log "🚀 Setting up chains and deploying contracts..."
     log "========================================================"
     
     # Setup EVM chain first
@@ -302,7 +302,7 @@ log "   Solver monitors escrow event on EVM chain and fulfills intent on hub cha
 log "   - Bob sees intent with ID: $INTENT_ID"
 log "   - Bob provides 1 APT ($APT_AMOUNT_OCTAS Octas) on hub chain to fulfill the intent"
 
-# Get the intent object address from Step 1
+# Get the intent object address from the intent creation transaction
 if [ -z "$HUB_INTENT_ADDRESS" ] || [ "$HUB_INTENT_ADDRESS" = "null" ]; then
     log_and_echo "     ❌ ERROR: Could not find hub intent address"
     exit 1

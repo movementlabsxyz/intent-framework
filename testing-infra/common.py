@@ -186,14 +186,18 @@ def display_balances() -> None:
     alice2 = get_aptos_balance("alice-chain2")
     bob1 = get_aptos_balance("bob-chain1")
     bob2 = get_aptos_balance("bob-chain2")
+    deployer1 = get_aptos_balance("intent-account-chain1")
+    deployer2 = get_aptos_balance("intent-account-chain2")
 
     log_and_echo("")
     log_and_echo("   Chain 1 (Hub):")
-    log_and_echo(f"      Alice: {alice1} Octas")
-    log_and_echo(f"      Bob:   {bob1} Octas")
+    log_and_echo(f"      Alice:   {alice1} Octas")
+    log_and_echo(f"      Bob:     {bob1} Octas")
+    log_and_echo(f"      Deployer: {deployer1} Octas")
     log_and_echo("   Chain 2 (Connected):")
-    log_and_echo(f"      Alice: {alice2} Octas")
-    log_and_echo(f"      Bob:   {bob2} Octas")
+    log_and_echo(f"      Alice:   {alice2} Octas")
+    log_and_echo(f"      Bob:     {bob2} Octas")
+    log_and_echo(f"      Deployer: {deployer2} Octas")
 
     # Check if EVM chain is running
     try:
@@ -232,6 +236,18 @@ def display_balances() -> None:
                     if line.strip().isdigit():
                         bob_evm = line.strip()
 
+            # Get Deployer's balance (account 0)
+            deployer_result = run_command(
+                f'nix develop "{PROJECT_ROOT}" -c bash -c '
+                f'"cd \'{PROJECT_ROOT}/evm-intent-framework\' && '
+                f'ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1'
+            )
+            deployer_evm = "0"
+            if deployer_result.returncode == 0:
+                for line in deployer_result.stdout.strip().split('\n'):
+                    if line.strip().isdigit():
+                        deployer_evm = line.strip()
+
             os.chdir(PROJECT_ROOT)
 
             log_and_echo("   Chain 3 (EVM):")
@@ -240,20 +256,29 @@ def display_balances() -> None:
             if alice_evm != "0" and alice_evm:
                 try:
                     alice_eth = float(alice_evm) / 1e18
-                    log_and_echo(f"      Alice (Acc 1): {alice_eth:.4f} ETH")
+                    log_and_echo(f"      Alice (Acc 1):   {alice_eth:.4f} ETH")
                 except:
-                    log_and_echo("      Alice (Acc 1): 0 ETH")
+                    log_and_echo("      Alice (Acc 1):   0 ETH")
             else:
-                log_and_echo("      Alice (Acc 1): 0 ETH")
+                log_and_echo("      Alice (Acc 1):   0 ETH")
 
             if bob_evm != "0" and bob_evm:
                 try:
                     bob_eth = float(bob_evm) / 1e18
-                    log_and_echo(f"      Bob (Acc 2): {bob_eth:.4f} ETH")
+                    log_and_echo(f"      Bob (Acc 2):     {bob_eth:.4f} ETH")
                 except:
-                    log_and_echo("      Bob (Acc 2): 0 ETH")
+                    log_and_echo("      Bob (Acc 2):     0 ETH")
             else:
-                log_and_echo("      Bob (Acc 2): 0 ETH")
+                log_and_echo("      Bob (Acc 2):     0 ETH")
+
+            if deployer_evm != "0" and deployer_evm:
+                try:
+                    deployer_eth = float(deployer_evm) / 1e18
+                    log_and_echo(f"      Deployer (Acc 0): {deployer_eth:.4f} ETH")
+                except:
+                    log_and_echo("      Deployer (Acc 0): 0 ETH")
+            else:
+                log_and_echo("      Deployer (Acc 0): 0 ETH")
     except:
         # EVM chain not running or error occurred
         pass

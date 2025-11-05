@@ -144,7 +144,7 @@ def main():
     # Check if we should run setup or use existing networks
     if setup_chains:
         log("")
-        log("🚀 Step 0.1: Setting up chains and deploying contracts...")
+        log("🚀 Setting up chains and deploying contracts...")
         log("========================================================")
 
         # Setup EVM chain first
@@ -476,7 +476,7 @@ def main():
     log(f"   - Bob sees intent with ID: {intent_id}")
     log(f"   - Bob provides 1 APT ({apt_amount_octas} Octas) on hub chain to fulfill the intent")
 
-    # Get the intent object address from Step 1
+    # Get the intent object address from the intent creation transaction
     if not hub_intent_address or hub_intent_address == "null":
         log_and_echo("     ❌ ERROR: Could not find hub intent address")
         os._exit(1)

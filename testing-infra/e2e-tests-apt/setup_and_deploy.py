@@ -76,7 +76,7 @@ def main():
     log_and_echo(f"📝 All output logged to: {log_file}")
 
     log("")
-    log("🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts...")
+    log("🔗 Setting up dual Docker chains with Alice and Bob accounts...")
     log(" =============================================")
 
     # Call the Python version
@@ -89,7 +89,7 @@ def main():
         os._exit(1)
 
     log("")
-    log("⚙️  Step 2: Configuring Aptos CLI for both chains...")
+    log("⚙️  Configuring Aptos CLI for both chains...")
     log(" =============================================")
 
     # Clean up any existing profiles
@@ -132,7 +132,7 @@ def main():
 
     # Get Chain 1 address
     log("")
-    log("📦 Step 3: Deploying contracts to Chain 1...")
+    log("📦 Deploying contracts to Chain 1...")
     chain1_address = get_aptos_address("intent-account-chain1")
     if not chain1_address:
         log_and_echo("❌ Failed to get Chain 1 address")
@@ -143,7 +143,7 @@ def main():
 
     # Get Chain 2 address
     log("")
-    log("📦 Step 4: Deploying contracts to Chain 2...")
+    log("📦 Deploying contracts to Chain 2...")
     chain2_address = get_aptos_address("intent-account-chain2")
     if not chain2_address:
         log_and_echo("❌ Failed to get Chain 2 address")

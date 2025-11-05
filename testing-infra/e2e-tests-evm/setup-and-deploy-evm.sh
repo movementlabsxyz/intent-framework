@@ -14,7 +14,7 @@ log "==============================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 
 log ""
-log "🔗 Step 1: Setting up EVM Chain (Hardhat node)..."
+log "🔗 Setting up EVM Chain (Hardhat node)..."
 log " ============================================="
 ./testing-infra/connected-chain-evm/setup-evm-chain.sh
 
@@ -24,7 +24,7 @@ if [ $? -ne 0 ]; then
 fi
 
 log ""
-log "🔍 Step 1.5: Verifying EVM accounts are funded..."
+log "🔍 Verifying EVM accounts are funded..."
 log " ============================================="
 
 # Wait a bit to ensure Hardhat node is fully ready
@@ -34,11 +34,11 @@ sleep 2
 # Note: Use absolute path to evm-intent-framework since nix develop might start in different directory
 EVM_DIR="$PROJECT_ROOT/evm-intent-framework"
 
-log "   - Getting Alice address (Account 0)..."
-ALICE_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+log "   - Getting Alice address (Account 1)..."
+ALICE_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
 
-log "   - Getting Bob address (Account 1)..."
-BOB_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+log "   - Getting Bob address (Account 2)..."
+BOB_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
 
 if [ -z "$ALICE_ADDRESS" ] || [ -z "$BOB_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Failed to get EVM account addresses"
@@ -55,7 +55,7 @@ log "   ✅ Bob address: $BOB_ADDRESS"
 
 # Verify balances (Hardhat default accounts should have 10000 ETH each = 10000000000000000000000 wei)
 log "   - Getting Alice balance..."
-ALICE_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+ALICE_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
 # Extract balance - look for a line that's purely numeric (the balance) and take the last one
 # This handles cases where there might be line numbers or other numeric output
 ALICE_BALANCE=$(echo "$ALICE_BALANCE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
@@ -70,7 +70,7 @@ fi
 log "   DEBUG: Alice balance extracted: '$ALICE_BALANCE'"
 
 log "   - Getting Bob balance..."
-BOB_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+BOB_BALANCE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$EVM_DIR' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
 # Extract balance - look for a line that's purely numeric (the balance) and take the last one
 BOB_BALANCE=$(echo "$BOB_BALANCE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
 
@@ -95,7 +95,7 @@ fi
 # Panic if balances are 0 (Hardhat default accounts should have 10000 ETH each)
 # Use explicit string comparison and check for empty as well
 if [ -z "$ALICE_BALANCE" ] || [ "$ALICE_BALANCE" = "0" ] || [ "$ALICE_BALANCE" = "" ]; then
-    log_and_echo "❌ ERROR: Alice (Account 0) has ZERO or empty balance on EVM chain"
+    log_and_echo "❌ ERROR: Alice (Account 1) has ZERO or empty balance on EVM chain"
     log_and_echo "   Balance extracted: '$ALICE_BALANCE'"
     log_and_echo "   Balance output: $ALICE_BALANCE_OUTPUT"
     log_and_echo "   Address: $ALICE_ADDRESS"
@@ -105,7 +105,7 @@ if [ -z "$ALICE_BALANCE" ] || [ "$ALICE_BALANCE" = "0" ] || [ "$ALICE_BALANCE" =
 fi
 
 if [ -z "$BOB_BALANCE" ] || [ "$BOB_BALANCE" = "0" ] || [ "$BOB_BALANCE" = "" ]; then
-    log_and_echo "❌ ERROR: Bob (Account 1) has ZERO or empty balance on EVM chain"
+    log_and_echo "❌ ERROR: Bob (Account 2) has ZERO or empty balance on EVM chain"
     log_and_echo "   Balance extracted: '$BOB_BALANCE'"
     log_and_echo "   Balance output: $BOB_BALANCE_OUTPUT"
     log_and_echo "   Address: $BOB_ADDRESS"
@@ -122,7 +122,7 @@ ALICE_SUFFICIENT=$(echo "$ALICE_BALANCE $MIN_BALANCE" | awk '{if ($1 >= $2) prin
 BOB_SUFFICIENT=$(echo "$BOB_BALANCE $MIN_BALANCE" | awk '{if ($1 >= $2) print "1"; else print "0"}')
 
 if [ "$ALICE_SUFFICIENT" = "0" ]; then
-    log_and_echo "❌ ERROR: Alice (Account 0) balance insufficient"
+    log_and_echo "❌ ERROR: Alice (Account 1) balance insufficient"
     log_and_echo "   Balance: $ALICE_BALANCE wei"
     log_and_echo "   Required: At least 1 ETH ($MIN_BALANCE wei)"
     log_and_echo "   Address: $ALICE_ADDRESS"
@@ -130,21 +130,21 @@ if [ "$ALICE_SUFFICIENT" = "0" ]; then
 fi
 
 if [ "$BOB_SUFFICIENT" = "0" ]; then
-    log_and_echo "❌ ERROR: Bob (Account 1) balance insufficient"
+    log_and_echo "❌ ERROR: Bob (Account 2) balance insufficient"
     log_and_echo "   Balance: $BOB_BALANCE wei"
     log_and_echo "   Required: At least 1 ETH ($MIN_BALANCE wei)"
     log_and_echo "   Address: $BOB_ADDRESS"
     exit 1
 fi
 
-log "   ✅ Alice (Account 0): $ALICE_ADDRESS - Balance verified"
-log "   ✅ Bob (Account 1):   $BOB_ADDRESS - Balance verified"
+log "   ✅ Alice (Account 1): $ALICE_ADDRESS - Balance verified"
+log "   ✅ Bob (Account 2):   $BOB_ADDRESS - Balance verified"
 
 # Display EVM chain balances
 display_balances
 
 log ""
-log "📦 Step 2: Deploying IntentVault to EVM chain..."
+log "📦 Deploying IntentVault to EVM chain..."
 log " ============================================="
 ./testing-infra/e2e-tests-evm/deploy-vault.sh
 
@@ -166,13 +166,17 @@ else
     log "   ✅ IntentVault deployed at: $VAULT_ADDRESS"
 fi
 
-# Get verifier address (Hardhat account 1 - same as Bob)
-VERIFIER_ADDRESS="$BOB_ADDRESS"
+# Get verifier address (computed from verifier's ECDSA public key)
+# Match deploy-vault.sh logic exactly
+log "   - Computing verifier Ethereum address from config..."
+VERIFIER_ADDRESS=$(cd "$PROJECT_ROOT/trusted-verifier" && VERIFIER_CONFIG_PATH="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml" cargo run --bin get_verifier_eth_address 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
 
 if [ -z "$VERIFIER_ADDRESS" ]; then
-    # Fallback: Hardhat account 1 address (known default)
-    VERIFIER_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-    log "   ℹ️  Using default Hardhat verifier address: $VERIFIER_ADDRESS"
+    log_and_echo "❌ ERROR: Could not compute verifier Ethereum address from config"
+    log_and_echo "   The verifier address is required for proper logging"
+    log_and_echo "   Check that trusted-verifier/config/verifier_testing.toml exists and has valid keys"
+    log_and_echo "   Run: cargo run --bin get_verifier_eth_address in trusted-verifier directory"
+    exit 1
 else
     log "   ✅ Verifier address: $VERIFIER_ADDRESS"
 fi

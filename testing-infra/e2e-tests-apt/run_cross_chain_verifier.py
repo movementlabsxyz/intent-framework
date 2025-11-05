@@ -304,7 +304,7 @@ def main():
 
     # If option 1, run submit script first
     if run_setup:
-        log("🚀 Step 0: Running setup and submitting intents...")
+        log("🚀 Running setup and submitting intents...")
         log("=================================================")
 
         submit_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "submit_cross_chain_intent.py"

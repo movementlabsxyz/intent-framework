@@ -122,7 +122,7 @@ def main():
     # Check if we should run setup or use existing networks
     if setup_chains:
         log("")
-        log("🚀 Step 0.1: Setting up chains and deploying contracts...")
+        log("🚀 Setting up chains and deploying contracts...")
         log("========================================================")
 
         setup_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "setup_and_deploy.py"
@@ -443,7 +443,7 @@ def main():
     log(f"   - Bob sees intent with ID: {intent_id}")
     log("   - Bob provides 100000000 tokens on hub chain to fulfill the intent")
 
-    # Use the intent object address from Step 1
+    # Use the intent object address from the intent creation transaction
     if not hub_intent_address or hub_intent_address == "null":
         log_and_echo("     ⚠️  Could not get intent object address, skipping fulfillment")
         os._exit(1)

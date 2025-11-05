@@ -14,7 +14,7 @@ log "============================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 
 log ""
-log "🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts..."
+log "🔗 Setting up dual Docker chains with Alice and Bob accounts..."
 log " ============================================="
 ./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
 
@@ -24,7 +24,7 @@ if [ $? -ne 0 ]; then
 fi
 
 log ""
-log "⚙️  Step 2: Configuring Aptos CLI for both chains..."
+log "⚙️  Configuring Aptos CLI for both chains..."
 log " ============================================="
 
 # Clean up any existing profiles to ensure fresh addresses each run
@@ -41,7 +41,7 @@ log "   - Configuring Chain 2 (port 8082)..."
 printf "\n" | aptos init --profile intent-account-chain2 --network custom --rest-url http://127.0.0.1:8082 --faucet-url http://127.0.0.1:8083 --assume-yes >> "$LOG_FILE" 2>&1
 
 log ""
-log "📦 Step 3: Deploying contracts to Chain 1..."
+log "📦 Deploying contracts to Chain 1..."
 log "   - Getting account address for Chain 1..."
 CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
 
@@ -58,7 +58,7 @@ else
 fi
 
 log ""
-log "📦 Step 4: Deploying contracts to Chain 2..."
+log "📦 Deploying contracts to Chain 2..."
 log "   - Getting account address for Chain 2..."
 cd ..
 CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain2"].account')

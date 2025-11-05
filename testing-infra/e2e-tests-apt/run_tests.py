@@ -92,7 +92,7 @@ def main():
     log_and_echo(f"📝 All output logged to: {log_file}")
 
     log("")
-    log("🚀 Step 0: Setting up chains, deploying contracts, and submitting intents...")
+    log("🚀 Setting up chains, deploying contracts, and submitting intents...")
     log("========================================================================")
 
     # Set up config file (get path and clean up any old config)
@@ -247,7 +247,7 @@ mod integration;
     log("")
     log("✅ E2E integration tests completed!")
     log("")
-    log("🚀 Step 2: Running verifier service to test end-to-end flow...")
+    log("🚀 Running verifier service to test end-to-end flow...")
     log("============================================================")
 
     # Call run-cross-chain-verifier Python script

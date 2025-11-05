@@ -83,7 +83,7 @@ def main():
     log_and_echo(f"📝 All output logged to: {log_file}")
 
     log("")
-    log("🔗 Step 1: Setting up EVM Chain (Hardhat node)...")
+    log("🔗 Setting up EVM Chain (Hardhat node)...")
     log(" =============================================")
 
     setup_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "setup_evm_chain.py"
@@ -95,7 +95,7 @@ def main():
         os._exit(1)
 
     log("")
-    log("🔍 Step 1.5: Verifying EVM accounts are funded...")
+    log("🔍 Verifying EVM accounts are funded...")
     log(" =============================================")
 
     # Wait for Hardhat node to be fully ready
@@ -187,7 +187,7 @@ def main():
     display_balances()
 
     log("")
-    log("📦 Step 2: Deploying IntentVault to EVM chain...")
+    log("📦 Deploying IntentVault to EVM chain...")
     log(" =============================================")
 
     deploy_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "deploy_vault.py"
@@ -232,13 +232,40 @@ def main():
     else:
         log(f"   ✅ IntentVault deployed at: {vault_address}")
 
-    # Get verifier address (Hardhat account 1 - same as Bob)
-    verifier_address = bob_address
-
+    # Get verifier address (computed from verifier's ECDSA public key)
+    # Match deploy-vault.sh logic exactly
+    log("   - Computing verifier Ethereum address from config...")
+    verifier_dir = common.PROJECT_ROOT / "trusted-verifier"
+    config_path = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    
+    env = os.environ.copy()
+    env["VERIFIER_CONFIG_PATH"] = str(config_path)
+    
+    # Run command and capture both stdout and stderr (like shell script does with 2>&1)
+    # Shell script doesn't check return code, just greps the output
+    verifier_result = run_command(
+        f"cd {verifier_dir} && cargo run --bin get_verifier_eth_address",
+        check=False,
+        env=env
+    )
+    
+    # Extract Ethereum address from both stdout and stderr (shell script uses 2>&1 then greps)
+    # Pattern matches: grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n'
+    # Shell script doesn't check return code, just extracts from output
+    verifier_address = ""
+    output = verifier_result.stdout + verifier_result.stderr
+    for line in output.strip().split('\n'):
+        match = re.match(r'^(0x[a-fA-F0-9]{40})$', line.strip())
+        if match:
+            verifier_address = match.group(1)
+            break  # head -1 equivalent: take first match
+    
     if not verifier_address:
-        # Fallback: Hardhat account 1 address (known default)
-        verifier_address = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-        log(f"   ℹ️  Using default Hardhat verifier address: {verifier_address}")
+        log_and_echo("❌ ERROR: Could not compute verifier Ethereum address from config")
+        log_and_echo("   The verifier address is required for proper logging")
+        log_and_echo("   Check that trusted-verifier/config/verifier_testing.toml exists and has valid keys")
+        log_and_echo("   Run: cargo run --bin get_verifier_eth_address in trusted-verifier directory")
+        os._exit(1)
     else:
         log(f"   ✅ Verifier address: {verifier_address}")
 

@@ -55,7 +55,7 @@ def get_verifier_eth_address() -> str:
     env["VERIFIER_CONFIG_PATH"] = str(config_path)
 
     result = run_command(
-        f"cd {verifier_dir} && cargo run --bin get_verifier_eth_address 2>/dev/null",
+        f"cd {verifier_dir} && cargo run --bin get_verifier_eth_address",
         check=False
     )
 
@@ -154,15 +154,17 @@ def main():
     log("")
     log("🔑 Configuration:")
 
-    # Get verifier Ethereum address
+    # Get verifier Ethereum address - REQUIRED, fail if not found
     verifier_eth_address = get_verifier_eth_address()
 
     if not verifier_eth_address:
-        log_and_echo("   ⚠️  Warning: Could not compute verifier Ethereum address from config")
-        log_and_echo("   Falling back to Hardhat account 1 (Bob)")
-    else:
-        log(f"   ✅ Verifier Ethereum address: {verifier_eth_address}")
+        log_and_echo("❌ ERROR: Could not compute verifier Ethereum address from config")
+        log_and_echo("   The verifier address is required for proper signature verification")
+        log_and_echo("   Check that trusted-verifier/config/verifier_testing.toml exists and has valid keys")
+        log_and_echo("   Run: cargo run --bin get_verifier_eth_address in trusted-verifier directory")
+        os._exit(1)
 
+    log(f"   ✅ Verifier Ethereum address: {verifier_eth_address}")
     log("   RPC URL: http://127.0.0.1:8545")
 
     # Deploy contract

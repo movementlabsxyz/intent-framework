@@ -10,12 +10,13 @@ async function main() {
   }
 
   const signers = await hre.ethers.getSigners();
+  const alice = signers[1]; // Alice (Account 1)
   const vault = await hre.ethers.getContractAt("IntentVault", vaultAddress);
   const intentId = BigInt(intentIdHex);
   const amount = BigInt(amountWei);
   
   // Deposit ETH (pass value in transaction)
-  const tx = await vault.connect(signers[0]).deposit(intentId, amount, { value: amount });
+  const tx = await vault.connect(alice).deposit(intentId, amount, { value: amount });
   await tx.wait();
   console.log("Deposited", amount.toString(), "wei (ETH) into vault");
 }

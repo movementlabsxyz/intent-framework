@@ -207,11 +207,11 @@ def display_balances() -> None:
             # EVM chain is running, fetch balances
             os.chdir(PROJECT_ROOT / "evm-intent-framework")
 
-            # Get Alice's balance (account 0)
+            # Get Alice's balance (account 1)
             alice_result = run_command(
                 f'nix develop "{PROJECT_ROOT}" -c bash -c '
                 f'"cd \'{PROJECT_ROOT}/evm-intent-framework\' && '
-                f'ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1'
+                f'ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1'
             )
             alice_evm = "0"
             if alice_result.returncode == 0:
@@ -220,17 +220,17 @@ def display_balances() -> None:
                     if line.strip().isdigit():
                         alice_evm = line.strip()
 
-            # Get Solver's balance (account 1)
-            solver_result = run_command(
+            # Get Bob's balance (account 2)
+            bob_result = run_command(
                 f'nix develop "{PROJECT_ROOT}" -c bash -c '
                 f'"cd \'{PROJECT_ROOT}/evm-intent-framework\' && '
-                f'ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1'
+                f'ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1'
             )
-            solver_evm = "0"
-            if solver_result.returncode == 0:
-                for line in solver_result.stdout.strip().split('\n'):
+            bob_evm = "0"
+            if bob_result.returncode == 0:
+                for line in bob_result.stdout.strip().split('\n'):
                     if line.strip().isdigit():
-                        solver_evm = line.strip()
+                        bob_evm = line.strip()
 
             os.chdir(PROJECT_ROOT)
 
@@ -240,20 +240,20 @@ def display_balances() -> None:
             if alice_evm != "0" and alice_evm:
                 try:
                     alice_eth = float(alice_evm) / 1e18
-                    log_and_echo(f"      Alice (Acc 0): {alice_eth:.4f} ETH")
+                    log_and_echo(f"      Alice (Acc 1): {alice_eth:.4f} ETH")
                 except:
-                    log_and_echo("      Alice (Acc 0): 0 ETH")
+                    log_and_echo("      Alice (Acc 1): 0 ETH")
             else:
-                log_and_echo("      Alice (Acc 0): 0 ETH")
+                log_and_echo("      Alice (Acc 1): 0 ETH")
 
-            if solver_evm != "0" and solver_evm:
+            if bob_evm != "0" and bob_evm:
                 try:
-                    bob_eth = float(solver_evm) / 1e18
-                    log_and_echo(f"      Bob (Acc 1): {bob_eth:.4f} ETH")
+                    bob_eth = float(bob_evm) / 1e18
+                    log_and_echo(f"      Bob (Acc 2): {bob_eth:.4f} ETH")
                 except:
-                    log_and_echo("      Bob (Acc 1): 0 ETH")
+                    log_and_echo("      Bob (Acc 2): 0 ETH")
             else:
-                log_and_echo("      Bob (Acc 1): 0 ETH")
+                log_and_echo("      Bob (Acc 2): 0 ETH")
     except:
         # EVM chain not running or error occurred
         pass

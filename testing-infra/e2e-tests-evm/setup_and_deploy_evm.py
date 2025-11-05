@@ -102,13 +102,13 @@ def main():
     import time
     time.sleep(2)
 
-    # Get Alice address (Account 0)
-    log("   - Getting Alice address (Account 0)...")
-    alice_address = get_evm_account_address(0)
+    # Get Alice address (Account 1)
+    log("   - Getting Alice address (Account 1)...")
+    alice_address = get_evm_account_address(1)
 
-    # Get Bob address (Account 1)
-    log("   - Getting Bob address (Account 1)...")
-    bob_address = get_evm_account_address(1)
+    # Get Bob address (Account 2)
+    log("   - Getting Bob address (Account 2)...")
+    bob_address = get_evm_account_address(2)
 
     if not alice_address or not bob_address:
         log_and_echo("❌ ERROR: Failed to get EVM account addresses")
@@ -122,7 +122,7 @@ def main():
 
     # Verify balances
     log("   - Getting Alice balance...")
-    alice_balance, alice_output = get_evm_account_balance(0)
+    alice_balance, alice_output = get_evm_account_balance(1)
 
     if not alice_balance:
         log_and_echo("❌ ERROR: Failed to get Alice balance - Hardhat node may not be ready")
@@ -132,7 +132,7 @@ def main():
     log(f"   DEBUG: Alice balance extracted: '{alice_balance}'")
 
     log("   - Getting Bob balance...")
-    bob_balance, bob_output = get_evm_account_balance(1)
+    bob_balance, bob_output = get_evm_account_balance(2)
 
     if not bob_balance:
         log_and_echo("❌ ERROR: Failed to get Bob balance - Hardhat node may not be ready")
@@ -143,7 +143,7 @@ def main():
 
     # Check if balances are zero
     if not alice_balance or alice_balance == "0":
-        log_and_echo("❌ ERROR: Alice (Account 0) has ZERO or empty balance on EVM chain")
+        log_and_echo("❌ ERROR: Alice (Account 1) has ZERO or empty balance on EVM chain")
         log_and_echo(f"   Balance extracted: '{alice_balance}'")
         log_and_echo(f"   Balance output: {alice_output}")
         log_and_echo(f"   Address: {alice_address}")
@@ -152,7 +152,7 @@ def main():
         os._exit(1)
 
     if not bob_balance or bob_balance == "0":
-        log_and_echo("❌ ERROR: Bob (Account 1) has ZERO or empty balance on EVM chain")
+        log_and_echo("❌ ERROR: Bob (Account 2) has ZERO or empty balance on EVM chain")
         log_and_echo(f"   Balance extracted: '{bob_balance}'")
         log_and_echo(f"   Balance output: {bob_output}")
         log_and_echo(f"   Address: {bob_address}")
@@ -167,21 +167,21 @@ def main():
     bob_balance_int = int(bob_balance)
 
     if alice_balance_int < MIN_BALANCE:
-        log_and_echo("❌ ERROR: Alice (Account 0) balance insufficient")
+        log_and_echo("❌ ERROR: Alice (Account 1) balance insufficient")
         log_and_echo(f"   Balance: {alice_balance} wei")
         log_and_echo(f"   Required: At least 1 ETH ({MIN_BALANCE} wei)")
         log_and_echo(f"   Address: {alice_address}")
         os._exit(1)
 
     if bob_balance_int < MIN_BALANCE:
-        log_and_echo("❌ ERROR: Bob (Account 1) balance insufficient")
+        log_and_echo("❌ ERROR: Bob (Account 2) balance insufficient")
         log_and_echo(f"   Balance: {bob_balance} wei")
         log_and_echo(f"   Required: At least 1 ETH ({MIN_BALANCE} wei)")
         log_and_echo(f"   Address: {bob_address}")
         os._exit(1)
 
-    log(f"   ✅ Alice (Account 0): {alice_address} - Balance verified")
-    log(f"   ✅ Bob (Account 1):   {bob_address} - Balance verified")
+    log(f"   ✅ Alice (Account 1): {alice_address} - Balance verified")
+    log(f"   ✅ Bob (Account 2):   {bob_address} - Balance verified")
 
     # Display EVM chain balances
     display_balances()

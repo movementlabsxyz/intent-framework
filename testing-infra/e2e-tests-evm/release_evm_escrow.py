@@ -44,7 +44,7 @@ def get_bob_balance() -> tuple[str, str]:
 
     result = run_command(
         f"nix develop {common.PROJECT_ROOT} -c bash -c "
-        f"\"cd '{evm_dir}' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost\" 2>&1",
+        f"\"cd '{evm_dir}' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost\" 2>&1",
         check=False
     )
 

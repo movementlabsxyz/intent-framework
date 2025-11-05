@@ -6,19 +6,15 @@ async function main() {
   // Get signers
   const [deployer] = await hre.ethers.getSigners();
   
-  // Get verifier address from environment variable or use Hardhat account 1 as fallback
+  // Get verifier address from environment variable - REQUIRED, no fallback
   const verifierAddress = process.env.VERIFIER_ADDRESS;
-  let verifierAddr;
   
-  if (verifierAddress) {
-    verifierAddr = verifierAddress;
-    console.log("Using verifier address from config:", verifierAddr);
-  } else {
-    // Fallback to Hardhat account 1 (for backwards compatibility)
-    const [, verifier] = await hre.ethers.getSigners();
-    verifierAddr = verifier.address;
-    console.log("Using Hardhat account 1 as verifier:", verifierAddr);
+  if (!verifierAddress) {
+    throw new Error("VERIFIER_ADDRESS environment variable is required. The verifier address must be set for proper signature verification.");
   }
+  
+  const verifierAddr = verifierAddress;
+  console.log("Using verifier address from config:", verifierAddr);
   
   console.log("Deploying with account:", deployer.address);
   console.log("Verifier address:", verifierAddr);

@@ -10,7 +10,7 @@ async function main() {
   }
 
   const signers = await hre.ethers.getSigners();
-  const bob = signers[1];
+  const bob = signers[2]; // Bob (Account 2)
   
   // Use contract factory to get ABI, then create contract instance directly
   // This avoids the name resolution issue with getContractAt on localhost network

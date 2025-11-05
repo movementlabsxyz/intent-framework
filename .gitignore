@@ -18,6 +18,16 @@ yarn-error.log*
 dev-debug.log
 # Dependency directories
 node_modules/
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 # Environment variables
 .env
 # Editor directories and files

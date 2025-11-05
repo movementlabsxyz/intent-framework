@@ -1,0 +1,8 @@
+# Python dependencies for testing infrastructure
+# Install with: pip install -r requirements.txt
+
+# HTTP requests for API calls (Aptos, EVM RPC, faucet, etc.)
+requests>=2.31.0
+
+# Type hints support
+typing-extensions>=4.8.0

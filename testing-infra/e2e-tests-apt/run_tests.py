@@ -19,8 +19,57 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, get_aptos_address, PROJECT_ROOT, LOG_FILE
+    run_command, get_aptos_address, LOG_FILE
 )
+
+
+def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
+    """
+    Update a TOML file section, matching sed's behavior with range patterns.
+    
+    sed pattern: /\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = "0xADDRESS"|
+    This means: from [hub_chain] to [connected_chain] (inclusive), update the key.
+    
+    Args:
+        config_content: The TOML file content
+        start_section: Section header to start from (e.g., "[hub_chain]")
+        end_section: Section header to end at (e.g., "[connected_chain]")
+        key: Key to update (e.g., "intent_module_address")
+        value: New value
+    
+    Returns:
+        Updated config content
+    """
+    lines = config_content.split('\n')
+    result = []
+    in_section = False
+    
+    for line in lines:
+        # Check if we're entering the start section
+        if line.strip() == start_section:
+            in_section = True
+            result.append(line)
+            continue
+        
+        # Check if we've reached the end section (or any other section)
+        if in_section and line.strip().startswith('['):
+            # If this is the end section, we're done matching after this line
+            if end_section and line.strip() == end_section:
+                # Still process this line, but stop matching after
+                result.append(line)
+                in_section = False
+                continue
+            elif line.strip() != start_section:
+                # We've moved to a different section (not the end section), stop matching
+                in_section = False
+        
+        # If we're in the section and this line matches the key, replace it
+        if in_section and line.strip().startswith(key + ' ='):
+            result.append(f'{key} = {value}')
+        else:
+            result.append(line)
+    
+    return '\n'.join(result)
 
 
 def main():
@@ -33,13 +82,19 @@ def main():
     log("================================")
     log_and_echo(f"📝 All output logged to: {log_file}")
 
+    # Stop EVM chain if running (to avoid conflicts)
+    log("")
+    log("🧹 Stopping EVM chain if running...")
+    stop_evm_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
+    run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
+
     log("")
     log("🚀 Step 0: Setting up chains, deploying contracts, and submitting intents...")
     log("========================================================================")
 
-    # Call submit-cross-chain-intent.sh (not yet converted to Python)
-    submit_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "submit-cross-chain-intent.sh"
-    result = run_command(f"bash {submit_script} 1", check=False, capture_output=False)
+    # Call submit-cross-chain-intent Python script
+    submit_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "submit_cross_chain_intent.py"
+    result = run_command(f"python3 -u {submit_script} 1", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup and deploy contracts")
@@ -70,7 +125,7 @@ def main():
     log(f"   Chain 2 deployer: {chain2_address}")
 
     # Use verifier_testing.toml for tests - required, panic if not found
-    verifier_testing_config = PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    verifier_testing_config = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
 
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
@@ -81,29 +136,32 @@ def main():
     with open(verifier_testing_config, 'r') as f:
         config_content = f.read()
 
-    # Update module addresses in verifier_testing.toml
-    # Pattern: Update intent_module_address in [hub_chain] section
-    config_content = re.sub(
-        r'(\[hub_chain\].*?)(intent_module_address = )[^\n]*',
-        rf'\1\2"0x{chain1_address}"',
+    # Update module addresses in verifier_testing.toml using section-aware replacement
+    # This matches sed's behavior: /\[hub_chain\]/,/\[connected_chain\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[hub_chain]",
+        "[connected_chain]",
+        "intent_module_address",
+        f'"0x{chain1_address}"'
     )
 
-    # Pattern: Update intent_module_address in [connected_chain] section
-    config_content = re.sub(
-        r'(\[connected_chain\].*?)(intent_module_address = )[^\n]*',
-        rf'\1\2"0x{chain2_address}"',
+    # Update connected_chain intent_module_address: /\[connected_chain\]/,/\[verifier\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[connected_chain]",
+        "[verifier]",
+        "intent_module_address",
+        f'"0x{chain2_address}"'
     )
 
-    # Pattern: Update escrow_module_address in [connected_chain] section
-    config_content = re.sub(
-        r'(\[connected_chain\].*?)(escrow_module_address = )[^\n]*',
-        rf'\1\2"0x{chain2_address}"',
+    # Update connected_chain escrow_module_address: /\[connected_chain\]/,/\[verifier\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[connected_chain]",
+        "[verifier]",
+        "escrow_module_address",
+        f'"0x{chain2_address}"'
     )
 
     # Get Alice and Bob addresses and update known_accounts
@@ -112,19 +170,21 @@ def main():
     alice_chain2 = get_aptos_address("alice-chain2") or ""
 
     if alice_chain1 and bob_chain1:
-        config_content = re.sub(
-            r'(\[hub_chain\].*?)(known_accounts = )[^\n]*',
-            rf'\1\2["{alice_chain1}", "{bob_chain1}"]',
+        config_content = update_toml_section(
             config_content,
-            flags=re.DOTALL
+            "[hub_chain]",
+            "[connected_chain]",
+            "known_accounts",
+            f'["{alice_chain1}", "{bob_chain1}"]'
         )
 
     if alice_chain2:
-        config_content = re.sub(
-            r'(\[connected_chain\].*?)(known_accounts = )[^\n]*',
-            rf'\1\2["{alice_chain2}"]',
+        config_content = update_toml_section(
             config_content,
-            flags=re.DOTALL
+            "[connected_chain]",
+            "[verifier]",
+            "known_accounts",
+            f'["{alice_chain2}"]'
         )
 
     # Write updated config
@@ -138,7 +198,7 @@ def main():
     log("")
 
     # Create a temporary integration test entry point
-    integration_test_file = PROJECT_ROOT / "trusted-verifier" / "tests" / "integration_test_e2e.rs"
+    integration_test_file = common.PROJECT_ROOT / "trusted-verifier" / "tests" / "integration_test_e2e.rs"
 
     integration_test_content = """//! E2E Integration tests entry point
 //!
@@ -152,7 +212,7 @@ mod integration;
         f.write(integration_test_content)
 
     # Run the tests from trusted-verifier directory
-    verifier_dir = PROJECT_ROOT / "trusted-verifier"
+    verifier_dir = common.PROJECT_ROOT / "trusted-verifier"
 
     # Export config path for Rust code to use (absolute path so tests can find it)
     env = os.environ.copy()
@@ -161,7 +221,8 @@ mod integration;
     result = run_command(
         f"cd {verifier_dir} && cargo test --test integration_test_e2e",
         check=False,
-        capture_output=False
+        capture_output=False,
+        env=env
     )
 
     # Clean up temporary test file
@@ -179,9 +240,9 @@ mod integration;
     log("🚀 Step 2: Running verifier service to test end-to-end flow...")
     log("============================================================")
 
-    # Call run-cross-chain-verifier.sh (not yet converted to Python)
-    verifier_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "run-cross-chain-verifier.sh"
-    result = run_command(f"bash {verifier_script} 0", check=False, capture_output=False)
+    # Call run-cross-chain-verifier Python script
+    verifier_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "run_cross_chain_verifier.py"
+    result = run_command(f"python3 -u {verifier_script} 0", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Verifier service test failed!")
@@ -193,8 +254,8 @@ mod integration;
     log("🧹 Cleaning up Docker chains...")
 
     # Call stop-dual-chains.py (already converted)
-    stop_script = PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "stop_dual_chains.py"
-    result = run_command(f"python3 {stop_script}", check=False, capture_output=False)
+    stop_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "stop_dual_chains.py"
+    result = run_command(f"python3 -u {stop_script}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to stop Docker chains")

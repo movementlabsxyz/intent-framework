@@ -28,7 +28,7 @@ import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, get_aptos_address, display_balances,
-    PROJECT_ROOT, LOG_FILE
+    LOG_FILE
 )
 
 
@@ -120,7 +120,7 @@ def main():
         log("🚀 Step 0.1: Setting up chains and deploying contracts...")
         log("========================================================")
 
-        setup_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "setup_and_deploy.py"
+        setup_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "setup_and_deploy.py"
         result = run_command(f"python3 -u {setup_script}", check=False, capture_output=False)
 
         if result.returncode != 0:
@@ -162,7 +162,7 @@ def main():
     log(f"   Alice Chain 2 (connected): {alice_chain2_address}")
 
     # Load oracle public key from verifier config
-    verifier_testing_config = PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    verifier_testing_config = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
 
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")

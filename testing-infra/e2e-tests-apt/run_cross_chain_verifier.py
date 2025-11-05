@@ -27,8 +27,57 @@ import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, get_aptos_address, display_balances,
-    PROJECT_ROOT, LOG_FILE, LOG_DIR
+    LOG_FILE
 )
+
+
+def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
+    """
+    Update a TOML file section, matching sed's behavior with range patterns.
+    
+    sed pattern: /\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = "0xADDRESS"|
+    This means: from [hub_chain] to [connected_chain] (inclusive), update the key.
+    
+    Args:
+        config_content: The TOML file content
+        start_section: Section header to start from (e.g., "[hub_chain]")
+        end_section: Section header to end at (e.g., "[connected_chain]")
+        key: Key to update (e.g., "intent_module_address")
+        value: New value
+    
+    Returns:
+        Updated config content
+    """
+    lines = config_content.split('\n')
+    result = []
+    in_section = False
+    
+    for line in lines:
+        # Check if we're entering the start section
+        if line.strip() == start_section:
+            in_section = True
+            result.append(line)
+            continue
+        
+        # Check if we've reached the end section (or any other section)
+        if in_section and line.strip().startswith('['):
+            # If this is the end section, we're done matching after this line
+            if end_section and line.strip() == end_section:
+                # Still process this line, but stop matching after
+                result.append(line)
+                in_section = False
+                continue
+            elif line.strip() != start_section:
+                # We've moved to a different section (not the end section), stop matching
+                in_section = False
+        
+        # If we're in the section and this line matches the key, replace it
+        if in_section and line.strip().startswith(key + ' ='):
+            result.append(f'{key} = {value}')
+        else:
+            result.append(line)
+    
+    return '\n'.join(result)
 
 
 def stop_verifier_processes():
@@ -246,6 +295,7 @@ def main():
     # Setup project root and logging
     setup_project_root(Path(__file__))
     log_dir, log_file = setup_logging("verifier_and_escrow_release")
+    # Store log_dir for later use
 
     print("🔍 CROSS-CHAIN VERIFIER - STARTING MONITORING")
     log("==============================================")
@@ -257,7 +307,7 @@ def main():
         log("🚀 Step 0: Running setup and submitting intents...")
         log("=================================================")
 
-        submit_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "submit_cross_chain_intent.py"
+        submit_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "submit_cross_chain_intent.py"
         result = run_command(f"python3 -u {submit_script} 1", check=False, capture_output=False)
 
         if result.returncode != 0:
@@ -320,7 +370,7 @@ def main():
 
     # Update verifier config
     log("   - Updating verifier configuration...")
-    verifier_testing_config = PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    verifier_testing_config = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
 
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
@@ -331,40 +381,50 @@ def main():
     with open(verifier_testing_config, 'r') as f:
         config_content = f.read()
 
-    # Update addresses
-    config_content = re.sub(
-        r'(\[hub_chain\].*?)(intent_module_address = )[^\n]*',
-        rf'\1\2"0x{chain1_deploy_address}"',
+    # Update addresses using section-aware replacement (matches sed's behavior)
+    # Update hub_chain intent_module_address: /\[hub_chain\]/,/\[connected_chain\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[hub_chain]",
+        "[connected_chain]",
+        "intent_module_address",
+        f'"0x{chain1_deploy_address}"'
     )
 
-    config_content = re.sub(
-        r'(\[connected_chain\].*?)(intent_module_address = )[^\n]*',
-        rf'\1\2"0x{chain2_deploy_address}"',
+    # Update connected_chain intent_module_address: /\[connected_chain\]/,/\[verifier\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[connected_chain]",
+        "[verifier]",
+        "intent_module_address",
+        f'"0x{chain2_deploy_address}"'
     )
 
-    config_content = re.sub(
-        r'(\[connected_chain\].*?)(escrow_module_address = )[^\n]*',
-        rf'\1\2"0x{chain2_deploy_address}"',
+    # Update connected_chain escrow_module_address: /\[connected_chain\]/,/\[verifier\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[connected_chain]",
+        "[verifier]",
+        "escrow_module_address",
+        f'"0x{chain2_deploy_address}"'
     )
 
-    config_content = re.sub(
-        r'(\[hub_chain\].*?)(known_accounts = )[^\n]*',
-        rf'\1\2["{alice_chain1_address}", "{bob_chain1_address}"]',
+    # Update hub_chain known_accounts: /\[hub_chain\]/,/\[connected_chain\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[hub_chain]",
+        "[connected_chain]",
+        "known_accounts",
+        f'["{alice_chain1_address}", "{bob_chain1_address}"]'
     )
 
-    config_content = re.sub(
-        r'(\[connected_chain\].*?)(known_accounts = )[^\n]*',
-        rf'\1\2["{alice_chain2_address}"]',
+    # Update connected_chain known_accounts: /\[connected_chain\]/,/\[verifier\]/
+    config_content = update_toml_section(
         config_content,
-        flags=re.DOTALL
+        "[connected_chain]",
+        "[verifier]",
+        "known_accounts",
+        f'["{alice_chain2_address}"]'
     )
 
     # Write updated config
@@ -384,8 +444,8 @@ def main():
     log("========================================")
 
     # Start verifier in background
-    verifier_dir = PROJECT_ROOT / "trusted-verifier"
-    verifier_log = LOG_DIR / "verifier.log"
+    verifier_dir = common.PROJECT_ROOT / "trusted-verifier"
+    verifier_log = log_dir / "verifier.log"
 
     env = os.environ.copy()
     env["VERIFIER_CONFIG_PATH"] = str(verifier_testing_config.resolve())
@@ -532,7 +592,7 @@ def main():
     log_and_echo("✨ Script complete! Verifier is monitoring events in the background.")
 
     # Store PID for cleanup
-    pid_file = LOG_DIR / "verifier.pid"
+    pid_file = log_dir / "verifier.pid"
     with open(pid_file, 'w') as f:
         f.write(str(verifier_pid))
 

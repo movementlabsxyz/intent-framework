@@ -119,7 +119,7 @@ def log(message: str = "") -> None:
 
 
 def run_command(cmd: str, shell: bool = True, check: bool = False,
-                capture_output: bool = True, text: bool = True) -> subprocess.CompletedProcess:
+                capture_output: bool = True, text: bool = True, env: dict = None) -> subprocess.CompletedProcess:
     """
     Run a shell command and return the result.
 
@@ -129,18 +129,19 @@ def run_command(cmd: str, shell: bool = True, check: bool = False,
         check: Raise exception on non-zero exit
         capture_output: Capture stdout/stderr
         text: Return output as string
+        env: Environment variables dict (if None, uses current environment)
 
     Returns:
         CompletedProcess object with returncode, stdout, stderr
     """
     if capture_output:
         return subprocess.run(cmd, shell=shell, check=check,
-                             capture_output=capture_output, text=text)
+                              capture_output=capture_output, text=text, env=env)
     else:
         # When not capturing output, don't pass stdout/stderr parameters
         # This allows output to go directly to terminal in real-time
         # The process will return normally when it completes
-        return subprocess.run(cmd, shell=shell, check=check)
+        return subprocess.run(cmd, shell=shell, check=check, env=env)
 
 
 def get_aptos_address(profile: str) -> Optional[str]:

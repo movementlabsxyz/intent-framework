@@ -11,6 +11,7 @@ Python equivalent of release-evm-escrow.sh
 """
 
 import sys
+import os
 import json
 import time
 import re
@@ -116,7 +117,7 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
             if not bob_balance_before:
                 log_and_echo("   ❌ ERROR: Failed to get Bob's balance before claim")
                 log_and_echo(f"   Balance output: {bob_output_before}")
-                sys.exit(1)
+                os._exit(1)
 
             log(f"   - Bob's balance before claim: {bob_balance_before} wei")
 
@@ -142,14 +143,14 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
                 log_and_echo("   ❌ ERROR: Failed to release escrow on EVM chain")
                 log_and_echo(f"   Claim output: {claim_output}")
                 log_and_echo(f"   See log file for details: {LOG_FILE}")
-                sys.exit(1)
+                os._exit(1)
 
             # Verify claim succeeded
             if "escrow released successfully" not in claim_output.lower():
                 log_and_echo("   ❌ ERROR: Escrow claim did not complete successfully")
                 log_and_echo(f"   Claim output: {claim_output}")
                 log_and_echo("   Expected to see 'Escrow released successfully' in output")
-                sys.exit(1)
+                os._exit(1)
 
             # Wait for transaction to be processed
             time.sleep(2)
@@ -161,7 +162,7 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
             if not bob_balance_after:
                 log_and_echo("   ❌ ERROR: Failed to get Bob's balance after claim")
                 log_and_echo(f"   Balance output: {bob_output_after}")
-                sys.exit(1)
+                os._exit(1)
 
             log(f"   - Bob's balance after claim: {bob_balance_after} wei")
 
@@ -183,17 +184,15 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
                 log_and_echo(f"   Expected increase:   ~{expected_amount_wei} wei (1000 ETH)")
                 log_and_echo(f"   Minimum expected:     {min_expected} wei (99% of 1000 ETH)")
                 log_and_echo("   Escrow release FAILED - Bob did not receive funds!")
-                sys.exit(1)
+                os._exit(1)
 
             log("   ✅ Escrow released successfully on EVM chain!")
             log(f"   ✅ Bob received {balance_increase} wei (expected ~{expected_amount_wei} wei)")
             released_escrows.add(escrow_id)
 
-    except SystemExit:
-        # Re-raise SystemExit so it actually exits
-        raise
     except Exception as e:
         # Non-fatal error, continue polling
+        # Note: os._exit(1) bypasses all exception handlers, so it won't be caught here
         log(f"   ⚠️  Error checking approvals: {e}")
 
     return released_escrows
@@ -220,13 +219,13 @@ def main():
     if not is_verifier_running():
         log_and_echo("❌ Verifier is not running. Please start it first:")
         log_and_echo("   python3 testing-infra/e2e-tests-apt/run_cross_chain_verifier.py")
-        sys.exit(1)
+        os._exit(1)
 
     # Load config - required
     if not args.config_file.exists():
         log_and_echo(f"❌ Config file not found: {args.config_file}")
         log_and_echo("   The config file must be created by run_tests.py first")
-        sys.exit(1)
+        os._exit(1)
     
     config = TestConfig.load(args.config_file)
     log(f"   Loaded config from: {args.config_file}")
@@ -238,7 +237,7 @@ def main():
     if not vault_address:
         log_and_echo("❌ Vault address not found in config")
         log_and_echo("   The config must be populated with vault_address")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   Vault address: {vault_address}")
     log_and_echo(f"   Vault address: {vault_address}")
@@ -267,7 +266,7 @@ def main():
                 log_and_echo(f"   Address: {vault_address}")
                 log_and_echo("   The Hardhat chain may have been reset. Please redeploy the vault.")
                 log_and_echo("   Run: python3 testing-infra/e2e-tests-evm/deploy_vault.py")
-                sys.exit(1)
+                os._exit(1)
             log(f"   ✅ Vault contract verified (code length: {len(code) - 2} bytes)")
         except (json.JSONDecodeError, KeyError):
             log_and_echo("   ⚠️  Warning: Could not verify vault contract (RPC response invalid)")
@@ -294,7 +293,7 @@ def main():
         log_and_echo("❌ ERROR: No escrows were released!")
         log_and_echo("   The verifier may not have approved the escrow, or the claim failed")
         log_and_echo("   Check verifier logs and approvals API")
-        sys.exit(1)
+        os._exit(1)
 
     released_list = " ".join(released_escrows)
     log("✅ Escrow release monitoring complete!")

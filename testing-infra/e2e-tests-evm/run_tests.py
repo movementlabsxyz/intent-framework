@@ -230,7 +230,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup EVM chain")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo("")
     log_and_echo("📦 Setting up Aptos chains...")
@@ -239,7 +239,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup Aptos chains")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo("")
     log_and_echo("✅ Setup complete! Extracting module addresses...")
@@ -249,18 +249,18 @@ def main():
     result = run_command("aptos config show-profiles", check=False)
     if result.returncode != 0:
         log_and_echo("❌ ERROR: Could not read aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     try:
         data = json.loads(result.stdout)
         chain1_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
     except json.JSONDecodeError:
         log_and_echo("❌ ERROR: Could not parse aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     if not chain1_address:
         log_and_echo("❌ ERROR: Could not extract Chain 1 deployed module address")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo(f"   Chain 1 deployer: {chain1_address}")
 
@@ -281,7 +281,7 @@ def main():
                 log_and_echo("   EVM vault deployment may not have completed successfully")
         else:
             log_and_echo("   Log directory does not exist - EVM setup may have failed")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo(f"   EVM Vault: {vault_address}")
 
@@ -291,7 +291,7 @@ def main():
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
         log_and_echo("   Tests require trusted-verifier/config/verifier_testing.toml to exist")
-        sys.exit(1)
+        os._exit(1)
 
     # Get verifier Ethereum address from config
     log("   - Computing verifier Ethereum address from config...")
@@ -368,7 +368,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to submit intents")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo("")
     log_and_echo("✅ Intents submitted successfully!")
@@ -424,7 +424,7 @@ def main():
         log_and_echo("   ❌ Verifier failed to start")
         with open(verifier_log, 'r') as f:
             log_and_echo(f.read())
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo(f"   ✅ Verifier started (PID: {verifier_pid})")
     log_and_echo("")
@@ -491,7 +491,7 @@ def main():
                     log_and_echo(f"   Could not read log file: {e}")
         log_and_echo("")
         log_and_echo("   Check release-evm-escrow logs for full details")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo("")
     display_balances()
@@ -516,11 +516,11 @@ def main():
 
     if not stop_evm_chain_if_running():
         log_and_echo("❌ Failed to stop EVM chain")
-        sys.exit(1)
+        os._exit(1)
 
     if not stop_aptos_chains_if_running():
         log_and_echo("❌ Failed to stop Aptos chains")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo("")
     log_and_echo("✅ All E2E tests completed!")

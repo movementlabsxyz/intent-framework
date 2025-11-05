@@ -97,7 +97,7 @@ def main():
         if result.returncode != 0:
             log_and_echo("   ❌ ERROR: npm install failed")
             log_and_echo(f"   Check log file for details: {log_file}")
-            sys.exit(1)
+            os._exit(1)
 
         log("   ✅ Dependencies installed")
     else:
@@ -185,7 +185,7 @@ def main():
             except:
                 pass
 
-            sys.exit(1)
+            os._exit(1)
 
         time.sleep(1)
 

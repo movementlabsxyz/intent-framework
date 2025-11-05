@@ -11,6 +11,7 @@ Python equivalent of setup-and-test-alice-bob.sh
 """
 
 import sys
+import os
 import time
 from pathlib import Path
 
@@ -168,7 +169,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Error: Failed to start EVM chain")
-        sys.exit(1)
+        os._exit(1)
 
     # Wait for node to be fully ready
     log("⏳ Waiting for node to be fully ready...")
@@ -178,7 +179,7 @@ def main():
     log("🔍 Verifying EVM chain is running...")
     if not is_evm_running():
         log_and_echo("❌ Error: EVM chain failed to start on port 8545")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("% - - - - - - - - - - - ACCOUNTS - - - - - - - - - - - -")
@@ -199,7 +200,7 @@ def main():
 
     if not alice_address or not bob_address:
         log_and_echo("❌ Error: Failed to get account addresses")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   ✅ Alice (Account 0): {alice_address}")
     log(f"   ✅ Bob (Account 1):   {bob_address}")
@@ -230,7 +231,7 @@ def main():
         log("   ✅ Transfer successful!")
     else:
         log_and_echo("   ❌ Transfer failed!")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("🎉 All EVM chain setup and testing complete!")

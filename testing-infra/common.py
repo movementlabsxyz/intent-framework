@@ -288,14 +288,14 @@ def fund_and_verify_aptos_account(
         faucet_port = "8083"
     else:
         log_and_echo(f"❌ ERROR: Invalid chain number: {chain_num} (must be 1 or 2)")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"Funding {account_label}...")
     address = get_aptos_address(profile)
 
     if not address:
         log_and_echo(f"❌ ERROR: Could not get address for profile {profile}")
-        sys.exit(1)
+        os._exit(1)
 
     try:
         import requests
@@ -350,25 +350,25 @@ def fund_and_verify_aptos_account(
 
                 if balance is None:
                     log_and_echo(f"❌ ERROR: Failed to get {account_label} balance")
-                    sys.exit(1)
+                    os._exit(1)
 
                 if balance != expected_amount:
                     log_and_echo(f"❌ ERROR: {account_label} balance mismatch")
                     log_and_echo(f"   Expected: {expected_amount} Octas")
                     log_and_echo(f"   Got: {balance} Octas")
-                    sys.exit(1)
+                    os._exit(1)
 
                 log(f"✅ {account_label} balance verified: {balance} Octas")
                 return balance
             else:
                 log_and_echo(f"❌ ERROR: Could not verify {account_label} balance via FA store")
-                sys.exit(1)
+                os._exit(1)
         else:
             log_and_echo(f"❌ Failed to fund {account_label}")
-            sys.exit(1)
+            os._exit(1)
     except Exception as e:
         log_and_echo(f"❌ ERROR funding {account_label}: {e}")
-        sys.exit(1)
+        os._exit(1)
 
     return None
 

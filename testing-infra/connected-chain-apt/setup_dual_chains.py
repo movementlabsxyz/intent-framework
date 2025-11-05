@@ -8,6 +8,7 @@ Python equivalent of setup-dual-chains.sh
 """
 
 import sys
+import os
 import time
 from pathlib import Path
 
@@ -85,7 +86,7 @@ def verify_chain(chain_num: int, rest_port: int) -> dict:
         return {"chain_id": chain_id, "block_height": block_height}
     except Exception as e:
         log_and_echo(f"❌ Chain {chain_num} failed to start")
-        sys.exit(1)
+        os._exit(1)
 
 
 def main():
@@ -164,12 +165,12 @@ def main():
     # Wait for Chain 1
     if not wait_for_chain(1, 8080, 8081):
         log_and_echo("❌ Chain 1 failed to start within timeout")
-        sys.exit(1)
+        os._exit(1)
 
     # Wait for Chain 2
     if not wait_for_chain(2, 8082, 8083):
         log_and_echo("❌ Chain 2 failed to start within timeout")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("🔍 Verifying both chains...")

@@ -113,7 +113,7 @@ def main():
         log_and_echo("❌ ERROR: Config file is required")
         log_and_echo(f"   Config file not found: {args.config_file}")
         log_and_echo("   Usage: python3 submit_cross_chain_intent_evm.py <0|1> --config-file <config_file>")
-        sys.exit(1)
+        os._exit(1)
     
     config = TestConfig.load(args.config_file)
     log(f"   Loaded config from: {args.config_file}")
@@ -154,7 +154,7 @@ def main():
 
         if result.returncode != 0:
             log_and_echo("❌ Failed to setup EVM chain")
-            sys.exit(1)
+            os._exit(1)
 
         log("")
         log("📦 Setting up Aptos chains (Chain 1)...")
@@ -163,7 +163,7 @@ def main():
 
         if result.returncode != 0:
             log_and_echo("❌ Failed to setup Aptos chains")
-            sys.exit(1)
+            os._exit(1)
 
         log("")
         log("✅ Chains setup and contracts deployed successfully!")
@@ -184,7 +184,7 @@ def main():
             log_and_echo("   This should have been deployed during setup. Check setup logs.")
         else:
             log_and_echo("   Use --config-file to pass config with vault address")
-        sys.exit(1)
+        os._exit(1)
     
     log(f"   Using vault address from config: {vault_address}")
 
@@ -192,7 +192,7 @@ def main():
     result = run_command("aptos config show-profiles", check=False)
     if result.returncode != 0:
         log_and_echo("❌ ERROR: Could not read aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     try:
         data = json.loads(result.stdout)
@@ -220,7 +220,7 @@ def main():
                 config.bob_chain1_address = bob_chain1_address
     except json.JSONDecodeError:
         log_and_echo("❌ ERROR: Could not parse aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("📋 Chain Information:")
@@ -235,7 +235,7 @@ def main():
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
         log_and_echo("   Tests require trusted-verifier/config/verifier_testing.toml to exist")
-        sys.exit(1)
+        os._exit(1)
 
     # Read verifier public key from config
     with open(verifier_testing_config, 'r') as f:
@@ -246,7 +246,7 @@ def main():
         log_and_echo("❌ ERROR: Could not find public_key in verifier_testing.toml")
         log_and_echo("   The verifier public key is required for escrow creation.")
         log_and_echo("   Please ensure verifier_testing.toml has a valid public_key field.")
-        sys.exit(1)
+        os._exit(1)
 
     verifier_public_key_b64 = match.group(1)
 
@@ -261,7 +261,7 @@ def main():
         log_and_echo("   Expected: base64-encoded 32-byte Ed25519 public key")
         log_and_echo(f"   Got: {verifier_public_key_b64}")
         log_and_echo("   Please ensure the public_key in verifier_testing.toml is valid base64 and decodes to 32 bytes (64 hex chars).")
-        sys.exit(1)
+        os._exit(1)
 
     oracle_public_key = f"0x{oracle_public_key_hex}"
     log("   ✅ Loaded verifier public key from config (32 bytes)")
@@ -300,7 +300,7 @@ def main():
 
     if not apt_metadata_chain1:
         log_and_echo("     ❌ Failed to extract APT metadata from Chain 1 transaction")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"     ✅ Got APT metadata on Chain 1: {apt_metadata_chain1}")
     source_fa_metadata_chain1 = apt_metadata_chain1
@@ -330,7 +330,7 @@ def main():
     if result.returncode != 0:
         log_and_echo("     ❌ Intent creation failed on Chain 1!")
         log_and_echo(f"   See log file for details: {LOG_FILE}")
-        sys.exit(1)
+        os._exit(1)
 
     log("     ✅ Intent created on Chain 1!")
 
@@ -359,13 +359,13 @@ def main():
                 log_and_echo("✅ Intent created")
             else:
                 log_and_echo("     ❌ ERROR: Could not verify hub intent address")
-                sys.exit(1)
+                os._exit(1)
         else:
             log_and_echo("     ❌ ERROR: Could not query transactions")
-            sys.exit(1)
+            os._exit(1)
     except Exception as e:
         log_and_echo(f"     ❌ ERROR: Failed to verify intent: {e}")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("📝 STEP 2: [EVM CHAIN] Alice creates escrow with locked ETH")
@@ -410,14 +410,14 @@ def main():
         log_and_echo("     ❌ ERROR: Vault initialization failed!")
         log_and_echo(f"   Initialization output: {result.stdout}")
         log_and_echo(f"   See log file for details: {LOG_FILE}")
-        sys.exit(1)
+        os._exit(1)
 
     # Verify initialization succeeded
     if "vault initialized for intent" not in result.stdout.lower():
         log_and_echo("     ❌ ERROR: Vault initialization did not complete successfully")
         log_and_echo(f"   Initialization output: {result.stdout}")
         log_and_echo("   Expected to see 'Vault initialized for intent' in output")
-        sys.exit(1)
+        os._exit(1)
     
     log("     ✅ Vault initialized successfully")
     log_and_echo("     ✅ Vault initialized successfully")
@@ -445,7 +445,7 @@ def main():
         log_and_echo("     ❌ ERROR: ETH deposit failed!")
         log_and_echo(f"   Deposit output: {result.stdout}")
         log_and_echo(f"   See log file for details: {LOG_FILE}")
-        sys.exit(1)
+        os._exit(1)
 
     # Verify deposit succeeded
     if not re.search(r"Deposited.*wei.*ETH.*vault", result.stdout, re.IGNORECASE):
@@ -453,7 +453,7 @@ def main():
         log_and_echo(f"   Deposit output: {result.stdout}")
         log(f"   Full deposit output: {result.stdout}")
         log_and_echo("   Expected to see 'Deposited ... wei (ETH) into vault' in output")
-        sys.exit(1)
+        os._exit(1)
 
     log("     ✅ ETH deposit successful")
     log_and_echo("     ✅ ETH deposit successful")
@@ -479,7 +479,7 @@ def main():
     # Get the intent object address from Step 1
     if not hub_intent_address or hub_intent_address == "null":
         log_and_echo("     ❌ ERROR: Could not find hub intent address")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   - Intent object address: {hub_intent_address}")
     log("   - Fulfilling intent...")
@@ -501,7 +501,7 @@ def main():
     if result.returncode != 0:
         log_and_echo("     ❌ Intent fulfillment failed!")
         log_and_echo(f"   See log file for details: {LOG_FILE}")
-        sys.exit(1)
+        os._exit(1)
 
     log("     ✅ Bob successfully fulfilled the intent!")
     log_and_echo("✅ Intent fulfilled")

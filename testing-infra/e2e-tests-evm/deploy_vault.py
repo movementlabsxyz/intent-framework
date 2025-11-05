@@ -131,7 +131,7 @@ def deploy_vault_contract(verifier_address: str = "") -> str:
         log_and_echo("   Expected pattern: 'IntentVault deployed to: 0x...' or 'IntentVault deployed to 0x...'")
         log_and_echo("   Deployment output:")
         print(deploy_output)
-        sys.exit(1)
+        os._exit(1)
     
     return match.group(1)
 
@@ -149,7 +149,7 @@ def main():
     # Check if Hardhat node is running
     if not is_hardhat_running():
         log_and_echo("❌ Hardhat node is not running. Please run testing-infra/connected-chain-evm/setup-evm-chain.sh first")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("🔑 Configuration:")

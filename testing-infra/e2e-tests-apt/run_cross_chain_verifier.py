@@ -235,7 +235,7 @@ def check_and_release_escrows(released_escrows: set, chain2_deploy_address: str)
                     log_and_echo(f"      Bob balance before: {bob_balance_before} Octas")
                     log_and_echo(f"      Bob balance after: {bob_balance_after} Octas")
                     log_and_echo(f"      Escrow ID: {escrow_id}")
-                    sys.exit(1)
+                    os._exit(1)
 
                 log(f"   ✅ Bob received {balance_increase} Octas (expected ~100000000 minus gas)")
                 released_escrows.add(escrow_id)
@@ -254,7 +254,7 @@ def check_and_release_escrows(released_escrows: set, chain2_deploy_address: str)
                         log_and_echo(f"      Bob balance after: {bob_balance_after} Octas")
                         log_and_echo(f"      Escrow ID: {escrow_id}")
                         log_and_echo("      This indicates the escrow was released but funds went to wrong address or were lost")
-                        sys.exit(1)
+                        os._exit(1)
 
                     log(f"   ✅ Verified: Bob received {balance_increase} Octas (escrow was already released)")
                     released_escrows.add(escrow_id)
@@ -264,7 +264,7 @@ def check_and_release_escrows(released_escrows: set, chain2_deploy_address: str)
                     log_and_echo("   ❌ ERROR: Escrow release failed and Bob did not receive funds")
                     log_and_echo(f"      Balance increase: {balance_increase} Octas")
                     log_and_echo(f"      Expected minimum: {expected_min_amount} Octas")
-                    sys.exit(1)
+                    os._exit(1)
 
     except Exception as e:
         # Non-fatal error, continue polling
@@ -312,7 +312,7 @@ def main():
 
         if result.returncode != 0:
             log_and_echo("❌ Failed to setup and submit intents")
-            sys.exit(1)
+            os._exit(1)
 
         log("")
         log("✅ Setup and intent submission complete!")
@@ -342,7 +342,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ ERROR: Could not read aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     try:
         data = json.loads(result.stdout)
@@ -372,7 +372,7 @@ def main():
         bob_chain2_address = data.get("Result", {}).get("bob-chain2", {}).get("account", "")
     except json.JSONDecodeError:
         log_and_echo("❌ ERROR: Could not parse aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   ✅ Alice Chain 1: {alice_chain1_address}")
     log(f"   ✅ Alice Chain 2: {alice_chain2_address}")
@@ -393,7 +393,7 @@ def main():
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
         log_and_echo("   Tests require trusted-verifier/config/verifier_testing.toml to exist")
-        sys.exit(1)
+        os._exit(1)
 
     # Read config
     with open(verifier_testing_config, 'r') as f:
@@ -506,7 +506,7 @@ def main():
                     log_and_echo(f"   {f.read()}")
             else:
                 log_and_echo(f"   Log file not found at: {verifier_log}")
-            sys.exit(1)
+            os._exit(1)
 
     log("")
     log("📊 Monitoring verifier events...")
@@ -557,7 +557,7 @@ def main():
         log_and_echo(f"   ❌ ERROR: Found {rejected_count} rejected intents")
         log("")
         log_and_echo("   ❌ FATAL: Rejected intents detected. Exiting...")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("🔍 Verifier is now monitoring:")
@@ -573,7 +573,7 @@ def main():
     if not chain2_deploy_address or chain2_deploy_address == "null":
         log_and_echo("   ❌ ERROR: Could not find Chain 2 deployer address")
         log_and_echo("      Automatic escrow release requires a valid deployer address")
-        sys.exit(1)
+        os._exit(1)
 
     log("   ✅ Automatic escrow release enabled")
     log(f"      Chain 2 deployer: 0x{chain2_deploy_address}")

@@ -11,6 +11,7 @@ Python equivalent of setup-and-deploy.sh
 """
 
 import sys
+import os
 import json
 import subprocess
 from pathlib import Path
@@ -85,7 +86,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup dual chains with Alice and Bob accounts")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("⚙️  Step 2: Configuring Aptos CLI for both chains...")
@@ -135,10 +136,10 @@ def main():
     chain1_address = get_aptos_address("intent-account-chain1")
     if not chain1_address:
         log_and_echo("❌ Failed to get Chain 1 address")
-        sys.exit(1)
+        os._exit(1)
 
     if not deploy_contract("intent-account-chain1", chain1_address, "Chain 1"):
-        sys.exit(1)
+        os._exit(1)
 
     # Get Chain 2 address
     log("")
@@ -146,10 +147,10 @@ def main():
     chain2_address = get_aptos_address("intent-account-chain2")
     if not chain2_address:
         log_and_echo("❌ Failed to get Chain 2 address")
-        sys.exit(1)
+        os._exit(1)
 
     if not deploy_contract("intent-account-chain2", chain2_address, "Chain 2"):
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo("✅ Contracts deployed")
 

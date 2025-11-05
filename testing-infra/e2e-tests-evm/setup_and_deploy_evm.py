@@ -11,6 +11,7 @@ Python equivalent of setup-and-deploy-evm.sh
 """
 
 import sys
+import os
 import re
 from pathlib import Path
 
@@ -91,7 +92,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup EVM chain")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("🔍 Step 1.5: Verifying EVM accounts are funded...")
@@ -114,7 +115,7 @@ def main():
         log_and_echo(f"   Alice address: {alice_address or 'empty'}")
         log_and_echo(f"   Bob address: {bob_address or 'empty'}")
         log_and_echo("   EVM chain may not be properly initialized")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   ✅ Alice address: {alice_address}")
     log(f"   ✅ Bob address: {bob_address}")
@@ -126,7 +127,7 @@ def main():
     if not alice_balance:
         log_and_echo("❌ ERROR: Failed to get Alice balance - Hardhat node may not be ready")
         log_and_echo(f"   Error output: {alice_output}")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   DEBUG: Alice balance extracted: '{alice_balance}'")
 
@@ -136,7 +137,7 @@ def main():
     if not bob_balance:
         log_and_echo("❌ ERROR: Failed to get Bob balance - Hardhat node may not be ready")
         log_and_echo(f"   Error output: {bob_output}")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   DEBUG: Bob balance extracted: '{bob_balance}'")
 
@@ -148,7 +149,7 @@ def main():
         log_and_echo(f"   Address: {alice_address}")
         log_and_echo("   Hardhat default accounts should have 10000 ETH each")
         log_and_echo("   EVM chain may not be properly initialized")
-        sys.exit(1)
+        os._exit(1)
 
     if not bob_balance or bob_balance == "0":
         log_and_echo("❌ ERROR: Bob (Account 1) has ZERO or empty balance on EVM chain")
@@ -157,7 +158,7 @@ def main():
         log_and_echo(f"   Address: {bob_address}")
         log_and_echo("   Hardhat default accounts should have 10000 ETH each")
         log_and_echo("   EVM chain may not be properly initialized")
-        sys.exit(1)
+        os._exit(1)
 
     # Check if balances are sufficient (at least 1 ETH)
     MIN_BALANCE = 1000000000000000000  # 1 ETH in wei
@@ -170,14 +171,14 @@ def main():
         log_and_echo(f"   Balance: {alice_balance} wei")
         log_and_echo(f"   Required: At least 1 ETH ({MIN_BALANCE} wei)")
         log_and_echo(f"   Address: {alice_address}")
-        sys.exit(1)
+        os._exit(1)
 
     if bob_balance_int < MIN_BALANCE:
         log_and_echo("❌ ERROR: Bob (Account 1) balance insufficient")
         log_and_echo(f"   Balance: {bob_balance} wei")
         log_and_echo(f"   Required: At least 1 ETH ({MIN_BALANCE} wei)")
         log_and_echo(f"   Address: {bob_address}")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   ✅ Alice (Account 0): {alice_address} - Balance verified")
     log(f"   ✅ Bob (Account 1):   {bob_address} - Balance verified")
@@ -195,7 +196,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to deploy IntentVault")
-        sys.exit(1)
+        os._exit(1)
 
     # Extract vault address from deployment logs
     log_dir = common.PROJECT_ROOT / "tmp" / "intent-framework-logs"
@@ -227,7 +228,7 @@ def main():
         log_and_echo("   This is required for verifier configuration")
         log_and_echo(f"   Check deployment logs in: {log_dir}")
         log_and_echo("   Deployment may have failed - check deploy-vault logs for errors")
-        sys.exit(1)
+        os._exit(1)
     else:
         log(f"   ✅ IntentVault deployed at: {vault_address}")
 

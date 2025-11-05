@@ -104,7 +104,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup and deploy contracts")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("✅ Setup complete! Loading module addresses from config...")
@@ -114,7 +114,7 @@ def main():
         log_and_echo("❌ ERROR: Config file not found after setup")
         log_and_echo(f"   Expected: {config_file}")
         log_and_echo("   The submit script should have created this file")
-        sys.exit(1)
+        os._exit(1)
     
     config = TestConfig.load(config_file)
     log(f"   Loaded config from: {config_file}")
@@ -125,7 +125,7 @@ def main():
     if not chain1_address or not chain2_address:
         log_and_echo("❌ ERROR: Config missing chain addresses")
         log_and_echo("   The submit script should have populated these addresses")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   Chain 1 deployer: {chain1_address}")
     log(f"   Chain 2 deployer: {chain2_address}")
@@ -140,7 +140,7 @@ def main():
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
         log_and_echo("   Tests require trusted-verifier/config/verifier_testing.toml to exist")
-        sys.exit(1)
+        os._exit(1)
 
     # Read current config
     with open(verifier_testing_config, 'r') as f:
@@ -242,7 +242,7 @@ mod integration;
     if result.returncode != 0:
         log_and_echo("❌ E2E integration tests failed!")
         log_and_echo("   Check cargo test output for details")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("✅ E2E integration tests completed!")
@@ -257,7 +257,7 @@ mod integration;
 
     if result.returncode != 0:
         log_and_echo("❌ Verifier service test failed!")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("✅ All E2E tests completed!")
@@ -270,7 +270,7 @@ mod integration;
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to stop Docker chains")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("✨ E2E test runner completed!")

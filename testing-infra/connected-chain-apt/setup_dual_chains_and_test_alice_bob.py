@@ -11,6 +11,7 @@ Python equivalent of setup-dual-chains-and-test-alice-bob.sh
 """
 
 import sys
+import os
 import time
 import subprocess
 from pathlib import Path
@@ -82,7 +83,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup dual chains")
-        sys.exit(1)
+        os._exit(1)
 
     # Wait for services to be fully ready
     log("⏳ Waiting for services to be fully ready...")
@@ -92,14 +93,14 @@ def main():
     log("🔍 Verifying Chain 1 is running...")
     if not verify_chain_running(8080, "Chain 1"):
         log_and_echo("❌ Error: Chain 1 failed to start on port 8080")
-        sys.exit(1)
+        os._exit(1)
     log("✅ Chain 1 is running")
 
     # Verify Chain 2 is running
     log("🔍 Verifying Chain 2 is running...")
     if not verify_chain_running(8082, "Chain 2"):
         log_and_echo("❌ Error: Chain 2 failed to start on port 8082")
-        sys.exit(1)
+        os._exit(1)
     log("✅ Chain 2 is running")
 
     # Verify faucets are running
@@ -108,13 +109,13 @@ def main():
         log("✅ Chain 1 faucet is running")
     else:
         log_and_echo("❌ Error: Chain 1 faucet failed to start on port 8081")
-        sys.exit(1)
+        os._exit(1)
 
     if verify_faucet_running(8083, "Chain 2"):
         log("✅ Chain 2 faucet is running")
     else:
         log_and_echo("❌ Error: Chain 2 faucet failed to start on port 8083")
-        sys.exit(1)
+        os._exit(1)
 
     log_and_echo("✅ Docker chains setup")
 
@@ -175,7 +176,7 @@ def main():
         log_and_echo("❌ Failed to create Alice-chain1 account on Chain 1")
         if result.stderr:
             log_and_echo(f"Error: {result.stderr}")
-        sys.exit(1)
+        os._exit(1)
 
     log("Creating bob-chain1 account for Chain 1...")
     result = subprocess.run(
@@ -199,7 +200,7 @@ def main():
         log_and_echo("❌ Failed to create Bob-chain1 account on Chain 1")
         if result.stderr:
             log_and_echo(f"Error: {result.stderr}")
-        sys.exit(1)
+        os._exit(1)
 
     # Create test accounts for Chain 2
     log("")
@@ -228,7 +229,7 @@ def main():
         log_and_echo("❌ Failed to create Alice-chain2 account on Chain 2")
         if result.stderr:
             log_and_echo(f"Error: {result.stderr}")
-        sys.exit(1)
+        os._exit(1)
 
     log("Creating bob-chain2 account for Chain 2...")
     result = subprocess.run(
@@ -253,7 +254,7 @@ def main():
         log_and_echo("❌ Failed to create Bob-chain2 account on Chain 2")
         if result.stderr:
             log_and_echo(f"Error: {result.stderr}")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("% - - - - - - - - - - - FUNDING - - - - - - - - - - - -")

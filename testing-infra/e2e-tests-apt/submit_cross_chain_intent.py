@@ -130,7 +130,7 @@ def main():
 
         if result.returncode != 0:
             log_and_echo("❌ Failed to setup chains and deploy contracts")
-            sys.exit(1)
+            os._exit(1)
 
         log("")
         log("✅ Chains setup and contracts deployed successfully!")
@@ -145,7 +145,7 @@ def main():
     result = run_command("aptos config show-profiles", check=False)
     if result.returncode != 0:
         log_and_echo("❌ ERROR: Could not read aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     try:
         data = json.loads(result.stdout)
@@ -183,7 +183,7 @@ def main():
         alice_chain2_address = data.get("Result", {}).get("alice-chain2", {}).get("account", "")
     except json.JSONDecodeError:
         log_and_echo("❌ ERROR: Could not parse aptos config")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("📋 Chain Information:")
@@ -199,7 +199,7 @@ def main():
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
         log_and_echo("   Tests require trusted-verifier/config/verifier_testing.toml to exist")
-        sys.exit(1)
+        os._exit(1)
 
     # Read verifier public key from config
     with open(verifier_testing_config, 'r') as f:
@@ -210,7 +210,7 @@ def main():
         log_and_echo("❌ ERROR: Could not find public_key in verifier_testing.toml")
         log_and_echo("   The verifier public key is required for escrow creation.")
         log_and_echo("   Please ensure verifier_testing.toml has a valid public_key field.")
-        sys.exit(1)
+        os._exit(1)
 
     verifier_public_key_b64 = match.group(1)
 
@@ -225,7 +225,7 @@ def main():
         log_and_echo("   Expected: base64-encoded 32-byte Ed25519 public key")
         log_and_echo(f"   Got: {verifier_public_key_b64}")
         log_and_echo("   Please ensure the public_key in verifier_testing.toml is valid base64 and decodes to 32 bytes (64 hex chars).")
-        sys.exit(1)
+        os._exit(1)
 
     oracle_public_key = f"0x{oracle_public_key_hex}"
     log("   ✅ Loaded verifier public key from config (32 bytes)")
@@ -265,7 +265,7 @@ def main():
 
     if not apt_metadata_chain1:
         log_and_echo("     ❌ Failed to extract APT metadata from Chain 1 transaction")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"     ✅ Got APT metadata on Chain 1: {apt_metadata_chain1}")
     source_fa_metadata_chain1 = apt_metadata_chain1
@@ -277,7 +277,7 @@ def main():
 
     if not apt_metadata_chain2:
         log_and_echo("     ❌ Failed to extract APT metadata from Chain 2 transaction")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"     ✅ Got APT metadata on Chain 2: {apt_metadata_chain2}")
     source_fa_metadata_chain2 = apt_metadata_chain2
@@ -304,7 +304,7 @@ def main():
     if result.returncode != 0:
         log_and_echo("     ❌ Intent creation failed on Chain 1!")
         log_and_echo(f"   See log file for details: {LOG_FILE}")
-        sys.exit(1)
+        os._exit(1)
 
     log("     ✅ Intent created on Chain 1!")
 
@@ -333,13 +333,13 @@ def main():
                 log_and_echo("✅ Intent created")
             else:
                 log_and_echo("     ❌ ERROR: Could not verify hub intent address")
-                sys.exit(1)
+                os._exit(1)
         else:
             log_and_echo("     ❌ ERROR: Could not query transactions")
-            sys.exit(1)
+            os._exit(1)
     except Exception as e:
         log_and_echo(f"     ❌ ERROR: Failed to verify intent: {e}")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("📝 STEP 2: [CONNECTED CHAIN] Alice creates escrow intent with locked tokens")
@@ -369,7 +369,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("     ❌ Escrow intent creation failed!")
-        sys.exit(1)
+        os._exit(1)
 
     log("     ✅ Escrow intent created on Chain 2!")
 
@@ -416,7 +416,7 @@ def main():
                     log_and_echo("     ❌ ERROR: Intent IDs don't match!")
                     log_and_echo(f"        Expected: {intent_id}")
                     log_and_echo(f"        Got: {escrow_intent_id}")
-                    sys.exit(1)
+                    os._exit(1)
 
                 # Verify locked amount
                 if locked_amount == "100000000":
@@ -427,13 +427,13 @@ def main():
                 log_and_echo("✅ Escrow created")
             else:
                 log_and_echo("     ❌ ERROR: Could not verify escrow from events")
-                sys.exit(1)
+                os._exit(1)
         else:
             log_and_echo("     ❌ ERROR: Could not query transactions")
-            sys.exit(1)
+            os._exit(1)
     except Exception as e:
         log_and_echo(f"     ❌ ERROR: Failed to verify escrow: {e}")
-        sys.exit(1)
+        os._exit(1)
 
     log("")
     log("📝 STEP 3: [HUB CHAIN] Bob fulfills intent on hub chain")
@@ -446,7 +446,7 @@ def main():
     # Use the intent object address from Step 1
     if not hub_intent_address or hub_intent_address == "null":
         log_and_echo("     ⚠️  Could not get intent object address, skipping fulfillment")
-        sys.exit(1)
+        os._exit(1)
 
     log(f"   - Fulfilling intent at: {hub_intent_address}")
 
@@ -466,7 +466,7 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("     ❌ Intent fulfillment failed!")
-        sys.exit(1)
+        os._exit(1)
 
     log("     ✅ Bob successfully fulfilled the intent!")
     log_and_echo("✅ Intent fulfilled")

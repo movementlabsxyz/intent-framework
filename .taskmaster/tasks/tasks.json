@@ -241,7 +241,7 @@
         "id": "5",
         "title": "Phase 5: Test Runners & Critical Scripts (Highest Risk)",
         "description": "Convert complex orchestration scripts that call multiple other scripts",
-        "status": "pending",
+        "status": "done",
         "priority": "high",
         "dependencies": [
           "4"
@@ -253,7 +253,7 @@
             "id": 1,
             "title": "Convert run-tests.sh (APT) to Python (110 lines)",
             "description": "Create testing-infra/e2e-tests-apt/run_tests.py",
-            "status": "pending",
+            "status": "done",
             "priority": "high",
             "dependencies": [
               "4"
@@ -261,13 +261,14 @@
             "details": "Convert run-tests.sh (110 lines - APT) to Python.\n\nFeatures:\n- Orchestrates full E2E test flow\n- Calls setup, deploy, and test scripts\n- Updates verifier configs\n- Runs Rust integration tests\n- Cleanup",
             "testStrategy": "1. Run run_tests.py\n2. Verify all E2E tests pass\n3. Check verifier config updated correctly\n4. Verify cleanup completes\n5. Run multiple times for reliability",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T14:42:26.947Z"
           },
           {
             "id": 2,
             "title": "Convert run-tests.sh (EVM) to Python (254 lines)",
             "description": "Create testing-infra/e2e-tests-evm/run_tests.py",
-            "status": "pending",
+            "status": "done",
             "priority": "high",
             "dependencies": [
               "5.1"
@@ -275,13 +276,14 @@
             "details": "Convert run-tests.sh (254 lines - EVM) to Python.\n\nFeatures:\n- EVM E2E test orchestration\n- Multiple script coordination\n- Contract deployment verification\n- Test execution\n- Cleanup",
             "testStrategy": "1. Run run_tests.py\n2. Verify all EVM E2E tests pass\n3. Check contracts deployed correctly\n4. Verify cleanup completes\n5. Run multiple times for reliability",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T14:44:07.597Z"
           },
           {
             "id": 3,
             "title": "Convert submit-cross-chain-intent.sh to Python (367 lines)",
             "description": "Create testing-infra/e2e-tests-apt/submit_cross_chain_intent.py",
-            "status": "pending",
+            "status": "done",
             "priority": "high",
             "dependencies": [
               "5.2"
@@ -289,13 +291,14 @@
             "details": "Convert submit-cross-chain-intent.sh (367 lines) to Python.\n\nFeatures:\n- Cross-chain intent submission\n- Multi-chain coordination\n- Event monitoring\n- State verification\n- Complex error handling",
             "testStrategy": "1. Setup dual chains\n2. Run submit_cross_chain_intent.py\n3. Verify intent submitted on chain 1\n4. Check intent received on chain 2\n5. Verify state transitions correct\n6. Check events emitted properly",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T14:46:06.616Z"
           },
           {
             "id": 4,
             "title": "Convert submit-cross-chain-intent-evm.sh to Python (341 lines)",
             "description": "Create testing-infra/e2e-tests-evm/submit_cross_chain_intent_evm.py",
-            "status": "pending",
+            "status": "done",
             "priority": "high",
             "dependencies": [
               "5.3"
@@ -303,13 +306,14 @@
             "details": "Convert submit-cross-chain-intent-evm.sh (341 lines) to Python.\n\nFeatures:\n- EVM cross-chain intent submission\n- Event monitoring\n- Web3 interactions\n- State verification",
             "testStrategy": "1. Setup EVM and APT chains\n2. Run submit_cross_chain_intent_evm.py\n3. Verify intent submitted on EVM\n4. Check intent received on APT chain\n5. Verify cross-chain state consistency",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T14:47:48.982Z"
           },
           {
             "id": 5,
             "title": "Convert run-cross-chain-verifier.sh to Python (507 lines)",
             "description": "Create testing-infra/e2e-tests-apt/run_cross_chain_verifier.py",
-            "status": "pending",
+            "status": "done",
             "priority": "high",
             "dependencies": [
               "5.4"
@@ -317,9 +321,11 @@
             "details": "Convert run-cross-chain-verifier.sh (507 lines) to Python.\n\nThis is the most complex script with extensive logic. Consider breaking into smaller functions/modules.\n\nFeatures:\n- Full verifier flow orchestration\n- Multi-chain coordination\n- Event monitoring\n- State verification\n- Complex error handling",
             "testStrategy": "1. Setup all chains\n2. Run run_cross_chain_verifier.py\n3. Verify verifier processes intents correctly\n4. Check all state transitions\n5. Verify cross-chain consistency\n6. Run complete E2E flow multiple times",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T14:50:03.582Z"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-05T14:50:03.582Z"
       },
       {
         "id": "6",
@@ -380,9 +386,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-05T10:39:06.044Z",
+      "lastModified": "2025-11-05T14:50:03.586Z",
       "taskCount": 6,
-      "completedCount": 4,
+      "completedCount": 5,
       "tags": [
         "master"
       ]

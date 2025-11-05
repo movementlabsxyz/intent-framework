@@ -151,7 +151,7 @@
         "id": "4",
         "title": "Phase 4: Complex Setup & Orchestration (Higher Risk)",
         "description": "Convert scripts that call other scripts or have complex logic",
-        "status": "pending",
+        "status": "done",
         "priority": "medium",
         "dependencies": [
           "3"
@@ -163,7 +163,7 @@
             "id": 1,
             "title": "Convert setup-and-test-alice-bob.sh to Python (177 lines)",
             "description": "Create testing-infra/connected-chain-evm/setup_and_test_alice_bob.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "3"
@@ -171,13 +171,14 @@
             "details": "Convert setup-and-test-alice-bob.sh (177 lines) to Python.\n\nFeatures:\n- Orchestrates setup and testing\n- Alice/Bob account funding\n- Balance verification\n- Transaction testing",
             "testStrategy": "1. Run setup_and_test_alice_bob.py\n2. Verify Alice and Bob accounts funded\n3. Check balance transfers work\n4. Verify final balances are correct",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:34:45.895Z"
           },
           {
             "id": 2,
             "title": "Convert setup-and-deploy.sh to Python (112 lines)",
             "description": "Create testing-infra/e2e-tests-apt/setup_and_deploy.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "4.1"
@@ -185,13 +186,14 @@
             "details": "Convert setup-and-deploy.sh (112 lines) to Python.\n\nFeatures:\n- Chain setup\n- Contract deployment\n- Profile initialization\n- Verification",
             "testStrategy": "1. Run setup_and_deploy.py\n2. Verify chains running\n3. Check contracts deployed\n4. Verify profiles exist with correct addresses",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:35:39.991Z"
           },
           {
             "id": 3,
             "title": "Convert setup-and-deploy-evm.sh to Python (198 lines)",
             "description": "Create testing-infra/e2e-tests-evm/setup_and_deploy_evm.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "4.2"
@@ -199,13 +201,14 @@
             "details": "Convert setup-and-deploy-evm.sh (198 lines) to Python.\n\nFeatures:\n- EVM chain setup\n- Contract deployment\n- Account initialization\n- Verification",
             "testStrategy": "1. Run setup_and_deploy_evm.py\n2. Verify EVM chain running\n3. Check all contracts deployed\n4. Verify accounts have correct balances",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:36:42.723Z"
           },
           {
             "id": 4,
             "title": "Convert setup-dual-chains-and-test-alice-bob.sh to Python (202 lines)",
             "description": "Create testing-infra/connected-chain-apt/setup_dual_chains_and_test_alice_bob.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "4.3"
@@ -213,13 +216,14 @@
             "details": "Convert setup-dual-chains-and-test-alice-bob.sh (202 lines) to Python.\n\nFeatures:\n- Dual chain setup\n- Alice/Bob testing on both chains\n- Cross-chain balance verification\n- Integration testing",
             "testStrategy": "1. Run setup_dual_chains_and_test_alice_bob.py\n2. Verify both chains running\n3. Check Alice/Bob accounts on both chains\n4. Verify cross-chain transfers work\n5. Check final balances correct",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:37:58.223Z"
           },
           {
             "id": 5,
             "title": "Convert release-evm-escrow.sh to Python (214 lines)",
             "description": "Create testing-infra/e2e-tests-evm/release_evm_escrow.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "4.4"
@@ -227,9 +231,11 @@
             "details": "Convert release-evm-escrow.sh (214 lines) to Python.\n\nFeatures:\n- Escrow release logic\n- Event monitoring\n- Balance verification\n- State transitions",
             "testStrategy": "1. Setup escrow scenario\n2. Run release_evm_escrow.py\n3. Verify escrow released\n4. Check balances updated correctly\n5. Verify events emitted",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:39:06.041Z"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-05T10:39:06.041Z"
       },
       {
         "id": "5",
@@ -374,9 +380,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-05T10:23:04.357Z",
+      "lastModified": "2025-11-05T10:39:06.044Z",
       "taskCount": 6,
-      "completedCount": 3,
+      "completedCount": 4,
       "tags": [
         "master"
       ]

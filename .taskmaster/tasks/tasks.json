@@ -46,7 +46,7 @@
         "id": "2",
         "title": "Phase 2: Teardown Scripts (Low Risk)",
         "description": "Convert smallest, safest scripts - pure cleanup operations",
-        "status": "in-progress",
+        "status": "done",
         "priority": "high",
         "dependencies": [
           "1"
@@ -73,7 +73,7 @@
             "id": 2,
             "title": "Convert stop-evm-chain.sh to Python (62 lines)",
             "description": "Create testing-infra/connected-chain-evm/stop_evm_chain.py",
-            "status": "pending",
+            "status": "done",
             "priority": "high",
             "dependencies": [
               "2.1"
@@ -81,10 +81,11 @@
             "details": "Convert stop-evm-chain.sh (62 lines) to Python.\n\nFeatures:\n- Stop Hardhat node\n- Docker cleanup for EVM chain\n- Logging via common.py",
             "testStrategy": "1. Set up EVM chain using shell script\n2. Run Python stop_evm_chain.py\n3. Verify EVM chain stopped\n4. Verify all Docker containers cleaned up",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:17:07.102Z"
           }
         ],
-        "updatedAt": "2025-11-05T10:13:02.222Z"
+        "updatedAt": "2025-11-05T10:17:07.102Z"
       },
       {
         "id": "3",
@@ -369,9 +370,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-05T10:13:02.227Z",
+      "lastModified": "2025-11-05T10:17:07.105Z",
       "taskCount": 6,
-      "completedCount": 1,
+      "completedCount": 2,
       "tags": [
         "master"
       ]

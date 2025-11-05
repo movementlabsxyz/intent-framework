@@ -25,7 +25,7 @@ import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, get_aptos_address, display_balances,
-    LOG_FILE
+    LOG_FILE, stop_evm_chain_if_running, stop_aptos_chains_if_running
 )
 from config import TestConfig, setup_config_file
 
@@ -194,31 +194,21 @@ verifier_address = "{verifier_address}"
 
 def main():
     """Run mixed-chain E2E integration tests."""
-    # Setup project root and logging
+    # Setup project root first (needed for cleanup)
     setup_project_root(Path(__file__))
+    
+    # Cleanup any existing chains and processes - before logging setup
+    # The stop scripts will output their own messages
+    stop_evm_chain_if_running()
+    stop_aptos_chains_if_running()
+    
+    # Now setup logging
     log_dir, log_file = setup_logging("run-tests-evm")
 
     log_and_echo("🧪 MIXED-CHAIN E2E Integration Tests Runner")
     log_and_echo("==========================================")
     log_and_echo(f"📝 All output logged to: {log_file}")
     log_and_echo("")
-
-    log_and_echo("🧹 Cleaning up any existing chains and processes...")
-    log_and_echo("==================================================")
-
-    # Stop EVM chain
-    log_and_echo("   - Stopping EVM chain...")
-    stop_evm_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
-    result = run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
-    if result.returncode != 0:
-        log_and_echo("   ℹ️  No EVM chain running")
-
-    # Stop Aptos chains
-    log_and_echo("   - Stopping Aptos chains...")
-    stop_apt_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "stop_dual_chains.py"
-    result = run_command(f"python3 -u {stop_apt_script}", check=False, capture_output=False)
-    if result.returncode != 0:
-        log_and_echo("   ℹ️  No Aptos chains running")
 
     # Stop any existing verifier processes
     log("   - Stopping any existing verifier processes...")

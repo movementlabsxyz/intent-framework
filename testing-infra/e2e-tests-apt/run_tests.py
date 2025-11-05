@@ -19,7 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, get_aptos_address, LOG_FILE
+    run_command, get_aptos_address, LOG_FILE, stop_evm_chain_if_running,
+    stop_aptos_chains_if_running
 )
 from config import TestConfig, setup_config_file
 
@@ -75,21 +76,20 @@ def update_toml_section(config_content: str, start_section: str, end_section: st
 
 def main():
     """Run E2E integration tests."""
-    # Setup project root and logging
+    # Setup project root first (needed for cleanup)
     setup_project_root(Path(__file__))
+    
+    # Stop any existing chains (to ensure clean state) - before logging setup
+    # The stop scripts will output their own messages
+    stop_evm_chain_if_running()
+    stop_aptos_chains_if_running()
+    
+    # Now setup logging
     log_dir, log_file = setup_logging("run-tests")
 
     log("🧪 E2E Integration Tests Runner")
     log("================================")
     log_and_echo(f"📝 All output logged to: {log_file}")
-
-    # Stop EVM chain if running (to avoid conflicts)
-    log("")
-    log("🧹 Stopping EVM chain if running...")
-    stop_evm_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
-    result = run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
-    if result.returncode != 0:
-        log("   ℹ️  No EVM chain running")
 
     log("")
     log("🚀 Step 0: Setting up chains, deploying contracts, and submitting intents...")

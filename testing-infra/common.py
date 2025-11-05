@@ -373,6 +373,50 @@ def fund_and_verify_aptos_account(
     return None
 
 
+def stop_evm_chain_if_running() -> bool:
+    """
+    Stop EVM chain if running (non-fatal if not running).
+    
+    Returns:
+        True if EVM chain was stopped (or wasn't running), False on error
+    """
+    if PROJECT_ROOT is None:
+        setup_project_root()
+    
+    log("🧹 Stopping EVM chain if running (to avoid conflicts)...")
+    
+    stop_evm_script = PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
+    result = run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
+    
+    if result.returncode != 0:
+        log("   ℹ️  No EVM chain running")
+        return True  # Not running is not an error
+    
+    return True
+
+
+def stop_aptos_chains_if_running() -> bool:
+    """
+    Stop Aptos chains if running (non-fatal if not running).
+    
+    Returns:
+        True if Aptos chains were stopped (or weren't running), False on error
+    """
+    if PROJECT_ROOT is None:
+        setup_project_root()
+    
+    log("🧹 Stopping Aptos chains if running...")
+    
+    stop_apt_script = PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "stop_dual_chains.py"
+    result = run_command(f"python3 -u {stop_apt_script}", check=False, capture_output=False)
+    
+    if result.returncode != 0:
+        log("   ℹ️  No Aptos chains running")
+        return True  # Not running is not an error
+    
+    return True
+
+
 if __name__ == "__main__":
     # Example usage / testing
     print("Testing common.py utilities...")

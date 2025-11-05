@@ -147,11 +147,12 @@ def check_and_release_escrows(released_escrows: set, chain2_deploy_address: str)
                     log(f"   ✅ Found correct escrow object address: {actual_escrow_id} (was: {escrow_id})")
                     escrow_id = actual_escrow_id
                 else:
-                    log(f"   ❌ ERROR: Could not find escrow object address for intent_id: {intent_id}")
-                    log("   ❌ This indicates no escrow event was found on the connected chain (Chain 2)")
-                    log(f"   ❌ Expected escrow event with intent_id: {intent_id}")
-                    log("   ❌ Cannot continue without valid escrow object address")
-                    sys.exit(1)
+                    log_and_echo(f"   ❌ ERROR: Could not find escrow object address for intent_id: {intent_id}")
+                    log_and_echo("   ❌ This indicates no escrow event was found on the connected chain (Chain 2)")
+                    log_and_echo(f"   ❌ Expected escrow event with intent_id: {intent_id}")
+                    log_and_echo("   ❌ Cannot continue without valid escrow object address")
+                    # Exit immediately - this is a fatal error
+                    os._exit(1)
 
             # Skip if already released
             if escrow_id in released_escrows:

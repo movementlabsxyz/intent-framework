@@ -91,7 +91,7 @@
         "id": "3",
         "title": "Phase 3: Simple Setup Scripts (Medium Risk)",
         "description": "Convert straightforward setup scripts without complex orchestration",
-        "status": "pending",
+        "status": "done",
         "priority": "medium",
         "dependencies": [
           "2"
@@ -103,7 +103,7 @@
             "id": 1,
             "title": "Convert deploy-vault.sh to Python (83 lines)",
             "description": "Create testing-infra/e2e-tests-evm/deploy_vault.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "2"
@@ -111,13 +111,14 @@
             "details": "Convert deploy-vault.sh (83 lines) to Python.\n\nFeatures:\n- Deploy vault contract\n- Verify deployment\n- Logging via common.py",
             "testStrategy": "1. Setup EVM chain\n2. Run deploy_vault.py\n3. Verify vault deployed successfully\n4. Check contract address is valid",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:20:17.841Z"
           },
           {
             "id": 2,
             "title": "Convert setup-dual-chains.sh to Python (99 lines)",
             "description": "Create testing-infra/connected-chain-apt/setup_dual_chains.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "3.1"
@@ -125,13 +126,14 @@
             "details": "Convert setup-dual-chains.sh (99 lines) to Python.\n\nFeatures:\n- Docker compose setup for both chains\n- Health checks\n- Profile creation\n- Logging via common.py",
             "testStrategy": "1. Run setup_dual_chains.py\n2. Check both chains are healthy (curl endpoints)\n3. Verify profiles created\n4. Run stop_dual_chains.py for cleanup",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:22:07.434Z"
           },
           {
             "id": 3,
             "title": "Convert setup-evm-chain.sh to Python (151 lines)",
             "description": "Create testing-infra/connected-chain-evm/setup_evm_chain.py",
-            "status": "pending",
+            "status": "done",
             "priority": "medium",
             "dependencies": [
               "3.2"
@@ -139,9 +141,11 @@
             "details": "Convert setup-evm-chain.sh (151 lines) to Python.\n\nFeatures:\n- Start Hardhat node\n- Docker setup for EVM chain\n- RPC health checks\n- Logging via common.py",
             "testStrategy": "1. Run setup_evm_chain.py\n2. Verify Hardhat RPC responding (curl http://127.0.0.1:8545)\n3. Check eth_blockNumber works\n4. Run stop_evm_chain.py for cleanup",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:23:04.354Z"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-05T10:23:04.354Z"
       },
       {
         "id": "4",
@@ -370,9 +374,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-05T10:17:07.105Z",
+      "lastModified": "2025-11-05T10:23:04.357Z",
       "taskCount": 6,
-      "completedCount": 2,
+      "completedCount": 3,
       "tags": [
         "master"
       ]

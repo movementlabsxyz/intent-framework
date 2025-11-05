@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""
+Deploy IntentVault contract to EVM chain.
+
+This script deploys the IntentVault smart contract to a running Hardhat node.
+Python equivalent of deploy-vault.sh
+"""
+
+import sys
+import re
+import os
+from pathlib import Path
+
+# Add parent directory to path to import common
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from common import (
+    setup_project_root, setup_logging, log, log_and_echo,
+    run_command, PROJECT_ROOT, LOG_FILE
+)
+
+
+def is_hardhat_running() -> bool:
+    """
+    Check if Hardhat node is running on port 8545.
+
+    Returns:
+        True if Hardhat is running, False otherwise
+    """
+    try:
+        import requests
+        response = requests.post(
+            "http://127.0.0.1:8545",
+            json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
+            timeout=2
+        )
+        return response.status_code == 200
+    except:
+        return False
+
+
+def get_verifier_eth_address() -> str:
+    """
+    Get verifier Ethereum address from config.
+
+    Returns:
+        Ethereum address (0x...) or empty string if not found
+    """
+    log("   Computing verifier Ethereum address from config...")
+
+    verifier_dir = PROJECT_ROOT / "trusted-verifier"
+    config_path = PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+
+    env = os.environ.copy()
+    env["VERIFIER_CONFIG_PATH"] = str(config_path)
+
+    result = run_command(
+        f"cd {verifier_dir} && cargo run --bin get_verifier_eth_address 2>/dev/null",
+        check=False
+    )
+
+    if result.returncode == 0:
+        # Extract Ethereum address (0x followed by 40 hex chars)
+        for line in result.stdout.strip().split('\n'):
+            match = re.match(r'^(0x[a-fA-F0-9]{40})$', line.strip())
+            if match:
+                return match.group(1)
+
+    return ""
+
+
+def deploy_vault_contract(verifier_address: str = "") -> str:
+    """
+    Deploy IntentVault contract.
+
+    Args:
+        verifier_address: Optional verifier Ethereum address
+
+    Returns:
+        Deployed contract address
+
+    Raises:
+        SystemExit: If deployment fails
+    """
+    log("")
+    log("📤 Deploying IntentVault...")
+
+    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+
+    if verifier_address:
+        # Use computed verifier address
+        env_cmd = f"VERIFIER_ADDRESS='{verifier_address}' "
+    else:
+        # Use Hardhat account 1 (fallback)
+        env_cmd = ""
+
+    # Run deployment in nix develop
+    cmd = (
+        f"cd {evm_dir} && "
+        f"nix develop {PROJECT_ROOT} -c bash -c \""
+        f"{env_cmd}npx hardhat run scripts/deploy.js --network localhost"
+        f"\""
+    )
+
+    result = run_command(cmd, check=False)
+    deploy_output = result.stdout + result.stderr
+
+    # Log deployment output
+    if LOG_FILE:
+        with open(LOG_FILE, 'a') as f:
+            f.write(deploy_output + "\n")
+
+    # Extract contract address from output
+    # Try pattern: "IntentVault deployed to 0x..."
+    match = re.search(r"IntentVault deployed to\s+(0x[a-fA-F0-9]{40})", deploy_output, re.IGNORECASE)
+    if match:
+        return match.group(1)
+
+    # Try alternative pattern: any Ethereum address
+    match = re.search(r"(0x[a-fA-F0-9]{40})", deploy_output)
+    if match:
+        return match.group(1)
+
+    # Deployment failed
+    log_and_echo("❌ Failed to extract contract address from deployment")
+    log_and_echo("   Deployment output:")
+    print(deploy_output)
+    sys.exit(1)
+
+
+def main():
+    """Deploy IntentVault contract."""
+    # Setup project root and logging
+    setup_project_root(Path(__file__))
+    log_dir, log_file = setup_logging("deploy-vault")
+
+    log("📦 Deploying IntentVault Contract")
+    log("==================================")
+    log_and_echo(f"📝 All output logged to: {log_file}")
+
+    # Check if Hardhat node is running
+    if not is_hardhat_running():
+        log_and_echo("❌ Hardhat node is not running. Please run testing-infra/connected-chain-evm/setup-evm-chain.sh first")
+        sys.exit(1)
+
+    log("")
+    log("🔑 Configuration:")
+
+    # Get verifier Ethereum address
+    verifier_eth_address = get_verifier_eth_address()
+
+    if not verifier_eth_address:
+        log_and_echo("   ⚠️  Warning: Could not compute verifier Ethereum address from config")
+        log_and_echo("   Falling back to Hardhat account 1 (Bob)")
+    else:
+        log(f"   ✅ Verifier Ethereum address: {verifier_eth_address}")
+
+    log("   RPC URL: http://127.0.0.1:8545")
+
+    # Deploy contract
+    vault_address = deploy_vault_contract(verifier_eth_address)
+
+    log("")
+    log("✅ IntentVault deployed successfully!")
+    log(f"   Contract Address: {vault_address}")
+    log("")
+    log("📋 Contract Details:")
+    log("   Network:      localhost")
+    log("   RPC URL:      http://127.0.0.1:8545")
+    log("   Chain ID:     31337 (Hardhat default)")
+    log("")
+    log("🔍 Verify deployment:")
+    log(f"   npx hardhat verify --network localhost {vault_address} <verifier_address>")
+
+
+if __name__ == "__main__":
+    main()

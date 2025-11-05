@@ -42,8 +42,8 @@ def get_bob_balance() -> tuple[str, str]:
     evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
 
     result = run_command(
-        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
-        f"'ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost' 2>&1",
+        f"nix develop {common.PROJECT_ROOT} -c bash -c "
+        f"\"cd '{evm_dir}' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost\" 2>&1",
         check=False
     )
 
@@ -125,8 +125,8 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
 
             log("   - Calling IntentVault.claim() on EVM...")
             result = run_command(
-                f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
-                f"\"VAULT_ADDRESS='{vault_address}' INTENT_ID_EVM='{intent_id_evm}' "
+                f"nix develop {common.PROJECT_ROOT} -c bash -c "
+                f"\"cd '{evm_dir}' && VAULT_ADDRESS='{vault_address}' INTENT_ID_EVM='{intent_id_evm}' "
                 f"SIGNATURE_HEX='{signature_hex}' npx hardhat run scripts/claim-escrow.js --network localhost\" 2>&1",
                 check=False
             )

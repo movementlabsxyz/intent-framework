@@ -84,3 +84,73 @@ class TestConfig:
         with open(path, 'rb') as f:
             return pickle.load(f)
 
+
+def get_config_path() -> Path:
+    """
+    Get the standard config file path.
+    
+    Returns:
+        Path to the test config file
+    """
+    # Import here to avoid circular dependency
+    from pathlib import Path
+    
+    # Try to get PROJECT_ROOT from common if available
+    try:
+        import common
+        if common.PROJECT_ROOT:
+            return common.PROJECT_ROOT / "tmp" / "test-config.pkl"
+    except (ImportError, AttributeError):
+        pass
+    
+    # Fallback: assume we're in testing-infra directory
+    # Go up to project root
+    current = Path(__file__).parent
+    if current.name == "testing-infra":
+        project_root = current.parent
+    else:
+        # Assume we're already at project root
+        project_root = current
+    
+    return project_root / "tmp" / "test-config.pkl"
+
+
+def cleanup_old_config(config_path: Path = None, log_fn=None) -> None:
+    """
+    Delete any existing config file to ensure a fresh start.
+    
+    Args:
+        config_path: Path to config file (defaults to standard location)
+        log_fn: Optional logging function to call with message
+    """
+    if config_path is None:
+        config_path = get_config_path()
+    
+    if config_path.exists():
+        if log_fn:
+            log_fn(f"   Deleting old config file: {config_path}")
+        config_path.unlink()
+
+
+def setup_config_file(config_path: Path = None, log_fn=None) -> Path:
+    """
+    Set up the config file for a fresh test run.
+    
+    This function:
+    1. Gets the standard config file path
+    2. Deletes any existing config file to ensure a fresh start
+    
+    Args:
+        config_path: Path to config file (defaults to standard location)
+        log_fn: Optional logging function to call with messages
+        
+    Returns:
+        Path to the config file
+    """
+    if config_path is None:
+        config_path = get_config_path()
+    
+    cleanup_old_config(config_path, log_fn)
+    
+    return config_path
+

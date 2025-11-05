@@ -30,6 +30,7 @@ from common import (
     run_command, get_aptos_address, display_balances,
     LOG_FILE
 )
+from config import TestConfig
 
 
 def get_apt_metadata_address(chain_address: str, alice_address: str, chain_port: int, profile: str) -> str:
@@ -76,20 +77,24 @@ def get_apt_metadata_address(chain_address: str, alice_address: str, chain_port:
 
 def main():
     """Submit cross-chain intents (Aptos chains)."""
-    # Validate parameter
-    if len(sys.argv) < 2 or sys.argv[1] not in ["0", "1"]:
-        print("❌ Error: Invalid parameter!")
-        print("")
-        print(f"Usage: {sys.argv[0]} <parameter>")
-        print("  Parameter 0: Use existing running networks (skip setup)")
-        print("  Parameter 1: Run full setup and deploy contracts")
-        print("")
-        print("Examples:")
-        print(f"  {sys.argv[0]} 0    # Use existing networks")
-        print(f"  {sys.argv[0]} 1    # Run full setup")
-        sys.exit(1)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Submit cross-chain intents (Aptos)")
+    parser.add_argument('setup_flag', choices=['0', '1'],
+                       help='0=skip setup (use existing), 1=run full setup')
+    parser.add_argument('--config-file', type=Path,
+                       help='Path to test config file (pickle format)')
+    args = parser.parse_args()
 
-    setup_chains = sys.argv[1] == "1"
+    setup_chains = args.setup_flag == "1"
+    
+    # Load config if provided, otherwise create new one
+    if args.config_file and args.config_file.exists():
+        config = TestConfig.load(args.config_file)
+        log(f"   Loaded config from: {args.config_file}")
+    else:
+        config = TestConfig()
+        config.setup_chains = setup_chains
 
     # Setup project root and logging
     setup_project_root(Path(__file__))
@@ -136,7 +141,7 @@ def main():
         log("   Use parameter '1' to run full setup: ./submit-cross-chain-intent.py 1")
         log("")
 
-    # Get addresses
+    # Get addresses from config or extract from aptos
     result = run_command("aptos config show-profiles", check=False)
     if result.returncode != 0:
         log_and_echo("❌ ERROR: Could not read aptos config")
@@ -144,10 +149,37 @@ def main():
 
     try:
         data = json.loads(result.stdout)
-        chain1_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
-        chain2_address = data.get("Result", {}).get("intent-account-chain2", {}).get("account", "")
-        alice_chain1_address = data.get("Result", {}).get("alice-chain1", {}).get("account", "")
-        bob_chain1_address = data.get("Result", {}).get("bob-chain1", {}).get("account", "")
+        
+        # Use config values if available, otherwise extract and update config
+        # If we just ran setup, config file was deleted, so we'll always extract fresh addresses
+        if config.chain1_address and not setup_chains:
+            chain1_address = config.chain1_address
+        else:
+            chain1_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
+            if chain1_address:
+                config.chain1_address = chain1_address
+        
+        if config.chain2_address and not setup_chains:
+            chain2_address = config.chain2_address
+        else:
+            chain2_address = data.get("Result", {}).get("intent-account-chain2", {}).get("account", "")
+            if chain2_address:
+                config.chain2_address = chain2_address
+        
+        if config.alice_chain1_address and not setup_chains:
+            alice_chain1_address = config.alice_chain1_address
+        else:
+            alice_chain1_address = data.get("Result", {}).get("alice-chain1", {}).get("account", "")
+            if alice_chain1_address:
+                config.alice_chain1_address = alice_chain1_address
+        
+        if config.bob_chain1_address and not setup_chains:
+            bob_chain1_address = config.bob_chain1_address
+        else:
+            bob_chain1_address = data.get("Result", {}).get("bob-chain1", {}).get("account", "")
+            if bob_chain1_address:
+                config.bob_chain1_address = bob_chain1_address
+        
         alice_chain2_address = data.get("Result", {}).get("alice-chain2", {}).get("account", "")
     except json.JSONDecodeError:
         log_and_echo("❌ ERROR: Could not parse aptos config")
@@ -204,6 +236,7 @@ def main():
 
     # Generate a random intent_id (32 bytes)
     intent_id = f"0x{secrets.token_hex(32)}"
+    config.intent_id = intent_id
 
     log("")
     log("🔑 Configuration:")
@@ -463,6 +496,11 @@ def main():
     log("   ./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh")
     log("")
     log("✨ Script completed - intents are submitted and waiting for verification!")
+    
+    # Save config if provided
+    if args.config_file:
+        config.save(args.config_file)
+        log(f"   Updated config saved to: {args.config_file}")
 
 
 if __name__ == "__main__":

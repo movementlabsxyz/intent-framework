@@ -29,6 +29,7 @@ from common import (
     run_command, get_aptos_address, display_balances,
     LOG_FILE
 )
+from config import TestConfig
 
 
 def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
@@ -273,24 +274,22 @@ def check_and_release_escrows(released_escrows: set, chain2_deploy_address: str)
 
 def main():
     """Run cross-chain verifier."""
-    # Validate parameter
-    if len(sys.argv) < 2 or sys.argv[1] not in ["0", "1"]:
-        log_and_echo("🔍 CROSS-CHAIN VERIFIER - USAGE")
-        log_and_echo("==============================================")
-        log_and_echo("")
-        log_and_echo(f"Usage: {sys.argv[0]} <parameter>")
-        log_and_echo("")
-        log_and_echo("Options:")
-        log_and_echo("  0: Run verifier only (use existing running networks)")
-        log_and_echo("  1: Run full setup + submit intents + verifier")
-        log_and_echo("")
-        log_and_echo("Examples:")
-        log_and_echo(f"  {sys.argv[0]} 0    # Run verifier on existing networks")
-        log_and_echo(f"  {sys.argv[0]} 1    # Setup, deploy, submit intents, then run verifier")
-        log_and_echo("")
-        sys.exit(1)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Run cross-chain verifier")
+    parser.add_argument('run_flag', choices=['0', '1'],
+                       help='0=verifier only, 1=full setup + submit + verifier')
+    parser.add_argument('--config-file', type=Path,
+                       help='Path to test config file (pickle format)')
+    args = parser.parse_args()
 
-    run_setup = sys.argv[1] == "1"
+    run_setup = args.run_flag == "1"
+    
+    # Load config if provided
+    config = None
+    if args.config_file and args.config_file.exists():
+        config = TestConfig.load(args.config_file)
+        log(f"   Loaded config from: {args.config_file}")
 
     # Setup project root and logging
     setup_project_root(Path(__file__))
@@ -346,12 +345,30 @@ def main():
 
     try:
         data = json.loads(result.stdout)
-        alice_chain1_address = data.get("Result", {}).get("alice-chain1", {}).get("account", "")
+        
+        # Use config values if available, otherwise extract from aptos
+        if config and config.chain1_address:
+            chain1_deploy_address = config.chain1_address
+        else:
+            chain1_deploy_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
+        
+        if config and config.chain2_address:
+            chain2_deploy_address = config.chain2_address
+        else:
+            chain2_deploy_address = data.get("Result", {}).get("intent-account-chain2", {}).get("account", "")
+        
+        if config and config.alice_chain1_address:
+            alice_chain1_address = config.alice_chain1_address
+        else:
+            alice_chain1_address = data.get("Result", {}).get("alice-chain1", {}).get("account", "")
+        
+        if config and config.bob_chain1_address:
+            bob_chain1_address = config.bob_chain1_address
+        else:
+            bob_chain1_address = data.get("Result", {}).get("bob-chain1", {}).get("account", "")
+        
         alice_chain2_address = data.get("Result", {}).get("alice-chain2", {}).get("account", "")
-        bob_chain1_address = data.get("Result", {}).get("bob-chain1", {}).get("account", "")
         bob_chain2_address = data.get("Result", {}).get("bob-chain2", {}).get("account", "")
-        chain1_deploy_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
-        chain2_deploy_address = data.get("Result", {}).get("intent-account-chain2", {}).get("account", "")
     except json.JSONDecodeError:
         log_and_echo("❌ ERROR: Could not parse aptos config")
         sys.exit(1)

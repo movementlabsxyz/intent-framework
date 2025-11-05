@@ -27,7 +27,7 @@ from common import (
     run_command, get_aptos_address, display_balances,
     LOG_FILE
 )
-from config import TestConfig
+from config import TestConfig, setup_config_file
 
 
 def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
@@ -230,6 +230,9 @@ def main():
     log_and_echo("🚀 Step 0: Setting up chains and deploying contracts...")
     log_and_echo("======================================================")
 
+    # Set up config file (get path and clean up any old config)
+    config_file = setup_config_file(None, log)
+
     # Setup EVM chain first
     log_and_echo("📦 Setting up EVM chain...")
     setup_evm_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "setup_and_deploy_evm.py"
@@ -323,8 +326,7 @@ def main():
     config.bob_chain1_address = get_aptos_address("bob-chain1")
     config.verifier_config_path = verifier_testing_config
 
-    # Save config to temp file
-    config_file = common.PROJECT_ROOT / "tmp" / "test-config.pkl"
+    # Save config to temp file (config_file already defined above)
     config.save(config_file)
     log(f"   Saved test config to: {config_file}")
 

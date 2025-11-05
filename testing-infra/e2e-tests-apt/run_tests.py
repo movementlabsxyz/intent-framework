@@ -21,6 +21,7 @@ from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, get_aptos_address, LOG_FILE
 )
+from config import TestConfig, setup_config_file
 
 
 def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
@@ -94,33 +95,36 @@ def main():
     log("🚀 Step 0: Setting up chains, deploying contracts, and submitting intents...")
     log("========================================================================")
 
+    # Set up config file (get path and clean up any old config)
+    config_file = setup_config_file(None, log)
+
     # Call submit-cross-chain-intent Python script
     submit_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "submit_cross_chain_intent.py"
-    result = run_command(f"python3 -u {submit_script} 1", check=False, capture_output=False)
+    result = run_command(f"python3 -u {submit_script} 1 --config-file {config_file}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup and deploy contracts")
         sys.exit(1)
 
     log("")
-    log("✅ Setup complete! Extracting module addresses...")
+    log("✅ Setup complete! Loading module addresses from config...")
 
-    # Extract deployed addresses from aptos profiles
-    result = run_command("aptos config show-profiles", check=False)
-    if result.returncode != 0:
-        log_and_echo("❌ ERROR: Could not read aptos config")
+    # Load config that was created/updated by submit script
+    if not config_file.exists():
+        log_and_echo("❌ ERROR: Config file not found after setup")
+        log_and_echo(f"   Expected: {config_file}")
+        log_and_echo("   The submit script should have created this file")
         sys.exit(1)
-
-    try:
-        data = json.loads(result.stdout)
-        chain1_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
-        chain2_address = data.get("Result", {}).get("intent-account-chain2", {}).get("account", "")
-    except json.JSONDecodeError:
-        log_and_echo("❌ ERROR: Could not parse aptos config")
-        sys.exit(1)
-
+    
+    config = TestConfig.load(config_file)
+    log(f"   Loaded config from: {config_file}")
+    
+    chain1_address = config.chain1_address
+    chain2_address = config.chain2_address
+    
     if not chain1_address or not chain2_address:
-        log_and_echo("❌ ERROR: Could not extract deployed module addresses")
+        log_and_echo("❌ ERROR: Config missing chain addresses")
+        log_and_echo("   The submit script should have populated these addresses")
         sys.exit(1)
 
     log(f"   Chain 1 deployer: {chain1_address}")
@@ -128,6 +132,10 @@ def main():
 
     # Use verifier_testing.toml for tests - required, panic if not found
     verifier_testing_config = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    
+    if not config.verifier_config_path:
+        config.verifier_config_path = verifier_testing_config
+        config.save(config_file)
 
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
@@ -166,9 +174,9 @@ def main():
         f'"0x{chain2_address}"'
     )
 
-    # Get Alice and Bob addresses and update known_accounts
-    alice_chain1 = get_aptos_address("alice-chain1") or ""
-    bob_chain1 = get_aptos_address("bob-chain1") or ""
+    # Get Alice and Bob addresses from config and update known_accounts
+    alice_chain1 = config.alice_chain1_address or get_aptos_address("alice-chain1") or ""
+    bob_chain1 = config.bob_chain1_address or get_aptos_address("bob-chain1") or ""
     alice_chain2 = get_aptos_address("alice-chain2") or ""
 
     if alice_chain1 and bob_chain1:
@@ -244,7 +252,8 @@ mod integration;
 
     # Call run-cross-chain-verifier Python script
     verifier_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "run_cross_chain_verifier.py"
-    result = run_command(f"python3 -u {verifier_script} 0", check=False, capture_output=False)
+    log_and_echo(f"   Passing config file to verifier script: {config_file}")
+    result = run_command(f"python3 -u {verifier_script} 0 --config-file {config_file}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Verifier service test failed!")

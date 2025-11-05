@@ -464,7 +464,32 @@ def main():
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to release EVM escrow")
-        log_and_echo("   Check release-evm-escrow logs for details")
+        log_and_echo("")
+        # Try to read the log file to show the error
+        log_dir = common.PROJECT_ROOT / "tmp" / "intent-framework-logs"
+        if log_dir.exists():
+            log_files = sorted(log_dir.glob("release-evm-escrow*.log"), reverse=True)
+            if log_files:
+                log_file = log_files[0]
+                log_and_echo(f"   Reading error from log: {log_file}")
+                try:
+                    with open(log_file, 'r') as f:
+                        lines = f.readlines()
+                        # Show last 20 lines that contain errors
+                        error_lines = []
+                        for line in reversed(lines[-50:]):  # Check last 50 lines
+                            if '❌' in line or 'ERROR' in line or 'error' in line.lower():
+                                error_lines.insert(0, line.strip())
+                                if len(error_lines) >= 10:
+                                    break
+                        if error_lines:
+                            log_and_echo("   Recent errors from log:")
+                            for line in error_lines:
+                                log_and_echo(f"   {line}")
+                except Exception as e:
+                    log_and_echo(f"   Could not read log file: {e}")
+        log_and_echo("")
+        log_and_echo("   Check release-evm-escrow logs for full details")
         sys.exit(1)
 
     log_and_echo("")

@@ -241,10 +241,15 @@ impl CryptoService {
     /// * `Err(anyhow::Error)` - Failed to create signature
     pub fn create_evm_approval_signature(&self, intent_id: &str, approval_value: u8) -> Result<Vec<u8>> {
         // Remove 0x prefix if present
-        let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
+        let mut intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id).to_string();
+        
+        // Pad with leading zero if odd length (hex strings must have even number of characters)
+        if intent_id_hex.len() % 2 != 0 {
+            intent_id_hex = format!("0{}", intent_id_hex);
+        }
         
         // Convert hex string to bytes (intent_id should be 32 bytes)
-        let intent_id_bytes = hex::decode(intent_id_hex)
+        let intent_id_bytes = hex::decode(&intent_id_hex)
             .map_err(|e| anyhow::anyhow!("Invalid intent_id hex: {}", e))?;
         
         // Pad intent_id to 32 bytes if needed (left-pad with zeros)

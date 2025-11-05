@@ -10,7 +10,13 @@ async function main() {
   }
 
   const signers = await hre.ethers.getSigners();
-  const vault = await hre.ethers.getContractAt("IntentVault", vaultAddress, signers[0]);
+  const maker = signers[0];
+  
+  // Use contract factory to get ABI, then create contract instance directly
+  // This avoids the name resolution issue with getContractAt on localhost network
+  const IntentVaultFactory = await hre.ethers.getContractFactory("IntentVault", maker);
+  const vault = IntentVaultFactory.attach(vaultAddress);
+  
   const intentId = BigInt(intentIdHex);
   
   // Use address(0) for ETH

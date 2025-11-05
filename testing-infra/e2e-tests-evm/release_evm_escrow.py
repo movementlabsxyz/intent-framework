@@ -189,9 +189,12 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
             log(f"   ✅ Bob received {balance_increase} wei (expected ~{expected_amount_wei} wei)")
             released_escrows.add(escrow_id)
 
+    except SystemExit:
+        # Re-raise SystemExit so it actually exits
+        raise
     except Exception as e:
         # Non-fatal error, continue polling
-        pass
+        log(f"   ⚠️  Error checking approvals: {e}")
 
     return released_escrows
 

@@ -29,6 +29,76 @@ async function main() {
   const approvalValue = 1;
   const signature = `0x${signatureHex}`;
   
+  // Validate signature format
+  if (signatureHex.length !== 130) {
+    throw new Error(`Invalid signature hex length: expected 130 chars (65 bytes), got ${signatureHex.length}`);
+  }
+  
+  // Verify signature is valid hex
+  if (!/^[0-9a-fA-F]+$/.test(signatureHex)) {
+    throw new Error(`Invalid signature hex format: contains non-hex characters`);
+  }
+  
+  // Check signature byte length (should be 65 bytes = 130 hex chars)
+  const signatureBytes = Buffer.from(signatureHex, 'hex');
+  if (signatureBytes.length !== 65) {
+    throw new Error(`Invalid signature byte length: expected 65 bytes, got ${signatureBytes.length}`);
+  }
+  
+  // Extract r, s, v from signature
+  const r = signatureBytes.slice(0, 32);
+  const s = signatureBytes.slice(32, 64);
+  const v = signatureBytes[64];
+  console.log("  Signature validation:");
+  console.log("    r (first 4 bytes):", r.slice(0, 4).toString('hex'));
+  console.log("    s (first 4 bytes):", s.slice(0, 4).toString('hex'));
+  console.log("    v:", v);
+  
+  // Validate v is 27 or 28
+  if (v !== 27 && v !== 28) {
+    throw new Error(`Invalid signature v value: expected 27 or 28, got ${v}`);
+  }
+  
+  // Verify signature matches the expected message format
+  // Message should be: keccak256(abi.encodePacked(intentId, approvalValue))
+  const { ethers } = hre;
+  
+  // Create the message hash (same as contract does)
+  const messageHash = ethers.keccak256(
+    ethers.solidityPacked(["uint256", "uint8"], [intentId, approvalValue])
+  );
+  
+  // Apply Ethereum signed message prefix (same as contract does)
+  const ethMessagePrefix = "\x19Ethereum Signed Message:\n32";
+  const prefixedMessage = ethers.concat([
+    ethers.toUtf8Bytes(ethMessagePrefix),
+    ethers.getBytes(messageHash)
+  ]);
+  const ethSignedMessageHash = ethers.keccak256(prefixedMessage);
+  
+  // Recover signer using ecrecover (same logic as contract)
+  let recoveredSigner;
+  try {
+    // Use ethers' recoverAddress which does ecrecover internally
+    recoveredSigner = ethers.recoverAddress(ethers.getBytes(ethSignedMessageHash), signature);
+  } catch (recoverError) {
+    console.error("Failed to recover signer from signature:", recoverError.message);
+    throw new Error(`Invalid signature: could not recover signer. ${recoverError.message}`);
+  }
+  
+  // Get verifier address from contract
+  const verifierAddress = await vault.verifier();
+  console.log("  Signature verification:");
+  console.log("    Message hash:", messageHash);
+  console.log("    ETH signed message hash:", ethSignedMessageHash);
+  console.log("    Recovered signer:", recoveredSigner);
+  console.log("    Contract verifier:", verifierAddress);
+  console.log("    Signatures match:", recoveredSigner.toLowerCase() === verifierAddress.toLowerCase());
+  
+  if (recoveredSigner.toLowerCase() !== verifierAddress.toLowerCase()) {
+    throw new Error(`Signature verification failed: recovered signer ${recoveredSigner} does not match verifier ${verifierAddress}`);
+  }
+  
   try {
     // Check vault state before claim
     let vaultBefore;

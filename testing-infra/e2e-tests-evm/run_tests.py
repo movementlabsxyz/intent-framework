@@ -27,7 +27,7 @@ from common import (
     run_command, get_aptos_address, display_balances,
     LOG_FILE, stop_evm_chain_if_running, stop_aptos_chains_if_running
 )
-from config import TestConfig, setup_config_file
+from config import TestConfig, setup_config_file, print_config_content
 
 
 def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
@@ -457,6 +457,15 @@ def main():
     if result.returncode != 0:
         log_and_echo("❌ Failed to release EVM escrow")
         log_and_echo("")
+        
+        # Print config content for debugging
+        if config_file.exists():
+            try:
+                config = TestConfig.load(config_file)
+                print_config_content(config, log_and_echo)
+            except Exception as e:
+                log_and_echo(f"   Could not load config for debugging: {e}")
+        
         # Try to read the log file to show the error
         log_dir = common.PROJECT_ROOT / "tmp" / "intent-framework-logs"
         if log_dir.exists():
@@ -505,13 +514,11 @@ def main():
     log_and_echo("🧹 Step 4: Cleaning up chains...")
     log_and_echo("================================")
 
-    result = run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
-    if result.returncode != 0:
+    if not stop_evm_chain_if_running():
         log_and_echo("❌ Failed to stop EVM chain")
         sys.exit(1)
 
-    result = run_command(f"python3 -u {stop_apt_script}", check=False, capture_output=False)
-    if result.returncode != 0:
+    if not stop_aptos_chains_if_running():
         log_and_echo("❌ Failed to stop Aptos chains")
         sys.exit(1)
 

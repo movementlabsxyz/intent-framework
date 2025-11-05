@@ -154,3 +154,32 @@ def setup_config_file(config_path: Path = None, log_fn=None) -> Path:
     
     return config_path
 
+
+def print_config_content(config: TestConfig, log_fn=None) -> None:
+    """
+    Print all config fields for debugging.
+    
+    Args:
+        config: TestConfig instance to print
+        log_fn: Optional logging function (defaults to print)
+    """
+    if log_fn is None:
+        log_fn = print
+    
+    log_fn("📋 Config file content:")
+    log_fn("   Chain addresses:")
+    log_fn(f"      chain1_address: {config.chain1_address}")
+    log_fn(f"      chain2_address: {config.chain2_address}")
+    log_fn("   Account addresses:")
+    log_fn(f"      alice_chain1_address: {config.alice_chain1_address}")
+    log_fn(f"      bob_chain1_address: {config.bob_chain1_address}")
+    log_fn("   EVM addresses:")
+    log_fn(f"      vault_address: {config.vault_address}")
+    log_fn(f"      verifier_address: {config.verifier_address}")
+    log_fn("   Intent IDs:")
+    log_fn(f"      intent_id: {config.intent_id}")
+    log_fn(f"      intent_id_evm: {config.intent_id_evm}")
+    log_fn("   Other:")
+    log_fn(f"      verifier_config_path: {config.verifier_config_path}")
+    log_fn(f"      setup_chains: {config.setup_chains}")
+

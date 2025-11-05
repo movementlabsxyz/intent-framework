@@ -24,7 +24,7 @@ from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, LOG_FILE
 )
-from config import TestConfig
+from config import TestConfig, print_config_content
 
 
 def is_verifier_running() -> bool:
@@ -227,6 +227,9 @@ def main():
     
     config = TestConfig.load(args.config_file)
     log(f"   Loaded config from: {args.config_file}")
+    
+    # Print config content for debugging
+    print_config_content(config, log_and_echo)
     
     vault_address = config.vault_address
     if not vault_address:

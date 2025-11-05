@@ -13,9 +13,10 @@ from pathlib import Path
 
 # Add parent directory to path to import common
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, PROJECT_ROOT, LOG_FILE
+    run_command, LOG_FILE
 )
 
 
@@ -47,8 +48,8 @@ def get_verifier_eth_address() -> str:
     """
     log("   Computing verifier Ethereum address from config...")
 
-    verifier_dir = PROJECT_ROOT / "trusted-verifier"
-    config_path = PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    verifier_dir = common.PROJECT_ROOT / "trusted-verifier"
+    config_path = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
 
     env = os.environ.copy()
     env["VERIFIER_CONFIG_PATH"] = str(config_path)
@@ -84,7 +85,7 @@ def deploy_vault_contract(verifier_address: str = "") -> str:
     log("")
     log("📤 Deploying IntentVault...")
 
-    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+    evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
 
     if verifier_address:
         # Use computed verifier address
@@ -96,7 +97,7 @@ def deploy_vault_contract(verifier_address: str = "") -> str:
     # Run deployment in nix develop
     cmd = (
         f"cd {evm_dir} && "
-        f"nix develop {PROJECT_ROOT} -c bash -c \""
+        f"nix develop {common.PROJECT_ROOT} -c bash -c \""
         f"{env_cmd}npx hardhat run scripts/deploy.js --network localhost"
         f"\""
     )

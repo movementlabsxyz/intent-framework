@@ -13,9 +13,10 @@ from pathlib import Path
 
 # Add parent directory to path to import common
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, PROJECT_ROOT, LOG_FILE
+    run_command, LOG_FILE
 )
 
 
@@ -38,8 +39,8 @@ def wait_for_chain(chain_num: int, rest_port: int, faucet_port: int, max_attempt
 
     for attempt in range(1, max_attempts + 1):
         try:
-            # Check REST API
-            rest_response = requests.get(f"http://127.0.0.1:{rest_port}/v1/ledger/info", timeout=2)
+            # Check REST API (using /v1 endpoint like the shell script)
+            rest_response = requests.get(f"http://127.0.0.1:{rest_port}/v1", timeout=2)
             # Check Faucet
             faucet_response = requests.get(f"http://127.0.0.1:{faucet_port}/", timeout=2)
 
@@ -73,7 +74,7 @@ def verify_chain(chain_num: int, rest_port: int) -> dict:
     import json
 
     try:
-        response = requests.get(f"http://127.0.0.1:{rest_port}/v1/ledger/info", timeout=5)
+        response = requests.get(f"http://127.0.0.1:{rest_port}/v1", timeout=5)
         response.raise_for_status()
         info = response.json()
 
@@ -99,28 +100,61 @@ def main():
 
     # Stop any existing containers
     log("🧹 Stopping existing containers...")
-    run_command(
-        f"docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml "
-        f"-p aptos-chain1 down 2>/dev/null",
+    
+    # Check for running containers and list their IDs
+    result = run_command(
+        'docker ps --filter "name=aptos-localnet-chain" --format "{{.ID}}|{{.Names}}|{{.Status}}"',
         check=False
     )
-    run_command(
-        f"docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml "
-        f"-p aptos-chain2 down 2>/dev/null",
-        check=False
-    )
+    
+    found_containers = []
+    if result.returncode == 0 and result.stdout.strip():
+        log("📋 Found running containers:")
+        for line in result.stdout.strip().split('\n'):
+            if line.strip():
+                parts = line.split('|')
+                if len(parts) >= 2:
+                    container_id = parts[0]
+                    container_name = parts[1]
+                    container_status = parts[2] if len(parts) > 2 else "unknown"
+                    log(f"   - {container_name} (ID: {container_id[:12]}, Status: {container_status})")
+                    found_containers.append((container_id[:12], container_name))
+    else:
+        log("   No running containers found")
+    
+    log("")
+    
+    # Stop the containers
+    if found_containers:
+        run_command(
+            f"docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml "
+            f"-p aptos-chain1 down 2>/dev/null",
+            check=False
+        )
+        run_command(
+            f"docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml "
+            f"-p aptos-chain2 down 2>/dev/null",
+            check=False
+        )
+        
+        # Verify containers are stopped
+        log("✅ Stopped containers:")
+        for container_id, container_name in found_containers:
+            log(f"   - {container_name} (ID: {container_id})")
+    else:
+        log("   No containers to stop")
 
     log("")
     log("🚀 Starting Chain 1 (ports 8080/8081)...")
     run_command(
-        f"docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml "
+        f"docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml "
         f"-p aptos-chain1 up -d"
     )
 
     log("")
     log("🚀 Starting Chain 2 (ports 8082/8083)...")
     run_command(
-        f"docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml "
+        f"docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml "
         f"-p aptos-chain2 up -d"
     )
 
@@ -155,11 +189,11 @@ def main():
 
     log("")
     log("📋 Management Commands:")
-    log(f"   Stop Chain 1:    docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down")
-    log(f"   Stop Chain 2:    docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down")
-    log(f"   Stop Both:       python3 {PROJECT_ROOT}/testing-infra/connected-chain-apt/stop_dual_chains.py")
-    log(f"   Logs Chain 1:    docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 logs -f")
-    log(f"   Logs Chain 2:    docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 logs -f")
+    log(f"   Stop Chain 1:    docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down")
+    log(f"   Stop Chain 2:    docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down")
+    log(f"   Stop Both:       python3 {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/stop_dual_chains.py")
+    log(f"   Logs Chain 1:    docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 logs -f")
+    log(f"   Logs Chain 2:    docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 logs -f")
 
     log("")
     log("🎉 Dual-chain setup complete!")

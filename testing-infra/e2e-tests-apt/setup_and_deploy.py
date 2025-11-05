@@ -12,13 +12,15 @@ Python equivalent of setup-and-deploy.sh
 
 import sys
 import json
+import subprocess
 from pathlib import Path
 
 # Add parent directory to path to import common
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, get_aptos_address, PROJECT_ROOT, LOG_FILE
+    run_command, get_aptos_address, LOG_FILE
 )
 
 
@@ -38,7 +40,7 @@ def deploy_contract(profile: str, chain_address: str, chain_name: str) -> bool:
     log(f"   - Getting account address for {chain_name}...")
     log(f"   - Deploying to {chain_name} with address: {chain_address}")
 
-    move_dir = PROJECT_ROOT / "move-intent-framework"
+    move_dir = common.PROJECT_ROOT / "move-intent-framework"
 
     result = run_command(
         f"cd {move_dir} && "
@@ -76,10 +78,10 @@ def main():
     log("🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts...")
     log(" =============================================")
 
-    # TODO: Replace with Python version when task 4.4 is complete
-    # For now, call the shell script
-    setup_script = PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "setup-dual-chains-and-test-alice-bob.sh"
-    result = run_command(f"{setup_script}", check=False)
+    # Call the Python version
+    setup_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "setup_dual_chains_and_test_alice_bob.py"
+    # Use unbuffered Python to ensure output is visible
+    result = run_command(f"python3 -u {setup_script}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup dual chains with Alice and Bob accounts")
@@ -96,24 +98,36 @@ def main():
 
     # Configure Chain 1 (port 8080)
     log("   - Configuring Chain 1 (port 8080)...")
-    result = run_command(
-        "printf '\\n' | aptos init --profile intent-account-chain1 --network local --assume-yes",
-        check=False
+    result = subprocess.run(
+        "aptos init --profile intent-account-chain1 --network local --assume-yes",
+        shell=True,
+        input="\n",
+        capture_output=True,
+        text=True
     )
     if LOG_FILE:
         with open(LOG_FILE, 'a') as f:
-            f.write(result.stdout + "\n")
+            if result.stdout:
+                f.write(result.stdout + "\n")
+            if result.stderr:
+                f.write("STDERR:\n" + result.stderr + "\n")
 
     # Configure Chain 2 (port 8082)
     log("   - Configuring Chain 2 (port 8082)...")
-    result = run_command(
-        "printf '\\n' | aptos init --profile intent-account-chain2 --network custom "
+    result = subprocess.run(
+        "aptos init --profile intent-account-chain2 --network custom "
         "--rest-url http://127.0.0.1:8082 --faucet-url http://127.0.0.1:8083 --assume-yes",
-        check=False
+        shell=True,
+        input="\n",
+        capture_output=True,
+        text=True
     )
     if LOG_FILE:
         with open(LOG_FILE, 'a') as f:
-            f.write(result.stdout + "\n")
+            if result.stdout:
+                f.write(result.stdout + "\n")
+            if result.stderr:
+                f.write("STDERR:\n" + result.stderr + "\n")
 
     # Get Chain 1 address
     log("")
@@ -166,7 +180,7 @@ def main():
     log('   Fund Chain 2 account:   curl -X POST "http://127.0.0.1:8083/mint?address=<ADDRESS>&amount=100000000"')
     log("")
     log("📋 Useful commands:")
-    log(f"   Stop chains:     python3 {PROJECT_ROOT}/testing-infra/connected-chain-apt/stop_dual_chains.py")
+    log(f"   Stop chains:     python3 {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/stop_dual_chains.py")
     log("   View Chain 1:    aptos config show-profiles --profile intent-account-chain1")
     log("   View Chain 2:    aptos config show-profiles --profile intent-account-chain2")
 

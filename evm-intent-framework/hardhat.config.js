@@ -14,6 +14,10 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
+      mining: {
+        auto: false,
+        interval: 1000  // Mine a block every 1 second
+      },
     },
     localhost: {
       url: "http://127.0.0.1:8545",

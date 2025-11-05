@@ -112,7 +112,7 @@ def log(message: str = "") -> None:
     Args:
         message: Message to log
     """
-    print(message)  # Still print to stdout like the bash version
+    print(message)  # Still print to stdout like the bash version. This is a temporary solution to aid in debugging.
     if LOG_FILE is not None:
         with open(LOG_FILE, 'a') as f:
             f.write(message + "\n")
@@ -133,8 +133,14 @@ def run_command(cmd: str, shell: bool = True, check: bool = False,
     Returns:
         CompletedProcess object with returncode, stdout, stderr
     """
-    return subprocess.run(cmd, shell=shell, check=check,
-                         capture_output=capture_output, text=text)
+    if capture_output:
+        return subprocess.run(cmd, shell=shell, check=check,
+                             capture_output=capture_output, text=text)
+    else:
+        # When not capturing output, don't pass stdout/stderr parameters
+        # This allows output to go directly to terminal in real-time
+        # The process will return normally when it completes
+        return subprocess.run(cmd, shell=shell, check=check)
 
 
 def get_aptos_address(profile: str) -> Optional[str]:
@@ -311,12 +317,21 @@ def fund_and_verify_aptos_account(
             tx_response.raise_for_status()
             tx_info = tx_response.json()
 
+            # Find all Deposit events and get the last one (like shell script uses tail -1)
+            # Shell script uses: select(.type=="0x1::fungible_asset::Deposit").data.store | tail -1
             fa_store = None
+            deposit_stores = []
             for event in tx_info.get("events", []):
-                if "fungible_asset::Deposit" in event.get("type", ""):
-                    fa_store = event.get("data", {}).get("store")
-                    if fa_store:
-                        break
+                event_type = event.get("type", "")
+                # Match exactly like shell script: .type=="0x1::fungible_asset::Deposit"
+                if event_type == "0x1::fungible_asset::Deposit":
+                    store = event.get("data", {}).get("store")
+                    if store and store != "null":
+                        deposit_stores.append(store)
+            
+            # Use the last matching store (like shell script's tail -1)
+            if deposit_stores:
+                fa_store = deposit_stores[-1]
 
             if fa_store and fa_store != "null":
                 # Get balance from FA store

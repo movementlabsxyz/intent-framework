@@ -12,14 +12,16 @@ Python equivalent of setup-dual-chains-and-test-alice-bob.sh
 
 import sys
 import time
+import subprocess
 from pathlib import Path
 
 # Add parent directory to path to import common
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, fund_and_verify_aptos_account, display_balances,
-    get_aptos_address, PROJECT_ROOT, LOG_FILE
+    get_aptos_address, LOG_FILE
 )
 
 
@@ -29,7 +31,8 @@ def verify_chain_running(port: int, chain_name: str) -> bool:
         import requests
         response = requests.get(f"http://127.0.0.1:{port}/v1", timeout=5)
         return response.status_code == 200
-    except:
+    except Exception as e:
+        log(f"   verify_chain_running error: {e}")
         return False
 
 
@@ -63,18 +66,19 @@ def main():
     # Stop any existing Docker containers
     log("🧹 Stopping any existing Docker containers...")
     run_command(
-        f"docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml down",
+        f"docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain1.yml down",
         check=False
     )
     run_command(
-        f"docker-compose -f {PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml down",
+        f"docker-compose -f {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/docker-compose-chain2.yml down",
         check=False
     )
 
     # Start fresh Docker localnets
     log("🚀 Starting fresh Docker Aptos localnets (dual chains)...")
-    setup_script = PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "setup_dual_chains.py"
-    result = run_command(f"python3 {setup_script}", check=False)
+    setup_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "setup_dual_chains.py"
+    # Use unbuffered Python to ensure output is visible
+    result = run_command(f"python3 -u {setup_script}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup dual chains")
@@ -119,19 +123,23 @@ def main():
     log("📊 Chain Status:")
     try:
         import requests
-        chain1_info = requests.get("http://127.0.0.1:8080/v1", timeout=5).json()
-        chain1_id = chain1_info.get("chain_id", "unknown")
-        chain1_height = chain1_info.get("block_height", "unknown")
-        chain1_role = chain1_info.get("node_role", "unknown")
-        log(f"   Chain 1: ID={chain1_id}, Height={chain1_height}, Role={chain1_role}")
+        chain1_info = requests.get("http://127.0.0.1:8080/v1", timeout=5)
+        if chain1_info.status_code == 200:
+            chain1_data = chain1_info.json()
+            chain1_id = chain1_data.get("chain_id", "unknown")
+            chain1_height = chain1_data.get("block_height", "unknown")
+            chain1_role = chain1_data.get("node_role", "unknown")
+            log(f"   Chain 1: ID={chain1_id}, Height={chain1_height}, Role={chain1_role}")
 
-        chain2_info = requests.get("http://127.0.0.1:8082/v1", timeout=5).json()
-        chain2_id = chain2_info.get("chain_id", "unknown")
-        chain2_height = chain2_info.get("block_height", "unknown")
-        chain2_role = chain2_info.get("node_role", "unknown")
-        log(f"   Chain 2: ID={chain2_id}, Height={chain2_height}, Role={chain2_role}")
-    except:
-        log("   Could not get chain status")
+        chain2_info = requests.get("http://127.0.0.1:8082/v1", timeout=5)
+        if chain2_info.status_code == 200:
+            chain2_data = chain2_info.json()
+            chain2_id = chain2_data.get("chain_id", "unknown")
+            chain2_height = chain2_data.get("block_height", "unknown")
+            chain2_role = chain2_data.get("node_role", "unknown")
+            log(f"   Chain 2: ID={chain2_id}, Height={chain2_height}, Role={chain2_role}")
+    except Exception as e:
+        log(f"   Could not get chain status: {e}")
 
     # Clean up any existing profiles
     log("")
@@ -146,27 +154,51 @@ def main():
     log("👥 Creating test accounts for Chain 1...")
 
     log("Creating alice-chain1 account for Chain 1...")
-    result = run_command("printf '\\n' | aptos init --profile alice-chain1 --network local --assume-yes", check=False)
+    result = subprocess.run(
+        "aptos init --profile alice-chain1 --network local --assume-yes",
+        shell=True,
+        input="\n",
+        capture_output=True,
+        text=True
+    )
     if LOG_FILE:
         with open(LOG_FILE, 'a') as f:
-            f.write(result.stdout + "\n")
+            f.write("=== Alice-chain1 init output ===\n")
+            if result.stdout:
+                f.write(result.stdout + "\n")
+            if result.stderr:
+                f.write("STDERR:\n" + result.stderr + "\n")
 
     if result.returncode == 0:
         log("✅ Alice-chain1 account created successfully on Chain 1")
     else:
         log_and_echo("❌ Failed to create Alice-chain1 account on Chain 1")
+        if result.stderr:
+            log_and_echo(f"Error: {result.stderr}")
         sys.exit(1)
 
     log("Creating bob-chain1 account for Chain 1...")
-    result = run_command("printf '\\n' | aptos init --profile bob-chain1 --network local --assume-yes", check=False)
+    result = subprocess.run(
+        "aptos init --profile bob-chain1 --network local --assume-yes",
+        shell=True,
+        input="\n",
+        capture_output=True,
+        text=True
+    )
     if LOG_FILE:
         with open(LOG_FILE, 'a') as f:
-            f.write(result.stdout + "\n")
+            f.write("=== Bob-chain1 init output ===\n")
+            if result.stdout:
+                f.write(result.stdout + "\n")
+            if result.stderr:
+                f.write("STDERR:\n" + result.stderr + "\n")
 
     if result.returncode == 0:
         log("✅ Bob-chain1 account created successfully on Chain 1")
     else:
         log_and_echo("❌ Failed to create Bob-chain1 account on Chain 1")
+        if result.stderr:
+            log_and_echo(f"Error: {result.stderr}")
         sys.exit(1)
 
     # Create test accounts for Chain 2
@@ -174,35 +206,53 @@ def main():
     log("👥 Creating test accounts for Chain 2...")
 
     log("Creating alice-chain2 account for Chain 2...")
-    result = run_command(
-        "printf '\\n' | aptos init --profile alice-chain2 --network custom "
+    result = subprocess.run(
+        "aptos init --profile alice-chain2 --network custom "
         "--rest-url http://127.0.0.1:8082 --faucet-url http://127.0.0.1:8083 --assume-yes",
-        check=False
+        shell=True,
+        input="\n",
+        capture_output=True,
+        text=True
     )
     if LOG_FILE:
         with open(LOG_FILE, 'a') as f:
-            f.write(result.stdout + "\n")
+            f.write("=== Alice-chain2 init output ===\n")
+            if result.stdout:
+                f.write(result.stdout + "\n")
+            if result.stderr:
+                f.write("STDERR:\n" + result.stderr + "\n")
 
     if result.returncode == 0:
         log("✅ Alice-chain2 account created successfully on Chain 2")
     else:
         log_and_echo("❌ Failed to create Alice-chain2 account on Chain 2")
+        if result.stderr:
+            log_and_echo(f"Error: {result.stderr}")
         sys.exit(1)
 
     log("Creating bob-chain2 account for Chain 2...")
-    result = run_command(
-        "printf '\\n' | aptos init --profile bob-chain2 --network custom "
+    result = subprocess.run(
+        "aptos init --profile bob-chain2 --network custom "
         "--rest-url http://127.0.0.1:8082 --faucet-url http://127.0.0.1:8083 --assume-yes",
-        check=False
+        shell=True,
+        input="\n",
+        capture_output=True,
+        text=True
     )
     if LOG_FILE:
         with open(LOG_FILE, 'a') as f:
-            f.write(result.stdout + "\n")
+            f.write("=== Bob-chain2 init output ===\n")
+            if result.stdout:
+                f.write(result.stdout + "\n")
+            if result.stderr:
+                f.write("STDERR:\n" + result.stderr + "\n")
 
     if result.returncode == 0:
         log("✅ Bob-chain2 account created successfully on Chain 2")
     else:
         log_and_echo("❌ Failed to create Bob-chain2 account on Chain 2")
+        if result.stderr:
+            log_and_echo(f"Error: {result.stderr}")
         sys.exit(1)
 
     log("")
@@ -258,7 +308,7 @@ def main():
     log('   Fund Chain 2 account:    curl -X POST "http://127.0.0.1:8083/mint?address=<ADDRESS>&amount=100000000"')
     log("")
     log("📋 Useful Commands:")
-    log(f"   Stop chains:     python3 {PROJECT_ROOT}/testing-infra/connected-chain-apt/stop_dual_chains.py")
+    log(f"   Stop chains:     python3 {common.PROJECT_ROOT}/testing-infra/connected-chain-apt/stop_dual_chains.py")
     log("   View profiles:   aptos config show-profiles")
     log("   Test Chain 1:    aptos account balance --profile alice-chain1")
     log("   Test Chain 2:    aptos account balance --profile alice-chain2")

@@ -16,18 +16,19 @@ from pathlib import Path
 
 # Add parent directory to path to import common
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, display_balances, PROJECT_ROOT, LOG_FILE
+    run_command, display_balances, LOG_FILE
 )
 
 
 def get_evm_account_address(account_index: int) -> str:
     """Get EVM account address using Hardhat script."""
-    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+    evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
 
     result = run_command(
-        f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c "
+        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
         f"'ACCOUNT_INDEX={account_index} npx hardhat run scripts/get-account-address.js --network localhost' 2>&1",
         check=False
     )
@@ -48,10 +49,10 @@ def get_evm_account_balance(account_index: int) -> tuple[str, str]:
     Returns:
         Tuple of (balance_in_wei, output_text)
     """
-    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+    evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
 
     result = run_command(
-        f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c "
+        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
         f"'ACCOUNT_INDEX={account_index} npx hardhat run scripts/get-account-balance.js --network localhost' 2>&1",
         check=False
     )
@@ -84,8 +85,9 @@ def main():
     log("🔗 Step 1: Setting up EVM Chain (Hardhat node)...")
     log(" =============================================")
 
-    setup_script = PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "setup_evm_chain.py"
-    result = run_command(f"python3 {setup_script}", check=False)
+    setup_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "setup_evm_chain.py"
+    # Use unbuffered Python to ensure output is visible
+    result = run_command(f"python3 -u {setup_script}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to setup EVM chain")
@@ -187,15 +189,16 @@ def main():
     log("📦 Step 2: Deploying IntentVault to EVM chain...")
     log(" =============================================")
 
-    deploy_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "deploy_vault.py"
-    result = run_command(f"python3 {deploy_script}", check=False)
+    deploy_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "deploy_vault.py"
+    # Use unbuffered Python to ensure output is visible
+    result = run_command(f"python3 -u {deploy_script}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to deploy IntentVault")
         sys.exit(1)
 
     # Extract vault address from deployment logs
-    log_dir = PROJECT_ROOT / "tmp" / "intent-framework-logs"
+    log_dir = common.PROJECT_ROOT / "tmp" / "intent-framework-logs"
     vault_address = ""
 
     if log_dir.exists():
@@ -203,9 +206,18 @@ def main():
             try:
                 with open(log_file_path, 'r') as f:
                     content = f.read()
-                    match = re.search(r"IntentVault deployed to\s+(0x[a-fA-F0-9]{40})", content, re.IGNORECASE)
-                    if match:
-                        vault_address = match.group(1)
+                    # Try multiple patterns to find the vault address
+                    patterns = [
+                        r"IntentVault deployed to\s+(0x[a-fA-F0-9]{40})",
+                        r"Contract Address:\s+(0x[a-fA-F0-9]{40})",
+                        r"✅ IntentVault deployed successfully!.*?Contract Address:\s+(0x[a-fA-F0-9]{40})",
+                    ]
+                    for pattern in patterns:
+                        match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+                        if match:
+                            vault_address = match.group(1)
+                            break
+                    if vault_address:
                         break
             except:
                 pass
@@ -244,7 +256,7 @@ def main():
     log("   Check EVM Chain:    curl -X POST http://127.0.0.1:8545 -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}'")
     log("")
     log("📋 Useful commands:")
-    log(f"   Stop EVM chain:  python3 {PROJECT_ROOT}/testing-infra/connected-chain-evm/stop_evm_chain.py")
+    log(f"   Stop EVM chain:  python3 {common.PROJECT_ROOT}/testing-infra/connected-chain-evm/stop_evm_chain.py")
 
     log("")
     log("✨ EVM setup and deployment script completed!")

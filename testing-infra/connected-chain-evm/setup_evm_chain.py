@@ -15,9 +15,10 @@ from pathlib import Path
 
 # Add parent directory to path to import common
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, PROJECT_ROOT, LOG_FILE
+    run_command, LOG_FILE
 )
 
 
@@ -82,14 +83,14 @@ def main():
     log("")
     log("📦 Installing npm dependencies...")
 
-    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+    evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
     node_modules = evm_dir / "node_modules"
 
     # Install dependencies if needed
     if not node_modules.exists():
         log("   Running npm install...")
         result = run_command(
-            f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c 'npm install'",
+            f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c 'npm install'",
             check=False
         )
 
@@ -108,7 +109,7 @@ def main():
     # Start Hardhat node in background
     hardhat_log = open(log_file, 'a')
     hardhat_process = subprocess.Popen(
-        f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c 'npx hardhat node --port 8545'",
+        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c 'npx hardhat node --port 8545'",
         shell=True,
         stdout=hardhat_log,
         stderr=hardhat_log,
@@ -203,7 +204,7 @@ def main():
     log("   Private keys available via: npx hardhat node")
     log("")
     log("📋 Management Commands:")
-    log(f"   Stop node:      python3 {PROJECT_ROOT}/testing-infra/connected-chain-evm/stop_evm_chain.py")
+    log(f"   Stop node:      python3 {common.PROJECT_ROOT}/testing-infra/connected-chain-evm/stop_evm_chain.py")
     log(f"   View logs:      tail -f {log_file}")
     log("   Check status:   curl -X POST http://127.0.0.1:8545 -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}'")
     log("")

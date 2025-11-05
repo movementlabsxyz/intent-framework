@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 4
-intent_module_address = "0x977025703f2b316adf300f892f222d3b141422cc4cfd82c115afe97250eef8e6"
-known_accounts = ["1515037f94800c395bd977363dbedf76e77ce1cd9f893a730e81f4584dfbb58c", "eb94cae289f607e21a850e6e894f74cf2f07b7bb87e6543b707803cbfd4b49af"]
+intent_module_address = "0xf6a5860ec8cc2d2dba12371275162acd8001be0d74da0e4deca3ea44491132e1"
+known_accounts = ["5afcbe5024b12fb357822d99747603d96e2479b005d17679f99df95559c54bfa", "64d4f2cd131f7b919e92d45c5b25df22302580a68fc0375b0fb9f1771635534c"]
 
 # Connected Chain Configuration  
 # The connected chain is where escrow events occur and are monitored
@@ -17,9 +17,9 @@ known_accounts = ["1515037f94800c395bd977363dbedf76e77ce1cd9f893a730e81f4584dfbb
 name = "Connected Chain"
 rpc_url = "http://127.0.0.1:8082"
 chain_id = 4
-intent_module_address = "0x731122dd7b611a07757e82fddf5dae3a20b4a4ccf3a7780fa19e56b61b638ecd"
-escrow_module_address = "0x731122dd7b611a07757e82fddf5dae3a20b4a4ccf3a7780fa19e56b61b638ecd"
-known_accounts = ["5c0199e4b45770462709942d6730e06376b896421b608fe3e2ec8e61b8b642eb"]
+intent_module_address = "0x5394d2fb516ffd844023af14c265c2e35c960696423193aac7c5ad162d2b3931"
+escrow_module_address = "0x5394d2fb516ffd844023af14c265c2e35c960696423193aac7c5ad162d2b3931"
+known_accounts = ["a7138d54c6b661950bae5211e9ad5e449a44f4450c24cf192116418de422a3a5"]
 
 # Verifier Configuration
 # Cryptographic keys and timing parameters for the verifier

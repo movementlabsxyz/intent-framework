@@ -11,6 +11,7 @@ Python equivalent of release-evm-escrow.sh
 """
 
 import sys
+import json
 import time
 import re
 import base64
@@ -18,10 +19,12 @@ from pathlib import Path
 
 # Add parent directory to path to import common
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
-    run_command, PROJECT_ROOT, LOG_FILE
+    run_command, LOG_FILE
 )
+from config import TestConfig
 
 
 def is_verifier_running() -> bool:
@@ -34,30 +37,12 @@ def is_verifier_running() -> bool:
         return False
 
 
-def get_vault_address() -> str:
-    """Get vault address from deployment logs."""
-    log_dir = PROJECT_ROOT / "tmp" / "intent-framework-logs"
-
-    if log_dir.exists():
-        for log_file_path in sorted(log_dir.glob("deploy-vault*.log"), reverse=True):
-            try:
-                with open(log_file_path, 'r') as f:
-                    content = f.read()
-                    match = re.search(r"IntentVault deployed to\s+(0x[a-fA-F0-9]{40})", content, re.IGNORECASE)
-                    if match:
-                        return match.group(1)
-            except:
-                pass
-
-    return ""
-
-
 def get_bob_balance() -> tuple[str, str]:
     """Get Bob's EVM balance. Returns (balance_wei, output)."""
-    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+    evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
 
     result = run_command(
-        f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c "
+        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
         f"'ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost' 2>&1",
         check=False
     )
@@ -136,11 +121,11 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
             log(f"   - Bob's balance before claim: {bob_balance_before} wei")
 
             # Submit escrow release transaction
-            evm_dir = PROJECT_ROOT / "evm-intent-framework"
+            evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
 
             log("   - Calling IntentVault.claim() on EVM...")
             result = run_command(
-                f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c "
+                f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
                 f"\"VAULT_ADDRESS='{vault_address}' INTENT_ID_EVM='{intent_id_evm}' "
                 f"SIGNATURE_HEX='{signature_hex}' npx hardhat run scripts/claim-escrow.js --network localhost\" 2>&1",
                 check=False
@@ -213,6 +198,13 @@ def check_and_release_escrows(vault_address: str, released_escrows: set) -> set:
 
 def main():
     """Monitor and release EVM escrows."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Release EVM escrows")
+    parser.add_argument('--config-file', type=Path, required=True,
+                       help='Path to test config file (pickle format)')
+    args = parser.parse_args()
+
     # Setup project root and logging
     setup_project_root(Path(__file__))
     log_dir, log_file = setup_logging("release-evm-escrow")
@@ -227,14 +219,54 @@ def main():
         log_and_echo("   python3 testing-infra/e2e-tests-apt/run_cross_chain_verifier.py")
         sys.exit(1)
 
-    # Get vault address
-    vault_address = get_vault_address()
-
+    # Load config - required
+    if not args.config_file.exists():
+        log_and_echo(f"❌ Config file not found: {args.config_file}")
+        log_and_echo("   The config file must be created by run_tests.py first")
+        sys.exit(1)
+    
+    config = TestConfig.load(args.config_file)
+    log(f"   Loaded config from: {args.config_file}")
+    
+    vault_address = config.vault_address
     if not vault_address:
-        log_and_echo("❌ Could not find vault address")
+        log_and_echo("❌ Vault address not found in config")
+        log_and_echo("   The config must be populated with vault_address")
         sys.exit(1)
 
     log(f"   Vault address: {vault_address}")
+    log_and_echo(f"   Vault address: {vault_address}")
+    
+    # Verify vault contract exists on chain using direct RPC call
+    rpc_payload = {
+        "jsonrpc": "2.0",
+        "method": "eth_getCode",
+        "params": [vault_address, "latest"],
+        "id": 1
+    }
+    
+    result = run_command(
+        f"curl -s -X POST http://127.0.0.1:8545 "
+        f"-H 'Content-Type: application/json' "
+        f"--data '{json.dumps(rpc_payload)}'",
+        check=False
+    )
+    
+    if result.returncode == 0:
+        try:
+            rpc_response = json.loads(result.stdout)
+            code = rpc_response.get("result", "")
+            if code == "0x" or not code:
+                log_and_echo("❌ ERROR: Vault contract does not exist at the specified address!")
+                log_and_echo(f"   Address: {vault_address}")
+                log_and_echo("   The Hardhat chain may have been reset. Please redeploy the vault.")
+                log_and_echo("   Run: python3 testing-infra/e2e-tests-evm/deploy_vault.py")
+                sys.exit(1)
+            log(f"   ✅ Vault contract verified (code length: {len(code) - 2} bytes)")
+        except (json.JSONDecodeError, KeyError):
+            log_and_echo("   ⚠️  Warning: Could not verify vault contract (RPC response invalid)")
+    else:
+        log_and_echo("   ⚠️  Warning: Could not verify vault contract (RPC call failed)")
 
     # Track released escrows
     released_escrows = set()

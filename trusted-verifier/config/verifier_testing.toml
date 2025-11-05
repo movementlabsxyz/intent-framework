@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 4
-intent_module_address = "0xee1ef0b8e346864233cf67754b897daab13bae9598ba40822edd6aec936885e3"
-known_accounts = ["b53b40f0237798d807cdc955c5ff36ffdd6b07dc7cc11852bc757b4eb07155fd", "ed292878b9634f4fd3ec8993780c7ee184ec22f6ea60d04c8b177563d44992bb"]
+intent_module_address = "0x04eae83cd4dfcf764488ea73d52b1f419c6dc527e03fad035ae4c2e8d634c37a"
+known_accounts = ["cdb23de995bbfe7ae0052d65628548dd8eaacb82813be0f1ac75e8303888894d", "a123b8f872ceadc6526beafb5511b1a3d7a52306a7f87b48386f06607a58a849"]
 
 # Connected Chain Configuration  
 # The connected chain is where escrow events occur and are monitored
@@ -25,7 +25,7 @@ known_accounts = ["34d0338b44464f346db8d177e357ebdf84bfbd341997b4a86db801bd4f17b
 # Cryptographic keys and timing parameters for the verifier
 [evm_chain]
 rpc_url = "http://127.0.0.1:8545"
-vault_address = "0xf8ee8a600f9ab9b67135a533d20502eba6b52c95"
+vault_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 chain_id = 31337
 verifier_address = "0xf8ee8a600f9ab9b67135a533d20502eba6b52c95"
 [verifier]

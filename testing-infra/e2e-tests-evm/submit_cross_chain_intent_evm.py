@@ -28,13 +28,14 @@ import common
 from common import (
     setup_project_root, setup_logging, log, log_and_echo,
     run_command, get_aptos_address, display_balances,
-    PROJECT_ROOT, LOG_FILE
+    LOG_FILE
 )
+from config import TestConfig
 
 
 def get_evm_vault_address() -> str:
     """Get EVM vault address from deployment logs."""
-    log_dir = PROJECT_ROOT / "tmp" / "intent-framework-logs"
+    log_dir = common.PROJECT_ROOT / "tmp" / "intent-framework-logs"
 
     if not log_dir.exists():
         return ""
@@ -96,20 +97,27 @@ def get_apt_metadata_address(chain_address: str, alice_address: str, chain_port:
 
 def main():
     """Submit mixed-chain intents."""
-    # Validate parameter
-    if len(sys.argv) < 2 or sys.argv[1] not in ["0", "1"]:
-        print("❌ Error: Invalid parameter!")
-        print("")
-        print(f"Usage: {sys.argv[0]} <parameter>")
-        print("  Parameter 0: Use existing running networks (skip setup)")
-        print("  Parameter 1: Run full setup and deploy contracts")
-        print("")
-        print("Examples:")
-        print(f"  {sys.argv[0]} 0    # Use existing networks")
-        print(f"  {sys.argv[0]} 1    # Run full setup")
-        sys.exit(1)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Submit mixed-chain intents")
+    parser.add_argument('setup_flag', choices=['0', '1'], 
+                       help='0=skip setup (use existing), 1=run full setup')
+    parser.add_argument('--config-file', type=Path, 
+                       help='Path to test config file (pickle format)')
+    args = parser.parse_args()
 
-    setup_chains = sys.argv[1] == "1"
+    setup_chains = args.setup_flag == "1"
+    
+    # Load config - required
+    if not args.config_file or not args.config_file.exists():
+        log_and_echo("❌ ERROR: Config file is required")
+        log_and_echo(f"   Config file not found: {args.config_file}")
+        log_and_echo("   Usage: python3 submit_cross_chain_intent_evm.py <0|1> --config-file <config_file>")
+        sys.exit(1)
+    
+    config = TestConfig.load(args.config_file)
+    log(f"   Loaded config from: {args.config_file}")
+    config.setup_chains = setup_chains
 
     # Setup project root and logging
     setup_project_root(Path(__file__))
@@ -141,7 +149,7 @@ def main():
 
         # Setup EVM chain first
         log("📦 Setting up EVM chain (Chain 3)...")
-        setup_evm_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "setup_and_deploy_evm.py"
+        setup_evm_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "setup_and_deploy_evm.py"
         result = run_command(f"python3 -u {setup_evm_script}", check=False, capture_output=False)
 
         if result.returncode != 0:
@@ -150,7 +158,7 @@ def main():
 
         log("")
         log("📦 Setting up Aptos chains (Chain 1)...")
-        setup_apt_script = PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "setup_and_deploy.py"
+        setup_apt_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-apt" / "setup_and_deploy.py"
         result = run_command(f"python3 -u {setup_apt_script}", check=False, capture_output=False)
 
         if result.returncode != 0:
@@ -167,7 +175,20 @@ def main():
         log("   Use parameter '1' to run full setup: ./submit-cross-chain-intent-evm.py 1")
         log("")
 
-    # Get addresses
+    # Get vault address from config
+    vault_address = config.vault_address
+    if not vault_address:
+        log_and_echo("❌ ERROR: Vault address not found in config!")
+        log_and_echo("   The config must be populated with vault_address")
+        if setup_chains:
+            log_and_echo("   This should have been deployed during setup. Check setup logs.")
+        else:
+            log_and_echo("   Use --config-file to pass config with vault address")
+        sys.exit(1)
+    
+    log(f"   Using vault address from config: {vault_address}")
+
+    # Get addresses from aptos config
     result = run_command("aptos config show-profiles", check=False)
     if result.returncode != 0:
         log_and_echo("❌ ERROR: Could not read aptos config")
@@ -175,20 +196,31 @@ def main():
 
     try:
         data = json.loads(result.stdout)
-        chain1_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
-        alice_chain1_address = data.get("Result", {}).get("alice-chain1", {}).get("account", "")
-        bob_chain1_address = data.get("Result", {}).get("bob-chain1", {}).get("account", "")
+        
+        # Get addresses from config or extract from aptos (update config if missing)
+        if config.chain1_address:
+            chain1_address = config.chain1_address
+        else:
+            chain1_address = data.get("Result", {}).get("intent-account-chain1", {}).get("account", "")
+            if chain1_address:
+                config.chain1_address = chain1_address
+        
+        if config.alice_chain1_address:
+            alice_chain1_address = config.alice_chain1_address
+        else:
+            alice_chain1_address = data.get("Result", {}).get("alice-chain1", {}).get("account", "")
+            if alice_chain1_address:
+                config.alice_chain1_address = alice_chain1_address
+        
+        if config.bob_chain1_address:
+            bob_chain1_address = config.bob_chain1_address
+        else:
+            bob_chain1_address = data.get("Result", {}).get("bob-chain1", {}).get("account", "")
+            if bob_chain1_address:
+                config.bob_chain1_address = bob_chain1_address
     except json.JSONDecodeError:
         log_and_echo("❌ ERROR: Could not parse aptos config")
         sys.exit(1)
-
-    # Get EVM vault address
-    vault_address = get_evm_vault_address()
-
-    if not vault_address:
-        log_and_echo("⚠️  Warning: Could not find vault address. Please ensure IntentVault is deployed.")
-        log_and_echo("   Run: ./testing-infra/e2e-tests-evm/deploy-vault.sh")
-        vault_address = "0x0000000000000000000000000000000000000000"  # Placeholder
 
     log("")
     log("📋 Chain Information:")
@@ -198,7 +230,7 @@ def main():
     log(f"   Bob Chain 1 (hub):       {bob_chain1_address}")
 
     # Load oracle public key from verifier config
-    verifier_testing_config = PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
+    verifier_testing_config = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
 
     if not verifier_testing_config.exists():
         log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {verifier_testing_config}")
@@ -240,6 +272,7 @@ def main():
 
     # Generate a random intent_id (32 bytes)
     intent_id = f"0x{secrets.token_hex(32)}"
+    config.intent_id = intent_id
 
     log("")
     log("🔑 Configuration:")
@@ -347,16 +380,22 @@ def main():
     intent_id_hex = intent_id.replace("0x", "")
     intent_id_hex = intent_id_hex.zfill(64)
     intent_id_evm = f"0x{intent_id_hex}"
+    config.intent_id_evm = intent_id_evm
 
     log(f"     Intent ID (EVM): {intent_id_evm}")
+    log_and_echo(f"     Vault Address: {vault_address}")
+    log_and_echo(f"     Intent ID (EVM): {intent_id_evm}")
 
     # Initialize vault for this intent with ETH
     log("   - Initializing vault for intent (ETH vault)...")
+    log_and_echo("   - Initializing vault for intent (ETH vault)...")
     expiry_time_evm = int((datetime.datetime.now() + datetime.timedelta(hours=1)).timestamp())
+    log(f"     Expiry time (EVM): {expiry_time_evm}")
 
-    evm_dir = PROJECT_ROOT / "evm-intent-framework"
+    evm_dir = common.PROJECT_ROOT / "evm-intent-framework"
+    log(f"     Running: initialize-vault-eth.js with VAULT_ADDRESS={vault_address}, INTENT_ID_EVM={intent_id_evm}")
     result = run_command(
-        f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c "
+        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
         f"\"cd '{evm_dir}' && VAULT_ADDRESS='{vault_address}' INTENT_ID_EVM='{intent_id_evm}' "
         f"EXPIRY_TIME_EVM='{expiry_time_evm}' npx hardhat run scripts/initialize-vault-eth.js --network localhost\" 2>&1",
         check=False
@@ -374,18 +413,24 @@ def main():
         sys.exit(1)
 
     # Verify initialization succeeded
-    if "Vault initialized for intent" not in result.stdout.lower():
+    if "vault initialized for intent" not in result.stdout.lower():
         log_and_echo("     ❌ ERROR: Vault initialization did not complete successfully")
         log_and_echo(f"   Initialization output: {result.stdout}")
-        log_and_echo("   Expected to see 'Vault initialized for intent (ETH)' in output")
+        log_and_echo("   Expected to see 'Vault initialized for intent' in output")
         sys.exit(1)
+    
+    log("     ✅ Vault initialized successfully")
+    log_and_echo("     ✅ Vault initialized successfully")
 
     # Deposit 1000 ETH into vault
     log("   - Depositing 1000 ETH into vault...")
+    log_and_echo("   - Depositing 1000 ETH into vault...")
     eth_amount_wei = "1000000000000000000000"  # 1000 ETH = 1000 * 10^18 wei
+    log(f"     Amount: {eth_amount_wei} wei (1000 ETH)")
+    log(f"     Running: deposit-eth.js with VAULT_ADDRESS={vault_address}, INTENT_ID_EVM={intent_id_evm}")
 
     result = run_command(
-        f"cd {evm_dir} && nix develop {PROJECT_ROOT} -c bash -c "
+        f"cd {evm_dir} && nix develop {common.PROJECT_ROOT} -c bash -c "
         f"\"cd '{evm_dir}' && VAULT_ADDRESS='{vault_address}' INTENT_ID_EVM='{intent_id_evm}' "
         f"ETH_AMOUNT_WEI='{eth_amount_wei}' npx hardhat run scripts/deposit-eth.js --network localhost\" 2>&1",
         check=False
@@ -406,8 +451,20 @@ def main():
     if not re.search(r"Deposited.*wei.*ETH.*vault", result.stdout, re.IGNORECASE):
         log_and_echo("     ❌ ERROR: ETH deposit did not complete successfully")
         log_and_echo(f"   Deposit output: {result.stdout}")
+        log(f"   Full deposit output: {result.stdout}")
         log_and_echo("   Expected to see 'Deposited ... wei (ETH) into vault' in output")
         sys.exit(1)
+
+    log("     ✅ ETH deposit successful")
+    log_and_echo("     ✅ ETH deposit successful")
+    
+    # Log vault state for verification
+    log(f"     Final vault state:")
+    log(f"       Vault Address: {vault_address}")
+    log(f"       Intent ID (EVM): {intent_id_evm}")
+    log(f"       Amount Deposited: {eth_amount_wei} wei (1000 ETH)")
+    log_and_echo(f"     Vault Address: {vault_address}")
+    log_and_echo(f"     Intent ID (EVM): {intent_id_evm}")
 
     log("     ✅ Escrow created on Chain 3 (EVM)!")
     log_and_echo("✅ Escrow created")
@@ -462,6 +519,11 @@ def main():
     log("   ✅ Escrow created on Chain 3 (EVM): 1000 ETH locked")
     log("   ✅ Intent fulfilled on Chain 1 (Aptos hub): Bob provided 1 APT")
     log("   ⏳ Waiting for verifier approval to release 1000 ETH escrow on Chain 3")
+    
+    # Save updated config if config file was provided
+    if args.config_file:
+        config.save(args.config_file)
+        log(f"   Updated config saved to: {args.config_file}")
 
 
 if __name__ == "__main__":

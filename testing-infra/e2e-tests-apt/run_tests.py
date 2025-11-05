@@ -86,7 +86,9 @@ def main():
     log("")
     log("🧹 Stopping EVM chain if running...")
     stop_evm_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
-    run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
+    result = run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
+    if result.returncode != 0:
+        log("   ℹ️  No EVM chain running")
 
     log("")
     log("🚀 Step 0: Setting up chains, deploying contracts, and submitting intents...")
@@ -259,7 +261,7 @@ mod integration;
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to stop Docker chains")
-        # Don't exit with error, cleanup is best-effort
+        sys.exit(1)
 
     log("")
     log("✨ E2E test runner completed!")

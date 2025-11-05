@@ -27,6 +27,7 @@ from common import (
     run_command, get_aptos_address, display_balances,
     LOG_FILE
 )
+from config import TestConfig
 
 
 def update_toml_section(config_content: str, start_section: str, end_section: str, key: str, value: str) -> str:
@@ -208,12 +209,16 @@ def main():
     # Stop EVM chain
     log_and_echo("   - Stopping EVM chain...")
     stop_evm_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-evm" / "stop_evm_chain.py"
-    run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
+    result = run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
+    if result.returncode != 0:
+        log_and_echo("   ℹ️  No EVM chain running")
 
     # Stop Aptos chains
     log_and_echo("   - Stopping Aptos chains...")
     stop_apt_script = common.PROJECT_ROOT / "testing-infra" / "connected-chain-apt" / "stop_dual_chains.py"
-    run_command(f"python3 -u {stop_apt_script}", check=False, capture_output=False)
+    result = run_command(f"python3 -u {stop_apt_script}", check=False, capture_output=False)
+    if result.returncode != 0:
+        log_and_echo("   ℹ️  No Aptos chains running")
 
     # Stop any existing verifier processes
     log("   - Stopping any existing verifier processes...")
@@ -309,6 +314,20 @@ def main():
 
     log_and_echo(f"   EVM Verifier: {verifier_address}")
 
+    # Create and populate test config
+    config = TestConfig()
+    config.chain1_address = chain1_address
+    config.vault_address = vault_address
+    config.verifier_address = verifier_address
+    config.alice_chain1_address = get_aptos_address("alice-chain1")
+    config.bob_chain1_address = get_aptos_address("bob-chain1")
+    config.verifier_config_path = verifier_testing_config
+
+    # Save config to temp file
+    config_file = common.PROJECT_ROOT / "tmp" / "test-config.pkl"
+    config.save(config_file)
+    log(f"   Saved test config to: {config_file}")
+
     # Read current config
     with open(verifier_testing_config, 'r') as f:
         config_content = f.read()
@@ -349,9 +368,11 @@ def main():
     log_and_echo("📝 Step 1: Submitting mixed-chain intents...")
     log_and_echo("===========================================")
 
-    # Call submit-cross-chain-intent-evm.sh (not yet converted)
-    submit_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "submit-cross-chain-intent-evm.sh"
-    result = run_command(f"bash {submit_script} 0", check=False, capture_output=False)
+    # Call submit-cross-chain-intent-evm.py (already converted)
+    # Pass the config file
+    submit_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "submit_cross_chain_intent_evm.py"
+    log_and_echo(f"   Passing config file to submit script: {config_file}")
+    result = run_command(f"python3 -u {submit_script} 0 --config-file {config_file}", check=False, capture_output=False)
 
     if result.returncode != 0:
         log_and_echo("❌ Failed to submit intents")
@@ -436,8 +457,15 @@ def main():
     log_and_echo("==================================")
 
     # Call release-evm-escrow.py (already converted)
+    # Pass the config file
     release_script = common.PROJECT_ROOT / "testing-infra" / "e2e-tests-evm" / "release_evm_escrow.py"
-    result = run_command(f"python3 -u {release_script}", check=False, capture_output=False)
+    log_and_echo(f"   Passing config file to release script: {config_file}")
+    result = run_command(f"python3 -u {release_script} --config-file {config_file}", check=False, capture_output=False)
+
+    if result.returncode != 0:
+        log_and_echo("❌ Failed to release EVM escrow")
+        log_and_echo("   Check release-evm-escrow logs for details")
+        sys.exit(1)
 
     log_and_echo("")
     display_balances()
@@ -460,8 +488,15 @@ def main():
     log_and_echo("🧹 Step 4: Cleaning up chains...")
     log_and_echo("================================")
 
-    run_command(f"python3 {stop_evm_script}", check=False, capture_output=False)
-    run_command(f"python3 {stop_apt_script}", check=False, capture_output=False)
+    result = run_command(f"python3 -u {stop_evm_script}", check=False, capture_output=False)
+    if result.returncode != 0:
+        log_and_echo("❌ Failed to stop EVM chain")
+        sys.exit(1)
+
+    result = run_command(f"python3 -u {stop_apt_script}", check=False, capture_output=False)
+    if result.returncode != 0:
+        log_and_echo("❌ Failed to stop Aptos chains")
+        sys.exit(1)
 
     log_and_echo("")
     log_and_echo("✅ All E2E tests completed!")

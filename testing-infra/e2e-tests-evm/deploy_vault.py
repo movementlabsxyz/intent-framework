@@ -106,26 +106,34 @@ def deploy_vault_contract(verifier_address: str = "") -> str:
     deploy_output = result.stdout + result.stderr
 
     # Log deployment output
+    log("")
+    log("📋 Raw Hardhat deployment output:")
+    log("=" * 50)
+    if deploy_output:
+        log(deploy_output)
+    else:
+        log("   (No output captured)")
+    log("=" * 50)
+    log("")
+    
     if LOG_FILE:
         with open(LOG_FILE, 'a') as f:
+            f.write("\n📋 Raw Hardhat deployment output:\n")
+            f.write("=" * 50 + "\n")
             f.write(deploy_output + "\n")
+            f.write("=" * 50 + "\n\n")
 
-    # Extract contract address from output
-    # Try pattern: "IntentVault deployed to 0x..."
-    match = re.search(r"IntentVault deployed to\s+(0x[a-fA-F0-9]{40})", deploy_output, re.IGNORECASE)
-    if match:
-        return match.group(1)
-
-    # Try alternative pattern: any Ethereum address
-    match = re.search(r"(0x[a-fA-F0-9]{40})", deploy_output)
-    if match:
-        return match.group(1)
-
-    # Deployment failed
-    log_and_echo("❌ Failed to extract contract address from deployment")
-    log_and_echo("   Deployment output:")
-    print(deploy_output)
-    sys.exit(1)
+    # Extract contract address from output - must match exact pattern
+    # Pattern: "IntentVault deployed to: 0x..." or "IntentVault deployed to 0x..."
+    match = re.search(r"IntentVault deployed to:?\s+(0x[a-fA-F0-9]{40})", deploy_output, re.IGNORECASE)
+    if not match:
+        log_and_echo("❌ Failed to extract contract address from deployment")
+        log_and_echo("   Expected pattern: 'IntentVault deployed to: 0x...' or 'IntentVault deployed to 0x...'")
+        log_and_echo("   Deployment output:")
+        print(deploy_output)
+        sys.exit(1)
+    
+    return match.group(1)
 
 
 def main():

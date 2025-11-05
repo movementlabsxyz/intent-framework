@@ -46,7 +46,7 @@
         "id": "2",
         "title": "Phase 2: Teardown Scripts (Low Risk)",
         "description": "Convert smallest, safest scripts - pure cleanup operations",
-        "status": "pending",
+        "status": "in-progress",
         "priority": "high",
         "dependencies": [
           "1"
@@ -58,7 +58,7 @@
             "id": 1,
             "title": "Convert stop-dual-chains.sh to Python (31 lines)",
             "description": "Create testing-infra/connected-chain-apt/stop_dual_chains.py",
-            "status": "pending",
+            "status": "done",
             "priority": "high",
             "dependencies": [
               "1"
@@ -66,7 +66,8 @@
             "details": "Convert stop-dual-chains.sh (31 lines) to Python.\n\nFeatures:\n- Docker compose down for both chains\n- Cleanup Aptos CLI profiles (alice-chain1, bob-chain1, alice-chain2, bob-chain2, intent-account-chain1, intent-account-chain2)\n- Logging via common.py\n\nKeep .sh version with deprecation notice during migration.",
             "testStrategy": "1. Set up dual chains using shell script\n2. Run Python stop_dual_chains.py\n3. Verify both chains stopped\n4. Verify all profiles deleted",
             "subtasks": [],
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-05T10:13:02.222Z"
           },
           {
             "id": 2,
@@ -82,7 +83,8 @@
             "subtasks": [],
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-05T10:13:02.222Z"
       },
       {
         "id": "3",
@@ -367,7 +369,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-05T09:59:57.075Z",
+      "lastModified": "2025-11-05T10:13:02.227Z",
       "taskCount": 6,
       "completedCount": 1,
       "tags": [

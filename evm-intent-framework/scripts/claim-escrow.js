@@ -57,6 +57,39 @@ async function main() {
       throw getVaultError;
     }
 
+    // Log claim parameters before attempting
+    console.log("Attempting claim with:");
+    console.log("  IntentId:", intentId.toString());
+    console.log("  ApprovalValue:", approvalValue);
+    console.log("  Signature length:", signature.length, "bytes");
+    console.log("  Signature (first 20 chars):", signature.substring(0, 20) + "...");
+
+    // Estimate gas first to catch errors early
+    try {
+      const gasEstimate = await vault.claim.estimateGas(intentId, approvalValue, signature);
+      console.log("Gas estimate:", gasEstimate.toString());
+    } catch (estimateError) {
+      console.error("⚠️ Gas estimation failed - transaction will likely fail:");
+      console.error("  Error message:", estimateError.message);
+      if (estimateError.reason) {
+        console.error("  Reason:", estimateError.reason);
+      }
+      if (estimateError.data) {
+        console.error("  Error data:", estimateError.data);
+        // Try to decode error selector
+        if (estimateError.data.length >= 10) {
+          const errorSelector = estimateError.data.slice(0, 10);
+          console.error("  Error selector:", errorSelector);
+        }
+      }
+      // Try to get more details from the error
+      if (estimateError.error) {
+        console.error("  Nested error:", estimateError.error);
+      }
+      // Re-throw to show it's a gas estimation failure
+      throw new Error(`Gas estimation failed: ${estimateError.message}. ${estimateError.reason || ''}`);
+    }
+
     const tx = await vault.claim(intentId, approvalValue, signature);
     const receipt = await tx.wait();
     
@@ -83,7 +116,24 @@ async function main() {
     }
     if (error.data) {
       console.error("Error data:", error.data);
+      // Try to decode error selector if present
+      if (error.data.length >= 10) {
+        const errorSelector = error.data.slice(0, 10);
+        console.error("Error selector:", errorSelector);
+      }
     }
+    // Log nested error if present
+    if (error.error) {
+      console.error("Nested error:", error.error);
+    }
+    // Log full error details for debugging
+    console.error("Error details:", {
+      message: error.message,
+      reason: error.reason,
+      data: error.data,
+      code: error.code,
+      action: error.action
+    });
     process.exit(1);
   }
 }

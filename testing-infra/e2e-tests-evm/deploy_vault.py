@@ -62,7 +62,8 @@ def get_verifier_eth_address() -> str:
 
     result = run_command(
         f"cd {verifier_dir} && cargo run --bin get_verifier_eth_address",
-        check=False
+        check=False,
+        env=env
     )
 
     if result.returncode != 0:

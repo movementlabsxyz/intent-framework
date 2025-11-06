@@ -18,4 +18,4 @@ Tests Aptos-only cross-chain intent framework: intents on Chain 1 (hub) and escr
 
 ## Integration Tests
 
-The `integration-tests/` directory contains Rust integration tests for the trusted verifier library (connectivity, deployment, event polling). These are automatically run by `run-tests.sh`.
+The `verifier-rust-integration-tests/` directory contains Rust integration tests for the trusted verifier library (connectivity, deployment, event polling). These are automatically run by `run-tests.sh`.

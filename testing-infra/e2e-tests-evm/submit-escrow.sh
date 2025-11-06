@@ -9,19 +9,6 @@ setup_project_root
 setup_logging "submit-escrow"
 cd "$PROJECT_ROOT"
 
-log "======================================"
-log "🎯 ESCROW CREATION - EVM CHAIN"
-log "======================================"
-log_and_echo "📝 All output logged to: $LOG_FILE"
-log ""
-log "This script creates escrow on EVM chain:"
-log "  [EVM CHAIN] User creates escrow with locked ETH"
-log ""
-log "Note: Hub chain intent should be created first using:"
-log "      ./testing-infra/e2e-tests-apt/submit-hub-intent.sh"
-log ""
-log "Usage: ./testing-infra/e2e-tests-evm/submit-escrow.sh"
-log "   (INTENT_ID will be loaded from tmp/intent-info.env if not provided)"
 
 # Load INTENT_ID from info file if not provided
 if [ -z "$INTENT_ID" ]; then
@@ -69,9 +56,7 @@ log ""
 display_balances
 
 log ""
-log "📝 STEP 1: [EVM CHAIN] Alice creates escrow with locked ETH"
-log "================================================="
-log "   User creates escrow on EVM chain WITH ETH locked in it"
+log "   Creating escrow on EVM chain..."
 log "   - Alice locks 1000 ETH in escrow on Chain 3 (EVM)"
 log "   - User provides hub chain intent_id when creating escrow"
 log "   - Using intent_id from hub chain: $INTENT_ID"
@@ -152,10 +137,4 @@ log "   Locked Amount: 1000 ETH"
 # Check final balances using common function
 display_balances
 
-log ""
-log "🔍 Next Steps:"
-log "   To monitor and verify with the trusted verifier, run:"
-log "   ./testing-infra/e2e-tests-evm/release-escrow.sh"
-log ""
-log "✨ Script completed - escrow is created and waiting for verification!"
 

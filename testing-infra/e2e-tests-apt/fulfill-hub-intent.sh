@@ -9,19 +9,6 @@ setup_project_root
 setup_logging "fulfill-hub-intent"
 cd "$PROJECT_ROOT"
 
-log "======================================"
-log "🎯 HUB CHAIN INTENT - FULFILL"
-log "======================================"
-log_and_echo "📝 All output logged to: $LOG_FILE"
-log ""
-log "This script fulfills intent on hub chain:"
-log "  [HUB CHAIN] Solver fulfills intent on hub chain"
-log ""
-log "Note: Intent should be created first using:"
-log "      ./testing-infra/e2e-tests-apt/submit-hub-intent.sh"
-log ""
-log "Usage: ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh"
-log "   (INTENT_ID and HUB_INTENT_ADDRESS will be loaded from tmp/intent-info.env)"
 
 # Load INTENT_ID and HUB_INTENT_ADDRESS from info file
 INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
@@ -52,9 +39,7 @@ log "   Intent ID:               $INTENT_ID"
 log "   Hub Intent Address:      $HUB_INTENT_ADDRESS"
 
 log ""
-log "📝 STEP 1: [HUB CHAIN] Bob fulfills intent on hub chain"
-log "================================================="
-log "   Solver monitors escrow event and fulfills intent on hub chain"
+log "   Fulfilling intent on hub chain..."
 log "   - Bob sees intent with ID: $INTENT_ID"
 log "   - Bob provides 100000000 tokens on hub chain to fulfill the intent"
 
@@ -95,6 +80,4 @@ log "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
 # Check final balances using common function
 display_balances
 
-log ""
-log "✨ Script completed!"
 

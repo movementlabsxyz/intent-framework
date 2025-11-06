@@ -9,18 +9,6 @@ setup_project_root
 setup_logging "submit-hub-intent"
 cd "$PROJECT_ROOT"
 
-log "======================================"
-log "🎯 HUB CHAIN INTENT - CREATE"
-log "======================================"
-log_and_echo "📝 All output logged to: $LOG_FILE"
-log ""
-log "This script creates intent on hub chain:"
-log "  [HUB CHAIN] User creates intent requesting tokens"
-log ""
-log "Note: Escrow creation should be done next, then fulfillment"
-log "      using: ./testing-infra/e2e-tests-apt/submit-escrow.sh"
-log "      then:  ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh"
-
 # Generate a random intent_id that will be used for both hub and escrow
 INTENT_ID="0x$(openssl rand -hex 32)"
 
@@ -53,9 +41,7 @@ log ""
 display_balances
 
 log ""
-log "📝 STEP 1: [HUB CHAIN] Alice creates intent requesting tokens"
-log "================================================="
-log "   User creates intent on hub chain requesting tokens from solver"
+log "   Creating intent on hub chain..."
 log "   - Alice creates intent on Chain 1 (hub chain)"
 log "   - Intent requests 100000000 tokens to be provided by solver"
 log "   - Using intent_id: $INTENT_ID"
@@ -163,15 +149,4 @@ log "   📝 Intent info saved to: $INTENT_INFO_FILE"
 # Check final balances using common function
 display_balances
 
-log ""
-log "🔍 Next Steps:"
-log "   To create escrow on connected chain, run:"
-log "   ./testing-infra/e2e-tests-apt/submit-escrow.sh"
-log "   or for EVM:"
-log "   ./testing-infra/e2e-tests-evm/submit-escrow.sh"
-log ""
-log "   Then to fulfill the intent, run:"
-log "   ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh"
-log ""
-log "✨ Script completed!"
 

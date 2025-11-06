@@ -9,19 +9,6 @@ setup_project_root
 setup_logging "submit-escrow"
 cd "$PROJECT_ROOT"
 
-log "======================================"
-log "🎯 ESCROW CREATION - CONNECTED CHAIN"
-log "======================================"
-log_and_echo "📝 All output logged to: $LOG_FILE"
-log ""
-log "This script creates escrow on connected chain:"
-log "  [CONNECTED CHAIN] User creates escrow with locked tokens"
-log ""
-log "Note: Hub chain intent should be created first using:"
-log "      ./testing-infra/e2e-tests-apt/submit-hub-intent.sh"
-log ""
-log "Usage: ./testing-infra/e2e-tests-apt/submit-escrow.sh"
-log "   (INTENT_ID will be loaded from tmp/intent-info.env if not provided)"
 
 # Load INTENT_ID from info file if not provided
 if [ -z "$INTENT_ID" ]; then
@@ -102,11 +89,8 @@ log ""
 display_balances
 
 log ""
-log "📝 STEP 1: [CONNECTED CHAIN] Alice creates escrow intent with locked tokens"
-log "================================================="
-log "   User creates escrow on connected chain WITH tokens locked in it"
+log "   Creating escrow on connected chain..."
 log "   - Alice locks 100000000 tokens in escrow on Chain 2 (connected chain)"
-log "   - User provides hub chain intent_id when creating escrow"
 log "   - Using intent_id from hub chain: $INTENT_ID"
 
 # Get APT metadata on Chain 2
@@ -213,13 +197,4 @@ fi
 # Check final balances using common function
 display_balances
 
-log ""
-log "🔍 Next Steps:"
-log "   To create and fulfill the hub chain intent, run:"
-log "   ./testing-infra/e2e-tests-apt/submit-hub-intent.sh"
-log ""
-log "   Or to monitor and verify with the trusted verifier, run:"
-log "   ./testing-infra/e2e-tests-apt/release-escrow.sh"
-log ""
-log "✨ Script completed - escrow is created and waiting for verification!"
 

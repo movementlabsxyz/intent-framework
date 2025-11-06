@@ -51,6 +51,12 @@ def get_verifier_eth_address() -> str:
     verifier_dir = common.PROJECT_ROOT / "trusted-verifier"
     config_path = common.PROJECT_ROOT / "trusted-verifier" / "config" / "verifier_testing.toml"
 
+    # Check if config file exists
+    if not config_path.exists():
+        log_and_echo(f"❌ ERROR: verifier_testing.toml not found at {config_path}")
+        log_and_echo("   The verifier config file is required for deployment")
+        return ""
+
     env = os.environ.copy()
     env["VERIFIER_CONFIG_PATH"] = str(config_path)
 
@@ -59,13 +65,30 @@ def get_verifier_eth_address() -> str:
         check=False
     )
 
-    if result.returncode == 0:
-        # Extract Ethereum address (0x followed by 40 hex chars)
-        for line in result.stdout.strip().split('\n'):
-            match = re.match(r'^(0x[a-fA-F0-9]{40})$', line.strip())
-            if match:
-                return match.group(1)
+    if result.returncode != 0:
+        log_and_echo("❌ ERROR: Failed to compute verifier Ethereum address from config")
+        log_and_echo(f"   Command exit code: {result.returncode}")
+        log_and_echo("   Command output:")
+        output = result.stdout + result.stderr
+        for line in output.strip().split('\n'):
+            log_and_echo(f"      {line}")
+        log_and_echo("   Check that trusted-verifier/config/verifier_testing.toml has valid keys")
+        log_and_echo("   The [verifier] section must contain valid private_key and public_key (base64 encoded)")
+        return ""
 
+    # Extract Ethereum address (0x followed by 40 hex chars)
+    output = result.stdout + result.stderr
+    for line in output.strip().split('\n'):
+        match = re.match(r'^(0x[a-fA-F0-9]{40})$', line.strip())
+        if match:
+            return match.group(1)
+    
+    # If we get here, no address was found in output
+    log_and_echo("❌ ERROR: Could not extract verifier Ethereum address from output")
+    log_and_echo("   Command output:")
+    for line in output.strip().split('\n'):
+        log_and_echo(f"      {line}")
+    log_and_echo("   Expected format: 0x followed by 40 hex characters")
     return ""
 
 
@@ -158,10 +181,9 @@ def main():
     verifier_eth_address = get_verifier_eth_address()
 
     if not verifier_eth_address:
+        # get_verifier_eth_address() already printed detailed error messages
         log_and_echo("❌ ERROR: Could not compute verifier Ethereum address from config")
-        log_and_echo("   The verifier address is required for proper signature verification")
-        log_and_echo("   Check that trusted-verifier/config/verifier_testing.toml exists and has valid keys")
-        log_and_echo("   Run: cargo run --bin get_verifier_eth_address in trusted-verifier directory")
+        log_and_echo("   Deployment cannot proceed without a valid verifier address")
         os._exit(1)
 
     log(f"   ✅ Verifier Ethereum address: {verifier_eth_address}")

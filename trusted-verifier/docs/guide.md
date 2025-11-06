@@ -19,13 +19,13 @@ Keys
 Local dual‑chain setup and full flow (setup + submit + verifier + escrow release):
 
 ```
-./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh 1
+python3 testing-infra/e2e-tests-apt/run_cross_chain_verifier.py 1
 ```
 
 Verifier only (assumes chains and intents already created):
 
 ```
-./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh 0
+python3 testing-infra/e2e-tests-apt/run_cross_chain_verifier.py 0
 ```
 
 What the script does

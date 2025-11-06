@@ -113,8 +113,8 @@ pkill -f faucet || true
 rm -rf ~/.aptos/ .aptos/
 
 # 2. Start local testnet (Docker)
-# Multi-chain: ./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
-# Or chains only: ./testing-infra/connected-chain-apt/setup-dual-chains.sh
+#   Multi-chain: python3 testing-infra/connected-chain-apt/setup_dual_chains_and_test_alice_bob.py
+#   Or chains only: python3 testing-infra/connected-chain-apt/setup_dual_chains.py
 
 # 3. Create Alice account (non-interactive)
 printf "\n" | aptos init --profile alice --network local --assume-yes

@@ -12,13 +12,13 @@ Infrastructure setup for running chains for development and testing.
 
 ```bash
 # Multi-chain setup (two independent localnets with Alice and Bob accounts)
-./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
+python3 testing-infra/connected-chain-apt/setup_dual_chains_and_test_alice_bob.py
 
 # Or setup chains only
-./testing-infra/connected-chain-apt/setup-dual-chains.sh
+python3 testing-infra/connected-chain-apt/setup_dual_chains.py
 
 # Stop both chains
-./testing-infra/connected-chain-apt/stop-dual-chains.sh
+python3 testing-infra/connected-chain-apt/stop_dual_chains.py
 ```
 
 **Endpoints:**
@@ -29,10 +29,10 @@ Infrastructure setup for running chains for development and testing.
 
 ```bash
 # Start EVM chain
-./testing-infra/connected-chain-evm/setup-evm-chain.sh
+python3 testing-infra/connected-chain-evm/setup_evm_chain.py
 
 # Stop EVM chain
-./testing-infra/connected-chain-evm/stop-evm-chain.sh
+python3 testing-infra/connected-chain-evm/stop_evm_chain.py
 ```
 
 **Endpoints:**

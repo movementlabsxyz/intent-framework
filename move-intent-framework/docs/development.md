@@ -137,7 +137,7 @@ Deploy the Intent Framework to a local Aptos network:
 
 ```bash
 # 1. Setup local chain (optional)
-./testing-infra/connected-chain-apt/setup-dual-chains.sh
+python3 testing-infra/connected-chain-apt/setup_dual_chains.py
 
 # 2. Configure Aptos CLI to use local chain (port 8080)
 aptos init --profile local --network local

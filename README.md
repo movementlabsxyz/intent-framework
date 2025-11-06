@@ -32,15 +32,9 @@ Run from project root:
 
 ```bash
 # Aptos E2E Tests
-# Shell script
-nix develop -c bash -c "./testing-infra/e2e-tests-apt/run-tests.sh"
-# Python script
 nix develop -c bash -c "python3 testing-infra/e2e-tests-apt/run_tests.py"
 
 # EVM E2E Tests
-# Shell script
-nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests.sh"
-# Python script
 nix develop -c bash -c "python3 testing-infra/e2e-tests-evm/run_tests.py"
 ```
 

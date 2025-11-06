@@ -5,7 +5,7 @@ Tests Aptos-only cross-chain intent framework: intents on Chain 1 (hub) and escr
 ## Quick Start
 
 ```bash
-./testing-infra/e2e-tests-apt/run-tests.sh
+python3 testing-infra/e2e-tests-apt/run_tests.py
 ```
 
 ## What's Tested
@@ -18,11 +18,11 @@ Tests Aptos-only cross-chain intent framework: intents on Chain 1 (hub) and escr
 
 ## Test Scripts
 
-- `run-tests.sh` - Complete test runner (setup → test → cleanup)
-- `setup-and-deploy.sh` - Deploys contracts to both chains
-- `submit-cross-chain-intent.sh` - Creates intent and escrow
-- `run-cross-chain-verifier.sh` - Runs verifier and releases escrow
+- `run_tests.py` - Complete test runner (setup → test → cleanup)
+- `setup_and_deploy.py` - Deploys contracts to both chains
+- `submit_cross_chain_intent.py` - Creates intent and escrow
+- `run_cross_chain_verifier.py` - Runs verifier and releases escrow
 
 ## Integration Tests
 
-The `integration-tests/` directory contains Rust integration tests for the trusted verifier library (connectivity, deployment, event polling). These are automatically run by `run-tests.sh`.
+The `integration-tests/` directory contains Rust integration tests for the trusted verifier library (connectivity, deployment, event polling). These are automatically run by `run_tests.py`.

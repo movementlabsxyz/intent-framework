@@ -5,7 +5,7 @@ Tests mixed-chain intent framework: intents on Aptos Chain 1 (hub) and escrows o
 ## Quick Start
 
 ```bash
-./testing-infra/e2e-tests-evm/run-tests.sh
+python3 testing-infra/e2e-tests-evm/run_tests.py
 ```
 
 ## What's Tested
@@ -18,8 +18,8 @@ Tests mixed-chain intent framework: intents on Aptos Chain 1 (hub) and escrows o
 
 ## Test Scripts
 
-- `run-tests.sh` - Complete test runner (setup → test → cleanup)
-- `setup-and-deploy-evm.sh` - Sets up EVM chain and deploys vault
-- `deploy-vault.sh` - Deploys IntentVault contract to EVM
-- `submit-cross-chain-intent-evm.sh` - Creates intent and escrow
-- `release-evm-escrow.sh` - Runs verifier and releases escrow
+- `run_tests.py` - Complete test runner (setup → test → cleanup)
+- `setup_and_deploy_evm.py` - Sets up EVM chain and deploys vault
+- `deploy_vault.py` - Deploys IntentVault contract to EVM
+- `submit_cross_chain_intent_evm.py` - Creates intent and escrow
+- `release_evm_escrow.py` - Runs verifier and releases escrow

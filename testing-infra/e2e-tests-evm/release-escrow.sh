@@ -16,7 +16,7 @@ log ""
 
 log "This script will:"
 log "  1. Start the trusted verifier service"
-log "  2. Monitor events on Chain 1 (Aptos hub) for intents and fulfillments"
+log "  2. Monitor events on Chain 1 (hub) for intents and fulfillments"
 log "  3. When fulfillment detected, create ECDSA signature"
 log "  4. Release escrow on Chain 3 (EVM)"
 log ""

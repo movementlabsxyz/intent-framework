@@ -34,7 +34,8 @@ log_and_echo "======================================================"
 ./testing-infra/connected-chain-evm/setup-alice-bob.sh
 ./testing-infra/e2e-tests-evm/deploy-contract.sh
 
-./testing-infra/connected-chain-apt/setup-dual-chains.sh
+./testing-infra/connected-chain-apt/setup-hub.sh
+./testing-infra/connected-chain-apt/setup-connected-chain.sh
 ./testing-infra/connected-chain-apt/setup-alice-bob.sh
 ./testing-infra/e2e-tests-apt/deploy-contracts.sh
 

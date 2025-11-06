@@ -1,7 +1,7 @@
 //! Tests for Contract Deployment Verification
 //!
 //! These tests verify that contracts are deployed on both chains.
-//! They require contracts to be deployed via setup-and-deploy.sh
+//! They require contracts to be deployed via deploy-contracts.sh
 
 use trusted_verifier::aptos_client::AptosClient;
 

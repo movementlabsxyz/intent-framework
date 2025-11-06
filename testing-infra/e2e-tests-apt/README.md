@@ -19,7 +19,7 @@ Tests Aptos-only cross-chain intent framework: intents on Chain 1 (hub) and escr
 ## Test Scripts
 
 - `run-tests.sh` - Complete test runner (setup → test → cleanup)
-- `setup-and-deploy.sh` - Deploys contracts to both chains
+- `deploy-contracts.sh` - Deploys contracts to both chains
 - `submit-cross-chain-intent.sh` - Creates intent and escrow
 - `run-cross-chain-verifier.sh` - Runs verifier and releases escrow
 

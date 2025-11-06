@@ -50,7 +50,7 @@ if [ "$1" = "1" ]; then
     log ""
     log "🚀 Step 0.1: Setting up chains and deploying contracts..."
     log "========================================================"
-    ./testing-infra/e2e-tests-apt/setup-and-deploy.sh
+    ./testing-infra/e2e-tests-apt/deploy-contracts.sh
 
     if [ $? -ne 0 ]; then
         log_and_echo "❌ Failed to setup chains and deploy contracts"

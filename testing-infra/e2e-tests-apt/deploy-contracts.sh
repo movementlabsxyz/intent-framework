@@ -6,10 +6,10 @@ source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "setup-and-deploy"
+setup_logging "deploy-contracts"
 cd "$PROJECT_ROOT"
 
-log "🚀 APTOS INTENT FRAMEWORK - SETUP AND DEPLOY"
+log "🚀 APTOS INTENT FRAMEWORK - DEPLOY CONTRACTS"
 log "============================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 
@@ -109,4 +109,5 @@ log "   View Chain 1:    aptos config show-profiles --profile intent-account-cha
 log "   View Chain 2:    aptos config show-profiles --profile intent-account-chain2"
 
 log ""
-log "✨ Setup and deployment script completed!"
+log "✨ Deployment script completed!"
+

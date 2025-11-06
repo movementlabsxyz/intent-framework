@@ -109,9 +109,9 @@ async fn test_poll_connected_events_api() {
 #[tokio::test]
 async fn test_poll_hub_events_with_real_intent() {
     // This test requires:
-    // 1. Chains running (via setup-and-deploy.sh)
-    // 2. Contracts deployed (via setup-and-deploy.sh)
-    // 3. Alice funded (via setup-and-deploy.sh)
+    // 1. Chains running (via deploy-contracts.sh)
+    // 2. Contracts deployed (via deploy-contracts.sh)
+    // 3. Alice funded (via deploy-contracts.sh)
     // 4. An intent created (via submit-intents.sh or manual transaction)
     //
     // If no intents exist, this test will FAIL - which is correct behavior!

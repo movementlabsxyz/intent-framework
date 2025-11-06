@@ -39,8 +39,17 @@ VERIFIER_PID=""
 VERIFIER_LOG="$PROJECT_ROOT/tmp/intent-framework-logs/verifier-evm.log"
 mkdir -p "$(dirname "$VERIFIER_LOG")"
 
+# Set config path to testing config - NO FALLBACK!
+VERIFIER_CONFIG_PATH="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
+if [ ! -f "$VERIFIER_CONFIG_PATH" ]; then
+    log_and_echo "   ❌ ERROR: verifier_testing.toml not found at $VERIFIER_CONFIG_PATH"
+    log_and_echo "   The testing config file is required - no fallback to verifier.toml!"
+    exit 1
+fi
+
 log "   Starting verifier service..."
-cargo run --bin trusted-verifier > "$VERIFIER_LOG" 2>&1 &
+log "   Using config: $VERIFIER_CONFIG_PATH"
+VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" cargo run --bin trusted-verifier > "$VERIFIER_LOG" 2>&1 &
 VERIFIER_PID=$!
 
 # Wait for verifier to start

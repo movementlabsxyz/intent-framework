@@ -315,6 +315,7 @@ else
             # If escrow_id looks like intent_id (might be wrong due to EVM config), look up actual escrow object address
             # Object addresses are 66 chars (0x + 64 hex), intent_ids are variable length
             # Also check if we can find it in escrow events
+            EVENTS_RESPONSE=""
             if [ ${#ESCROW_ID} -lt 64 ] || ! echo "$ESCROW_ID" | grep -qE '^0x[0-9a-fA-F]{64}$'; then
                 log "   ⚠️  escrow_id from approval looks incorrect ($ESCROW_ID), looking up from escrow events..."
                 # Get escrow events and find matching escrow by intent_id
@@ -359,9 +360,23 @@ else
                 continue
             fi
             
+            # Get desired_amount from escrow events (reuse if already fetched)
+            if [ -z "$EVENTS_RESPONSE" ]; then
+                EVENTS_RESPONSE=$(curl -s "http://127.0.0.1:3333/events")
+            fi
+            DESIRED_AMOUNT=$(echo "$EVENTS_RESPONSE" | jq -r ".data.escrow_events[] | select(.escrow_id == \"$ESCROW_ID\") | .desired_amount" 2>/dev/null | head -1)
+            
+            if [ -z "$DESIRED_AMOUNT" ] || [ "$DESIRED_AMOUNT" = "null" ] || [ "$DESIRED_AMOUNT" = "0" ]; then
+                log "   ❌ ERROR: Could not determine desired_amount for escrow $ESCROW_ID"
+                log "   ❌ Cannot complete escrow without knowing the required payment amount"
+                exit 1
+            fi
+            
+            PAYMENT_AMOUNT="$DESIRED_AMOUNT"
+            log "   - Payment amount: $PAYMENT_AMOUNT (from escrow desired_amount)"
+            
             # Submit escrow release transaction
             # Using bob-chain2 as solver (needs to have APT for payment)
-            PAYMENT_AMOUNT=1  # Placeholder amount
             
             aptos move run --profile bob-chain2 --assume-yes \
                 --function-id "0x${CHAIN2_DEPLOY_ADDRESS}::intent_as_escrow_entry::complete_escrow_from_fa" \

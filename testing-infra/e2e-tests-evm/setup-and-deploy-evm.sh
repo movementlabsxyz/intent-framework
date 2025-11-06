@@ -9,22 +9,12 @@ setup_project_root
 setup_logging "setup-and-deploy-evm"
 cd "$PROJECT_ROOT"
 
-log "🚀 EVM CHAIN - SETUP AND DEPLOY"
-log "==============================="
+log "🚀 EVM CHAIN - DEPLOY"
+log "===================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 
 log ""
-log "🔗 Step 1: Setting up EVM Chain (Hardhat node)..."
-log " ============================================="
-./testing-infra/connected-chain-evm/setup-evm-chain.sh
-
-if [ $? -ne 0 ]; then
-    log_and_echo "❌ Failed to setup EVM chain"
-    exit 1
-fi
-
-log ""
-log "🔍 Step 1.5: Verifying EVM accounts are funded..."
+log "🔍 Step 1: Verifying EVM accounts are funded..."
 log " ============================================="
 
 # Wait a bit to ensure Hardhat node is fully ready
@@ -145,7 +135,7 @@ display_balances
 
 log ""
 log "📦 Step 2: Deploying IntentVault to EVM chain..."
-log " ============================================="
+log "============================================="
 ./testing-infra/e2e-tests-evm/deploy-vault.sh
 
 if [ $? -ne 0 ]; then

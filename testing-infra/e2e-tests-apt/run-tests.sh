@@ -12,8 +12,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 cd "$PROJECT_ROOT"
 
-echo "🧪 E2E Integration Tests Runner"
-echo "================================"
+echo "🧪 E2E Test with Connected Aptos Chain"
+echo "======================================="
 echo ""
 
 echo "🧹 Step 1: Cleaning up any existing chains, accounts and processes..."
@@ -29,7 +29,8 @@ echo "===================================================================="
 echo ""
 echo "🚀 Step 3: Submitting cross-chain intents, configuring verifier..."
 echo "================================================================"
-./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh
+./testing-infra/e2e-tests-apt/submit-hub-intent-and-fulfill.sh
+./testing-infra/e2e-tests-apt/submit-escrow.sh
 ./testing-infra/e2e-tests-apt/configure-verifier.sh
 
 echo ""

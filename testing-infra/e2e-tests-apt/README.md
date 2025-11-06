@@ -16,13 +16,6 @@ Tests Aptos-only cross-chain intent framework: intents on Chain 1 (hub) and escr
 4. **Verifier Approval**: Verifier monitors and generates Ed25519 approval signature
 5. **Escrow Release**: Escrow released on Chain 2 with verifier signature
 
-## Test Scripts
-
-- `run-tests.sh` - Complete test runner (setup → test → cleanup)
-- `deploy-contracts.sh` - Deploys contracts to both chains
-- `submit-cross-chain-intent.sh` - Creates intent and escrow
-- `release-escrow.sh` - Runs verifier and releases escrow
-
 ## Integration Tests
 
 The `integration-tests/` directory contains Rust integration tests for the trusted verifier library (connectivity, deployment, event polling). These are automatically run by `run-tests.sh`.

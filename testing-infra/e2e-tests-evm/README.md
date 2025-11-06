@@ -15,10 +15,3 @@ Tests mixed-chain intent framework: intents on Aptos Chain 1 (hub) and escrows o
 3. **Intent Fulfillment**: Bob fulfills intent on Chain 1
 4. **Verifier Approval**: Verifier monitors and generates ECDSA approval signature
 5. **Escrow Release**: Escrow released on EVM Chain 3 with verifier signature
-
-## Test Scripts
-
-- `run-tests.sh` - Complete test runner (setup → test → cleanup)
-- `deploy-contract.sh` - Deploys IntentVault contract to EVM
-- `submit-cross-chain-intent-evm.sh` - Creates intent and escrow
-- `release-escrow.sh` - Runs verifier and releases escrow

@@ -25,13 +25,13 @@ log_and_echo ""
 
 log_and_echo "🧹 Step 1: Cleaning up any existing chains, accounts and processes..."
 log_and_echo "=========================================================="
-./testing-infra/cleanup.sh
+./testing-infra/e2e-tests-evm/cleanup.sh
 log_and_echo ""
 
 log_and_echo "🚀 Step 2: Setting up chains and deploying contracts..."
 log_and_echo "======================================================"
 
-./testing-infra/connected-chain-evm/setup-evm-chain.sh
+./testing-infra/connected-chain-evm/setup-alice-bob.sh
 ./testing-infra/e2e-tests-evm/setup-and-deploy-evm.sh
 
 ./testing-infra/connected-chain-apt/setup-dual-chains.sh
@@ -61,4 +61,4 @@ log_and_echo ""
 log_and_echo ""
 log_and_echo "🧹 Step 4: Cleaning up chains, accounts and processes..."
 log_and_echo "======================================================="
-./testing-infra/cleanup.sh
+./testing-infra/e2e-tests-evm/cleanup.sh

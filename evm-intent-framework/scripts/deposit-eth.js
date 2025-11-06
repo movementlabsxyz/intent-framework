@@ -15,7 +15,8 @@ async function main() {
   const amount = BigInt(amountWei);
   
   // Deposit ETH (pass value in transaction)
-  const tx = await vault.connect(signers[0]).deposit(intentId, amount, { value: amount });
+  // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
+  const tx = await vault.connect(signers[1]).deposit(intentId, amount, { value: amount });
   await tx.wait();
   console.log("Deposited", amount.toString(), "wei (ETH) into vault");
 }

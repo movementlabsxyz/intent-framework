@@ -14,9 +14,10 @@ async function main() {
   const intentId = BigInt(intentIdHex);
   
   // Use address(0) for ETH
+  // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
   const ethAddress = "0x0000000000000000000000000000000000000000";
   
-  await vault.connect(signers[0]).initializeVault(intentId, ethAddress, expiry);
+  await vault.connect(signers[1]).initializeVault(intentId, ethAddress, expiry);
   console.log("Vault initialized for intent (ETH):", intentId.toString());
 }
 

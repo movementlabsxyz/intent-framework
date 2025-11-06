@@ -16,7 +16,8 @@ async function main() {
   const signature = `0x${signatureHex}`;
   
   try {
-    const tx = await vault.connect(signers[1]).claim(intentId, approvalValue, signature);
+    // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
+    const tx = await vault.connect(signers[2]).claim(intentId, approvalValue, signature);
     const receipt = await tx.wait();
     console.log("Claim transaction hash:", receipt.hash);
     console.log("Escrow released successfully!");

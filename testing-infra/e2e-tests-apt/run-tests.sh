@@ -18,7 +18,7 @@ echo ""
 
 echo "🧹 Step 1: Cleaning up any existing chains, accounts and processes..."
 echo "================================================================"
-./testing-infra/cleanup.sh
+./testing-infra/e2e-tests-apt/cleanup.sh
 
 echo "🚀 Step 2: Setting up chains, deploying contracts, funding accounts"
 echo "===================================================================="
@@ -47,4 +47,4 @@ echo "✅ E2E test flow completed!"
 echo ""
 echo "🧹 Step 6: Cleaning up chains, accounts and processes..."
 echo "======================================="
-./testing-infra/cleanup.sh
+./testing-infra/e2e-tests-apt/cleanup.sh

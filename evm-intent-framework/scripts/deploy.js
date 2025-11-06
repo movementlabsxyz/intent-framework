@@ -14,10 +14,11 @@ async function main() {
     verifierAddr = verifierAddress;
     console.log("Using verifier address from config:", verifierAddr);
   } else {
-    // Fallback to Hardhat account 1 (for backwards compatibility)
-    const [, verifier] = await hre.ethers.getSigners();
-    verifierAddr = verifier.address;
-    console.log("Using Hardhat account 1 as verifier:", verifierAddr);
+    // Fallback to Hardhat account 0 (Deployer is the verifier)
+    // Account 0 = deployer/verifier, Account 1 = Alice, Account 2 = Bob
+    const [deployer] = await hre.ethers.getSigners();
+    verifierAddr = deployer.address;
+    console.log("Using Hardhat account 0 (deployer) as verifier:", verifierAddr);
   }
   
   console.log("Deploying with account:", deployer.address);

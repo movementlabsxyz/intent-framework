@@ -31,7 +31,7 @@ VERIFIER_ETH_ADDRESS=$(cd "$PROJECT_ROOT/trusted-verifier" && VERIFIER_CONFIG_PA
 
 if [ -z "$VERIFIER_ETH_ADDRESS" ]; then
     log_and_echo "   ⚠️  Warning: Could not compute verifier Ethereum address from config"
-    log_and_echo "   Falling back to Hardhat account 1 (Bob)"
+    log_and_echo "   Falling back to Hardhat account 0 (Deployer)"
     VERIFIER_ETH_ADDRESS=""
 else
     log "   ✅ Verifier Ethereum address: $VERIFIER_ETH_ADDRESS"
@@ -48,7 +48,7 @@ if [ -n "$VERIFIER_ETH_ADDRESS" ]; then
     # Use computed verifier address
     DEPLOY_OUTPUT=$(nix develop -c bash -c "VERIFIER_ADDRESS='$VERIFIER_ETH_ADDRESS' npx hardhat run scripts/deploy.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 else
-    # Use Hardhat account 1 (fallback)
+    # Use Hardhat account 0 (fallback - Deployer is the verifier)
     DEPLOY_OUTPUT=$(nix develop -c bash -c "npx hardhat run scripts/deploy.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 fi
 

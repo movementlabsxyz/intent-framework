@@ -54,9 +54,9 @@ log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
 log ""
 log "📋 Hardhat Default Accounts:"
-log "   Alice = Account 0 (signer index 0)"
-log "   Bob   = Account 1 (signer index 1)"
-log "   Verifier = Account 1 (signer index 1)"
+log "   Deployer/Verifier = Account 0 (signer index 0)"
+log "   Alice             = Account 1 (signer index 1)"
+log "   Bob               = Account 2 (signer index 2)"
 
 # Get account addresses using Hardhat
 cd evm-intent-framework
@@ -67,7 +67,7 @@ ALICE_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
-  console.log(signers[0].address);
+  console.log(signers[1].address);
 })();
 EOF" 2>/dev/null | tail -1 | tr -d '\n')
 
@@ -75,7 +75,7 @@ BOB_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
 const hre = require('hardhat');
 (async () => {
   const signers = await hre.ethers.getSigners();
-  console.log(signers[1].address);
+  console.log(signers[2].address);
 })();
 EOF" 2>/dev/null | tail -1 | tr -d '\n')
 
@@ -86,8 +86,8 @@ if [ -z "$ALICE_ADDRESS" ] || [ -z "$BOB_ADDRESS" ]; then
     exit 1
 fi
 
-log "   ✅ Alice (Account 0): $ALICE_ADDRESS"
-log "   ✅ Bob (Account 1):   $BOB_ADDRESS"
+log "   ✅ Alice (Account 1): $ALICE_ADDRESS"
+log "   ✅ Bob (Account 2):   $BOB_ADDRESS"
 
 log ""
 log "% - - - - - - - - - - - BALANCES - - - - - - - - - - - -"

@@ -56,14 +56,14 @@ VERIFIER_ADDRESS=$(cd "$PROJECT_ROOT/trusted-verifier" && VERIFIER_CONFIG_PATH="
 
 if [ -z "$VERIFIER_ADDRESS" ]; then
     log_and_echo "   ⚠️  Warning: Could not compute verifier Ethereum address from config"
-    log_and_echo "   Falling back to Hardhat account 1 (Bob)"
-    # Get Hardhat account 1 as fallback
+    log_and_echo "   Falling back to Hardhat account 0 (Deployer)"
+    # Get Hardhat account 0 as fallback (Deployer is the verifier)
     cd evm-intent-framework
-    VERIFIER_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+    VERIFIER_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
     cd ..
     
     if [ -z "$VERIFIER_ADDRESS" ]; then
-        VERIFIER_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"  # Hardhat default account 1
+        VERIFIER_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"  # Hardhat default account 0
     fi
 fi
 

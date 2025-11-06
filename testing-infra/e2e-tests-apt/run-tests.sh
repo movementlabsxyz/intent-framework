@@ -30,8 +30,9 @@ echo "===================================================================="
 echo ""
 echo "🚀 Step 3: Submitting cross-chain intents, configuring verifier..."
 echo "================================================================"
-./testing-infra/e2e-tests-apt/submit-hub-intent-and-fulfill.sh
+./testing-infra/e2e-tests-apt/submit-hub-intent.sh
 ./testing-infra/e2e-tests-apt/submit-escrow.sh
+./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh
 ./testing-infra/e2e-tests-apt/configure-verifier.sh
 
 echo ""

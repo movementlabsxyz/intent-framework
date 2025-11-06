@@ -18,7 +18,7 @@ log "This script creates escrow on connected chain:"
 log "  [CONNECTED CHAIN] User creates escrow with locked tokens"
 log ""
 log "Note: Hub chain intent should be created first using:"
-log "      ./testing-infra/e2e-tests-apt/submit-hub-intent-and-fulfill.sh"
+log "      ./testing-infra/e2e-tests-apt/submit-hub-intent.sh"
 log ""
 log "Usage: ./testing-infra/e2e-tests-apt/submit-escrow.sh"
 log "   (INTENT_ID will be loaded from tmp/intent-info.env if not provided)"
@@ -31,7 +31,7 @@ if [ -z "$INTENT_ID" ]; then
         log "   ✅ Loaded INTENT_ID from $INTENT_INFO_FILE"
     else
         log_and_echo "❌ ERROR: INTENT_ID not provided and intent-info.env not found"
-        log_and_echo "   Run submit-hub-intent-and-fulfill.sh first, or provide INTENT_ID=<id>"
+        log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id>"
         exit 1
     fi
 fi
@@ -216,7 +216,7 @@ display_balances
 log ""
 log "🔍 Next Steps:"
 log "   To create and fulfill the hub chain intent, run:"
-log "   ./testing-infra/e2e-tests-apt/submit-hub-intent-and-fulfill.sh"
+log "   ./testing-infra/e2e-tests-apt/submit-hub-intent.sh"
 log ""
 log "   Or to monitor and verify with the trusted verifier, run:"
 log "   ./testing-infra/e2e-tests-apt/release-escrow.sh"

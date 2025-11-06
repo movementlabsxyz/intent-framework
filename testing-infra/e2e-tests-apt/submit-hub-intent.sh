@@ -10,16 +10,16 @@ setup_logging "submit-hub-intent"
 cd "$PROJECT_ROOT"
 
 log "======================================"
-log "🎯 HUB CHAIN INTENT - CREATE & FULFILL"
+log "🎯 HUB CHAIN INTENT - CREATE"
 log "======================================"
 log_and_echo "📝 All output logged to: $LOG_FILE"
 log ""
-log "This script handles hub chain intent operations:"
-log "  1. [HUB CHAIN] User creates intent requesting tokens"
-log "  2. [HUB CHAIN] Solver fulfills intent on hub chain"
+log "This script creates intent on hub chain:"
+log "  [HUB CHAIN] User creates intent requesting tokens"
 log ""
-log "Note: Escrow creation on connected chain should be done separately"
+log "Note: Escrow creation should be done next, then fulfillment"
 log "      using: ./testing-infra/e2e-tests-apt/submit-escrow.sh"
+log "      then:  ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh"
 
 # Generate a random intent_id that will be used for both hub and escrow
 INTENT_ID="0x$(openssl rand -hex 32)"
@@ -128,8 +128,6 @@ if [ $? -eq 0 ]; then
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
         log "     ✅ Hub intent stored at: $HUB_INTENT_ADDRESS"
         log_and_echo "✅ Intent created"
-        # Export for use in fulfillment step
-        export HUB_INTENT_ADDRESS
     else
         log_and_echo "     ❌ ERROR: Could not verify hub intent address"
         exit 1
@@ -141,43 +139,11 @@ else
 fi
 
 log ""
-log "📝 STEP 2: [HUB CHAIN] Bob fulfills intent on hub chain"
-log "================================================="
-log "   Solver monitors escrow event on connected chain and fulfills intent on hub chain"
-log "   - Solver sees escrow event on connected chain"
-log "   - Bob sees intent with ID: $INTENT_ID"
-log "   - Bob provides 100000000 tokens on hub chain to fulfill the intent"
-
-# Get the intent object address from Step 1
-INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
-
-if [ -n "$INTENT_OBJECT_ADDRESS" ] && [ "$INTENT_OBJECT_ADDRESS" != "null" ]; then
-    log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
-    
-    # Bob fulfills the intent by providing tokens
-    aptos move run --profile bob-chain1 --assume-yes \
-        --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::fulfill_cross_chain_request_intent" \
-        --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
-    
-    if [ $? -eq 0 ]; then
-        log "     ✅ Bob successfully fulfilled the intent!"
-        log_and_echo "✅ Intent fulfilled"
-    else
-        log_and_echo "     ❌ Intent fulfillment failed!"
-        exit 1
-    fi
-else
-    log_and_echo "     ❌ ERROR: Could not get intent object address"
-    exit 1
-fi
-
+log "🎉 HUB CHAIN INTENT CREATION COMPLETE!"
+log "======================================="
 log ""
-log "🎉 HUB CHAIN INTENT OPERATIONS COMPLETE!"
-log "========================================"
-log ""
-log "✅ Steps completed successfully:"
+log "✅ Step completed successfully:"
 log "   1. Intent created on Chain 1 (hub chain)"
-log "   2. Intent fulfilled on Chain 1 by Bob"
 log ""
 log "📋 Intent Details:"
 log "   Intent ID: $INTENT_ID"
@@ -200,7 +166,12 @@ display_balances
 log ""
 log "🔍 Next Steps:"
 log "   To create escrow on connected chain, run:"
-log "   INTENT_ID=$INTENT_ID ./testing-infra/e2e-tests-apt/submit-escrow.sh"
+log "   ./testing-infra/e2e-tests-apt/submit-escrow.sh"
+log "   or for EVM:"
+log "   ./testing-infra/e2e-tests-evm/submit-escrow.sh"
+log ""
+log "   Then to fulfill the intent, run:"
+log "   ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh"
 log ""
 log "✨ Script completed!"
 

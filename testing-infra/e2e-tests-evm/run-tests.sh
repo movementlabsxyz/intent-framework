@@ -34,20 +34,23 @@ log_and_echo "======================================================"
 ./testing-infra/connected-chain-evm/setup-alice-bob.sh
 ./testing-infra/e2e-tests-evm/deploy-contract.sh
 
+
 ./testing-infra/connected-chain-apt/setup-hub.sh
 ./testing-infra/connected-chain-apt/setup-connected-chain.sh
 ./testing-infra/connected-chain-apt/setup-alice-bob.sh
 ./testing-infra/e2e-tests-apt/deploy-contracts.sh
 
 
-echo ""
-echo "🚀 Step 3: Submitting cross-chain intents, configuring verifier..."
-echo "==============================================================="
-./testing-infra/e2e-tests-evm/submit-cross-chain-intent-evm.sh 0
+log_and_echo ""
+log_and_echo "🚀 Step 3: Submitting cross-chain intents, configuring verifier..."
+log_and_echo "==============================================================="
+./testing-infra/e2e-tests-apt/submit-hub-intent.sh
+./testing-infra/e2e-tests-evm/submit-escrow.sh
+./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh
 ./testing-infra/e2e-tests-evm/configure-verifier.sh
 
 log_and_echo ""
-log_and_echo "🔓 Step 3: Starting verifier and releasing EVM escrow..."
+log_and_echo "🔓 Step 4: Starting verifier and releasing EVM escrow..."
 log_and_echo "========================================================"
 ./testing-infra/e2e-tests-evm/release-escrow.sh
 
@@ -60,6 +63,6 @@ log_and_echo ""
 
 
 log_and_echo ""
-log_and_echo "🧹 Step 4: Cleaning up chains, accounts and processes..."
+log_and_echo "🧹 Step 5: Cleaning up chains, accounts and processes..."
 log_and_echo "======================================================="
 ./testing-infra/e2e-tests-evm/cleanup.sh

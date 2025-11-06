@@ -9,19 +9,9 @@ setup_project_root
 setup_logging "deploy-contracts"
 cd "$PROJECT_ROOT"
 
-log "🚀 APTOS INTENT FRAMEWORK - DEPLOY CONTRACTS"
+log "🚀 DEPLOY CONTRACTS"
 log "============================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
-
-log ""
-log "🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts..."
-log " ============================================="
-./testing-infra/connected-chain-apt/setup-alice-bob.sh
-
-if [ $? -ne 0 ]; then
-    log_and_echo "❌ Failed to setup dual chains with Alice and Bob accounts"
-    exit 1
-fi
 
 log ""
 log "⚙️  Step 2: Configuring Aptos CLI for both chains..."

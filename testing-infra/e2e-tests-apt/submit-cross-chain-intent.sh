@@ -28,44 +28,8 @@ log "  5. Wait for hub intent to be fulfilled"
 log "  6. Sign approval for escrow release on connected chain"
 log ""
 
-# Validate parameter
-if [ -z "$1" ] || ([ "$1" != "0" ] && [ "$1" != "1" ]); then
-    log_and_echo "❌ Error: Invalid parameter!"
-    log_and_echo ""
-    log_and_echo "Usage: $0 <parameter>"
-    log_and_echo "  Parameter 0: Use existing running networks (skip setup)"
-    log_and_echo "  Parameter 1: Run full setup and deploy contracts"
-    log_and_echo ""
-    log_and_echo "Examples:"
-    log_and_echo "  $0 0    # Use existing networks"
-    log_and_echo "  $0 1    # Run full setup"
-    exit 1
-fi
-
 # Generate a random intent_id that will be used for both hub and escrow
 INTENT_ID="0x$(openssl rand -hex 32)"
-
-# Check if we should run setup or use existing networks
-if [ "$1" = "1" ]; then
-    log ""
-    log "🚀 Step 0.1: Setting up chains and deploying contracts..."
-    log "========================================================"
-    ./testing-infra/e2e-tests-apt/deploy-contracts.sh
-
-    if [ $? -ne 0 ]; then
-        log_and_echo "❌ Failed to setup chains and deploy contracts"
-        exit 1
-    fi
-
-    log ""
-    log "✅ Chains setup and contracts deployed successfully!"
-    log ""
-else
-    log ""
-    log "⚡ Using existing running networks (skipping setup)"
-    log "   Use parameter '1' to run full setup: ./submit-cross-chain-intent.sh 1"
-    log ""
-fi
 
 # Note: Verifier monitoring will be handled separately
 

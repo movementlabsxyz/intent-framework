@@ -43,12 +43,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-log_and_echo ""
-log_and_echo "📦 Setting up Aptos chains..."
-log_and_echo "   Starting fresh Docker Aptos localnets (dual chains)..."
 ./testing-infra/connected-chain-apt/setup-dual-chains.sh
-log_and_echo "📦 Deploying contracts on Aptos chains..."
+./testing-infra/connected-chain-apt/setup-alice-bob.sh
 ./testing-infra/e2e-tests-apt/deploy-contracts.sh
+
 
 if [ $? -ne 0 ]; then
     log_and_echo "❌ Failed to setup Aptos chains"

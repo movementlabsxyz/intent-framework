@@ -27,16 +27,10 @@ echo ""
 echo "🚀 Step 0: Setting up chains, deploying contracts, and submitting intents..."
 echo "========================================================================"
 
-echo "   Starting fresh Docker Aptos localnets (dual chains)..."
 ./testing-infra/connected-chain-apt/setup-dual-chains.sh
-
-echo ""
-./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh 1
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to setup and deploy contracts"
-    exit 1
-fi
+./testing-infra/connected-chain-apt/setup-alice-bob.sh
+./testing-infra/e2e-tests-apt/deploy-contracts.sh
+./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh
 
 echo ""
 echo "✅ Setup complete! Extracting module addresses..."
@@ -113,7 +107,7 @@ echo "✅ E2E integration tests completed!"
 echo ""
 echo "🚀 Step 2: Running verifier service to test end-to-end flow..."
 echo "============================================================"
-./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh 0
+./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh
 
 echo ""
 echo "✅ All E2E tests completed!"

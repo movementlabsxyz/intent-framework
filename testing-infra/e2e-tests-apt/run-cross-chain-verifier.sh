@@ -9,44 +9,10 @@ setup_project_root
 setup_logging "verifier_and_escrow_release"
 cd "$PROJECT_ROOT"
 
-# Validate parameter
-if [ -z "$1" ] || ([ "$1" != "0" ] && [ "$1" != "1" ]); then
-    log_and_echo "🔍 CROSS-CHAIN VERIFIER - USAGE"
-    log_and_echo "=============================================="
-    log_and_echo ""
-    log_and_echo "Usage: $0 <parameter>"
-    log_and_echo ""
-    log_and_echo "Options:"
-    log_and_echo "  0: Run verifier only (use existing running networks)"
-    log_and_echo "  1: Run full setup + submit intents + verifier"
-    log_and_echo ""
-    log_and_echo "Examples:"
-    log_and_echo "  $0 0    # Run verifier on existing networks"
-    log_and_echo "  $0 1    # Setup, deploy, submit intents, then run verifier"
-    log_and_echo ""
-    exit 1
-fi
-
 echo "🔍 CROSS-CHAIN VERIFIER - STARTING MONITORING"
 log "=============================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 log ""
-
-# If option 1, run submit script first (which does setup + submit)
-if [ "$1" = "1" ]; then
-    log "🚀 Step 0: Running setup and submitting intents..."
-    log "================================================="
-    ./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh 1
-    
-    if [ $? -ne 0 ]; then
-        log_and_echo "❌ Failed to setup and submit intents"
-        exit 1
-    fi
-    
-    log ""
-    log "✅ Setup and intent submission complete!"
-    log ""
-fi
 
 log "This script will:"
 log "  1. Start the trusted verifier service"

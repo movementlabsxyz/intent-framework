@@ -139,7 +139,7 @@ log "   Alice (Acc 1): $ALICE_ADDRESS"
 log "   Bob (Acc 2):   $BOB_ADDRESS"
 log ""
 log "📋 Useful commands:"
-log "   Stop chain:    ./testing-infra/connected-chain-evm/stop-chain.sh"
+log "   Stop chain:    ./testing-infra/chain-connected-evm/stop-chain.sh"
 log ""
 log "✨ Script completed!"
 

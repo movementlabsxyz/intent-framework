@@ -13,7 +13,7 @@ log "🛑 STOPPING CONNECTED CHAIN (Chain 2)"
 log "======================================"
 
 log "🧹 Stopping Chain 2..."
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-connected-chain-apt.yml -p aptos-chain2 down
+docker-compose -f testing-infra/chain-connected-apt/docker-compose-connected-chain-apt.yml -p aptos-chain2 down
 
 log ""
 log "🧹 Cleaning up Chain 2 Aptos CLI profiles..."

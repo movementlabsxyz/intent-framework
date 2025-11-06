@@ -47,7 +47,7 @@ cd ..
 
 if [ -z "$VAULT_ADDRESS" ]; then
     log_and_echo "⚠️  Warning: Could not find vault address. Please ensure IntentVault is deployed."
-    log_and_echo "   Run: ./testing-infra/connected-chain-evm/deploy-contract.sh"
+    log_and_echo "   Run: ./testing-infra/chain-connected-evm/deploy-contract.sh"
     VAULT_ADDRESS="0x0000000000000000000000000000000000000000"  # Placeholder
 fi
 

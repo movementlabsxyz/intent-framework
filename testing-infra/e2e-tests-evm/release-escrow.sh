@@ -65,7 +65,14 @@ sleep 30
 if curl -s http://127.0.0.1:3333/health >/dev/null 2>&1; then
     log "   ✅ Verifier is healthy"
 else
-    log "   ⚠️  Verifier health check failed"
+    log_and_echo "   ❌ ERROR: Verifier health check failed"
+    log_and_echo "   Verifier process may have crashed or failed to start"
+    log_and_echo "   Verifier PID: $VERIFIER_PID"
+    log_and_echo "   Verifier log: $VERIFIER_LOG"
+    log_and_echo "   Last 50 lines of verifier log:"
+    tail -50 "$VERIFIER_LOG" >> "$LOG_FILE" 2>&1
+    tail -50 "$VERIFIER_LOG"
+    exit 1
 fi
 
 log ""

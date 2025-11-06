@@ -63,26 +63,22 @@ cd evm-intent-framework
 log ""
 log "🔍 Getting Alice and Bob addresses..."
 
-ALICE_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  console.log(signers[1].address);
-})();
-EOF" 2>/dev/null | tail -1 | tr -d '\n')
+ACCOUNTS_OUTPUT=$(nix develop -c bash -c "npx hardhat run scripts/get-accounts.js" 2>&1)
 
-BOB_ADDRESS=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  console.log(signers[2].address);
-})();
-EOF" 2>/dev/null | tail -1 | tr -d '\n')
+if [ $? -ne 0 ]; then
+    log_and_echo "❌ Error: Failed to get account addresses"
+    echo "$ACCOUNTS_OUTPUT" >> "$LOG_FILE"
+    exit 1
+fi
+
+ALICE_ADDRESS=$(echo "$ACCOUNTS_OUTPUT" | grep "^ALICE_ADDRESS=" | cut -d'=' -f2 | tr -d '\n')
+BOB_ADDRESS=$(echo "$ACCOUNTS_OUTPUT" | grep "^BOB_ADDRESS=" | cut -d'=' -f2 | tr -d '\n')
 
 cd ..
 
 if [ -z "$ALICE_ADDRESS" ] || [ -z "$BOB_ADDRESS" ]; then
-    log_and_echo "❌ Error: Failed to get account addresses"
+    log_and_echo "❌ Error: Failed to extract account addresses from output"
+    echo "$ACCOUNTS_OUTPUT" >> "$LOG_FILE"
     exit 1
 fi
 
@@ -98,25 +94,24 @@ log ""
 log "💰 Checking initial balances..."
 
 cd evm-intent-framework
-ALICE_BALANCE=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const balance = await hre.ethers.provider.getBalance(signers[0].address);
-  console.log(balance.toString());
-})();
-EOF" 2>/dev/null | tail -1 | tr -d '\n')
+BALANCES_OUTPUT=$(nix develop -c bash -c "npx hardhat run scripts/get-accounts.js" 2>&1)
 
-BOB_BALANCE=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const balance = await hre.ethers.provider.getBalance(signers[1].address);
-  console.log(balance.toString());
-})();
-EOF" 2>/dev/null | tail -1 | tr -d '\n')
+if [ $? -ne 0 ]; then
+    log_and_echo "❌ Error: Failed to get account balances"
+    echo "$BALANCES_OUTPUT" >> "$LOG_FILE"
+    exit 1
+fi
+
+ALICE_BALANCE=$(echo "$BALANCES_OUTPUT" | grep "^ALICE_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
+BOB_BALANCE=$(echo "$BALANCES_OUTPUT" | grep "^BOB_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
 
 cd ..
+
+if [ -z "$ALICE_BALANCE" ] || [ -z "$BOB_BALANCE" ]; then
+    log_and_echo "❌ Error: Failed to extract account balances from output"
+    echo "$BALANCES_OUTPUT" >> "$LOG_FILE"
+    exit 1
+fi
 
 log "   Alice balance: $ALICE_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
 log "   Bob balance:   $BOB_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
@@ -130,26 +125,7 @@ log ""
 log "🧪 Testing transfer from Alice to Bob..."
 
 cd evm-intent-framework
-TRANSFER_RESULT=$(nix develop -c bash -c "npx hardhat run - <<'EOF'
-const hre = require('hardhat');
-(async () => {
-  const signers = await hre.ethers.getSigners();
-  const alice = signers[0];
-  const bob = signers[1];
-  
-  const amount = hre.ethers.parseEther('1.0'); // 1 ETH
-  
-  const tx = await alice.sendTransaction({
-    to: bob.address,
-    value: amount
-  });
-  
-  await tx.wait();
-  
-  const bobBalanceAfter = await hre.ethers.provider.getBalance(bob.address);
-  console.log('SUCCESS: Bob balance after transfer:', bobBalanceAfter.toString());
-})();
-EOF" 2>&1)
+TRANSFER_RESULT=$(nix develop -c bash -c "npx hardhat run scripts/test-transfer.js" 2>&1)
 
 cd ..
 
@@ -167,8 +143,8 @@ log ""
 log "📋 Summary:"
 log "   EVM Chain:     http://127.0.0.1:8545"
 log "   Chain ID:      31337"
-log "   Alice (Acc 0): $ALICE_ADDRESS"
-log "   Bob (Acc 1):   $BOB_ADDRESS"
+log "   Alice (Acc 1): $ALICE_ADDRESS"
+log "   Bob (Acc 2):   $BOB_ADDRESS"
 log ""
 log "📋 Useful commands:"
 log "   Stop chain:    ./testing-infra/connected-chain-evm/stop-evm-chain.sh"

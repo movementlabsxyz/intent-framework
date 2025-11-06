@@ -32,7 +32,7 @@ log_and_echo "🚀 Step 2: Setting up chains and deploying contracts..."
 log_and_echo "======================================================"
 
 ./testing-infra/connected-chain-evm/setup-alice-bob.sh
-./testing-infra/e2e-tests-evm/setup-and-deploy-evm.sh
+./testing-infra/e2e-tests-evm/deploy-contract.sh
 
 ./testing-infra/connected-chain-apt/setup-dual-chains.sh
 ./testing-infra/connected-chain-apt/setup-alice-bob.sh

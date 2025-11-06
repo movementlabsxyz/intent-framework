@@ -52,7 +52,7 @@ if [ "$1" = "1" ]; then
     
     # Setup EVM chain first
     log "📦 Setting up EVM chain (Chain 3)..."
-    ./testing-infra/e2e-tests-evm/setup-and-deploy-evm.sh
+    ./testing-infra/e2e-tests-evm/deploy-contract.sh
 
     if [ $? -ne 0 ]; then
         log_and_echo "❌ Failed to setup EVM chain"
@@ -88,7 +88,7 @@ BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1
 
 # Get EVM vault address from deployment logs or config
 cd evm-intent-framework
-VAULT_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-vault"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+VAULT_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
 if [ -z "$VAULT_ADDRESS" ]; then
     # Try to get from hardhat config or last deployment
     VAULT_ADDRESS=$(nix develop -c bash -c "npx hardhat run scripts/deploy.js --network localhost --dry-run 2>&1 | grep 'IntentVault deployed to' | awk '{print \$NF}'" 2>/dev/null | tail -1 | tr -d '\n')
@@ -97,7 +97,7 @@ cd ..
 
 if [ -z "$VAULT_ADDRESS" ]; then
     log_and_echo "⚠️  Warning: Could not find vault address. Please ensure IntentVault is deployed."
-    log_and_echo "   Run: ./testing-infra/e2e-tests-evm/deploy-vault.sh"
+    log_and_echo "   Run: ./testing-infra/e2e-tests-evm/deploy-contract.sh"
     VAULT_ADDRESS="0x0000000000000000000000000000000000000000"  # Placeholder
 fi
 

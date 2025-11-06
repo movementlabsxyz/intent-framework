@@ -19,7 +19,6 @@ Tests mixed-chain intent framework: intents on Aptos Chain 1 (hub) and escrows o
 ## Test Scripts
 
 - `run-tests.sh` - Complete test runner (setup → test → cleanup)
-- `setup-and-deploy-evm.sh` - Sets up EVM chain and deploys vault
-- `deploy-vault.sh` - Deploys IntentVault contract to EVM
+- `deploy-contract.sh` - Deploys IntentVault contract to EVM
 - `submit-cross-chain-intent-evm.sh` - Creates intent and escrow
 - `release-escrow.sh` - Runs verifier and releases escrow

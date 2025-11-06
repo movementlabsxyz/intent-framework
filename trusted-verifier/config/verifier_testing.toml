@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 4
-intent_module_address = "0x993e535535a297f649712ffea6fcb83a11bb6feb31223fbe7bf56ace7dea49cb"
-known_accounts = ["9c5666ad3a7e0245e406e592d12a3fe33e6a3e21a82b9884d3518cc1a03438e0", "a7634340cc96bcd63542afa447021124a028470802a58f2df22dfbf0aed5c8d7"]
+intent_module_address = "0xbb10780188504134178816a5d25548e191e14c3709e1f23f3b22840bab64f20d"
+known_accounts = ["aee84575f3b8fa93200f81b35a8c4b11f6a49774ee345868a27a9904da139463", "7a92c85319e135c866e185465c6fd7af0c57a657b8155f6a1ce9179aee5a1a63"]
 
 # Connected Chain Configuration  
 # The connected chain is where escrow events occur and are monitored

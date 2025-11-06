@@ -31,7 +31,7 @@ log_and_echo "   Chain 1 deployer: $CHAIN1_ADDRESS"
 
 # Get EVM vault address
 cd evm-intent-framework
-VAULT_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-vault"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+VAULT_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
 cd ..
 
 if [ -z "$VAULT_ADDRESS" ]; then

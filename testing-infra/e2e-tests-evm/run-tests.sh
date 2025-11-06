@@ -23,21 +23,11 @@ log_and_echo "=========================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 log_and_echo ""
 
-log_and_echo "🧹 Cleaning up any existing chains and processes..."
-log_and_echo "=================================================="
-
-# Stop EVM chain (Hardhat node)
-log_and_echo "   - Stopping EVM chain..."
-./testing-infra/connected-chain-evm/stop-evm-chain.sh
-
-# Stop Aptos chains
-log_and_echo "   - Stopping Aptos chains..."
+log_and_echo "🧹 Step -1: Cleaning up any existing chains and processes..."
+log_and_echo "=========================================================="
 ./testing-infra/connected-chain-apt/stop-dual-chains.sh
-
-# Stop any existing verifier processes
-log "   - Stopping any existing verifier processes..."
+./testing-infra/connected-chain-evm/stop-evm-chain.sh
 pkill -f "trusted-verifier" || true
-
 log_and_echo "✅ Cleanup complete"
 log_and_echo ""
 

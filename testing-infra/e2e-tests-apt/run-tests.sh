@@ -16,6 +16,14 @@ echo "🧪 E2E Integration Tests Runner"
 echo "================================"
 echo ""
 
+echo "🧹 Step -1: Cleaning up any existing chains and processes..."
+echo "=========================================================="
+./testing-infra/connected-chain-apt/stop-dual-chains.sh
+./testing-infra/connected-chain-evm/stop-evm-chain.sh
+pkill -f "trusted-verifier" || true
+echo "✅ Cleanup complete"
+echo ""
+
 echo "🚀 Step 0: Setting up chains, deploying contracts, and submitting intents..."
 echo "========================================================================"
 ./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh 1

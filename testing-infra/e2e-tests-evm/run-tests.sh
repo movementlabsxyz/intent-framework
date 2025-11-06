@@ -34,24 +34,11 @@ log_and_echo ""
 log_and_echo "🚀 Step 0: Setting up chains and deploying contracts..."
 log_and_echo "======================================================"
 
-# Setup EVM chain first
-log_and_echo "📦 Setting up EVM chain..."
 ./testing-infra/e2e-tests-evm/setup-and-deploy-evm.sh
-
-if [ $? -ne 0 ]; then
-    log_and_echo "❌ Failed to setup EVM chain"
-    exit 1
-fi
 
 ./testing-infra/connected-chain-apt/setup-dual-chains.sh
 ./testing-infra/connected-chain-apt/setup-alice-bob.sh
 ./testing-infra/e2e-tests-apt/deploy-contracts.sh
-
-
-if [ $? -ne 0 ]; then
-    log_and_echo "❌ Failed to setup Aptos chains"
-    exit 1
-fi
 
 log_and_echo ""
 log_and_echo "✅ Setup complete! Extracting module addresses..."

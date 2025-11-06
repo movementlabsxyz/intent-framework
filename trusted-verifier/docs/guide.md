@@ -16,24 +16,13 @@ Keys
 
 ## Running
 
-Local dual‑chain setup and full flow (setup + submit + verifier + escrow release):
+Run the full E2E test flow:
 
 ```
-./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh 1
+./testing-infra/e2e-tests-apt/run-tests.sh
 ```
 
-Verifier only (assumes chains and intents already created):
-
-```
-./testing-infra/e2e-tests-apt/run-cross-chain-verifier.sh 0
-```
-
-What the script does
-1) Starts/validates chains, funds accounts, deploys modules
-2) Submits hub intent, creates connected‑chain escrow, fulfills hub intent
-3) Starts verifier (background), waits for events
-4) Polls `/approvals` and calls `complete_escrow_from_fa` with the approval
-5) Prints initial/final balances and diffs on both chains
+This script sets up chains, deploys contracts, submits intents, runs integration tests, starts the verifier, and releases escrow.
 
 ## Event linkage
 

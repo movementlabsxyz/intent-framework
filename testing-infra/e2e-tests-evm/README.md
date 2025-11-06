@@ -22,4 +22,4 @@ Tests mixed-chain intent framework: intents on Aptos Chain 1 (hub) and escrows o
 - `setup-and-deploy-evm.sh` - Sets up EVM chain and deploys vault
 - `deploy-vault.sh` - Deploys IntentVault contract to EVM
 - `submit-cross-chain-intent-evm.sh` - Creates intent and escrow
-- `release-evm-escrow.sh` - Runs verifier and releases escrow
+- `release-escrow.sh` - Runs verifier and releases escrow

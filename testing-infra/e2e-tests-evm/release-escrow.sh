@@ -6,19 +6,69 @@ source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "release-evm-escrow"
+setup_logging "release-escrow-evm"
 cd "$PROJECT_ROOT"
 
 log "🔓 EVM ESCROW RELEASE"
 log "====================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
+log ""
 
-# Check if verifier is running
-if ! curl -s http://127.0.0.1:3333/health >/dev/null 2>&1; then
-    log_and_echo "❌ Verifier is not running. Please start it first:"
-    log_and_echo "   ./testing-infra/e2e-tests-apt/release-escrow.sh"
+log "This script will:"
+log "  1. Start the trusted verifier service"
+log "  2. Monitor events on Chain 1 (Aptos hub) for intents and fulfillments"
+log "  3. When fulfillment detected, create ECDSA signature"
+log "  4. Release escrow on Chain 3 (EVM)"
+log ""
+
+# Check if verifier is already running and stop it
+log "   Checking for existing verifiers..."
+# Look for the actual cargo/rust processes, not the script
+if pgrep -f "cargo.*trusted-verifier" > /dev/null || pgrep -f "target/debug/trusted-verifier" > /dev/null; then
+    log "   ⚠️  Found existing verifier processes, stopping them..."
+    pkill -f "cargo.*trusted-verifier"
+    pkill -f "target/debug/trusted-verifier"
+    sleep 2
+else
+    log "   ✅ No existing verifier processes"
+fi
+
+# Start verifier in background
+cd trusted-verifier
+VERIFIER_PID=""
+VERIFIER_LOG="$PROJECT_ROOT/tmp/intent-framework-logs/verifier-evm.log"
+mkdir -p "$(dirname "$VERIFIER_LOG")"
+
+log "   Starting verifier service..."
+cargo run --bin trusted-verifier > "$VERIFIER_LOG" 2>&1 &
+VERIFIER_PID=$!
+
+# Wait for verifier to start
+sleep 5
+
+if ! ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
+    log_and_echo "   ❌ Verifier failed to start"
+    cat "$VERIFIER_LOG"
     exit 1
 fi
+
+log "   ✅ Verifier started (PID: $VERIFIER_PID)"
+log ""
+
+cd ..
+
+# Give verifier some time to process events
+log "   ⏳ Waiting for verifier to process events (30 seconds)..."
+sleep 30
+
+# Check verifier health
+if curl -s http://127.0.0.1:3333/health >/dev/null 2>&1; then
+    log "   ✅ Verifier is healthy"
+else
+    log "   ⚠️  Verifier health check failed"
+fi
+
+log ""
 
 # Get EVM vault address
 cd evm-intent-framework

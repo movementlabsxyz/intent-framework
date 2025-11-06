@@ -50,7 +50,8 @@ log_and_echo "==============================================================="
 ./testing-infra/e2e-tests-apt/submit-hub-intent.sh
 ./testing-infra/e2e-tests-evm/submit-escrow.sh
 ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh
-./testing-infra/e2e-tests-evm/configure-verifier.sh
+./testing-infra/hub-chain/configure-verifier.sh
+./testing-infra/connected-chain-evm/configure-verifier.sh
 
 log_and_echo ""
 log_and_echo "🔓 Step 4: Starting verifier and releasing EVM escrow..."

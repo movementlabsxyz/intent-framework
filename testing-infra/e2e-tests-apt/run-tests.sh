@@ -36,7 +36,8 @@ echo "================================================================"
 ./testing-infra/e2e-tests-apt/submit-hub-intent.sh
 ./testing-infra/e2e-tests-apt/submit-escrow.sh
 ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh
-./testing-infra/e2e-tests-apt/configure-verifier.sh
+./testing-infra/hub-chain/configure-verifier.sh
+./testing-infra/connected-chain-apt/configure-verifier.sh
 
 echo ""
 echo "🚀 Step 4: Running Rust integration tests..."

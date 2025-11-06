@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Configure Verifier for EVM E2E Tests
+# Configure Verifier for Connected EVM Chain
 # 
-# This script extracts deployed contract addresses and updates verifier_testing.toml
-# with the current deployment addresses for both Aptos Chain 1 and EVM Chain 3.
+# This script extracts deployed contract addresses from the EVM chain
+# and updates the [evm_chain] section in verifier_testing.toml.
 
 set -e
 
@@ -13,21 +13,11 @@ source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "configure-verifier-evm"
+setup_logging "configure-verifier-connected-evm"
 cd "$PROJECT_ROOT"
 
-log_and_echo "✅ Setup complete! Extracting module addresses..."
+log_and_echo "✅ Configuring verifier for Connected EVM Chain..."
 log_and_echo ""
-
-# Extract deployed addresses from aptos profiles and update verifier.toml
-CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
-
-if [ -z "$CHAIN1_ADDRESS" ]; then
-    log_and_echo "❌ ERROR: Could not extract Chain 1 deployed module address"
-    exit 1
-fi
-
-log_and_echo "   Chain 1 deployer: $CHAIN1_ADDRESS"
 
 # Get EVM vault address
 cd evm-intent-framework
@@ -72,9 +62,6 @@ log_and_echo "   EVM Verifier: $VERIFIER_ADDRESS"
 # Export config path for Rust code to use (absolute path so tests can find it)
 export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
 
-# Update module addresses in verifier_testing.toml
-sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
-
 # Add or update EVM chain section in verifier_testing.toml
 if grep -q "^\[evm_chain\]" "$VERIFIER_TESTING_CONFIG"; then
     # Update existing section
@@ -97,14 +84,6 @@ else
     fi
 fi
 
-# Get Alice and Bob addresses and update known_accounts
-ALICE_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain1"].account')
-BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1"].account')
-
-if [ -n "$ALICE_CHAIN1_ADDRESS" ] && [ -n "$BOB_CHAIN1_ADDRESS" ]; then
-    sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
-fi
-
-log_and_echo "✅ Updated verifier_testing.toml with deployed addresses"
+log_and_echo "✅ Updated verifier_testing.toml with Connected EVM Chain addresses"
 log_and_echo ""
 

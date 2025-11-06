@@ -29,10 +29,10 @@ Infrastructure setup for running chains for development and testing.
 
 ```bash
 # Start EVM chain
-./testing-infra/connected-chain-evm/setup-evm-chain.sh
+./testing-infra/connected-chain-evm/setup-chain.sh
 
 # Stop EVM chain
-./testing-infra/connected-chain-evm/stop-evm-chain.sh
+./testing-infra/connected-chain-evm/stop-chain.sh
 ```
 
 **Endpoints:**

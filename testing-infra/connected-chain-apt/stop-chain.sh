@@ -6,7 +6,7 @@ source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "stop-connected-chain"
+setup_logging "stop-chain"
 cd "$PROJECT_ROOT"
 
 log "🛑 STOPPING CONNECTED CHAIN (Chain 2)"

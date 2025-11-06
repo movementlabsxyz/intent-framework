@@ -15,11 +15,11 @@ log_and_echo "📝 All output logged to: $LOG_FILE"
 
 # Stop any existing container
 log "🧹 Stopping existing Chain 1 container..."
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down 2>/dev/null || true
+docker-compose -f testing-infra/hub-chain/docker-compose-chain1.yml -p aptos-chain1 down 2>/dev/null || true
 
 log ""
 log "🚀 Starting Chain 1 (ports 8080/8081)..."
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 up -d
+docker-compose -f testing-infra/hub-chain/docker-compose-chain1.yml -p aptos-chain1 up -d
 
 log ""
 log "⏳ Waiting for Chain 1 to start (this may take 2-3 minutes)..."

@@ -6,7 +6,7 @@ source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "stop-evm-chain"
+setup_logging "stop-chain"
 cd "$PROJECT_ROOT"
 
 log "🛑 EVM CHAIN CLEANUP"

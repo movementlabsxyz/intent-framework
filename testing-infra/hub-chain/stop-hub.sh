@@ -13,7 +13,7 @@ log "🛑 STOPPING HUB CHAIN (Chain 1)"
 log "================================"
 
 log "🧹 Stopping Chain 1..."
-docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down
+docker-compose -f testing-infra/hub-chain/docker-compose-chain1.yml -p aptos-chain1 down
 
 log ""
 log "🧹 Cleaning up Chain 1 Aptos CLI profiles..."

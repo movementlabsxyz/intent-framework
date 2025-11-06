@@ -18,9 +18,9 @@ cd "$PROJECT_ROOT"
 
 log_and_echo "🧹 Cleaning up chains and processes..."
 
-./testing-infra/connected-chain-evm/stop-evm-chain.sh || true
-./testing-infra/connected-chain-apt/stop-hub.sh
-./testing-infra/connected-chain-apt/stop-connected-chain.sh
+./testing-infra/connected-chain-evm/stop-chain.sh || true
+./testing-infra/hub-chain/stop-hub.sh
+./testing-infra/connected-chain-apt/stop-chain.sh
 pkill -f "trusted-verifier" || true
 
 log_and_echo "✅ Cleanup complete"

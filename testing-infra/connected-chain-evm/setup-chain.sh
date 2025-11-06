@@ -6,7 +6,7 @@ source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "setup-evm-chain"
+setup_logging "setup-chain"
 cd "$PROJECT_ROOT"
 
 log "🔗 EVM CHAIN SETUP"
@@ -143,7 +143,7 @@ log ""
 log "   Private keys available via: npx hardhat node"
 log ""
 log "📋 Management Commands:"
-log "   Stop node:      ./testing-infra/connected-chain-evm/stop-evm-chain.sh"
+log "   Stop node:      ./testing-infra/connected-chain-evm/stop-chain.sh"
 log "   View logs:      tail -f $LOG_FILE"
 log "   Check status:   curl -X POST http://127.0.0.1:8545 -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}'"
 log ""

@@ -26,15 +26,7 @@ log ""
 log "% - - - - - - - - - - - SETUP - - - - - - - - - - - -"
 log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
-# Stop any existing Hardhat node
-log "🧹 Stopping any existing Hardhat node..."
-./testing-infra/connected-chain-evm/stop-chain.sh
-
-# Start fresh Hardhat node
-log "🚀 Starting fresh Hardhat EVM node..."
-./testing-infra/connected-chain-evm/setup-chain.sh
-
-# Wait for node to be fully ready
+# Wait for node to be fully ready (assumes setup-chain.sh was already run)
 log "⏳ Waiting for node to be fully ready..."
 sleep 5
 

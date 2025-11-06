@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# Setup Dual Chains and Test Alice/Bob Accounts
+# Setup Connected Chain Test Alice/Bob Accounts
 # This script:
-# 1. Sets up dual Docker Aptos localnets
-# 2. Creates and funds Alice and Bob accounts on both chains
-# 3. Tests transfers between Alice and Bob on both chains
+# 1. Creates and funds Alice and Bob accounts on Chain 2 (connected chain)
 # Run this from the host machine (not inside Docker)
 
 set -e
@@ -15,42 +13,20 @@ source "$SCRIPT_DIR/../common.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "setup-dual-chains"
+setup_logging "setup-alice-bob-connected"
 cd "$PROJECT_ROOT"
 
 # Expected funding amount in octas
 # Note: aptos init funds accounts with 100000000, then we fund again with 100000000 = 200000000 total
 EXPECTED_FUNDING_AMOUNT=200000000
 
-log "🧪 Alice and Bob Account Testing - DUAL CHAINS"
-log "=============================================="
+log "🧪 Alice and Bob Account Setup - CONNECTED CHAIN (Chain 2)"
+log "==========================================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 
 log ""
 log "% - - - - - - - - - - - SETUP - - - - - - - - - - - -"
 log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-
-# Create test accounts for Chain 1
-log ""
-log "👥 Creating test accounts for Chain 1..."
-
-# Create alice account for Chain 1
-log "Creating alice-chain1 account for Chain 1..."
-if printf "\n" | aptos init --profile alice-chain1 --network local --assume-yes >> "$LOG_FILE" 2>&1; then
-    log "✅ Alice-chain1 account created successfully on Chain 1"
-else
-    log_and_echo "❌ Failed to create Alice-chain1 account on Chain 1"
-    exit 1
-fi
-
-# Create bob account for Chain 1
-log "Creating bob-chain1 account for Chain 1..."
-if printf "\n" | aptos init --profile bob-chain1 --network local --assume-yes >> "$LOG_FILE" 2>&1; then
-    log "✅ Bob-chain1 account created successfully on Chain 1"
-else
-    log_and_echo "❌ Failed to create Bob-chain1 account on Chain 1"
-    exit 1
-fi
 
 # Create test accounts for Chain 2
 log ""
@@ -78,19 +54,13 @@ log ""
 log "% - - - - - - - - - - - FUNDING - - - - - - - - - - - -"
 log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
-# Fund all accounts using common function
-fund_and_verify_account "alice-chain1" "1" "Alice Chain 1" "$EXPECTED_FUNDING_AMOUNT" "ALICE_BALANCE"
-fund_and_verify_account "bob-chain1" "1" "Bob Chain 1" "$EXPECTED_FUNDING_AMOUNT" "BOB_BALANCE"
+# Fund Chain 2 accounts using common function
 fund_and_verify_account "alice-chain2" "2" "Alice Chain 2" "$EXPECTED_FUNDING_AMOUNT" "ALICE2_BALANCE"
 fund_and_verify_account "bob-chain2" "2" "Bob Chain 2" "$EXPECTED_FUNDING_AMOUNT" "BOB2_BALANCE"
 
-log_and_echo "✅ Accounts funded"
-
-# Display initial balances using common function (variables already set above)
-display_balances
+log_and_echo "✅ Connected chain accounts funded"
 
 log ""
-log "🎉 DUAL-CHAIN ALICE AND BOB SETUP COMPLETE!"
-log "============================================"
-log "✨ Ready for cross-chain testing!"
-
+log "🎉 CONNECTED CHAIN ALICE AND BOB SETUP COMPLETE!"
+log "=================================================="
+log "✨ Connected chain accounts ready!"

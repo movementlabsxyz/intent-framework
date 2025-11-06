@@ -22,10 +22,13 @@ echo "================================================================"
 
 echo "🚀 Step 2: Setting up chains, deploying contracts, funding accounts"
 echo "===================================================================="
-./testing-infra/hub-chain/setup-hub.sh
+./testing-infra/hub-chain/setup-chain.sh
+./testing-infra/hub-chain/setup-alice-bob.sh
+./testing-infra/hub-chain/deploy-contracts.sh
+
 ./testing-infra/connected-chain-apt/setup-chain.sh
 ./testing-infra/connected-chain-apt/setup-alice-bob.sh
-./testing-infra/e2e-tests-apt/deploy-contracts.sh
+./testing-infra/connected-chain-apt/deploy-contracts.sh
 
 echo ""
 echo "🚀 Step 3: Submitting cross-chain intents, configuring verifier..."

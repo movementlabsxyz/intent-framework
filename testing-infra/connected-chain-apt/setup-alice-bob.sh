@@ -30,74 +30,6 @@ log ""
 log "% - - - - - - - - - - - SETUP - - - - - - - - - - - -"
 log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 
-# Start fresh Docker localnets (both chains)
-log "🚀 Starting fresh Docker Aptos localnets (dual chains)..."
-./testing-infra/connected-chain-apt/setup-dual-chains.sh
-
-# Wait for services to be fully ready
-log "⏳ Waiting for services to be fully ready..."
-sleep 15
-
-# Verify Chain 1 is running
-log "🔍 Verifying Chain 1 is running..."
-if ! curl -s http://127.0.0.1:8080/v1 > /dev/null; then
-    log_and_echo "❌ Error: Chain 1 failed to start on port 8080"
-    exit 1
-fi
-log "✅ Chain 1 is running"
-
-# Verify Chain 2 is running
-log "🔍 Verifying Chain 2 is running..."
-if ! curl -s http://127.0.0.1:8082/v1 > /dev/null; then
-    log_and_echo "❌ Error: Chain 2 failed to start on port 8082"
-    exit 1
-fi
-log "✅ Chain 2 is running"
-
-# Verify faucets are running
-log "🔍 Verifying faucets are running..."
-FAUCET1_RESPONSE=$(curl -s http://127.0.0.1:8081/ 2>/dev/null || echo "")
-FAUCET2_RESPONSE=$(curl -s http://127.0.0.1:8083/ 2>/dev/null || echo "")
-
-if [ "$FAUCET1_RESPONSE" = "tap:ok" ]; then
-    log "✅ Chain 1 faucet is running"
-else
-    log_and_echo "❌ Error: Chain 1 faucet failed to start on port 8081"
-    exit 1
-fi
-
-if [ "$FAUCET2_RESPONSE" = "tap:ok" ]; then
-    log "✅ Chain 2 faucet is running"
-else
-    log_and_echo "❌ Error: Chain 2 faucet failed to start on port 8083"
-    exit 1
-fi
-
-log_and_echo "✅ Docker chains setup"
-
-# Show chain status (logged only, not displayed to terminal)
-log ""
-log "📊 Chain Status:"
-CHAIN1_INFO=$(curl -s http://127.0.0.1:8080/v1 2>/dev/null)
-CHAIN1_ID=$(echo "$CHAIN1_INFO" | jq -r '.chain_id // "unknown"' 2>/dev/null)
-CHAIN1_HEIGHT=$(echo "$CHAIN1_INFO" | jq -r '.block_height // "unknown"' 2>/dev/null)
-CHAIN1_ROLE=$(echo "$CHAIN1_INFO" | jq -r '.node_role // "unknown"' 2>/dev/null)
-log "   Chain 1: ID=$CHAIN1_ID, Height=$CHAIN1_HEIGHT, Role=$CHAIN1_ROLE"
-
-CHAIN2_INFO=$(curl -s http://127.0.0.1:8082/v1 2>/dev/null)
-CHAIN2_ID=$(echo "$CHAIN2_INFO" | jq -r '.chain_id // "unknown"' 2>/dev/null)
-CHAIN2_HEIGHT=$(echo "$CHAIN2_INFO" | jq -r '.block_height // "unknown"' 2>/dev/null)
-CHAIN2_ROLE=$(echo "$CHAIN2_INFO" | jq -r '.node_role // "unknown"' 2>/dev/null)
-log "   Chain 2: ID=$CHAIN2_ID, Height=$CHAIN2_HEIGHT, Role=$CHAIN2_ROLE"
-
-# Clean up any existing profiles
-log ""
-log "🧹 Cleaning up existing CLI profiles..."
-aptos config delete-profile --profile alice-chain1 >> "$LOG_FILE" 2>&1 || true
-aptos config delete-profile --profile bob-chain1 >> "$LOG_FILE" 2>&1 || true
-aptos config delete-profile --profile alice-chain2 >> "$LOG_FILE" 2>&1 || true
-aptos config delete-profile --profile bob-chain2 >> "$LOG_FILE" 2>&1 || true
-
 # Create test accounts for Chain 1
 log ""
 log "👥 Creating test accounts for Chain 1..."
@@ -195,3 +127,4 @@ log "   Test Chain 1:    aptos account balance --profile alice"
 log "   Test Chain 2:    aptos account balance --profile alice-chain2"
 log ""
 log "✨ Ready for cross-chain testing!"
+

@@ -1,4 +1,4 @@
-name: "E2E Integration Tests (EVM Mixed-Chain)"
+name: "E2E Integration Tests (Connected EVM Chain)"
 on:
   pull_request:
   push:

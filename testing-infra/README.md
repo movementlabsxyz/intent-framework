@@ -12,7 +12,7 @@ Infrastructure setup for running chains for development and testing.
 
 ```bash
 # Multi-chain setup (two independent localnets with Alice and Bob accounts)
-./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
+./testing-infra/connected-chain-apt/setup-alice-bob.sh
 
 # Or setup chains only
 ./testing-infra/connected-chain-apt/setup-dual-chains.sh

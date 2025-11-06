@@ -26,6 +26,11 @@ echo ""
 
 echo "🚀 Step 0: Setting up chains, deploying contracts, and submitting intents..."
 echo "========================================================================"
+
+echo "   Starting fresh Docker Aptos localnets (dual chains)..."
+./testing-infra/connected-chain-apt/setup-dual-chains.sh
+
+echo ""
 ./testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh 1
 
 if [ $? -ne 0 ]; then

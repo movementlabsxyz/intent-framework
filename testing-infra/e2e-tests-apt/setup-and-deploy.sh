@@ -16,7 +16,7 @@ log_and_echo "📝 All output logged to: $LOG_FILE"
 log ""
 log "🔗 Step 1: Setting up dual Docker chains with Alice and Bob accounts..."
 log " ============================================="
-./testing-infra/connected-chain-apt/setup-dual-chains-and-test-alice-bob.sh
+./testing-infra/connected-chain-apt/setup-alice-bob.sh
 
 if [ $? -ne 0 ]; then
     log_and_echo "❌ Failed to setup dual chains with Alice and Bob accounts"

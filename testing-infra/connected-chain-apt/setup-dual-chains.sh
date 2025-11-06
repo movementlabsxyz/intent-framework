@@ -54,44 +54,55 @@ done
 log ""
 log "🔍 Verifying both chains..."
 
-# Check Chain 1
-CHAIN1_INFO=$(curl -s http://127.0.0.1:8080/v1/ledger/info 2>/dev/null || echo "null")
-if [ "$CHAIN1_INFO" != "null" ]; then
-    CHAIN1_ID=$(echo "$CHAIN1_INFO" | jq -r '.chain_id // "unknown"')
-    CHAIN1_HEIGHT=$(echo "$CHAIN1_INFO" | jq -r '.block_height // "unknown"')
-    log "✅ Chain 1: ID=$CHAIN1_ID, Height=$CHAIN1_HEIGHT"
+# Verify Chain 1 is running
+log "   - Verifying Chain 1 REST API..."
+if ! curl -s http://127.0.0.1:8080/v1 > /dev/null; then
+    log_and_echo "❌ Error: Chain 1 failed to start on port 8080"
+    exit 1
+fi
+log "   ✅ Chain 1 REST API is running"
+
+# Verify Chain 2 is running
+log "   - Verifying Chain 2 REST API..."
+if ! curl -s http://127.0.0.1:8082/v1 > /dev/null; then
+    log_and_echo "❌ Error: Chain 2 failed to start on port 8082"
+    exit 1
+fi
+log "   ✅ Chain 2 REST API is running"
+
+# Verify faucets are running
+log "   - Verifying faucets..."
+FAUCET1_RESPONSE=$(curl -s http://127.0.0.1:8081/ 2>/dev/null || echo "")
+FAUCET2_RESPONSE=$(curl -s http://127.0.0.1:8083/ 2>/dev/null || echo "")
+
+if [ "$FAUCET1_RESPONSE" = "tap:ok" ]; then
+    log "   ✅ Chain 1 faucet is running"
 else
-    log_and_echo "❌ Chain 1 failed to start"
+    log_and_echo "❌ Error: Chain 1 faucet failed to start on port 8081"
     exit 1
 fi
 
-# Check Chain 2
-CHAIN2_INFO=$(curl -s http://127.0.0.1:8082/v1/ledger/info 2>/dev/null || echo "null")
-if [ "$CHAIN2_INFO" != "null" ]; then
-    CHAIN2_ID=$(echo "$CHAIN2_INFO" | jq -r '.chain_id // "unknown"')
-    CHAIN2_HEIGHT=$(echo "$CHAIN2_INFO" | jq -r '.block_height // "unknown"')
-    log "✅ Chain 2: ID=$CHAIN2_ID, Height=$CHAIN2_HEIGHT"
+if [ "$FAUCET2_RESPONSE" = "tap:ok" ]; then
+    log "   ✅ Chain 2 faucet is running"
 else
-    log_and_echo "❌ Chain 2 failed to start"
+    log_and_echo "❌ Error: Chain 2 faucet failed to start on port 8083"
     exit 1
 fi
 
+# Show chain status
 log ""
-log "🔗 Dual-Chain Endpoints:"
-log "   Chain 1:"
-log "     REST API:        http://127.0.0.1:8080"
-log "     Faucet:          http://127.0.0.1:8081"
-log "   Chain 2:"
-log "     REST API:        http://127.0.0.1:8082"
-log "     Faucet:          http://127.0.0.1:8083"
+log "📊 Chain Status:"
+CHAIN1_INFO=$(curl -s http://127.0.0.1:8080/v1 2>/dev/null)
+CHAIN1_ID=$(echo "$CHAIN1_INFO" | jq -r '.chain_id // "unknown"' 2>/dev/null)
+CHAIN1_HEIGHT=$(echo "$CHAIN1_INFO" | jq -r '.block_height // "unknown"' 2>/dev/null)
+CHAIN1_ROLE=$(echo "$CHAIN1_INFO" | jq -r '.node_role // "unknown"' 2>/dev/null)
+log "   Chain 1: ID=$CHAIN1_ID, Height=$CHAIN1_HEIGHT, Role=$CHAIN1_ROLE"
 
-log ""
-log "📋 Management Commands:"
-log "   Stop Chain 1:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 down"
-log "   Stop Chain 2:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 down"
-log "   Stop Both:       ./testing-infra/connected-chain-apt/stop-dual-chains.sh"
-log "   Logs Chain 1:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain1.yml -p aptos-chain1 logs -f"
-log "   Logs Chain 2:    docker-compose -f testing-infra/connected-chain-apt/docker-compose-chain2.yml -p aptos-chain2 logs -f"
+CHAIN2_INFO=$(curl -s http://127.0.0.1:8082/v1 2>/dev/null)
+CHAIN2_ID=$(echo "$CHAIN2_INFO" | jq -r '.chain_id // "unknown"' 2>/dev/null)
+CHAIN2_HEIGHT=$(echo "$CHAIN2_INFO" | jq -r '.block_height // "unknown"' 2>/dev/null)
+CHAIN2_ROLE=$(echo "$CHAIN2_INFO" | jq -r '.node_role // "unknown"' 2>/dev/null)
+log "   Chain 2: ID=$CHAIN2_ID, Height=$CHAIN2_HEIGHT, Role=$CHAIN2_ROLE"
 
 log ""
 log "🎉 Dual-chain setup complete!"

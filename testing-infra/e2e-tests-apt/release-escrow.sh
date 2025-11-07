@@ -3,6 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../common_apt.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -267,10 +268,10 @@ else
                     log "   ✅ Found correct escrow object address: $ACTUAL_ESCROW_ID (was: $ESCROW_ID)"
                     ESCROW_ID="$ACTUAL_ESCROW_ID"
                 else
-                    log "   ❌ ERROR: Could not find escrow object address for intent_id: $INTENT_ID"
-                    log "   ❌ This indicates no escrow event was found on the connected chain (Chain 2)"
-                    log "   ❌ Expected escrow event with intent_id: $INTENT_ID"
-                    log "   ❌ Cannot continue without valid escrow object address"
+                    log_and_echo "   ❌ ERROR: Could not find escrow object address for intent_id: $INTENT_ID"
+                    log_and_echo "   ❌ This indicates no escrow event was found on the connected chain (Chain 2)"
+                    log_and_echo "   ❌ Expected escrow event with intent_id: $INTENT_ID"
+                    log_and_echo "   ❌ Cannot continue without valid escrow object address"
                     exit 1
                 fi
             fi

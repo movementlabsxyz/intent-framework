@@ -3,6 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../common_apt.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -17,9 +18,9 @@ docker-compose -f testing-infra/chain-hub/docker-compose-hub-chain.yml -p aptos-
 
 log ""
 log "🧹 Cleaning up Chain 1 Aptos CLI profiles..."
-aptos config delete-profile --profile alice-chain1 >> "$LOG_FILE" 2>&1 || true
-aptos config delete-profile --profile bob-chain1 >> "$LOG_FILE" 2>&1 || true
-aptos config delete-profile --profile intent-account-chain1 >> "$LOG_FILE" 2>&1 || true
+cleanup_aptos_profile "alice-chain1" "$LOG_FILE"
+cleanup_aptos_profile "bob-chain1" "$LOG_FILE"
+cleanup_aptos_profile "intent-account-chain1" "$LOG_FILE"
 
 log ""
 log_and_echo "✅ Hub chain stopped and accounts cleaned up!"

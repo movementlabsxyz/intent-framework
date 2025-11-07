@@ -1,0 +1,137 @@
+# Task ID: 1
+# Title: Refactor duplicated code within testing-infra folders
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Analyze each testing-infra subdirectory (chain-connected-apt, chain-hub, chain-connected-evm, e2e-tests-apt, e2e-tests-evm) for code duplication patterns and extract duplicated code into reusable functions to improve maintainability.
+# Details:
+Perform comprehensive refactoring within each testing-infra folder by:
+
+1. **Chain-connected-apt folder analysis**: Identify duplicated patterns in setup-alice-bob.sh, deploy-contracts.sh, configure-verifier.sh, setup-chain.sh, stop-chain.sh, and cleanup.sh. Common patterns include: Aptos CLI configuration with custom ports (8082/8083), account creation with chain2 profiles, contract deployment with intent-account-chain2 profiles, and logging setup.
+
+2. **Chain-hub folder analysis**: Identify duplicated patterns in setup-alice-bob.sh, deploy-contracts.sh, configure-verifier.sh, setup-chain.sh, and stop-chain.sh. Common patterns include: Aptos CLI configuration with local network (8080/8081), account creation with chain1 profiles, contract deployment with intent-account-chain1 profiles, and logging setup.
+
+3. **Chain-connected-evm folder analysis**: Examine setup-alice-bob.sh, deploy-contract.sh, configure-verifier.sh, setup-chain.sh, stop-chain.sh, and cleanup.sh for EVM-specific duplications including Hardhat account management, balance checking scripts, and EVM chain connectivity tests.
+
+4. **E2E test folders analysis**: Review e2e-tests-apt and e2e-tests-evm for duplicated test orchestration patterns, intent submission workflows, and escrow management.
+
+5. **Extract common functions per folder**: Create folder-specific utility files (e.g., chain-connected-apt/utils.sh, chain-hub/utils.sh) containing extracted functions like setup_chain_specific_accounts(), deploy_chain_contracts(), configure_chain_verifier().
+
+6. **Preserve functionality**: Ensure all extracted functions maintain the same behavior, error handling, logging patterns, and exit codes. Keep the same CLI parameters and output formats.
+
+7. **Update script imports**: Modify existing scripts to source their folder-specific utility files and call the extracted functions instead of duplicated code blocks.
+
+Focus on reducing duplication within each folder's scope while maintaining the existing common.sh file for cross-folder utilities.
+
+# Test Strategy:
+Verify refactoring success by: 1) Running each folder's scripts individually to ensure functionality is preserved 2) Testing complete E2E flows using both run-tests.sh scripts to verify end-to-end integration 3) Confirming all logging, error handling, and exit codes remain identical 4) Validating that extracted functions handle the same parameters and produce the same outputs 5) Running cleanup scripts to ensure proper resource management 6) Checking that common.sh functionality remains intact and accessible to all folders.
+
+# Subtasks:
+## 1. Analyze chain-connected-apt folder for duplicated patterns [done]
+### Dependencies: None
+### Description: Systematically examine all scripts in the chain-connected-apt folder to identify duplicated code patterns including setup-alice-bob.sh, deploy-contracts.sh, configure-verifier.sh, setup-chain.sh, stop-chain.sh, and cleanup.sh
+### Details:
+Perform detailed analysis of chain-connected-apt scripts focusing on: Aptos CLI configuration with custom ports (8082/8083), account creation with chain2 profiles (alice-chain2, bob-chain2, intent-account-chain2), contract deployment patterns with intent-account-chain2 profiles, logging setup patterns using setup_logging function, profile cleanup patterns using aptos config delete-profile, and funding/verification workflows. Document specific duplicated code blocks, line numbers, and frequency of patterns to prepare for extraction into utility functions.
+<info added on 2025-11-07T07:57:45.976Z>
+Let me first analyze the project structure to understand the codebase before generating the subtask update.Now let me examine the chain-hub folder structure to understand the patterns:Let me examine some key scripts from the chain-hub folder to identify patterns:Now let me examine the stop-chain.sh and configure-verifier.sh scripts to complete the pattern analysis:Let me also check if there's a cleanup.sh script in chain-hub:Let me check the common.sh file to understand the shared utilities:Now I'll analyze the chain-hub folder for duplicated patterns to provide the subtask update. Based on the user request about completing analysis of chain-connected-apt and the code I've examined, I can now provide an analysis of the chain-hub folder patterns to add to the subtask details.
+
+Analysis completed for chain-hub folder. Identified 6 major duplication patterns:
+
+1. **Script initialization boilerplate** (5 occurrences) - Lines: setup-alice-bob.sh:11-16; deploy-contracts.sh:4-10; configure-verifier.sh:11-16; setup-chain.sh:4-10; stop-chain.sh:4-10. Pattern: `SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" source "$SCRIPT_DIR/../common.sh" setup_project_root setup_logging "<script-name>" cd "$PROJECT_ROOT"`
+
+2. **Aptos CLI profile initialization for Chain1/local** (2 occurrences) - Lines: setup-alice-bob.sh:37,46; deploy-contracts.sh:25. Pattern: `printf "\n" | aptos init --profile <name> --network local --assume-yes >> "$LOG_FILE" 2>&1`
+
+3. **Aptos profile cleanup for Chain1** (4 occurrences) - Lines: deploy-contracts.sh:21; stop-chain.sh:20-22. Pattern: `aptos config delete-profile --profile <name> >> "$LOG_FILE" 2>&1 || true`
+
+4. **Docker compose hub chain management** (2 occurrences) - Lines: setup-chain.sh:18,22; stop-chain.sh:16. Pattern: `docker-compose -f testing-infra/chain-hub/docker-compose-hub-chain.yml -p aptos-chain1 <cmd>`
+
+5. **Address extraction from Aptos profiles** (3 occurrences) - Lines: deploy-contracts.sh:30; configure-verifier.sh:23,48. Pattern: `aptos config show-profiles | jq -r '.["Result"]["<profile>"].account'`
+
+6. **Chain health check for ports 8080/8081** (setup-chain.sh:29-36) - curl-based retry loop with 30 attempts and 5-second intervals
+
+**Key differences from chain-connected-apt:**
+- Uses ports 8080/8081 instead of 8082/8083
+- Uses chain1 profiles instead of chain2
+- Uses local network instead of custom network
+- Missing cleanup.sh script (only has 5 scripts vs 6)
+- Uses docker project name "aptos-chain1" instead of "aptos-chain2"
+
+**Recommended utility functions for chain-hub:**
+- init_chain1_profile(profile_name)
+- cleanup_chain1_profile(profile_name)  
+- start_chain1()
+- stop_chain1()
+- wait_for_chain1_ready()
+- verify_chain1_services()
+
+**Cross-folder pattern observation:** High overlap with chain-connected-apt patterns suggests potential for shared utilities with parameterized chain numbers (1 vs 2) and network types (local vs custom).
+</info added on 2025-11-07T07:57:45.976Z>
+
+## 2. Analyze chain-hub folder for duplicated patterns [done]
+### Dependencies: 1.1
+### Description: Systematically examine all scripts in the chain-hub folder to identify duplicated code patterns including setup-alice-bob.sh, deploy-contracts.sh, configure-verifier.sh, setup-chain.sh, and stop-chain.sh
+### Details:
+Perform detailed analysis of chain-hub scripts focusing on: Aptos CLI configuration with local network (8080/8081), account creation with chain1 profiles (alice-chain1, bob-chain1, intent-account-chain1), contract deployment patterns with intent-account-chain1 profiles, logging setup patterns using setup_logging function, profile cleanup patterns using aptos config delete-profile, and funding/verification workflows. Compare patterns with chain-connected-apt to identify similarities and differences. Document specific duplicated code blocks within the folder and prepare extraction candidates.
+<info added on 2025-11-07T08:03:41.137Z>
+I'll analyze the codebase structure first to understand the project and then provide the update based on your completed analysis.Based on my analysis of the codebase and your completed analysis report, here's the new information that should be appended to the subtask's details:
+
+ANALYSIS COMPLETED - Identified 8 major duplication patterns in chain-hub folder with specific file references:
+
+1. Script initialization boilerplate (5 files) - Lines: setup-alice-bob.sh:11-17, deploy-contracts.sh:4-10, configure-verifier.sh:11-17, setup-chain.sh:4-10, stop-chain.sh:4-10. Pattern identical to chain-connected-apt using SCRIPT_DIR setup and common.sh sourcing.
+
+2. Aptos profile initialization (3 files) - Lines: setup-alice-bob.sh:37,46; deploy-contracts.sh:25. Uses --network local flag (differs from chain-connected-apt's --network custom with URLs). Pattern: printf "\n" | aptos init --profile <name> --network local --assume-yes
+
+3. Profile cleanup pattern (4 files) - Lines: deploy-contracts.sh:21; stop-chain.sh:20-22. Identical to chain-connected-apt: aptos config delete-profile --profile <name> || true
+
+4. Docker compose management (3 files) - Lines: setup-chain.sh:18,22; stop-chain.sh:16. Uses docker-compose-hub-chain.yml with aptos-chain1 project name (vs chain-connected-apt's aptos-chain2)
+
+5. Address extraction (4 files) - Lines: deploy-contracts.sh:30; configure-verifier.sh:23,48,49. Identical pattern: aptos config show-profiles | jq -r '.["Result"]["<profile>"].account'
+
+6. Chain health check loop - setup-chain.sh:29-36 for ports 8080/8081
+
+7. REST API/faucet verification - setup-chain.sh:43-58 for ports 8080/8081  
+
+8. Verifier config update - configure-verifier.sh:45,52 updates [hub_chain] section with both Alice/Bob accounts
+
+KEY DIFFERENCES from chain-connected-apt: Missing cleanup.sh script, uses chain1 profiles, ports 8080/8081, --network local flag. Strong candidate for parameterized shared utilities covering both folders.
+</info added on 2025-11-07T08:03:41.137Z>
+
+## 3. Analyze chain-connected-evm folder for duplicated patterns [done]
+### Dependencies: 1.3
+### Description: Examine all EVM-related scripts in chain-connected-evm folder for duplicated patterns including setup-alice-bob.sh, deploy-contract.sh, configure-verifier.sh, setup-chain.sh, stop-chain.sh, and cleanup.sh
+### Details:
+Perform comprehensive analysis of EVM scripts focusing on: Hardhat account management patterns, balance checking scripts using npx hardhat run commands, EVM chain connectivity tests using curl with JSON-RPC, account address extraction patterns from Hardhat output, nix develop wrapper patterns for Hardhat commands, and transfer testing workflows. Identify duplicated patterns specific to EVM integration including error handling for Hardhat operations, account index management (accounts 0, 1, 2), and balance verification workflows using wei/ETH conversion.
+<info added on 2025-11-07T08:08:29.275Z>
+Analysis complete. Discovered 10 specific duplication patterns with exact line number references and file locations. Comprehensive comparison between EVM and Aptos implementations reveals key architectural differences: EVM uses Hardhat node with nix develop wrappers versus Docker containers, JSON-RPC health checks versus REST APIs, and PID-based process management versus docker-compose. Critical findings include 100% identical script initialization boilerplate (6 scripts), extensive nix wrapper patterns unique to EVM (7+ occurrences), and EVM-specific patterns for account extraction, process management, and connectivity testing. Identified clear utility function candidates including run_hardhat_command(), check_evm_chain_running(), get_hardhat_account_address(), start/stop_hardhat_node(), wait_for_evm_ready(), extract_vault_address(), and update_evm_verifier_config(). Script analysis spans setup-alice-bob.sh (146 lines), deploy-contract.sh (111 lines), configure-verifier.sh (86 lines), setup-chain.sh (152 lines), stop-chain.sh (63 lines), and cleanup.sh (28 lines) with detailed pattern mapping documented.
+</info added on 2025-11-07T08:08:29.275Z>
+
+## 4. Analyze e2e test folders for duplicated orchestration patterns [done]
+### Dependencies: 1.3
+### Description: Review e2e-tests-apt and e2e-tests-evm folders for duplicated test orchestration patterns, intent submission workflows, and escrow management code
+### Details:
+Examine e2e-tests-apt and e2e-tests-evm folders for: Test orchestration patterns in run-tests.sh scripts, intent submission workflows in submit-hub-intent.sh and submit-escrow.sh, escrow management patterns in fulfill-hub-intent.sh and release-escrow.sh, verifier integration test patterns, and common test setup/teardown procedures. Identify duplicated error handling, logging patterns, and test result validation across both APT and EVM test suites. Document integration points with chain setup scripts and common utility usage patterns.
+<info added on 2025-11-07T08:16:56.895Z>
+Let me first analyze the codebase structure to understand the project layout and then examine the specific e2e test folders mentioned.Now let me examine the specific e2e test folders to validate the analysis provided:Let me examine the common.sh file to understand existing utility functions:Now let me examine some key files mentioned in the analysis to verify the patterns:Based on my analysis of the codebase and verification of the patterns described in the user request, the analysis is comprehensive and accurate. The detailed breakdown shows extensive code duplication both within and across the e2e test folders. Let me provide the update text that summarizes the completed analysis:
+
+COMPLETED ANALYSIS: Examined all e2e-tests-apt scripts (submit-hub-intent.sh, submit-escrow.sh, fulfill-hub-intent.sh, release-escrow.sh, verifier-rust-integration-tests.sh, run-tests.sh) and e2e-tests-evm scripts (submit-escrow.sh, release-escrow.sh, run-tests.sh). Verified extensive duplication patterns align with existing common.sh utilities (display_balances, logging functions, project root setup).
+
+DUPLICATION ANALYSIS RESULTS:
+- e2e-tests-apt: 489 lines in release-escrow.sh, 6 total scripts with heavy initialization boilerplate
+- e2e-tests-evm: 281 lines in release-escrow.sh, 3 total scripts with identical patterns
+- INTENT_ID loading pattern (lines 13-24) identical across submit-escrow.sh and release-escrow.sh in both folders
+- Account address extraction via `aptos config show-profiles | jq` repeated 20+ times across scripts
+- Verifier configuration setup (lines 45-54 in APT, similar in EVM) duplicated from chain folder patterns
+- Escrow release approval loops: APT=170 lines, EVM=150 lines with similar structure but different APIs
+
+VALIDATED UTILITY EXTRACTION OPPORTUNITIES:
+- load_intent_info() - INTENT_ID loading pattern used in 5 scripts
+- extract_vault_address() - EVM-specific address retrieval (2 scripts)
+- convert_intent_id_to_evm() - hex conversion logic (lines 68-74 in EVM scripts)
+- get_account_addresses() - batch extraction to replace 20+ individual calls
+- extract_apt_metadata() - APT-specific metadata via Move+curl (3 occurrences)
+- verifier lifecycle management functions - start/stop/health check patterns
+- escrow approval workflow - complex 150+ line reusable logic in both chains
+
+Cross-folder analysis confirms identical script initialization patterns and suggests shared utility library would reduce codebase by estimated 30-40% in e2e test scripts.
+</info added on 2025-11-07T08:16:56.895Z>
+

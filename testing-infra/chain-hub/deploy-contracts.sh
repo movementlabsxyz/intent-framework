@@ -3,6 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../common_apt.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -18,11 +19,11 @@ log "⚙️  Configuring Aptos CLI for Chain 1..."
 
 # Clean up any existing profile to ensure fresh address each run
 log "🧹 Cleaning up existing CLI profile..."
-aptos config delete-profile --profile intent-account-chain1 >> "$LOG_FILE" 2>&1 || true
+cleanup_aptos_profile "intent-account-chain1" "$LOG_FILE"
 
 # Configure Chain 1 (port 8080)
 log "   - Configuring Chain 1 (port 8080)..."
-printf "\n" | aptos init --profile intent-account-chain1 --network local --assume-yes >> "$LOG_FILE" 2>&1
+init_aptos_profile "intent-account-chain1" "1" "$LOG_FILE"
 
 log ""
 log "📦 Deploying contracts to Chain 1..."

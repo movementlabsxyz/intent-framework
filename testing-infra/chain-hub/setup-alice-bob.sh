@@ -10,6 +10,7 @@ set -e
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../common_apt.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -34,21 +35,11 @@ log "👥 Creating test accounts for Chain 1..."
 
 # Create alice account for Chain 1
 log "Creating alice-chain1 account for Chain 1..."
-if printf "\n" | aptos init --profile alice-chain1 --network local --assume-yes >> "$LOG_FILE" 2>&1; then
-    log "✅ Alice-chain1 account created successfully on Chain 1"
-else
-    log_and_echo "❌ Failed to create Alice-chain1 account on Chain 1"
-    exit 1
-fi
+init_aptos_profile "alice-chain1" "1" "$LOG_FILE"
 
 # Create bob account for Chain 1
 log "Creating bob-chain1 account for Chain 1..."
-if printf "\n" | aptos init --profile bob-chain1 --network local --assume-yes >> "$LOG_FILE" 2>&1; then
-    log "✅ Bob-chain1 account created successfully on Chain 1"
-else
-    log_and_echo "❌ Failed to create Bob-chain1 account on Chain 1"
-    exit 1
-fi
+init_aptos_profile "bob-chain1" "1" "$LOG_FILE"
 
 log ""
 log "% - - - - - - - - - - - FUNDING - - - - - - - - - - - -"

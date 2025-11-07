@@ -3,6 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../common_apt.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -25,37 +26,13 @@ log ""
 log "⏳ Waiting for Chain 2 to start (this may take 2-3 minutes)..."
 
 # Wait for Chain 2
-log "   - Waiting for Chain 2 services..."
-for i in {1..30}; do
-    if curl -s http://127.0.0.1:8082/v1/ledger/info >/dev/null 2>&1 && curl -s http://127.0.0.1:8083/ >/dev/null 2>&1; then
-        log "   ✅ Chain 2 ready!"
-        break
-    fi
-    log "   Waiting... (attempt $i/30)"
-    sleep 5
-done
+wait_for_aptos_chain_ready "2"
 
 log ""
 log "🔍 Verifying Chain 2..."
 
-# Verify Chain 2 is running
-log "   - Verifying Chain 2 REST API..."
-if ! curl -s http://127.0.0.1:8082/v1 > /dev/null; then
-    log_and_echo "❌ Error: Chain 2 failed to start on port 8082"
-    exit 1
-fi
-log "   ✅ Chain 2 REST API is running"
-
-# Verify faucet is running
-log "   - Verifying faucet..."
-FAUCET2_RESPONSE=$(curl -s http://127.0.0.1:8083/ 2>/dev/null || echo "")
-
-if [ "$FAUCET2_RESPONSE" = "tap:ok" ]; then
-    log "   ✅ Chain 2 faucet is running"
-else
-    log_and_echo "❌ Error: Chain 2 faucet failed to start on port 8083"
-    exit 1
-fi
+# Verify Chain 2 services
+verify_aptos_chain_services "2"
 
 # Show chain status
 log ""

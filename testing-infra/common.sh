@@ -321,3 +321,115 @@ load_intent_info() {
     return 0
 }
 
+# Stop verifier processes
+# Usage: stop_verifier
+# Stops any running trusted-verifier processes
+stop_verifier() {
+    log "   Checking for existing verifiers..."
+    
+    if pgrep -f "cargo.*trusted-verifier" > /dev/null || pgrep -f "target/debug/trusted-verifier" > /dev/null; then
+        log "   ⚠️  Found existing verifier processes, stopping them..."
+        pkill -f "cargo.*trusted-verifier" || true
+        pkill -f "target/debug/trusted-verifier" || true
+        sleep 2
+        log "   ✅ Verifier processes stopped"
+    else
+        log "   ✅ No existing verifier processes"
+    fi
+}
+
+# Check verifier health
+# Usage: check_verifier_health [port]
+# Checks if verifier health endpoint responds
+# Returns 0 if healthy, 1 if not
+check_verifier_health() {
+    local port="${1:-3333}"
+    
+    if curl -s -f "http://127.0.0.1:${port}/health" > /dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Start verifier service
+# Usage: start_verifier [log_file] [rust_log_level]
+# Starts trusted-verifier in background and waits for it to be ready
+# Sets VERIFIER_PID and VERIFIER_LOG global variables
+# Exits with error if verifier fails to start
+start_verifier() {
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+
+    if [ -z "$VERIFIER_CONFIG_PATH" ]; then
+        setup_verifier_config
+    fi
+
+    local log_file="${1:-$LOG_DIR/verifier.log}"
+    local rust_log="${2:-info}"
+    
+    # Ensure log directory exists
+    mkdir -p "$(dirname "$log_file")"
+    
+    # Stop any existing verifier first
+    stop_verifier
+    
+    log "   Starting verifier service..."
+    log "   Using config: $VERIFIER_CONFIG_PATH"
+    log "   Log file: $log_file"
+    
+    # Change to trusted-verifier directory and start the verifier
+    pushd "$PROJECT_ROOT/trusted-verifier" > /dev/null
+    VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" RUST_LOG="$rust_log" cargo run --bin trusted-verifier > "$log_file" 2>&1 &
+    VERIFIER_PID=$!
+    popd > /dev/null
+    
+    log "   ✅ Verifier started with PID: $VERIFIER_PID"
+    
+    # Wait for verifier to be ready
+    log "   - Waiting for verifier to initialize..."
+    RETRY_COUNT=0
+    MAX_RETRIES=90
+    
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        # Check if process is still running
+        if ! ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
+            log_and_echo "   ❌ Verifier process died"
+            log_and_echo "   Verifier log:"
+            if [ -f "$log_file" ]; then
+                log_and_echo "   $(cat "$log_file")"
+            else
+                log_and_echo "   Log file not found at: $log_file"
+            fi
+            exit 1
+        fi
+        
+        # Check health endpoint
+        if check_verifier_health; then
+            log "   ✅ Verifier is ready!"
+            
+            # Give verifier a moment to start polling and collecting events
+            log "   - Waiting for verifier to begin polling events..."
+            sleep 5
+            
+            VERIFIER_LOG="$log_file"
+            export VERIFIER_PID VERIFIER_LOG
+            return 0
+        fi
+        
+        sleep 1
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+    done
+    
+    # If we get here, verifier didn't become healthy
+    log_and_echo "   ❌ Verifier failed to start after $MAX_RETRIES seconds"
+    log_and_echo "   Verifier log:"
+    if [ -f "$log_file" ]; then
+        log_and_echo "   $(cat "$log_file")"
+    else
+        log_and_echo "   Log file not found at: $log_file"
+    fi
+    exit 1
+}
+

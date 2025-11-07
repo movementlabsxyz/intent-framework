@@ -21,63 +21,8 @@ log "  3. When fulfillment detected, create ECDSA signature"
 log "  4. Release escrow on Chain 3 (EVM)"
 log ""
 
-# Check if verifier is already running and stop it
-log "   Checking for existing verifiers..."
-# Look for the actual cargo/rust processes, not the script
-if pgrep -f "cargo.*trusted-verifier" > /dev/null || pgrep -f "target/debug/trusted-verifier" > /dev/null; then
-    log "   ⚠️  Found existing verifier processes, stopping them..."
-    pkill -f "cargo.*trusted-verifier"
-    pkill -f "target/debug/trusted-verifier"
-    sleep 2
-else
-    log "   ✅ No existing verifier processes"
-fi
-
-# Start verifier in background
-cd trusted-verifier
-VERIFIER_PID=""
-VERIFIER_LOG="$PROJECT_ROOT/tmp/intent-framework-logs/verifier-evm.log"
-mkdir -p "$(dirname "$VERIFIER_LOG")"
-
-# Setup verifier config
-setup_verifier_config
-
-log "   Starting verifier service..."
-log "   Using config: $VERIFIER_CONFIG_PATH"
-VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" cargo run --bin trusted-verifier > "$VERIFIER_LOG" 2>&1 &
-VERIFIER_PID=$!
-
-# Wait for verifier to start
-sleep 5
-
-if ! ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
-    log_and_echo "   ❌ Verifier failed to start"
-    cat "$VERIFIER_LOG"
-    exit 1
-fi
-
-log "   ✅ Verifier started (PID: $VERIFIER_PID)"
-log ""
-
-cd ..
-
-# Give verifier some time to process events
-log "   ⏳ Waiting for verifier to process events (30 seconds)..."
-sleep 30
-
-# Check verifier health
-if curl -s http://127.0.0.1:3333/health >/dev/null 2>&1; then
-    log "   ✅ Verifier is healthy"
-else
-    log_and_echo "   ❌ ERROR: Verifier health check failed"
-    log_and_echo "   Verifier process may have crashed or failed to start"
-    log_and_echo "   Verifier PID: $VERIFIER_PID"
-    log_and_echo "   Verifier log: $VERIFIER_LOG"
-    log_and_echo "   Last 50 lines of verifier log:"
-    tail -50 "$VERIFIER_LOG" >> "$LOG_FILE" 2>&1
-    tail -50 "$VERIFIER_LOG"
-    exit 1
-fi
+# Start verifier (function handles stopping existing, starting, health checks, and initial polling wait)
+start_verifier "$LOG_DIR/verifier-evm.log"
 
 log ""
 

@@ -22,18 +22,6 @@ log "  4. Wait for hub intent to be fulfilled by solver"
 log "  5. Provide approval signatures for escrow release after hub fulfillment"
 log ""
 
-# Check if verifier is already running and stop it
-log "   Checking for existing verifiers..."
-# Look for the actual cargo/rust processes, not the script
-if pgrep -f "cargo.*trusted-verifier" > /dev/null || pgrep -f "target/debug/trusted-verifier" > /dev/null; then
-    log "   ⚠️  Found existing verifier processes, stopping them..."
-    pkill -f "cargo.*trusted-verifier"
-    pkill -f "target/debug/trusted-verifier"
-    sleep 2
-else
-    log "   ✅ No existing verifier processes"
-fi
-
 # Get Alice and Bob addresses
 log "   - Getting Alice and Bob account addresses..."
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
@@ -88,46 +76,9 @@ log ""
 log "🚀 Starting Trusted Verifier Service..."
 log "========================================"
 
-# Change to trusted-verifier directory and start the verifier
-pushd trusted-verifier > /dev/null
-VERIFIER_LOG="$LOG_DIR/verifier.log"
-RUST_LOG=info cargo run --bin trusted-verifier > "$VERIFIER_LOG" 2>&1 &
-VERIFIER_PID=$!
-popd > /dev/null
+# Start verifier (function handles stopping existing, starting, health checks, and initial polling wait)
+start_verifier "$LOG_DIR/verifier.log" "info"
 
-log "   ✅ Verifier started with PID: $VERIFIER_PID"
-
-# Wait for verifier to be ready
-log "   - Waiting for verifier to initialize..."
-RETRY_COUNT=0
-MAX_RETRIES=90
-
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -s -f "http://127.0.0.1:3333/health" > /dev/null 2>&1; then
-        log "   ✅ Verifier is ready!"
-        break
-    fi
-    
-    sleep 1
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    
-    if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-        log_and_echo "   ❌ Verifier failed to start after $MAX_RETRIES seconds"
-        log_and_echo "   Verifier log:"
-        if [ -f "$VERIFIER_LOG" ]; then
-            log_and_echo "   $(cat "$VERIFIER_LOG")"
-        else
-            log_and_echo "   Log file not found at: $VERIFIER_LOG"
-        fi
-        exit 1
-    fi
-done
-
-log ""
-log "📊 Monitoring verifier events..."
-log "   Waiting 5 seconds for verifier to poll and collect events..."
-
-sleep 5
 
 # Query verifier events
 log ""

@@ -205,4 +205,27 @@ fund_and_verify_account() {
     fi
 }
 
+# Setup verifier configuration
+# Usage: setup_verifier_config
+# Sets up the verifier testing configuration file path and exports it
+# This function is used by configure-verifier.sh scripts and e2e tests
+setup_verifier_config() {
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+
+    VERIFIER_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
+
+    if [ ! -f "$VERIFIER_TESTING_CONFIG" ]; then
+        log_and_echo "❌ ERROR: verifier_testing.toml not found at $VERIFIER_TESTING_CONFIG"
+        log_and_echo "   Tests require trusted-verifier/config/verifier_testing.toml to exist"
+        exit 1
+    fi
+
+    # Export config path for Rust code to use (absolute path so tests can find it)
+    export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
+
+    log "   ✅ Verifier config set: $VERIFIER_CONFIG_PATH"
+}
+
 

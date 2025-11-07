@@ -29,17 +29,8 @@ fi
 
 log_and_echo "   Chain 1 deployer: $CHAIN1_ADDRESS"
 
-# Use verifier_testing.toml for tests - required, panic if not found
-VERIFIER_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
-
-if [ ! -f "$VERIFIER_TESTING_CONFIG" ]; then
-    log_and_echo "❌ ERROR: verifier_testing.toml not found at $VERIFIER_TESTING_CONFIG"
-    log_and_echo "   Tests require trusted-verifier/config/verifier_testing.toml to exist"
-    exit 1
-fi
-
-# Export config path for Rust code to use (absolute path so tests can find it)
-export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
+# Setup verifier config
+setup_verifier_config
 
 # Update hub_chain section in verifier_testing.toml
 sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"

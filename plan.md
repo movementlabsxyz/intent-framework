@@ -20,7 +20,7 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
    - But Bob's balance only decreases by ~99.9M (less than 100M, not 100M + gas)
    - Possible causes: Coin vs FA balance accounting; initial capture timing; gas treatment
    - Investigate how `aptos account balance` relates to FA operations and why loss < transfer amount
-   - Location: `testing-infra/e2e-tests-apt/submit-cross-chain-intent.sh`
+   - Location: `testing-infra/e2e-tests-apt/fulfill-hub-intent.sh`
 
 2. **Test Improvements**
    - Add timeout scenario tests

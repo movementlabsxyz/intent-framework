@@ -81,7 +81,7 @@ display_balances() {
     log_and_echo "   Chain 1 (Hub):"
     log_and_echo "      Alice: $alice1 Octas"
     log_and_echo "      Bob:   $bob1 Octas"
-    log_and_echo "   Chain 2 (Connected):"
+    log_and_echo "   Chain 2 (Connected Apt):"
     log_and_echo "      Alice: $alice2 Octas"
     log_and_echo "      Bob:   $bob2 Octas"
     
@@ -103,7 +103,7 @@ display_balances() {
         cd "$PROJECT_ROOT"
         
         # Always show Chain 3 (EVM) header when EVM chain is running
-        log_and_echo "   Chain 3 (EVM):"
+        log_and_echo "   Chain 3 (Connected EVM):"
         
         # Format EVM balances (show both ETH and wei)
         if [ "$alice_evm" != "0" ] && [ -n "$alice_evm" ]; then
@@ -133,14 +133,14 @@ get_profile_address() {
     
     if [ -z "$profile" ]; then
         log_and_echo "❌ ERROR: get_profile_address() requires a profile name"
-        return 1
+        exit 1
     fi
     
     local address=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].account" 2>/dev/null)
     
     if [ -z "$address" ] || [ "$address" = "null" ]; then
         log_and_echo "❌ ERROR: Could not extract address for profile: $profile"
-        return 1
+        exit 1
     fi
     
     echo "$address"
@@ -242,4 +242,82 @@ setup_verifier_config() {
     log "   ✅ Verifier config set: $VERIFIER_CONFIG_PATH"
 }
 
+# Save intent information to file
+# Usage: save_intent_info [intent_id] [hub_intent_address]
+# If arguments are provided, uses them; otherwise uses INTENT_ID and HUB_INTENT_ADDRESS env vars
+# Saves to ${PROJECT_ROOT}/tmp/intent-info.env
+save_intent_info() {
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+
+    local intent_id="${1:-$INTENT_ID}"
+    local hub_intent_address="${2:-$HUB_INTENT_ADDRESS}"
+
+    if [ -z "$intent_id" ]; then
+        log_and_echo "❌ ERROR: save_intent_info() requires INTENT_ID"
+        exit 1
+    fi
+
+    INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
+    mkdir -p "$(dirname "$INTENT_INFO_FILE")"
+    
+    echo "INTENT_ID=$intent_id" > "$INTENT_INFO_FILE"
+    
+    if [ -n "$hub_intent_address" ] && [ "$hub_intent_address" != "null" ]; then
+        echo "HUB_INTENT_ADDRESS=$hub_intent_address" >> "$INTENT_INFO_FILE"
+    fi
+    
+    log "   📝 Intent info saved to: $INTENT_INFO_FILE"
+}
+
+# Load intent information from file
+# Usage: load_intent_info [required_vars]
+#   required_vars: comma-separated list of required variables (e.g., "INTENT_ID,HUB_INTENT_ADDRESS")
+#   If not provided, only INTENT_ID is required
+#   If INTENT_ID is already set, skips loading (allows override via env var)
+# Loads from ${PROJECT_ROOT}/tmp/intent-info.env
+load_intent_info() {
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+
+    local required_vars="${1:-INTENT_ID}"
+    INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
+
+    # If INTENT_ID is already set and only INTENT_ID is required, skip loading
+    if [ "$required_vars" = "INTENT_ID" ] && [ -n "$INTENT_ID" ]; then
+        log "   ✅ INTENT_ID already set, skipping load"
+        return 0
+    fi
+
+    if [ ! -f "$INTENT_INFO_FILE" ]; then
+        log_and_echo "❌ ERROR: intent-info.env not found at $INTENT_INFO_FILE"
+        if [ "$required_vars" = "INTENT_ID,HUB_INTENT_ADDRESS" ]; then
+            log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id> and HUB_INTENT_ADDRESS=<address>"
+        else
+            log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id>"
+        fi
+        exit 1
+    fi
+
+    source "$INTENT_INFO_FILE"
+    log "   ✅ Loaded intent info from $INTENT_INFO_FILE"
+
+    # Validate required variables
+    IFS=',' read -ra VARS <<< "$required_vars"
+    for var in "${VARS[@]}"; do
+        var=$(echo "$var" | tr -d ' ')
+        local value="${!var}"
+        if [ -z "$value" ]; then
+            log_and_echo "❌ ERROR: $var not found in intent-info.env"
+            if [ "$required_vars" = "INTENT_ID,HUB_INTENT_ADDRESS" ]; then
+                log_and_echo "   Run submit-hub-intent.sh first"
+            fi
+            exit 1
+        fi
+    done
+
+    return 0
+}
 

@@ -11,19 +11,7 @@ cd "$PROJECT_ROOT"
 
 
 # Load INTENT_ID and HUB_INTENT_ADDRESS from info file
-INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
-if [ -f "$INTENT_INFO_FILE" ]; then
-    source "$INTENT_INFO_FILE"
-    log "   ✅ Loaded INTENT_ID and HUB_INTENT_ADDRESS from $INTENT_INFO_FILE"
-else
-    log_and_echo "❌ ERROR: intent-info.env not found at $INTENT_INFO_FILE"
-    log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id> and HUB_INTENT_ADDRESS=<address>"
-    exit 1
-fi
-
-if [ -z "$INTENT_ID" ] || [ -z "$HUB_INTENT_ADDRESS" ]; then
-    log_and_echo "❌ ERROR: INTENT_ID or HUB_INTENT_ADDRESS not found in intent-info.env"
-    log_and_echo "   Run submit-hub-intent.sh first"
+if ! load_intent_info "INTENT_ID,HUB_INTENT_ADDRESS"; then
     exit 1
 fi
 

@@ -137,14 +137,8 @@ if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
     log "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
 fi
 
-# Export values for use by other scripts (write to a temp file for easy sourcing)
-INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
-mkdir -p "$(dirname "$INTENT_INFO_FILE")"
-echo "INTENT_ID=$INTENT_ID" > "$INTENT_INFO_FILE"
-if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-    echo "HUB_INTENT_ADDRESS=$HUB_INTENT_ADDRESS" >> "$INTENT_INFO_FILE"
-fi
-log "   📝 Intent info saved to: $INTENT_INFO_FILE"
+# Export values for use by other scripts
+save_intent_info "$INTENT_ID" "$HUB_INTENT_ADDRESS"
 
 # Check final balances using common function
 display_balances

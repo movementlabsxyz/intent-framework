@@ -11,16 +11,8 @@ cd "$PROJECT_ROOT"
 
 
 # Load INTENT_ID from info file if not provided
-if [ -z "$INTENT_ID" ]; then
-    INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
-    if [ -f "$INTENT_INFO_FILE" ]; then
-        source "$INTENT_INFO_FILE"
-        log "   ✅ Loaded INTENT_ID from $INTENT_INFO_FILE"
-    else
-        log_and_echo "❌ ERROR: INTENT_ID not provided and intent-info.env not found"
-        log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id>"
-        exit 1
-    fi
+if ! load_intent_info "INTENT_ID"; then
+    exit 1
 fi
 
 # Get addresses

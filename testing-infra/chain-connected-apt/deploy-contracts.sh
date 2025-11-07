@@ -27,7 +27,7 @@ printf "\n" | aptos init --profile intent-account-chain2 --network custom --rest
 log ""
 log "📦 Deploying contracts to Chain 2..."
 log "   - Getting account address for Chain 2..."
-CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain2"].account')
+CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
 
 log "   - Deploying to Chain 2 with address: $CHAIN2_ADDRESS"
 cd move-intent-framework

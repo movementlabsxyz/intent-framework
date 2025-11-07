@@ -125,11 +125,25 @@ display_balances() {
 }
 
 # Get address from aptos profile
-# Usage: get_aptos_address <profile_name>
+# Usage: get_profile_address <profile_name>
 # Returns the account address for the given profile
-get_aptos_address() {
+# Standardizes the pattern: aptos config show-profiles | jq -r '.["Result"]["<profile>"].account'
+get_profile_address() {
     local profile="$1"
-    aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].account"
+    
+    if [ -z "$profile" ]; then
+        log_and_echo "❌ ERROR: get_profile_address() requires a profile name"
+        return 1
+    fi
+    
+    local address=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].account" 2>/dev/null)
+    
+    if [ -z "$address" ] || [ "$address" = "null" ]; then
+        log_and_echo "❌ ERROR: Could not extract address for profile: $profile"
+        return 1
+    fi
+    
+    echo "$address"
 }
 
 # Fund account and verify balance
@@ -159,7 +173,7 @@ fund_and_verify_account() {
     fi
     
     log "Funding $account_label..."
-    local address=$(get_aptos_address "$profile")
+    local address=$(get_profile_address "$profile")
     local tx_hash=$(curl -s -X POST "http://127.0.0.1:${faucet_port}/mint?address=${address}&amount=100000000" | jq -r '.[0]')
     
     if [ "$tx_hash" != "null" ] && [ -n "$tx_hash" ]; then

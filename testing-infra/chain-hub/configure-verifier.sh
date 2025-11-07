@@ -20,7 +20,7 @@ log_and_echo "✅ Configuring verifier for Hub Chain..."
 log_and_echo ""
 
 # Extract deployed address from aptos profile
-CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
+CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 
 if [ -z "$CHAIN1_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Could not extract Chain 1 deployed module address"
@@ -36,8 +36,8 @@ setup_verifier_config
 sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
 # Get Alice and Bob addresses and update known_accounts
-ALICE_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain1"].account')
-BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1"].account')
+ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
+BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 
 if [ -n "$ALICE_CHAIN1_ADDRESS" ] && [ -n "$BOB_CHAIN1_ADDRESS" ]; then
     sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"

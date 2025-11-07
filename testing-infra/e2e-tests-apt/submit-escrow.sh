@@ -24,13 +24,13 @@ if [ -z "$INTENT_ID" ]; then
 fi
 
 # Get addresses
-CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
-CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain2"].account')
+CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
+CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
 
 # Get Alice and Bob addresses
-ALICE_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain1"].account')
-BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1"].account')
-ALICE_CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain2"].account')
+ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
+BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
 
 log ""
 log "📋 Chain Information:"

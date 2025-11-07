@@ -20,7 +20,7 @@ log_and_echo "✅ Configuring verifier for Connected Aptos Chain..."
 log_and_echo ""
 
 # Extract deployed address from aptos profile
-CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain2"].account')
+CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
 
 if [ -z "$CHAIN2_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Could not extract Chain 2 deployed module address"
@@ -37,7 +37,7 @@ sed -i "/\[connected_chain\]/,/\[verifier\]/ s|intent_module_address = .*|intent
 sed -i "/\[connected_chain\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
 # Get Alice address and update known_accounts
-ALICE_CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain2"].account')
+ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
 
 if [ -n "$ALICE_CHAIN2_ADDRESS" ]; then
     sed -i "/\[connected_chain\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"

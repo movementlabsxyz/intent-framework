@@ -28,8 +28,8 @@ if [ -z "$INTENT_ID" ] || [ -z "$HUB_INTENT_ADDRESS" ]; then
 fi
 
 # Get addresses
-CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
-BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1"].account')
+CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
+BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 
 log ""
 log "📋 Chain Information:"

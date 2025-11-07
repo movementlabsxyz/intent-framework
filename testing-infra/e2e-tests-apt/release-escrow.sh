@@ -36,12 +36,12 @@ fi
 
 # Get Alice and Bob addresses
 log "   - Getting Alice and Bob account addresses..."
-ALICE_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain1"].account')
-ALICE_CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["alice-chain2"].account')
-BOB_CHAIN1_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain1"].account')
-BOB_CHAIN2_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["bob-chain2"].account')
-CHAIN1_DEPLOY_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain1"].account')
-CHAIN2_DEPLOY_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain2"].account')
+ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
+ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
+BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
+CHAIN1_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain1")
+CHAIN2_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain2")
 
 log "   ✅ Alice Chain 1: $ALICE_CHAIN1_ADDRESS"
 log "   ✅ Alice Chain 2: $ALICE_CHAIN2_ADDRESS"
@@ -260,7 +260,7 @@ log "🔓 Starting automatic escrow release monitoring..."
 log "=================================================="
 
 # Get Chain 2 deployer address for function calls
-CHAIN2_DEPLOY_ADDRESS=$(aptos config show-profiles | jq -r '.["Result"]["intent-account-chain2"].account')
+CHAIN2_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain2")
 if [ -z "$CHAIN2_DEPLOY_ADDRESS" ] || [ "$CHAIN2_DEPLOY_ADDRESS" = "null" ]; then
     log_and_echo "   ❌ ERROR: Could not find Chain 2 deployer address"
     log_and_echo "      Automatic escrow release requires a valid deployer address"

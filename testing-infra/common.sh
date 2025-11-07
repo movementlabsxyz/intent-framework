@@ -409,9 +409,9 @@ start_verifier() {
         if check_verifier_health; then
             log "   ✅ Verifier is ready!"
             
-            # Give verifier a moment to start polling and collecting events
-            log "   - Waiting for verifier to begin polling events..."
-            sleep 5
+            # Give verifier time to start polling and collect initial events
+            log "   - Waiting for verifier to poll and collect events (30 seconds)..."
+            sleep 30
             
             VERIFIER_LOG="$log_file"
             export VERIFIER_PID VERIFIER_LOG

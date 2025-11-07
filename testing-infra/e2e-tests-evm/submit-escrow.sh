@@ -63,8 +63,8 @@ log "     Intent ID (EVM): $INTENT_ID_EVM"
 
 # Initialize vault for this intent with ETH (address(0))
 log "   - Initializing vault for intent (ETH vault)..."
-EXPIRY_TIME_EVM=$(date -d "+1 hour" +%s)
-INIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && VAULT_ADDRESS='$VAULT_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' EXPIRY_TIME_EVM='$EXPIRY_TIME_EVM' npx hardhat run scripts/initialize-vault-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+# Expiry is now contract-defined, no longer passed as parameter
+INIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && VAULT_ADDRESS='$VAULT_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' npx hardhat run scripts/initialize-vault-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 INIT_EXIT_CODE=$?
 
 # Check if initialization was successful

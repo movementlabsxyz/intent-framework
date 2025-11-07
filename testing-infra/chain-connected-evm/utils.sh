@@ -139,3 +139,27 @@ extract_vault_address() {
     echo "$vault_address"
 }
 
+# Convert intent ID from Aptos format to EVM format
+# Usage: convert_intent_id_to_evm <intent_id>
+# Returns: EVM-formatted intent ID (0x-prefixed, 64 hex chars) via stdout
+# Input: intent_id in hex format (0x...)
+# Output: intent_id padded to 64 characters (32 bytes) with 0x prefix
+convert_intent_id_to_evm() {
+    local intent_id="$1"
+    
+    if [ -z "$intent_id" ]; then
+        log_and_echo "❌ ERROR: convert_intent_id_to_evm() requires an intent_id"
+        exit 1
+    fi
+    
+    # Remove 0x prefix if present
+    local intent_id_hex
+    intent_id_hex=$(echo "$intent_id" | sed 's/^0x//')
+    
+    # Pad to 64 characters (32 bytes) with leading zeros
+    intent_id_hex=$(printf "%064s" "$intent_id_hex" | tr ' ' '0')
+    
+    # Add 0x prefix and output
+    echo "0x$intent_id_hex"
+}
+

@@ -165,14 +165,38 @@ Target scripts: setup-alice-bob.sh, deploy-contract.sh, setup-chain.sh, stop-cha
 
 Note: This creates a new file testing-infra/chain-connected-evm/utils.sh that must be sourced by EVM scripts.
 
-## 4. E2E test utilities (2 functions) [pending]
+✅ COMPLETED (2025-11-07) - COMMITTED (9fc352a)
+
+All 4 functions implemented:
+- run_hardhat_command() ✅
+- check_evm_chain_running() ✅
+- get_hardhat_account_address() ✅
+- extract_vault_address() ✅
+
+Total impact: 4 utility functions added, 4 scripts refactored, ~80+ lines of duplicate code eliminated.
+
+## 4. E2E test utilities (2 functions) [done]
 ### Dependencies: 2.1
-### Description: Implement 2 E2E test utility functions in testing-infra/common.sh: extract_apt_metadata() and convert_intent_id_to_evm(). Refactor e2e-tests-apt and e2e-tests-evm scripts to use these utilities.
+### Description: Implement 2 E2E test utility functions: extract_apt_metadata() in common_apt.sh and convert_intent_id_to_evm() in chain-connected-evm/utils.sh. Refactor e2e-tests-apt and e2e-tests-evm scripts to use these utilities.
 ### Details:
 Extract and standardize E2E test patterns:
 
-- extract_apt_metadata(): Extract Aptos metadata extraction patterns from e2e test scripts using Move module queries and curl
-- convert_intent_id_to_evm(): Extract intent ID conversion logic for EVM compatibility (hex conversion, padding, etc.)
+- extract_apt_metadata(): Extract Aptos metadata extraction patterns from e2e test scripts using Move module queries and curl. Implemented in testing-infra/common_apt.sh (Aptos-specific).
+- convert_intent_id_to_evm(): Extract intent ID conversion logic for EVM compatibility (hex conversion, padding, etc.). Implemented in testing-infra/chain-connected-evm/utils.sh (EVM-specific).
 
 Target scripts: submit-escrow.sh, release-escrow.sh, fulfill-hub-intent.sh in both e2e-tests-apt and e2e-tests-evm folders.
+
+✅ COMPLETED (2025-11-07)
+
+All 2 functions implemented:
+- extract_apt_metadata() ✅ (in common_apt.sh)
+- convert_intent_id_to_evm() ✅ (in chain-connected-evm/utils.sh)
+
+Refactored scripts:
+- submit-hub-intent.sh (apt) - uses extract_apt_metadata()
+- submit-escrow.sh (apt) - uses extract_apt_metadata()
+- submit-escrow.sh (evm) - uses convert_intent_id_to_evm()
+- release-escrow.sh (evm) - uses convert_intent_id_to_evm()
+
+Total impact: 2 utility functions added, 4 scripts refactored, ~60+ lines of duplicate code eliminated.
 

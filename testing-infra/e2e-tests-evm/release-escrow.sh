@@ -3,6 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../chain-connected-evm/utils.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -81,10 +82,8 @@ check_and_release_escrows() {
         log "   📦 New approval found for escrow: $ESCROW_ID"
         log "   🔓 Releasing escrow on EVM chain..."
         
-        # Convert intent_id to EVM format (remove 0x, pad to 64 chars)
-        INTENT_ID_HEX=$(echo "$INTENT_ID" | sed 's/^0x//')
-        INTENT_ID_HEX=$(printf "%064s" "$INTENT_ID_HEX" | tr ' ' '0')
-        INTENT_ID_EVM="0x$INTENT_ID_HEX"
+        # Convert intent_id to EVM format
+        INTENT_ID_EVM=$(convert_intent_id_to_evm "$INTENT_ID")
         
         # Convert signature from base64 to hex for EVM
         # The verifier provides ECDSA signature as base64-encoded bytes (65 bytes: r || s || v)

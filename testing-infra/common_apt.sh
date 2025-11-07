@@ -285,3 +285,79 @@ verify_aptos_chain_services() {
     fi
 }
 
+# Extract APT metadata address from Aptos chain
+# Usage: extract_apt_metadata <profile> <chain_address> <account_address> <chain_num> [log_file]
+# Returns: metadata address via stdout, exits on error
+# chain_num: 1 for Chain 1 (hub, port 8080), 2 for Chain 2 (connected, port 8082)
+extract_apt_metadata() {
+    local profile="$1"
+    local chain_address="$2"
+    local account_address="$3"
+    local chain_num="$4"
+    local log_file="${5:-$LOG_FILE}"
+    
+    if [ -z "$profile" ]; then
+        log_and_echo "❌ ERROR: extract_apt_metadata() requires a profile name"
+        exit 1
+    fi
+    
+    if [ -z "$chain_address" ]; then
+        log_and_echo "❌ ERROR: extract_apt_metadata() requires a chain address"
+        exit 1
+    fi
+    
+    if [ -z "$account_address" ]; then
+        log_and_echo "❌ ERROR: extract_apt_metadata() requires an account address"
+        exit 1
+    fi
+    
+    if [ -z "$chain_num" ]; then
+        log_and_echo "❌ ERROR: extract_apt_metadata() requires a chain number (1 or 2)"
+        exit 1
+    fi
+    
+    if [ "$chain_num" != "1" ] && [ "$chain_num" != "2" ]; then
+        log_and_echo "❌ ERROR: Invalid chain number: $chain_num (must be 1 or 2)"
+        exit 1
+    fi
+    
+    # Determine REST API port based on chain number
+    local rest_port
+    if [ "$chain_num" = "1" ]; then
+        rest_port="8080"
+    else
+        rest_port="8082"
+    fi
+    
+    # Run aptos move command to get APT metadata
+    local aptos_cmd="aptos move run --profile $profile --assume-yes --function-id \"0x${chain_address}::test_fa_helper::get_apt_metadata_address\""
+    
+    if [ -n "$log_file" ]; then
+        if ! eval "$aptos_cmd >> \"$log_file\" 2>&1"; then
+            log_and_echo "❌ Failed to get APT metadata on Chain $chain_num"
+            exit 1
+        fi
+    else
+        if ! eval "$aptos_cmd"; then
+            log_and_echo "❌ Failed to get APT metadata on Chain $chain_num"
+            exit 1
+        fi
+    fi
+    
+    # Wait for transaction to be processed
+    sleep 2
+    
+    # Query REST API for the account's latest transaction and extract metadata
+    local metadata
+    metadata=$(curl -s "http://127.0.0.1:${rest_port}/v1/accounts/${account_address}/transactions?limit=1" | \
+        jq -r '.[0].events[] | select(.type | contains("APTMetadataAddressEvent")) | .data.metadata' | head -n 1)
+    
+    if [ -z "$metadata" ] || [ "$metadata" = "null" ]; then
+        log_and_echo "❌ Failed to extract APT metadata from Chain $chain_num transaction"
+        exit 1
+    fi
+    
+    # Output metadata address
+    echo "$metadata"
+}
+

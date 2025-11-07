@@ -63,7 +63,7 @@
         "id": "2",
         "title": "Implement utility function refactoring in testing-infra",
         "description": "Extract folder-specific utility functions and update script imports based on analysis from Task 1. Create utility files containing extracted common functions and update all scripts to use these utilities while preserving exact functionality.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "1"
         ],
@@ -102,7 +102,7 @@
             "dependencies": [
               1
             ],
-            "details": "Extract and standardize EVM chain management patterns:\n\n- run_hardhat_command(): Standardize hardhat command execution patterns with nix develop wrapper\n- check_evm_chain_running(): Extract EVM chain status checking logic using JSON-RPC calls\n- get_hardhat_account_address(): Standardize hardhat account address retrieval from account indices (0, 1, 2)\n- extract_vault_address(): Extract vault address extraction patterns from Hardhat deployment output\n\nTarget scripts: setup-alice-bob.sh, deploy-contract.sh, setup-chain.sh, stop-chain.sh, cleanup.sh in chain-connected-evm folder.\n\nNote: This creates a new file testing-infra/chain-connected-evm/utils.sh that must be sourced by EVM scripts.",
+            "details": "Extract and standardize EVM chain management patterns:\n\n- run_hardhat_command(): Standardize hardhat command execution patterns with nix develop wrapper\n- check_evm_chain_running(): Extract EVM chain status checking logic using JSON-RPC calls\n- get_hardhat_account_address(): Standardize hardhat account address retrieval from account indices (0, 1, 2)\n- extract_vault_address(): Extract vault address extraction patterns from Hardhat deployment output\n\nTarget scripts: setup-alice-bob.sh, deploy-contract.sh, setup-chain.sh, stop-chain.sh, cleanup.sh in chain-connected-evm folder.\n\nNote: This creates a new file testing-infra/chain-connected-evm/utils.sh that must be sourced by EVM scripts.\n\n✅ COMPLETED (2025-11-07) - COMMITTED (9fc352a)\n\nAll 4 functions implemented:\n- run_hardhat_command() ✅\n- check_evm_chain_running() ✅\n- get_hardhat_account_address() ✅\n- extract_vault_address() ✅\n\nTotal impact: 4 utility functions added, 4 scripts refactored, ~80+ lines of duplicate code eliminated.",
             "testStrategy": "Test each function individually, then run complete EVM chain setup/teardown workflows. Validate chain-connected-evm scripts maintain identical behavior and that utils.sh is properly sourced.",
             "parentId": "undefined",
             "updatedAt": "2025-11-07T10:58:17.071Z"
@@ -110,17 +110,17 @@
           {
             "id": 4,
             "title": "E2E test utilities (2 functions)",
-            "description": "Implement 2 E2E test utility functions in testing-infra/common.sh: extract_apt_metadata() and convert_intent_id_to_evm(). Refactor e2e-tests-apt and e2e-tests-evm scripts to use these utilities.",
-            "status": "pending",
+            "description": "Implement 2 E2E test utility functions: extract_apt_metadata() in common_apt.sh and convert_intent_id_to_evm() in chain-connected-evm/utils.sh. Refactor e2e-tests-apt and e2e-tests-evm scripts to use these utilities.",
+            "status": "done",
             "dependencies": [
               1
             ],
-            "details": "Extract and standardize E2E test patterns:\n\n- extract_apt_metadata(): Extract Aptos metadata extraction patterns from e2e test scripts using Move module queries and curl\n- convert_intent_id_to_evm(): Extract intent ID conversion logic for EVM compatibility (hex conversion, padding, etc.)\n\nTarget scripts: submit-escrow.sh, release-escrow.sh, fulfill-hub-intent.sh in both e2e-tests-apt and e2e-tests-evm folders.",
+            "details": "Extract and standardize E2E test patterns:\n\n- extract_apt_metadata(): Extract Aptos metadata extraction patterns from e2e test scripts using Move module queries and curl. Implemented in testing-infra/common_apt.sh (Aptos-specific).\n- convert_intent_id_to_evm(): Extract intent ID conversion logic for EVM compatibility (hex conversion, padding, etc.). Implemented in testing-infra/chain-connected-evm/utils.sh (EVM-specific).\n\nTarget scripts: submit-escrow.sh, release-escrow.sh, fulfill-hub-intent.sh in both e2e-tests-apt and e2e-tests-evm folders.\n\n✅ COMPLETED (2025-11-07)\n\nAll 2 functions implemented:\n- extract_apt_metadata() ✅ (in common_apt.sh)\n- convert_intent_id_to_evm() ✅ (in chain-connected-evm/utils.sh)\n\nRefactored scripts:\n- submit-hub-intent.sh (apt) - uses extract_apt_metadata()\n- submit-escrow.sh (apt) - uses extract_apt_metadata()\n- submit-escrow.sh (evm) - uses convert_intent_id_to_evm()\n- release-escrow.sh (evm) - uses convert_intent_id_to_evm()\n\nTotal impact: 2 utility functions added, 4 scripts refactored, ~60+ lines of duplicate code eliminated.",
             "testStrategy": "Test each function individually, then run complete E2E test suites (./testing-infra/e2e-tests-apt/run-tests.sh and ./testing-infra/e2e-tests-evm/run-tests.sh). Validate all test workflows maintain identical behavior.",
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-07T10:58:17.071Z"
+        "updatedAt": "2025-11-07T11:09:22.393Z"
       },
       {
         "id": "3",
@@ -138,9 +138,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-07T10:58:17.072Z",
+      "lastModified": "2025-11-07T11:09:22.394Z",
       "taskCount": 3,
-      "completedCount": 0,
+      "completedCount": 1,
       "tags": [
         "master"
       ]

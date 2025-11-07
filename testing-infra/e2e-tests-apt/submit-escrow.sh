@@ -88,25 +88,9 @@ log "   - Using intent_id from hub chain: $INTENT_ID"
 
 # Get APT metadata on Chain 2
 log "   - Getting APT metadata on Chain 2..."
-aptos move run --profile alice-chain2 --assume-yes \
-    --function-id "0x${CHAIN2_ADDRESS}::test_fa_helper::get_apt_metadata_address" \
-    >> "$LOG_FILE" 2>&1
-
-if [ $? -eq 0 ]; then
-    sleep 2
-    APT_METADATA_CHAIN2=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
-        jq -r '.[0].events[] | select(.type | contains("APTMetadataAddressEvent")) | .data.metadata' | head -n 1)
-    if [ -n "$APT_METADATA_CHAIN2" ] && [ "$APT_METADATA_CHAIN2" != "null" ]; then
-        log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-        SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
-    else
-        log_and_echo "     ❌ Failed to extract APT metadata from Chain 2 transaction"
-        exit 1
-    fi
-else
-    log_and_echo "     ❌ Failed to get APT metadata on Chain 2"
-    exit 1
-fi
+APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
+log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
+SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 
 # Submit escrow intent using Alice's account on Chain 2 (connected chain)
 log "   - Creating escrow intent on Chain 2..."

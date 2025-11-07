@@ -3,6 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/../chain-connected-evm/utils.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -57,12 +58,7 @@ log "   - Exchange rate: 1000 ETH = 1 APT"
 cd evm-intent-framework
 
 # Convert intent_id from Aptos format to EVM uint256
-# Intent ID is already in hex format (0x...), just need to remove 0x and pad to 64 chars
-INTENT_ID_HEX=$(echo "$INTENT_ID" | sed 's/^0x//')
-# Ensure it's 64 characters (32 bytes)
-INTENT_ID_HEX=$(printf "%064s" "$INTENT_ID_HEX" | tr ' ' '0')
-INTENT_ID_EVM="0x$INTENT_ID_HEX"
-
+INTENT_ID_EVM=$(convert_intent_id_to_evm "$INTENT_ID")
 log "     Intent ID (EVM): $INTENT_ID_EVM"
 
 # Initialize vault for this intent with ETH (address(0))

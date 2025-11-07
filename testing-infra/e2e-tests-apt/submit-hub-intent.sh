@@ -52,48 +52,16 @@ log "   - Getting APT metadata addresses..."
 
 # Get APT metadata on Chain 1
 log "     Getting APT metadata on Chain 1..."
-aptos move run --profile alice-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::test_fa_helper::get_apt_metadata_address" \
-    >> "$LOG_FILE" 2>&1
-
-if [ $? -eq 0 ]; then
-    sleep 2
-    APT_METADATA_CHAIN1=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" | \
-        jq -r '.[0].events[] | select(.type | contains("APTMetadataAddressEvent")) | .data.metadata' | head -n 1)
-    if [ -n "$APT_METADATA_CHAIN1" ] && [ "$APT_METADATA_CHAIN1" != "null" ]; then
-        log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
-        SOURCE_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
-        DESIRED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
-    else
-        log_and_echo "     ❌ Failed to extract APT metadata from Chain 1 transaction"
-        exit 1
-    fi
-else
-    log_and_echo "     ❌ Failed to get APT metadata on Chain 1"
-    exit 1
-fi
+APT_METADATA_CHAIN1=$(extract_apt_metadata "alice-chain1" "$CHAIN1_ADDRESS" "$ALICE_CHAIN1_ADDRESS" "1" "$LOG_FILE")
+log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
+SOURCE_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+DESIRED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
 
 # Get APT metadata on Chain 2
 log "     Getting APT metadata on Chain 2..."
-aptos move run --profile alice-chain2 --assume-yes \
-    --function-id "0x${CHAIN2_ADDRESS}::test_fa_helper::get_apt_metadata_address" \
-    >> "$LOG_FILE" 2>&1
-
-if [ $? -eq 0 ]; then
-    sleep 2
-    APT_METADATA_CHAIN2=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
-        jq -r '.[0].events[] | select(.type | contains("APTMetadataAddressEvent")) | .data.metadata' | head -n 1)
-    if [ -n "$APT_METADATA_CHAIN2" ] && [ "$APT_METADATA_CHAIN2" != "null" ]; then
-        log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-        SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
-    else
-        log_and_echo "     ❌ Failed to extract APT metadata from Chain 2 transaction"
-        exit 1
-    fi
-else
-    log_and_echo "     ❌ Failed to get APT metadata on Chain 2"
-    exit 1
-fi
+APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
+log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
+SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
 log "   - Creating cross-chain request intent on Chain 1..."

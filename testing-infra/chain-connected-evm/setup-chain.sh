@@ -3,6 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/utils.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -61,13 +62,7 @@ log "⏳ Waiting for Hardhat node to be ready..."
 # Wait for node to be ready (check if port 8545 is responding)
 # Timeout set to 180 seconds (3 minutes) for CI environments
 for i in {1..180}; do
-    CURL_RESPONSE=$(curl -s -X POST http://127.0.0.1:8545 \
-        -H "Content-Type: application/json" \
-        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-        2>&1)
-    CURL_EXIT_CODE=$?
-    
-    if [ $CURL_EXIT_CODE -eq 0 ] && echo "$CURL_RESPONSE" | grep -q '"result"'; then
+    if check_evm_chain_running; then
         log "   ✅ Hardhat node ready!"
         break
     fi
@@ -75,11 +70,6 @@ for i in {1..180}; do
     # Log progress every 30 seconds
     if [ $((i % 30)) -eq 0 ]; then
         log "   Still waiting... (${i}/180 seconds)"
-        if [ $CURL_EXIT_CODE -ne 0 ]; then
-            log "   Curl error (exit code: $CURL_EXIT_CODE): $CURL_RESPONSE"
-        elif [ -n "$CURL_RESPONSE" ]; then
-            log "   Curl response: $CURL_RESPONSE"
-        fi
     fi
     
     if [ $i -eq 180 ]; then
@@ -120,8 +110,12 @@ for i in {1..180}; do
         else
             log_and_echo "   Cannot check port status (lsof/ss not available)"
         fi
-        log_and_echo "   Final curl test response:"
-        log_and_echo "   $CURL_RESPONSE"
+        log_and_echo "   Final EVM chain check:"
+        if check_evm_chain_running; then
+            log_and_echo "   Chain is responding (unexpected - should have been detected earlier)"
+        else
+            log_and_echo "   Chain is NOT responding"
+        fi
         kill "$HARDHAT_PID" 2>/dev/null || true
         exit 1
     fi

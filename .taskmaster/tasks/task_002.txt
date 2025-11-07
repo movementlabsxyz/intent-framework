@@ -1,13 +1,13 @@
 # Task ID: 2
 # Title: Implement utility function refactoring in testing-infra
-# Status: pending
+# Status: in-progress
 # Dependencies: 1
 # Priority: high
 # Description: Extract folder-specific utility functions and update script imports based on analysis from Task 1. Create utility files containing extracted common functions and update all scripts to use these utilities while preserving exact functionality.
 # Details:
-Implement comprehensive 4-phase utility function refactoring plan:
+Implement comprehensive utility function refactoring plan:
 
-**PHASE 1: Extend common.sh with core utilities (7 functions)**
+**1. Extend common.sh with core utilities (7 functions)**
 - setup_verifier_config(): Extract verifier configuration logic from configure-verifier.sh scripts across chain-connected-apt, chain-hub, and chain-connected-evm folders
 - get_profile_address(): Standardize profile address extraction from aptos config show-profiles
 - load_intent_info(): Extract intent information loading patterns
@@ -16,19 +16,19 @@ Implement comprehensive 4-phase utility function refactoring plan:
 - stop_verifier(): Extract verifier shutdown logic
 - check_verifier_health(): Extract verifier health check logic
 
-**PHASE 2: Aptos chain utilities (4 functions)**
+**2. Aptos chain utilities (4 functions)**
 - init_aptos_profile(): Standardize aptos init commands with different profiles (alice-chain1/2, bob-chain1/2, intent-account-chain1/2)
 - cleanup_aptos_profile(): Standardize profile cleanup procedures
 - wait_for_aptos_chain_ready(): Extract chain readiness verification logic from setup-chain.sh scripts
 - verify_aptos_chain_services(): Extract service verification patterns from multiple scripts
 
-**PHASE 3: EVM utilities in chain-connected-evm/utils.sh (4 functions)**
+**3. EVM utilities in chain-connected-evm/utils.sh (4 functions)**
 - run_hardhat_command(): Standardize hardhat command execution patterns
 - check_evm_chain_running(): Extract EVM chain status checking logic
 - get_hardhat_account_address(): Standardize hardhat account address retrieval
 - extract_vault_address(): Extract vault address extraction patterns
 
-**PHASE 4: E2E test utilities (2 functions)**
+**4. E2E test utilities (2 functions)**
 - extract_apt_metadata(): Extract Aptos metadata extraction patterns from e2e test scripts
 - convert_intent_id_to_evm(): Extract intent ID conversion logic for EVM compatibility
 
@@ -36,13 +36,13 @@ Implement comprehensive 4-phase utility function refactoring plan:
 - Implement one utility function at a time
 - Test thoroughly after each function implementation
 - Maintain strict backward compatibility
-- Validate with complete test suites per root README after each phase
-- Start with setup_verifier_config() in Phase 1.1
+- Validate with complete test suites per root README after each set
+- Start with setup_verifier_config()
 
 **File Locations:**
-- Phase 1-2: Extend existing testing-infra/common.sh
-- Phase 3: Create new testing-infra/chain-connected-evm/utils.sh
-- Phase 4: Add to testing-infra/common.sh
+- Set 1-2: Extend existing testing-infra/common.sh and common_apt.sh
+- Set 3: Create new testing-infra/chain-connected-evm/utils.sh
+- Set 4: Add to testing-infra/common.sh
 
 All utility functions must preserve exact existing functionality while reducing code duplication across chain-connected-apt, chain-hub, chain-connected-evm, e2e-tests-apt, and e2e-tests-evm folders.
 <info added on 2025-11-07T09:01:00.478Z>
@@ -83,7 +83,7 @@ Successfully updated 6 scripts across testing-infra folders:
 </info added on 2025-11-07T09:01:00.478Z>
 
 # Test Strategy:
-Comprehensive validation strategy for each phase:
+Comprehensive validation strategy:
 
 **Per-Function Testing:**
 1. Unit test each utility function in isolation
@@ -91,8 +91,8 @@ Comprehensive validation strategy for each phase:
 3. Regression test all affected scripts to ensure identical behavior
 4. Validate error handling and edge cases match original implementations
 
-**Phase Validation:**
-1. Run complete test suites after each phase:
+**Validation After Each Set:**
+1. Run complete test suites:
    - ./testing-infra/e2e-tests-apt/run-tests.sh
    - ./testing-infra/e2e-tests-evm/run-tests.sh
 2. Verify all logging, error handling, and exit codes remain identical
@@ -108,15 +108,15 @@ Comprehensive validation strategy for each phase:
 **Implementation Verification:**
 1. Start with setup_verifier_config() - test against configure-verifier.sh in all three folders
 2. After each function: run targeted tests for affected scripts
-3. After each phase: full E2E test suite validation
+3. After each set: full E2E test suite validation
 4. Final validation: complete project test suite with all refactored utilities
 
 # Subtasks:
-## 1. Phase 1: Extend common.sh with core utilities (7 functions) [done]
+## 1. Extend common.sh with core utilities (7 functions) [done]
 ### Dependencies: None
 ### Description: Implement 7 core utility functions in testing-infra/common.sh: setup_verifier_config(), get_profile_address(), load_intent_info(), save_intent_info(), start_verifier(), stop_verifier(), and check_verifier_health(). Refactor all scripts using these patterns to call the new utilities.
 ### Details:
-All 7 Phase 1 functions have been implemented and committed:
+All 7 core utility functions have been implemented and committed:
 
 - setup_verifier_config() - ✅ COMMITTED (1a11ca5)
 - get_profile_address() - ✅ COMMITTED (dcb3990)
@@ -125,9 +125,9 @@ All 7 Phase 1 functions have been implemented and committed:
 
 Total impact: 7 utility functions added, 20+ scripts refactored, ~200+ lines of duplicate code eliminated. All scripts syntax validated and CI tests passing.
 
-## 2. Phase 2: Aptos chain utilities (4 functions) [pending]
+## 2. Aptos chain utilities (4 functions) [done]
 ### Dependencies: 2.1
-### Description: Implement 4 Aptos-specific utility functions in testing-infra/common_aptos.sh: init_aptos_profile(), cleanup_aptos_profile(), wait_for_aptos_chain_ready(), and verify_aptos_chain_services(). Refactor chain-connected-apt and chain-hub scripts to use these utilities.
+### Description: Implement 4 Aptos-specific utility functions in testing-infra/common_apt.sh: init_aptos_profile(), cleanup_aptos_profile(), wait_for_aptos_chain_ready(), and verify_aptos_chain_services(). Refactor chain-connected-apt and chain-hub scripts to use these utilities.
 ### Details:
 Extract and standardize Aptos chain management patterns:
 
@@ -138,9 +138,19 @@ Extract and standardize Aptos chain management patterns:
 
 Target scripts: setup-alice-bob.sh, deploy-contracts.sh, setup-chain.sh, stop-chain.sh in both chain-connected-apt and chain-hub folders.
 
-Note: All Aptos-specific utilities are now in common_aptos.sh (which must be sourced after common.sh). The existing get_profile_address() and fund_and_verify_account() functions have already been moved to common_aptos.sh.
+Note: All Aptos-specific utilities are now in common_apt.sh (which must be sourced after common.sh). The existing get_profile_address() and fund_and_verify_account() functions have already been moved to common_apt.sh.
 
-## 3. Phase 3: EVM utilities in chain-connected-evm/utils.sh (4 functions) [pending]
+✅ COMPLETED (2025-11-07) - COMMITTED (f10f98b)
+
+All 4 functions implemented:
+- init_aptos_profile() ✅
+- cleanup_aptos_profile() ✅
+- wait_for_aptos_chain_ready() ✅
+- verify_aptos_chain_services() ✅
+
+Total impact: 4 utility functions added, 8 scripts refactored, ~100+ lines of duplicate code eliminated.
+
+## 3. EVM utilities in chain-connected-evm/utils.sh (4 functions) [done]
 ### Dependencies: 2.1
 ### Description: Create testing-infra/chain-connected-evm/utils.sh and implement 4 EVM-specific utility functions: run_hardhat_command(), check_evm_chain_running(), get_hardhat_account_address(), and extract_vault_address(). Refactor chain-connected-evm scripts to use these utilities.
 ### Details:
@@ -155,7 +165,7 @@ Target scripts: setup-alice-bob.sh, deploy-contract.sh, setup-chain.sh, stop-cha
 
 Note: This creates a new file testing-infra/chain-connected-evm/utils.sh that must be sourced by EVM scripts.
 
-## 4. Phase 4: E2E test utilities (2 functions) [pending]
+## 4. E2E test utilities (2 functions) [pending]
 ### Dependencies: 2.1
 ### Description: Implement 2 E2E test utility functions in testing-infra/common.sh: extract_apt_metadata() and convert_intent_id_to_evm(). Refactor e2e-tests-apt and e2e-tests-evm scripts to use these utilities.
 ### Details:

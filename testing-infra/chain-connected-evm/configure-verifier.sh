@@ -10,6 +10,7 @@ set -e
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/utils.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -20,30 +21,12 @@ log_and_echo "✅ Configuring verifier for Connected EVM Chain..."
 log_and_echo ""
 
 # Get EVM vault address
-cd evm-intent-framework
-VAULT_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
-cd ..
-
-if [ -z "$VAULT_ADDRESS" ]; then
-    log_and_echo "❌ ERROR: Could not extract EVM vault address"
-    exit 1
-fi
-
+VAULT_ADDRESS=$(extract_vault_address)
 log_and_echo "   EVM Vault: $VAULT_ADDRESS"
 
 # Get verifier Ethereum address (Hardhat account 0)
 log "   - Getting verifier Ethereum address (Hardhat account 0)..."
-cd evm-intent-framework
-VERIFIER_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=0 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
-cd ..
-
-if [ -z "$VERIFIER_ADDRESS" ]; then
-    log_and_echo "   ❌ ERROR: Could not get verifier Ethereum address from Hardhat account 0"
-    log_and_echo "   ❌ Cannot proceed without a valid verifier address"
-    log_and_echo "   ❌ Please ensure Hardhat node is running"
-    exit 1
-fi
-
+VERIFIER_ADDRESS=$(get_hardhat_account_address "0")
 log_and_echo "   EVM Verifier: $VERIFIER_ADDRESS"
 
 # Setup verifier config

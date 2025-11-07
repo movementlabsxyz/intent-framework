@@ -12,6 +12,7 @@ set -e
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../common.sh"
+source "$SCRIPT_DIR/utils.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -32,10 +33,7 @@ sleep 5
 
 # Verify EVM chain is running
 log "🔍 Verifying EVM chain is running..."
-if ! curl -s -X POST http://127.0.0.1:8545 \
-    -H "Content-Type: application/json" \
-    -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-    >/dev/null 2>&1; then
+if ! check_evm_chain_running; then
     log_and_echo "❌ Error: EVM chain failed to start on port 8545"
     exit 1
 fi
@@ -51,28 +49,11 @@ log "   Alice             = Account 1 (signer index 1)"
 log "   Bob               = Account 2 (signer index 2)"
 
 # Get account addresses using Hardhat
-cd evm-intent-framework
 log ""
 log "🔍 Getting Alice and Bob addresses..."
 
-ACCOUNTS_OUTPUT=$(nix develop -c bash -c "npx hardhat run scripts/get-accounts.js" 2>&1)
-
-if [ $? -ne 0 ]; then
-    log_and_echo "❌ Error: Failed to get account addresses"
-    echo "$ACCOUNTS_OUTPUT" >> "$LOG_FILE"
-    exit 1
-fi
-
-ALICE_ADDRESS=$(echo "$ACCOUNTS_OUTPUT" | grep "^ALICE_ADDRESS=" | cut -d'=' -f2 | tr -d '\n')
-BOB_ADDRESS=$(echo "$ACCOUNTS_OUTPUT" | grep "^BOB_ADDRESS=" | cut -d'=' -f2 | tr -d '\n')
-
-cd ..
-
-if [ -z "$ALICE_ADDRESS" ] || [ -z "$BOB_ADDRESS" ]; then
-    log_and_echo "❌ Error: Failed to extract account addresses from output"
-    echo "$ACCOUNTS_OUTPUT" >> "$LOG_FILE"
-    exit 1
-fi
+ALICE_ADDRESS=$(get_hardhat_account_address "1")
+BOB_ADDRESS=$(get_hardhat_account_address "2")
 
 log "   ✅ Alice (Account 1): $ALICE_ADDRESS"
 log "   ✅ Bob (Account 2):   $BOB_ADDRESS"

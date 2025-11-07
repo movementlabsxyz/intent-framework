@@ -15,13 +15,16 @@ contract IntentVault {
     /// @notice Authorized verifier address that can approve releases
     address public immutable verifier;
 
+    /// @notice Contract-defined expiry duration (1 hour in seconds)
+    uint256 public constant EXPIRY_DURATION = 1 hours;
+
     /// @notice Vault data structure
     struct Vault {
         address maker;           // User who deposited funds
         address token;           // ERC20 token address
         uint256 amount;          // Amount deposited
         bool isClaimed;          // Whether funds have been claimed
-        uint256 expiry;          // Expiry timestamp (optional, enforced off-chain)
+        uint256 expiry;          // Expiry timestamp (contract-defined). After expiry, claims are blocked but maker can cancel
     }
 
     /// @notice Mapping from intent ID to vault data
@@ -40,6 +43,8 @@ contract IntentVault {
     error InvalidSignature();
     error InvalidApprovalValue();
     error UnauthorizedVerifier();
+    error VaultExpired(); // Vault has expired (for claim operations)
+    error VaultNotExpiredYet(); // Vault has not expired yet (for cancel operations)
 
     /**
      * @notice Initialize the vault with verifier address
@@ -54,12 +59,11 @@ contract IntentVault {
      * @notice Initialize a new vault for a specific intent
      * @param intentId Unique intent identifier
      * @param token ERC20 token address to be deposited (use address(0) for ETH)
-     * @param expiry Expiry timestamp (can be 0 for no expiry)
+     * @dev Expiry is automatically set to block.timestamp + EXPIRY_DURATION (contract-defined)
      */
     function initializeVault(
         uint256 intentId,
-        address token,
-        uint256 expiry
+        address token
     ) external {
         require(vaults[intentId].maker == address(0), "Vault already initialized");
 
@@ -68,7 +72,7 @@ contract IntentVault {
             token: token,
             amount: 0,
             isClaimed: false,
-            expiry: expiry
+            expiry: block.timestamp + EXPIRY_DURATION
         });
 
         emit VaultInitialized(intentId, address(this), msg.sender, token);
@@ -116,6 +120,10 @@ contract IntentVault {
         
         if (vault.isClaimed) revert VaultAlreadyClaimed();
         if (vault.amount == 0) revert NoDeposit();
+        
+        // Enforce expiry: claims are not allowed after expiry
+        if (block.timestamp > vault.expiry) revert VaultExpired();
+        
         if (approvalValue != 1) revert InvalidApprovalValue();
 
         // Verify signature
@@ -147,7 +155,8 @@ contract IntentVault {
     }
 
     /**
-     * @notice Cancel vault and return funds to maker (after expiry)
+     * @notice Cancel vault and return funds to maker (only after expiry)
+     * @dev Maker must wait until expiry before canceling to prevent premature withdrawal
      * @param intentId Intent identifier
      */
     function cancel(uint256 intentId) external {
@@ -156,6 +165,10 @@ contract IntentVault {
         if (vault.isClaimed) revert VaultAlreadyClaimed();
         if (vault.amount == 0) revert NoDeposit();
         if (msg.sender != vault.maker) revert UnauthorizedMaker();
+        
+        // Enforce expiry: cancellation is only allowed after expiry
+        // This ensures funds remain locked until the contract-defined expiry period
+        if (block.timestamp <= vault.expiry) revert VaultNotExpiredYet();
 
         uint256 amount = vault.amount;
         address token = vault.token;

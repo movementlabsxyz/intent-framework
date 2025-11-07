@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Common utilities for testing infrastructure scripts
-# Source this file in other scripts with: source "$(dirname "$0")/common.sh" or similar
+# Source this file in other scripts with: source "$(dirname "$0")/util.sh" or similar
 
 # Get project root - can be called from any script location
 # Usage: Call this function to set PROJECT_ROOT and optionally change to it
@@ -13,7 +13,7 @@ setup_project_root() {
     if [ -n "$SCRIPT_DIR" ]; then
         script_dir="$SCRIPT_DIR"
     else
-        # Get the calling script's path (BASH_SOURCE[1] because [0] is common.sh)
+        # Get the calling script's path (BASH_SOURCE[1] because [0] is util.sh)
         local script_path="${BASH_SOURCE[1]}"
         if [ -z "$script_path" ]; then
             # Fallback if called differently

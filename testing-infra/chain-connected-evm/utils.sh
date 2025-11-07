@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # EVM-specific utilities for testing infrastructure scripts
-# This file MUST be sourced AFTER common.sh
+# This file MUST be sourced AFTER util.sh
 # Usage: 
-#   source "$(dirname "$0")/../common.sh"
+#   source "$(dirname "$0")/../util.sh"
 #   source "$(dirname "$0")/utils.sh"
 #
-# Note: This file depends on functions from common.sh (log, log_and_echo, setup_project_root, etc.)
+# Note: This file depends on functions from util.sh (log, log_and_echo, setup_project_root, etc.)
 
 # Run Hardhat command with nix develop wrapper
 # Usage: run_hardhat_command <command> [env_vars]

@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Aptos-specific utilities for testing infrastructure scripts
-# This file MUST be sourced AFTER common.sh
+# This file MUST be sourced AFTER util.sh
 # Usage: 
-#   source "$(dirname "$0")/../common.sh"
-#   source "$(dirname "$0")/../common_apt.sh"
+#   source "$(dirname "$0")/../util.sh"
+#   source "$(dirname "$0")/../util_apt.sh"
 #
-# Note: This file depends on functions from common.sh (log, log_and_echo, setup_project_root, etc.)
+# Note: This file depends on functions from util.sh (log, log_and_echo, setup_project_root, etc.)
 
 # Get address from aptos profile
 # Usage: get_profile_address <profile_name>

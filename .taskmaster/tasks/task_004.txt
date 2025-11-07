@@ -1,0 +1,57 @@
+# Task ID: 4
+# Title: Check and implement ECDSA signing method in verifier API
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Check if verifier provides an ECDSA signing method via API. If not, implement it. Then check if E2E EVM tests use that verifier signing method, and update E2E tests to use it.
+# Details:
+1. Check if verifier API has ECDSA signing endpoint
+2. If missing, implement POST /evm-approval endpoint that takes intent_id and creates ECDSA signature
+3. Check if E2E EVM tests use the verifier signing method
+4. Update E2E tests to use the new signing method
+
+# Test Strategy:
+Verify API endpoint works, test with curl, update E2E test scripts
+
+# Subtasks:
+## 1. Check if verifier API provides ECDSA signing method [pending]
+### Dependencies: None
+### Description: Review verifier API endpoints and check if there's a method to request ECDSA signatures for EVM. Check if POST /approval supports ECDSA or if a new endpoint is needed.
+### Details:
+Review:
+1. trusted-verifier/src/api/mod.rs - check existing endpoints
+2. trusted-verifier/docs/api.md - check API documentation
+3. Check if POST /approval can create ECDSA signatures or only Ed25519
+4. Check if create_evm_approval_signature() is exposed via API
+
+## 2. Implement ECDSA signing endpoint if missing [pending]
+### Dependencies: 4.1
+### Description: If no ECDSA signing endpoint exists, implement POST /evm-approval endpoint that accepts intent_id and approval_value, and returns ECDSA signature.
+### Details:
+Implement:
+1. Add EvmApprovalRequest struct with intent_id and approval_value fields
+2. Add POST /evm-approval endpoint handler
+3. Handler should call crypto_service.create_evm_approval_signature()
+4. Return signature in base64 format
+5. Update API documentation
+
+## 3. Check if E2E EVM tests use verifier signing method [pending]
+### Dependencies: 4.1
+### Description: Review E2E EVM test scripts to see how they currently get signatures. Check if they use the verifier API or create signatures directly.
+### Details:
+Review:
+1. testing-infra/e2e-tests-evm/release-escrow.sh - how does it get signatures?
+2. Check if it calls verifier API endpoints
+3. Check if it uses /approvals endpoint (cached) or needs direct signing
+4. Document current approach
+
+## 4. Update E2E EVM tests to use verifier signing method [pending]
+### Dependencies: 4.2, 4.3
+### Description: Update E2E EVM test scripts to use the verifier's ECDSA signing endpoint (either existing or newly implemented). Replace any direct signature creation with API calls.
+### Details:
+Update:
+1. Modify release-escrow.sh to call POST /evm-approval endpoint
+2. Or update to use /approvals if that's the correct approach
+3. Ensure signature format matches EVM requirements (hex encoding)
+4. Test the updated E2E flow
+

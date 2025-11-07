@@ -1,0 +1,91 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Compare Aptos vs EVM test coverage and identify gaps",
+        "description": "Compare test coverage between Aptos E2E tests and EVM E2E tests. Identify what test scripts exist for Aptos (submit-hub-intent.sh, submit-escrow.sh, fulfill-hub-intent.sh, release-escrow.sh, verifier-rust-integration-tests.sh with connectivity_test.rs, deployment_test.rs, event_polling_test.rs), what exists for EVM (submit-escrow.sh, release-escrow.sh, reuses Aptos scripts for hub operations), and identify the differences and gaps in EVM test coverage. Document missing EVM-specific Rust integration tests.",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [],
+        "details": "Analyze:\n1. Aptos E2E test scripts and Rust integration tests\n2. EVM E2E test scripts\n3. Identify missing EVM tests:\n   - EVM client connectivity tests (JSON-RPC)\n   - EVM contract deployment verification\n   - EVM event polling tests (logs)\n4. Document findings in TEST_COVERAGE_COMPARISON.md",
+        "testStrategy": "Review existing test files, compare structures, document gaps",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Plan new EVM test functions based on Task 1 findings",
+        "description": "Based on the comparison from Task 1, plan what new test functions should be created for EVM. Define the structure, test cases, and implementation approach for EVM-specific Rust integration tests.",
+        "status": "in-progress",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "details": "Create a plan for:\n1. EVM client connectivity tests (similar to Aptos connectivity_test.rs)\n2. EVM contract deployment verification (similar to Aptos deployment_test.rs)\n3. EVM event polling tests (similar to Aptos event_polling_test.rs)\n4. Test runner script (similar to verifier-rust-integration-tests.sh)\n5. Integration with EVM E2E test flow",
+        "testStrategy": "Design test structure matching Aptos patterns but adapted for EVM/JSON-RPC",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement new EVM test functions",
+        "description": "Implement the EVM-specific Rust integration tests planned in Task 2. Create the test files, test runner script, and integrate with the EVM E2E test flow.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "details": "Implement:\n1. EVM client module (if needed) or use existing JSON-RPC libraries\n2. connectivity_test.rs for EVM chain\n3. deployment_test.rs for IntentVault contract\n4. event_polling_test.rs for EVM logs\n5. verifier-rust-integration-tests.sh for EVM\n6. Update run-tests.sh to include Rust integration tests",
+        "testStrategy": "Follow Aptos test patterns, adapt for EVM/JSON-RPC, ensure tests pass in CI",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Check and implement ECDSA signing method in verifier API",
+        "description": "Check if verifier provides an ECDSA signing method via API. If not, implement it. Then check if E2E EVM tests use that verifier signing method, and update E2E tests to use it.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [],
+        "details": "1. Check if verifier API has ECDSA signing endpoint\n2. If missing, implement POST /evm-approval endpoint that takes intent_id and creates ECDSA signature\n3. Check if E2E EVM tests use the verifier signing method\n4. Update E2E tests to use the new signing method",
+        "testStrategy": "Verify API endpoint works, test with curl, update E2E test scripts",
+        "subtasks": [
+          {
+            "id": "4.1",
+            "title": "Check if verifier API provides ECDSA signing method",
+            "description": "Review verifier API endpoints and check if there's a method to request ECDSA signatures for EVM. Check if POST /approval supports ECDSA or if a new endpoint is needed.",
+            "status": "pending",
+            "details": "Review:\n1. trusted-verifier/src/api/mod.rs - check existing endpoints\n2. trusted-verifier/docs/api.md - check API documentation\n3. Check if POST /approval can create ECDSA signatures or only Ed25519\n4. Check if create_evm_approval_signature() is exposed via API"
+          },
+          {
+            "id": "4.2",
+            "title": "Implement ECDSA signing endpoint if missing",
+            "description": "If no ECDSA signing endpoint exists, implement POST /evm-approval endpoint that accepts intent_id and approval_value, and returns ECDSA signature.",
+            "status": "pending",
+            "dependencies": ["4.1"],
+            "details": "Implement:\n1. Add EvmApprovalRequest struct with intent_id and approval_value fields\n2. Add POST /evm-approval endpoint handler\n3. Handler should call crypto_service.create_evm_approval_signature()\n4. Return signature in base64 format\n5. Update API documentation"
+          },
+          {
+            "id": "4.3",
+            "title": "Check if E2E EVM tests use verifier signing method",
+            "description": "Review E2E EVM test scripts to see how they currently get signatures. Check if they use the verifier API or create signatures directly.",
+            "status": "pending",
+            "dependencies": ["4.1"],
+            "details": "Review:\n1. testing-infra/e2e-tests-evm/release-escrow.sh - how does it get signatures?\n2. Check if it calls verifier API endpoints\n3. Check if it uses /approvals endpoint (cached) or needs direct signing\n4. Document current approach"
+          },
+          {
+            "id": "4.4",
+            "title": "Update E2E EVM tests to use verifier signing method",
+            "description": "Update E2E EVM test scripts to use the verifier's ECDSA signing endpoint (either existing or newly implemented). Replace any direct signature creation with API calls.",
+            "status": "pending",
+            "dependencies": ["4.2", "4.3"],
+            "details": "Update:\n1. Modify release-escrow.sh to call POST /evm-approval endpoint\n2. Or update to use /approvals if that's the correct approach\n3. Ensure signature format matches EVM requirements (hex encoding)\n4. Test the updated E2E flow"
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-11-07T11:59:19.896Z",
+      "updated": "2025-11-07T11:59:19.897Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

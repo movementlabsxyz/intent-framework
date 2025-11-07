@@ -1,0 +1,16 @@
+# Task ID: 2
+# Title: Plan new EVM test functions based on Task 1 findings
+# Status: in-progress
+# Dependencies: 1
+# Priority: high
+# Description: Based on the comparison from Task 1, plan what new test functions should be created for EVM. Define the structure, test cases, and implementation approach for EVM-specific Rust integration tests.
+# Details:
+Create a plan for:
+1. EVM client connectivity tests (similar to Aptos connectivity_test.rs)
+2. EVM contract deployment verification (similar to Aptos deployment_test.rs)
+3. EVM event polling tests (similar to Aptos event_polling_test.rs)
+4. Test runner script (similar to verifier-rust-integration-tests.sh)
+5. Integration with EVM E2E test flow
+
+# Test Strategy:
+Design test structure matching Aptos patterns but adapted for EVM/JSON-RPC

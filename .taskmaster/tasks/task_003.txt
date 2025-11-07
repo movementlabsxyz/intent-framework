@@ -1,0 +1,17 @@
+# Task ID: 3
+# Title: Implement new EVM test functions
+# Status: pending
+# Dependencies: 2
+# Priority: high
+# Description: Implement the EVM-specific Rust integration tests planned in Task 2. Create the test files, test runner script, and integrate with the EVM E2E test flow.
+# Details:
+Implement:
+1. EVM client module (if needed) or use existing JSON-RPC libraries
+2. connectivity_test.rs for EVM chain
+3. deployment_test.rs for IntentVault contract
+4. event_polling_test.rs for EVM logs
+5. verifier-rust-integration-tests.sh for EVM
+6. Update run-tests.sh to include Rust integration tests
+
+# Test Strategy:
+Follow Aptos test patterns, adapt for EVM/JSON-RPC, ensure tests pass in CI

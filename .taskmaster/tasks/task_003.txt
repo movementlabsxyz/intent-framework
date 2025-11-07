@@ -3,15 +3,21 @@
 # Status: pending
 # Dependencies: 2
 # Priority: high
-# Description: Implement the EVM-specific Rust integration tests planned in Task 2. Create the test files, test runner script, and integrate with the EVM E2E test flow.
+# Description: Implement the EVM test functions planned in Task 2. This includes both contract-level unit tests (JavaScript) and verifier service unit tests (Rust).
 # Details:
 Implement:
-1. EVM client module (if needed) or use existing JSON-RPC libraries
-2. connectivity_test.rs for EVM chain
-3. deployment_test.rs for IntentVault contract
-4. event_polling_test.rs for EVM logs
-5. verifier-rust-integration-tests.sh for EVM
-6. Update run-tests.sh to include Rust integration tests
+1. EVM contract unit tests (evm-intent-framework/test/):
+   - Add expiry handling tests to IntentVault.test.js
+   - Add cross-chain intent ID conversion tests
+   - Add comprehensive error condition tests
+   - Add edge case tests
+   - Add integration tests
+2. EVM verifier service unit tests (trusted-verifier/tests/):
+   - Add ECDSA signature tests to crypto_tests.rs
+   - Add EVM config tests to config_tests.rs
+   - Add EVM escrow monitoring tests to monitor_tests.rs
+   - Add EVM cross-chain tests to cross_chain_tests.rs
+3. Ensure all tests pass in CI
 
 # Test Strategy:
-Follow Aptos test patterns, adapt for EVM/JSON-RPC, ensure tests pass in CI
+Follow Aptos test patterns, adapt for EVM, ensure tests pass in CI

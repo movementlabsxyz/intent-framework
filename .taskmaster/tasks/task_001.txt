@@ -1,18 +1,20 @@
 # Task ID: 1
-# Title: Compare Aptos vs EVM test coverage and identify gaps
+# Title: Compare Aptos vs EVM unit test coverage and identify gaps
 # Status: done
 # Dependencies: None
 # Priority: high
-# Description: Compare test coverage between Aptos E2E tests and EVM E2E tests. Identify what test scripts exist for Aptos (submit-hub-intent.sh, submit-escrow.sh, fulfill-hub-intent.sh, release-escrow.sh, verifier-rust-integration-tests.sh with connectivity_test.rs, deployment_test.rs, event_polling_test.rs), what exists for EVM (submit-escrow.sh, release-escrow.sh, reuses Aptos scripts for hub operations), and identify the differences and gaps in EVM test coverage. Document missing EVM-specific Rust integration tests.
+# Description: Compare unit test coverage in two areas: (1) Contract-level unit tests: EVM contracts (evm-intent-framework/test/) vs Aptos Move contracts (move-intent-framework/tests/), (2) Verifier service unit tests: EVM functionality vs Aptos functionality in trusted-verifier/tests/. Document all gaps and missing test coverage.
 # Details:
 Analyze:
-1. Aptos E2E test scripts and Rust integration tests
-2. EVM E2E test scripts
-3. Identify missing EVM tests:
-   - EVM client connectivity tests (JSON-RPC)
-   - EVM contract deployment verification
-   - EVM event polling tests (logs)
-4. Document findings in TEST_COVERAGE_COMPARISON.md
+1. Contract unit tests:
+   - EVM: evm-intent-framework/test/IntentVault.test.js
+   - Aptos: move-intent-framework/tests/ (8 test files)
+   - Identify missing EVM contract test coverage
+2. Verifier service unit tests:
+   - Aptos functionality: trusted-verifier/tests/ (17 tests)
+   - EVM functionality: Missing tests for ECDSA, EVM config, EVM escrow handling
+   - Identify missing EVM verifier test coverage
+3. Document findings in UNIT_TEST_COVERAGE_COMPARISON.md
 
 # Test Strategy:
-Review existing test files, compare structures, document gaps
+Review existing test files, compare structures, document gaps for both contract and verifier tests

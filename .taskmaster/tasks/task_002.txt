@@ -3,14 +3,21 @@
 # Status: in-progress
 # Dependencies: 1
 # Priority: high
-# Description: Based on the comparison from Task 1, plan what new test functions should be created for EVM. Define the structure, test cases, and implementation approach for EVM-specific Rust integration tests.
+# Description: Based on the comparison from Task 1, plan what new test functions should be created for EVM. This includes both contract-level unit tests (JavaScript/TypeScript) and verifier service unit tests (Rust).
 # Details:
 Create a plan for:
-1. EVM client connectivity tests (similar to Aptos connectivity_test.rs)
-2. EVM contract deployment verification (similar to Aptos deployment_test.rs)
-3. EVM event polling tests (similar to Aptos event_polling_test.rs)
-4. Test runner script (similar to verifier-rust-integration-tests.sh)
-5. Integration with EVM E2E test flow
+1. EVM contract unit tests (JavaScript):
+   - Expiry handling tests
+   - Cross-chain intent ID conversion tests
+   - Comprehensive error condition tests
+   - Edge case tests
+   - Integration tests
+2. EVM verifier service unit tests (Rust):
+   - ECDSA signature tests (crypto_tests.rs)
+   - EVM config tests (config_tests.rs)
+   - EVM escrow monitoring tests (monitor_tests.rs)
+   - EVM cross-chain tests (cross_chain_tests.rs)
+3. Define test structure, test cases, and implementation approach
 
 # Test Strategy:
-Design test structure matching Aptos patterns but adapted for EVM/JSON-RPC
+Design test structure matching Aptos patterns but adapted for EVM

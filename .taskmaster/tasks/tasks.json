@@ -3,40 +3,199 @@
     "tasks": [
       {
         "id": 1,
-        "title": "Compare Aptos vs EVM test coverage and identify gaps",
-        "description": "Compare test coverage between Aptos E2E tests and EVM E2E tests. Identify what test scripts exist for Aptos (submit-hub-intent.sh, submit-escrow.sh, fulfill-hub-intent.sh, release-escrow.sh, verifier-rust-integration-tests.sh with connectivity_test.rs, deployment_test.rs, event_polling_test.rs), what exists for EVM (submit-escrow.sh, release-escrow.sh, reuses Aptos scripts for hub operations), and identify the differences and gaps in EVM test coverage. Document missing EVM-specific Rust integration tests.",
+        "title": "Compare Aptos vs EVM unit test coverage and identify gaps",
+        "description": "Compare unit test coverage in two areas: (1) Contract-level unit tests: EVM contracts (evm-intent-framework/test/) vs Aptos Move contracts (move-intent-framework/tests/), (2) Verifier service unit tests: EVM functionality vs Aptos functionality in trusted-verifier/tests/. Document all gaps and missing test coverage.",
         "status": "done",
         "priority": "high",
         "dependencies": [],
-        "details": "Analyze:\n1. Aptos E2E test scripts and Rust integration tests\n2. EVM E2E test scripts\n3. Identify missing EVM tests:\n   - EVM client connectivity tests (JSON-RPC)\n   - EVM contract deployment verification\n   - EVM event polling tests (logs)\n4. Document findings in TEST_COVERAGE_COMPARISON.md",
-        "testStrategy": "Review existing test files, compare structures, document gaps",
-        "subtasks": []
+        "details": "Analyze:\n1. Contract unit tests:\n   - EVM: evm-intent-framework/test/IntentVault.test.js\n   - Aptos: move-intent-framework/tests/ (8 test files)\n   - Identify missing EVM contract test coverage\n2. Verifier service unit tests:\n   - Aptos functionality: trusted-verifier/tests/ (17 tests)\n   - EVM functionality: Missing tests for ECDSA, EVM config, EVM escrow handling\n   - Identify missing EVM verifier test coverage\n3. Document findings in UNIT_TEST_COVERAGE_COMPARISON.md",
+        "testStrategy": "Review existing test files, compare structures, document gaps for both contract and verifier tests",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze EVM contract test coverage gaps",
+            "description": "Review the existing EVM IntentVault.test.js file and compare with the 8 Aptos Move test files to identify specific missing test coverage areas for EVM contracts.",
+            "dependencies": [],
+            "details": "Examine IntentVault.test.js structure which has 13 test cases covering initialization, deposit, claim, and cancel functions. Compare against Aptos test files (intent_tests.move, fa_tests.move, etc.) to identify missing areas like: expiry handling tests, cross-chain intent ID conversion tests, comprehensive error condition tests, edge case tests (max values, empty deposits), integration tests for multiple vaults, and complete event emission tests. Document specific gaps in test coverage.",
+            "status": "pending",
+            "testStrategy": "Review existing test files, analyze test patterns, document coverage gaps without executing tests"
+          },
+          {
+            "id": 2,
+            "title": "Analyze verifier service EVM test coverage gaps",
+            "description": "Review the trusted-verifier/tests directory and identify missing EVM-specific test coverage in crypto, config, monitor, and cross-chain test modules.",
+            "dependencies": [
+              1
+            ],
+            "details": "Based on the coverage report, analyze the 17 existing unit tests in trusted-verifier/tests/ (crypto_tests.rs with 9 tests, config_tests.rs with 4 tests, monitor_tests.rs with 3 tests, cross_chain_tests.rs with 1 test). Identify missing EVM functionality tests including: ECDSA signature tests, EVM chain config tests, EVM escrow handling tests, and EVM cross-chain matching tests. Document the ~22 missing unit tests needed for complete EVM coverage.",
+            "status": "pending",
+            "testStrategy": "Analyze test file structure and identify missing EVM test patterns based on existing Aptos tests"
+          },
+          {
+            "id": 3,
+            "title": "Plan EVM contract unit test implementation",
+            "description": "Create a detailed implementation plan for missing EVM contract unit tests based on gaps identified in subtask 1, following JavaScript/TypeScript patterns from existing IntentVault.test.js.",
+            "dependencies": [
+              1
+            ],
+            "details": "Design test structure for missing EVM contract tests: 1) Expiry handling tests - test vault expiration scenarios, 2) Cross-chain intent ID conversion tests - test intent ID format conversions, 3) Comprehensive error condition tests - test all revert conditions, 4) Edge case tests - test boundary conditions like max values and empty deposits, 5) Integration tests - test multiple vault interactions, 6) Event emission tests - verify all events are properly emitted. Define test cases, helper functions, and test data structures needed.",
+            "status": "pending",
+            "testStrategy": "Design comprehensive test suite following existing JavaScript test patterns in the codebase"
+          },
+          {
+            "id": 4,
+            "title": "Plan EVM verifier service unit test implementation",
+            "description": "Create a detailed implementation plan for missing EVM verifier service unit tests in Rust, following patterns from existing crypto_tests.rs, config_tests.rs, monitor_tests.rs, and cross_chain_tests.rs files.",
+            "dependencies": [
+              2
+            ],
+            "details": "Design test structure for missing EVM verifier tests: 1) ECDSA crypto tests - test create_evm_approval_signature(), ECDSA signature verification, get_ethereum_address() derivation, EVM signature format (65 bytes), keccak256 hashing, Ethereum signed message format, 2) EVM config tests - test EvmChainConfig structure, EVM chain config loading/serialization, 3) EVM monitor tests - test EVM escrow detection, ECDSA signature creation for EVM escrows, EVM escrow approval flow, 4) EVM cross-chain tests - test cross-chain matching with EVM escrows, intent_id conversion to EVM format. Define approximately 22 new test functions.",
+            "status": "pending",
+            "testStrategy": "Design Rust unit tests following existing test patterns, ensure comprehensive EVM functionality coverage"
+          },
+          {
+            "id": 5,
+            "title": "Create comprehensive test coverage comparison document",
+            "description": "Update and enhance the UNIT_TEST_COVERAGE_COMPARISON.md document with detailed findings from all subtasks, including specific test function names and implementation recommendations.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Enhance the existing UNIT_TEST_COVERAGE_COMPARISON.md document with: 1) Detailed analysis from subtask 1 - specific EVM contract test gaps with recommended test function names, 2) Detailed analysis from subtask 2 - specific EVM verifier test gaps with module breakdowns, 3) Implementation plans from subtask 3 - structured EVM contract test plan with test cases, 4) Implementation plans from subtask 4 - structured EVM verifier test plan with function specifications, 5) Priority recommendations for which tests to implement first, 6) Estimated effort and complexity for each test category. Ensure document provides actionable implementation guidance.",
+            "status": "pending",
+            "testStrategy": "Document review and enhancement, ensure comprehensive coverage analysis is captured for future implementation"
+          }
+        ]
       },
       {
         "id": 2,
         "title": "Plan new EVM test functions based on Task 1 findings",
-        "description": "Based on the comparison from Task 1, plan what new test functions should be created for EVM. Define the structure, test cases, and implementation approach for EVM-specific Rust integration tests.",
+        "description": "Based on the comparison from Task 1, plan what new test functions should be created for EVM. This includes both contract-level unit tests (JavaScript/TypeScript) and verifier service unit tests (Rust).",
         "status": "in-progress",
         "priority": "high",
         "dependencies": [
           "1"
         ],
-        "details": "Create a plan for:\n1. EVM client connectivity tests (similar to Aptos connectivity_test.rs)\n2. EVM contract deployment verification (similar to Aptos deployment_test.rs)\n3. EVM event polling tests (similar to Aptos event_polling_test.rs)\n4. Test runner script (similar to verifier-rust-integration-tests.sh)\n5. Integration with EVM E2E test flow",
-        "testStrategy": "Design test structure matching Aptos patterns but adapted for EVM/JSON-RPC",
-        "subtasks": []
+        "details": "Create a plan for:\n1. EVM contract unit tests (JavaScript):\n   - Expiry handling tests\n   - Cross-chain intent ID conversion tests\n   - Comprehensive error condition tests\n   - Edge case tests\n   - Integration tests\n2. EVM verifier service unit tests (Rust):\n   - ECDSA signature tests (crypto_tests.rs)\n   - EVM config tests (config_tests.rs)\n   - EVM escrow monitoring tests (monitor_tests.rs)\n   - EVM cross-chain tests (cross_chain_tests.rs)\n3. Define test structure, test cases, and implementation approach",
+        "testStrategy": "Design test structure matching Aptos patterns but adapted for EVM",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Plan EVM contract unit tests structure and test cases",
+            "description": "Plan the structure and specific test cases needed for EVM contract unit tests based on the gaps identified in Task 1",
+            "dependencies": [],
+            "details": "Define test cases for IntentVault.test.js covering: (1) Expiry handling tests - test vault expiry validation, expired vault cancellation, expired vault claim prevention; (2) Cross-chain intent ID conversion tests - test intent ID to uint256 conversion, boundary values, invalid formats; (3) Comprehensive error condition tests - test invalid token addresses, zero amounts, non-existent vaults, unauthorized operations; (4) Edge case tests - test maximum values, empty deposits, multiple vaults per maker, gas limit scenarios; (5) Integration tests - test multiple vault interactions, token transfer scenarios, event emission verification. Follow the existing test structure in IntentVault.test.js with describe blocks and beforeEach setup.",
+            "status": "pending",
+            "testStrategy": "Review Aptos test patterns from move-intent-framework/tests/ and adapt structure to JavaScript/Hardhat testing framework"
+          },
+          {
+            "id": 2,
+            "title": "Plan EVM verifier service unit tests structure for crypto functionality",
+            "description": "Plan the structure and test cases needed for EVM ECDSA signature tests in trusted-verifier/tests/crypto_tests.rs",
+            "dependencies": [
+              1
+            ],
+            "details": "Define test cases to add to crypto_tests.rs covering: (1) test_evm_key_derivation() - test ECDSA key derivation from Ed25519; (2) test_evm_signature_creation() - test create_evm_approval_signature() function; (3) test_evm_signature_format() - test ECDSA signature format (r || s || v, 65 bytes); (4) test_ethereum_address_derivation() - test get_ethereum_address() function; (5) test_evm_signature_verification() - test ECDSA signature verification; (6) test_keccak256_hashing() - test keccak256 hashing in EVM signatures; (7) test_ethereum_signed_message_format() - test Ethereum signed message prefix format. Follow the existing test patterns in crypto_tests.rs with proper error handling and assertions.",
+            "status": "pending",
+            "testStrategy": "Mirror existing Ed25519 test patterns but adapt for ECDSA, use similar test structure and naming conventions"
+          },
+          {
+            "id": 3,
+            "title": "Plan EVM verifier service unit tests for config and monitoring",
+            "description": "Plan the structure and test cases needed for EVM config tests and monitor tests in trusted-verifier",
+            "dependencies": [
+              2
+            ],
+            "details": "Define test cases for config_tests.rs covering: (1) test_evm_chain_config_creation() - test EvmChainConfig structure; (2) test_evm_config_serialization() - test EVM config TOML serialization; (3) test_evm_vault_address_validation() - test vault_address field validation; (4) test_evm_chain_id_validation() - test chain_id field validation; (5) test_optional_evm_chain_field() - test optional evm_chain field in main Config. Define test cases for monitor_tests.rs covering: (1) test_evm_escrow_detection() - test EVM escrow detection logic; (2) test_evm_approval_signature_creation() - test ECDSA signature creation for EVM escrows; (3) test_evm_vs_aptos_escrow_differentiation() - test proper chain detection; (4) test_evm_escrow_approval_flow() - test complete EVM approval workflow.",
+            "status": "pending",
+            "testStrategy": "Follow existing config and monitor test patterns, ensure proper mock data and error condition testing"
+          },
+          {
+            "id": 4,
+            "title": "Plan EVM cross-chain unit tests structure",
+            "description": "Plan the structure and test cases needed for EVM cross-chain functionality tests in trusted-verifier/tests/cross_chain_tests.rs",
+            "dependencies": [
+              3
+            ],
+            "details": "Define test cases to add to cross_chain_tests.rs covering: (1) test_cross_chain_evm_intent_matching() - test intent ID matching between EVM and Aptos; (2) test_intent_id_conversion_to_evm() - test conversion of intent IDs to EVM uint256 format; (3) test_evm_escrow_matching_with_aptos_hub() - test EVM escrow matching with Aptos hub intents; (4) test_cross_chain_signature_validation() - test that EVM ECDSA signatures are properly validated in cross-chain context; (5) test_cross_chain_approval_flow() - test complete cross-chain approval workflow from Aptos hub to EVM escrow. Ensure tests cover both directions of cross-chain communication and proper error handling for mismatched intent IDs.",
+            "status": "pending",
+            "testStrategy": "Extend existing cross_chain_intent_matching test pattern to include EVM scenarios, mock both Aptos and EVM components"
+          },
+          {
+            "id": 5,
+            "title": "Document test implementation plan and create test specification",
+            "description": "Create comprehensive documentation of the planned test implementation approach and test specification for all EVM tests",
+            "dependencies": [
+              4
+            ],
+            "details": "Create a detailed test implementation specification document covering: (1) Test file organization and structure for both contract tests (JavaScript) and verifier tests (Rust); (2) Test data requirements and mock setup procedures; (3) Test execution order and dependencies between test suites; (4) Coverage metrics and success criteria for each test category; (5) Integration with existing CI/CD pipeline and test automation; (6) Test maintenance guidelines and update procedures. Include specific test case definitions with expected inputs, outputs, and assertions. Define clear acceptance criteria for each test category and overall test suite completion.",
+            "status": "pending",
+            "testStrategy": "Create specification that ensures comprehensive test coverage matching Aptos test quality and can be implemented in Task 3"
+          }
+        ]
       },
       {
         "id": 3,
         "title": "Implement new EVM test functions",
-        "description": "Implement the EVM-specific Rust integration tests planned in Task 2. Create the test files, test runner script, and integrate with the EVM E2E test flow.",
+        "description": "Implement the EVM test functions planned in Task 2. This includes both contract-level unit tests (JavaScript) and verifier service unit tests (Rust).",
         "status": "pending",
         "priority": "high",
         "dependencies": [
           "2"
         ],
-        "details": "Implement:\n1. EVM client module (if needed) or use existing JSON-RPC libraries\n2. connectivity_test.rs for EVM chain\n3. deployment_test.rs for IntentVault contract\n4. event_polling_test.rs for EVM logs\n5. verifier-rust-integration-tests.sh for EVM\n6. Update run-tests.sh to include Rust integration tests",
-        "testStrategy": "Follow Aptos test patterns, adapt for EVM/JSON-RPC, ensure tests pass in CI",
-        "subtasks": []
+        "details": "Implement:\n1. EVM contract unit tests (evm-intent-framework/test/):\n   - Add expiry handling tests to IntentVault.test.js\n   - Add cross-chain intent ID conversion tests\n   - Add comprehensive error condition tests\n   - Add edge case tests\n   - Add integration tests\n2. EVM verifier service unit tests (trusted-verifier/tests/):\n   - Add ECDSA signature tests to crypto_tests.rs\n   - Add EVM config tests to config_tests.rs\n   - Add EVM escrow monitoring tests to monitor_tests.rs\n   - Add EVM cross-chain tests to cross_chain_tests.rs\n3. Ensure all tests pass in CI",
+        "testStrategy": "Follow Aptos test patterns, adapt for EVM, ensure tests pass in CI",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add expiry handling tests to IntentVault.test.js",
+            "description": "Add comprehensive expiry handling tests to evm-intent-framework/test/IntentVault.test.js to match the coverage from Aptos tests",
+            "dependencies": [],
+            "details": "Add test cases to IntentVault.test.js: (1) Test that deposits are allowed before expiry time, (2) Test that deposits are rejected after expiry time, (3) Test that claims are allowed before expiry time, (4) Test that claims are rejected after expiry time, (5) Test that cancellation works before expiry, (6) Test that cancellation works after expiry. Tests should follow the existing pattern in the file using Hardhat and Chai.",
+            "status": "pending",
+            "testStrategy": "Use beforeEach setup with different expiry times, test both valid and expired scenarios for deposit/claim/cancel operations"
+          },
+          {
+            "id": 2,
+            "title": "Add cross-chain intent ID conversion tests to IntentVault.test.js",
+            "description": "Add tests for cross-chain intent ID conversion functionality to ensure compatibility with Aptos chain intent IDs",
+            "dependencies": [],
+            "details": "Add test cases to validate intent ID conversion between EVM and Aptos formats: (1) Test that large intent IDs (>uint64 max) are handled correctly, (2) Test intent ID format validation, (3) Test intent ID uniqueness across chains, (4) Test intent ID collision detection. Follow the existing test structure using describe blocks and proper assertions.",
+            "status": "pending",
+            "testStrategy": "Create test cases with various intent ID formats and sizes, verify proper conversion and validation"
+          },
+          {
+            "id": 3,
+            "title": "Add comprehensive error condition tests to IntentVault.test.js",
+            "description": "Add comprehensive error condition and edge case tests to improve test coverage and match Aptos test thoroughness",
+            "dependencies": [],
+            "details": "Add error condition tests: (1) Test zero amount deposits, (2) Test deposits with insufficient allowance, (3) Test deposits to non-existent vaults, (4) Test claims with malformed signatures, (5) Test operations on uninitialized vaults, (6) Test maximum value edge cases (max uint256), (7) Test empty token addresses, (8) Test invalid verifier addresses. Use expect().to.be.revertedWith() patterns.",
+            "status": "pending",
+            "testStrategy": "Use negative test cases with invalid inputs and verify proper error messages are returned"
+          },
+          {
+            "id": 4,
+            "title": "Add ECDSA signature tests to crypto_tests.rs",
+            "description": "Add ECDSA signature functionality tests to trusted-verifier/tests/crypto_tests.rs to test EVM-specific cryptographic operations",
+            "dependencies": [],
+            "details": "Add ECDSA test functions to crypto_tests.rs: (1) test_create_evm_approval_signature() - Test ECDSA signature creation, (2) test_ecdsa_signature_verification() - Test ECDSA signature verification, (3) test_get_ethereum_address() - Test Ethereum address derivation, (4) test_ecdsa_key_derivation() - Test ECDSA key derivation from Ed25519, (5) test_evm_signature_format() - Test 65-byte signature format (r || s || v), (6) test_keccak256_hashing() - Test keccak256 hashing, (7) test_ethereum_signed_message_format() - Test Ethereum signed message format. Follow existing test pattern and naming conventions.",
+            "status": "pending",
+            "testStrategy": "Follow the existing crypto test patterns, use assert! macros for validation, test both success and failure cases"
+          },
+          {
+            "id": 5,
+            "title": "Add EVM config tests to config_tests.rs and EVM escrow/cross-chain tests",
+            "description": "Add EVM configuration tests to config_tests.rs and add EVM-specific tests to monitor_tests.rs and cross_chain_tests.rs",
+            "dependencies": [
+              4
+            ],
+            "details": "Add to config_tests.rs: (1) test_evm_chain_config_structure() - Test EvmChainConfig structure, (2) test_evm_config_loading() - Test EVM config loading, (3) test_evm_config_serialization() - Test TOML serialization with EVM fields. Add to monitor_tests.rs: (4) test_evm_escrow_detection() - Test EVM escrow detection, (5) test_evm_signature_creation() - Test ECDSA signature for EVM escrows. Add to cross_chain_tests.rs: (6) test_evm_cross_chain_matching() - Test cross-chain matching with EVM escrows, (7) test_intent_id_evm_conversion() - Test intent ID conversion to EVM format.",
+            "status": "pending",
+            "testStrategy": "Follow existing test patterns in each file, use proper assert statements, test both valid configurations and error cases"
+          }
+        ]
       },
       {
         "id": 4,
@@ -49,34 +208,41 @@
         "testStrategy": "Verify API endpoint works, test with curl, update E2E test scripts",
         "subtasks": [
           {
-            "id": "4.1",
+            "id": 1,
             "title": "Check if verifier API provides ECDSA signing method",
             "description": "Review verifier API endpoints and check if there's a method to request ECDSA signatures for EVM. Check if POST /approval supports ECDSA or if a new endpoint is needed.",
             "status": "pending",
             "details": "Review:\n1. trusted-verifier/src/api/mod.rs - check existing endpoints\n2. trusted-verifier/docs/api.md - check API documentation\n3. Check if POST /approval can create ECDSA signatures or only Ed25519\n4. Check if create_evm_approval_signature() is exposed via API"
           },
           {
-            "id": "4.2",
+            "id": 2,
             "title": "Implement ECDSA signing endpoint if missing",
             "description": "If no ECDSA signing endpoint exists, implement POST /evm-approval endpoint that accepts intent_id and approval_value, and returns ECDSA signature.",
             "status": "pending",
-            "dependencies": ["4.1"],
+            "dependencies": [
+              "4.1"
+            ],
             "details": "Implement:\n1. Add EvmApprovalRequest struct with intent_id and approval_value fields\n2. Add POST /evm-approval endpoint handler\n3. Handler should call crypto_service.create_evm_approval_signature()\n4. Return signature in base64 format\n5. Update API documentation"
           },
           {
-            "id": "4.3",
+            "id": 3,
             "title": "Check if E2E EVM tests use verifier signing method",
             "description": "Review E2E EVM test scripts to see how they currently get signatures. Check if they use the verifier API or create signatures directly.",
             "status": "pending",
-            "dependencies": ["4.1"],
+            "dependencies": [
+              "4.1"
+            ],
             "details": "Review:\n1. testing-infra/e2e-tests-evm/release-escrow.sh - how does it get signatures?\n2. Check if it calls verifier API endpoints\n3. Check if it uses /approvals endpoint (cached) or needs direct signing\n4. Document current approach"
           },
           {
-            "id": "4.4",
+            "id": 4,
             "title": "Update E2E EVM tests to use verifier signing method",
             "description": "Update E2E EVM test scripts to use the verifier's ECDSA signing endpoint (either existing or newly implemented). Replace any direct signature creation with API calls.",
             "status": "pending",
-            "dependencies": ["4.2", "4.3"],
+            "dependencies": [
+              "4.2",
+              "4.3"
+            ],
             "details": "Update:\n1. Modify release-escrow.sh to call POST /evm-approval endpoint\n2. Or update to use /approvals if that's the correct approach\n3. Ensure signature format matches EVM requirements (hex encoding)\n4. Test the updated E2E flow"
           }
         ]

@@ -3,7 +3,7 @@
 # Configure Verifier for Connected Aptos Chain
 # 
 # This script extracts deployed contract addresses from Chain 2 (Connected Aptos Chain)
-# and updates the [connected_chain] section in verifier_testing.toml.
+# and updates the [connected_chain_apt] section in verifier_testing.toml.
 
 set -e
 
@@ -33,15 +33,15 @@ log_and_echo "   Chain 2 deployer: $CHAIN2_ADDRESS"
 # Setup verifier config
 setup_verifier_config
 
-# Update connected_chain section in verifier_testing.toml
-sed -i "/\[connected_chain\]/,/\[verifier\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN2_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
-sed -i "/\[connected_chain\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+# Update connected_chain_apt section in verifier_testing.toml
+sed -i "/\[connected_chain_apt\]/,/\[verifier\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN2_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+sed -i "/\[connected_chain_apt\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
 # Get Alice address and update known_accounts
 ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
 
 if [ -n "$ALICE_CHAIN2_ADDRESS" ]; then
-    sed -i "/\[connected_chain\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+    sed -i "/\[connected_chain_apt\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 fi
 
 log_and_echo "✅ Updated verifier_testing.toml with Connected Aptos Chain addresses"

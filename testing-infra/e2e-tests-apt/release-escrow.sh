@@ -51,19 +51,19 @@ log "   - Updating verifier configuration..."
 setup_verifier_config
 
 # Update hub_chain intent_module_address
-sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+sed -i "/\[hub_chain\]/,/\[connected_chain_apt\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
-# Update connected_chain intent_module_address
-sed -i "/\[connected_chain\]/,/\[verifier\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+# Update connected_chain_apt intent_module_address
+sed -i "/\[connected_chain_apt\]/,/\[verifier\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
-# Update connected_chain escrow_module_address (same as intent_module_address)
-sed -i "/\[connected_chain\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+# Update connected_chain_apt escrow_module_address (same as intent_module_address)
+sed -i "/\[connected_chain_apt\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
 # Update hub_chain known_accounts (include both Alice and Bob - Bob fulfills intents)
-sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+sed -i "/\[hub_chain\]/,/\[connected_chain_apt\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 
-# Update connected_chain known_accounts
-sed -i "/\[connected_chain\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+# Update connected_chain_apt known_accounts
+sed -i "/\[connected_chain_apt\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 
 log "   ✅ Updated verifier_testing.toml with:"
 log "      Chain 1 intent_module_address: 0x$CHAIN1_DEPLOY_ADDRESS"

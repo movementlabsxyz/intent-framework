@@ -62,7 +62,10 @@ async fn test_contracts_deployed_on_chain2() {
         .expect("Failed to load verifier config - ensure config/verifier.toml exists with module addresses");
     
     // Extract the account address from the module address
-    let module_addr = config.connected_chain.intent_module_address.replace("0x", "");
+    let connected_chain_apt = config.connected_chain_apt
+        .as_ref()
+        .expect("Connected Aptos chain must be configured for this test");
+    let module_addr = connected_chain_apt.intent_module_address.replace("0x", "");
     let account_address = if module_addr.contains("::") {
         &module_addr[..module_addr.find("::").unwrap()]
     } else {

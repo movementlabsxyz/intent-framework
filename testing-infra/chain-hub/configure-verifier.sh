@@ -34,14 +34,14 @@ log_and_echo "   Chain 1 deployer: $CHAIN1_ADDRESS"
 setup_verifier_config
 
 # Update hub_chain section in verifier_testing.toml
-sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+sed -i "/\[hub_chain\]/,/\[connected_chain_apt\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
 # Get Alice and Bob addresses and update known_accounts
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 
 if [ -n "$ALICE_CHAIN1_ADDRESS" ] && [ -n "$BOB_CHAIN1_ADDRESS" ]; then
-    sed -i "/\[hub_chain\]/,/\[connected_chain\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+    sed -i "/\[hub_chain\]/,/\[connected_chain_apt\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 fi
 
 log_and_echo "✅ Updated verifier_testing.toml with Hub Chain addresses"

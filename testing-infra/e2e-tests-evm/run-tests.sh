@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# E2E Integration Test Runner (Mixed-Chain: Aptos Hub + EVM Escrow)
+# E2E Integration Test Runner (Mixed-Chain: hub + EVM Escrow)
 # 
 # This script runs the mixed-chain E2E flow:
-# - Chain 1 (Aptos Hub): Intent creation and fulfillment
+# - Chain 1 (hub): Intent creation and fulfillment
 # - Chain 3 (EVM): Escrow operations
 # - Verifier: Monitors Chain 1 and releases escrow on Chain 3
 

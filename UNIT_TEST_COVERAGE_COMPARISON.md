@@ -114,7 +114,7 @@ This document compares unit test coverage in two areas:
 **EVM Coverage:**
 - ❌ **MISSING** - No test for cross-chain matching with EVM escrows
 - ❌ **MISSING** - No test for intent_id conversion to EVM format
-- ❌ **MISSING** - No test for EVM escrow matching with Aptos hub intents
+- ❌ **MISSING** - No test for EVM escrow matching with hub intents
 
 ### Verifier Test Coverage Summary
 
@@ -230,7 +230,7 @@ Based on analysis from Task 1.2 and planning from Task 1.4, the following test f
 
 #### cross_chain_tests.rs - EVM Cross-Chain Tests (3 tests)
 
-1. `test_evm_escrow_cross_chain_matching` - Verify EVM escrow matches Aptos hub intent
+1. `test_evm_escrow_cross_chain_matching` - Verify EVM escrow matches hub intent
 2. `test_intent_id_conversion_to_evm_format` - Verify intent ID format conversion
 3. `test_evm_escrow_matching_with_aptos_hub_intent` - Verify cross-chain matching logic
 

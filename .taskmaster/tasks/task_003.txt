@@ -105,5 +105,5 @@ Add 5 EVM escrow tests: (1) test_evm_escrow_detection_logic - Verify EVM escrow 
 ### Dependencies: 3.4
 ### Description: Add 3 EVM cross-chain tests to cross_chain_tests.rs
 ### Details:
-Add 3 EVM cross-chain tests: (1) test_evm_escrow_cross_chain_matching - Verify EVM escrow matches Aptos hub intent, (2) test_intent_id_conversion_to_evm_format - Verify intent ID format conversion, (3) test_evm_escrow_matching_with_aptos_hub_intent - Verify cross-chain matching logic. Test EVM-to-Aptos cross-chain scenarios.
+Add 3 EVM cross-chain tests: (1) test_evm_escrow_cross_chain_matching - Verify EVM escrow matches hub intent, (2) test_intent_id_conversion_to_evm_format - Verify intent ID format conversion, (3) test_evm_escrow_matching_with_aptos_hub_intent - Verify cross-chain matching logic. Test EVM-to-Aptos cross-chain scenarios.
 

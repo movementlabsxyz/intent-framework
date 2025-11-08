@@ -136,7 +136,7 @@
             "dependencies": [
               3
             ],
-            "details": "Define test cases to add to cross_chain_tests.rs covering: (1) test_cross_chain_evm_intent_matching() - test intent ID matching between EVM and Aptos; (2) test_intent_id_conversion_to_evm() - test conversion of intent IDs to EVM uint256 format; (3) test_evm_escrow_matching_with_aptos_hub() - test EVM escrow matching with Aptos hub intents; (4) test_cross_chain_signature_validation() - test that EVM ECDSA signatures are properly validated in cross-chain context; (5) test_cross_chain_approval_flow() - test complete cross-chain approval workflow from Aptos hub to EVM escrow. Ensure tests cover both directions of cross-chain communication and proper error handling for mismatched intent IDs.\n<info added on 2025-11-07T15:40:29.266Z>\nI'll analyze the codebase to understand the project structure and then provide the update for this subtask.Based on my analysis of the codebase and the user request, here is the new information that should be appended to the subtask's details:\n\nPlanning completed in Task 1.4. Refined test plan based on codebase analysis: 3 EVM cross-chain tests identified for implementation in trusted-verifier/tests/cross_chain_tests.rs: (1) test_evm_escrow_cross_chain_matching - test EVM escrow matches Aptos hub intent using intent_id; (2) test_intent_id_conversion_to_evm_format - test conversion of Aptos hex intent IDs to EVM uint256 format for cross-chain compatibility; (3) test_evm_escrow_matching_with_aptos_hub_intent - test complete cross-chain matching workflow with EVM escrow detection and validation. Test specifications documented in UNIT_TEST_COVERAGE_COMPARISON.md Part 3, lines 231-236. Ready for implementation in Task 3.2.\n</info added on 2025-11-07T15:40:29.266Z>",
+            "details": "Define test cases to add to cross_chain_tests.rs covering: (1) test_cross_chain_evm_intent_matching() - test intent ID matching between EVM and Aptos; (2) test_intent_id_conversion_to_evm() - test conversion of intent IDs to EVM uint256 format; (3) test_evm_escrow_matching_with_aptos_hub() - test EVM escrow matching with hub intents; (4) test_cross_chain_signature_validation() - test that EVM ECDSA signatures are properly validated in cross-chain context; (5) test_cross_chain_approval_flow() - test complete cross-chain approval workflow from hub to EVM escrow. Ensure tests cover both directions of cross-chain communication and proper error handling for mismatched intent IDs.\n<info added on 2025-11-07T15:40:29.266Z>\nI'll analyze the codebase to understand the project structure and then provide the update for this subtask.Based on my analysis of the codebase and the user request, here is the new information that should be appended to the subtask's details:\n\nPlanning completed in Task 1.4. Refined test plan based on codebase analysis: 3 EVM cross-chain tests identified for implementation in trusted-verifier/tests/cross_chain_tests.rs: (1) test_evm_escrow_cross_chain_matching - test EVM escrow matches hub intent using intent_id; (2) test_intent_id_conversion_to_evm_format - test conversion of Aptos hex intent IDs to EVM uint256 format for cross-chain compatibility; (3) test_evm_escrow_matching_with_aptos_hub_intent - test complete cross-chain matching workflow with EVM escrow detection and validation. Test specifications documented in UNIT_TEST_COVERAGE_COMPARISON.md Part 3, lines 231-236. Ready for implementation in Task 3.2.\n</info added on 2025-11-07T15:40:29.266Z>",
             "status": "done",
             "testStrategy": "Extend existing cross_chain_intent_matching test pattern to include EVM scenarios, mock both Aptos and EVM components",
             "parentId": "undefined",
@@ -162,7 +162,7 @@
         "id": "3",
         "title": "Implement new EVM test functions",
         "description": "Implement the EVM test functions planned in Task 2. This includes both contract-level unit tests (JavaScript) and verifier service unit tests (Rust).",
-        "status": "in-progress",
+        "status": "done",
         "priority": "high",
         "dependencies": [
           "2"
@@ -264,18 +264,19 @@
           },
           {
             "id": 9,
-            "title": "Add EVM cross-chain tests to cross_chain_tests.rs",
-            "description": "Add 3 EVM cross-chain tests to cross_chain_tests.rs",
+            "title": "Add EVM cross-chain tests to cross_chain_tests_evm.rs",
+            "description": "Create cross_chain_tests_evm.rs and add 3 EVM cross-chain tests",
             "dependencies": [
               4
             ],
-            "details": "Add 3 EVM cross-chain tests: (1) test_evm_escrow_cross_chain_matching - Verify EVM escrow matches Aptos hub intent, (2) test_intent_id_conversion_to_evm_format - Verify intent ID format conversion, (3) test_evm_escrow_matching_with_aptos_hub_intent - Verify cross-chain matching logic. Test EVM-to-Aptos cross-chain scenarios.",
-            "status": "pending",
+            "details": "Add 3 EVM cross-chain tests: (1) test_evm_escrow_cross_chain_matching - Verify EVM escrow matches hub intent, (2) test_intent_id_conversion_to_evm_format - Verify intent ID format conversion, (3) test_evm_escrow_matching_with_aptos_hub_intent - Verify cross-chain matching logic. Test EVM-to-Aptos cross-chain scenarios.\n<info added on 2025-11-08T22:32:49.334Z>\nI'll analyze the codebase to understand the current test structure before updating the subtask details.Based on my analysis of the codebase, I can see that there are already separate EVM-specific test files like `crypto_tests_evm.rs`, `config_tests_evm.rs`, and `monitor_tests_evm.rs` following a consistent pattern. The request is to create a similar structure for cross-chain tests.\n\n**UPDATED PLAN**: Create new file `cross_chain_tests_evm.rs` in `/trusted-verifier/tests/` following the same pattern as other EVM test files (crypto_tests_evm.rs, config_tests_evm.rs, monitor_tests_evm.rs). Move the 3 EVM cross-chain tests to this new file instead of adding to existing cross_chain_tests.rs. The new file should include proper module imports and follow the same structure pattern as other EVM test files with `#[path = \"mod.rs\"] mod test_helpers;` and use `build_test_config_with_evm()` helper function for EVM configuration.\n</info added on 2025-11-08T22:32:49.334Z>",
+            "status": "done",
             "testStrategy": "Extend existing cross_chain_intent_matching test pattern to include EVM scenarios, mock both Aptos and EVM components",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-08T22:36:26.229Z"
           }
         ],
-        "updatedAt": "2025-11-08T22:27:30.383Z"
+        "updatedAt": "2025-11-08T22:36:26.229Z"
       },
       {
         "id": "4",
@@ -418,9 +419,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-08T22:27:30.384Z",
+      "lastModified": "2025-11-08T22:36:26.230Z",
       "taskCount": 5,
-      "completedCount": 2,
+      "completedCount": 3,
       "tags": [
         "master"
       ]

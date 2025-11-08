@@ -243,9 +243,10 @@
             "description": "Add 4 integration tests to IntentEscrow.test.js",
             "dependencies": [],
             "details": "Add 4 integration tests: (1) test_complete_deposit_to_claim_workflow - Full workflow from init to claim, (2) test_multi_token_scenarios - Test with different ERC20 tokens, (3) test_comprehensive_event_emission - Verify all events with correct parameters, (4) test_complete_cancellation_workflow - Full workflow from init to cancel. Test complete user flows end-to-end.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test complete workflows, verify event emissions, test with multiple tokens and scenarios",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-08T21:49:41.594Z"
           },
           {
             "id": 8,
@@ -272,7 +273,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-08T21:34:31.966Z"
+        "updatedAt": "2025-11-08T21:49:41.594Z"
       },
       {
         "id": "4",
@@ -331,7 +332,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-08T21:34:31.968Z",
+      "lastModified": "2025-11-08T21:49:41.595Z",
       "taskCount": 4,
       "completedCount": 2,
       "tags": [

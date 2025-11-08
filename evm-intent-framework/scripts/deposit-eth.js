@@ -1,24 +1,24 @@
 const hre = require("hardhat");
 
 async function main() {
-  const vaultAddress = process.env.VAULT_ADDRESS;
+  const escrowAddress = process.env.ESCROW_ADDRESS || process.env.VAULT_ADDRESS;
   const intentIdHex = process.env.INTENT_ID_EVM;
   const amountWei = process.env.ETH_AMOUNT_WEI;
 
-  if (!vaultAddress || !intentIdHex || !amountWei) {
-    throw new Error("Missing required environment variables: VAULT_ADDRESS, INTENT_ID_EVM, ETH_AMOUNT_WEI");
+  if (!escrowAddress || !intentIdHex || !amountWei) {
+    throw new Error("Missing required environment variables: ESCROW_ADDRESS (or VAULT_ADDRESS), INTENT_ID_EVM, ETH_AMOUNT_WEI");
   }
 
   const signers = await hre.ethers.getSigners();
-  const vault = await hre.ethers.getContractAt("IntentVault", vaultAddress);
+  const escrow = await hre.ethers.getContractAt("IntentEscrow", escrowAddress);
   const intentId = BigInt(intentIdHex);
   const amount = BigInt(amountWei);
   
   // Deposit ETH (pass value in transaction)
   // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
-  const tx = await vault.connect(signers[1]).deposit(intentId, amount, { value: amount });
+  const tx = await escrow.connect(signers[1]).deposit(intentId, amount, { value: amount });
   await tx.wait();
-  console.log("Deposited", amount.toString(), "wei (ETH) into vault");
+  console.log("Deposited", amount.toString(), "wei (ETH) into escrow");
 }
 
 main()

@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 
 async function main() {
-  console.log("Deploying IntentVault...");
+  console.log("Deploying IntentEscrow...");
 
   // Get signers
   const [deployer] = await hre.ethers.getSigners();
@@ -24,18 +24,18 @@ async function main() {
   console.log("Deploying with account:", deployer.address);
   console.log("Verifier address:", verifierAddr);
 
-  // Deploy vault with verifier address
-  const IntentVault = await hre.ethers.getContractFactory("IntentVault");
-  const vault = await IntentVault.deploy(verifierAddr);
+  // Deploy escrow with verifier address
+  const IntentEscrow = await hre.ethers.getContractFactory("IntentEscrow");
+  const escrow = await IntentEscrow.deploy(verifierAddr);
 
-  await vault.waitForDeployment();
+  await escrow.waitForDeployment();
 
-  const vaultAddress = await vault.getAddress();
-  console.log("IntentVault deployed to:", vaultAddress);
+  const escrowAddress = await escrow.getAddress();
+  console.log("IntentEscrow deployed to:", escrowAddress);
   console.log("Verifier set to:", verifierAddr);
 
   // Verify deployment
-  const verifierFromContract = await vault.verifier();
+  const verifierFromContract = await escrow.verifier();
   console.log("Verifier from contract:", verifierFromContract);
   
   if (verifierFromContract.toLowerCase() !== verifierAddr.toLowerCase()) {
@@ -43,7 +43,7 @@ async function main() {
   }
 
   console.log("\n✅ Deployment successful!");
-  console.log("Contract address:", vaultAddress);
+  console.log("Contract address:", escrowAddress);
 }
 
 main()

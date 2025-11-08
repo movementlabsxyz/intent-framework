@@ -27,17 +27,24 @@ start_verifier "$LOG_DIR/verifier-evm.log"
 
 log ""
 
-# Get EVM vault address
+# Get EVM escrow address
 cd evm-intent-framework
-VAULT_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+ESCROW_ADDRESS=$(grep -i "IntentEscrow deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+if [ -z "$ESCROW_ADDRESS" ]; then
+    # Try old vault name for backward compatibility
+    ESCROW_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+fi
 cd ..
 
-if [ -z "$VAULT_ADDRESS" ]; then
-    log_and_echo "❌ Could not find vault address"
+# Backward compatibility: also set VAULT_ADDRESS
+VAULT_ADDRESS="$ESCROW_ADDRESS"
+
+if [ -z "$ESCROW_ADDRESS" ]; then
+    log_and_echo "❌ Could not find escrow address"
     exit 1
 fi
 
-log "   Vault address: $VAULT_ADDRESS"
+log "   Escrow address: $ESCROW_ADDRESS"
 
 # Track released escrows to avoid duplicate attempts
 RELEASED_ESCROWS=""
@@ -118,8 +125,8 @@ check_and_release_escrows() {
         # Submit escrow release transaction on EVM
         cd evm-intent-framework
         
-        log "   - Calling IntentVault.claim() on EVM..."
-        CLAIM_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && VAULT_ADDRESS='$VAULT_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' SIGNATURE_HEX='$SIGNATURE_HEX' npx hardhat run scripts/claim-escrow.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+        log "   - Calling IntentEscrow.claim() on EVM..."
+        CLAIM_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' SIGNATURE_HEX='$SIGNATURE_HEX' npx hardhat run scripts/claim-escrow.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
         
         TX_EXIT_CODE=$?
         cd ..

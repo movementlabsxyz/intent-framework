@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { setupIntentVaultTests } = require("./helpers/setup");
+const { setupIntentEscrowTests } = require("./helpers/setup");
 
-describe("IntentVault - Claim", function () {
-  let vault;
+describe("IntentEscrow - Claim", function () {
+  let escrow;
   let token;
   let verifierWallet;
   let maker;
@@ -13,26 +13,26 @@ describe("IntentVault - Claim", function () {
   let approvalValue;
 
   beforeEach(async function () {
-    const fixtures = await setupIntentVaultTests();
-    vault = fixtures.vault;
+    const fixtures = await setupIntentEscrowTests();
+    escrow = fixtures.escrow;
     token = fixtures.token;
     verifierWallet = fixtures.verifierWallet;
     maker = fixtures.maker;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
 
-    await vault.connect(maker).initializeVault(intentId, token.target);
+    await escrow.connect(maker).initializeEscrow(intentId, token.target);
     
     amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
-    await token.connect(maker).approve(vault.target, amount);
-    await vault.connect(maker).deposit(intentId, amount);
+    await token.connect(maker).approve(escrow.target, amount);
+    await escrow.connect(maker).deposit(intentId, amount);
     
     approvalValue = 1; // Approval value must be 1
   });
 
   /// Test: Valid Claim with Verifier Signature
-  /// Verifies that solvers can claim vault funds when provided with a valid verifier signature.
+  /// Verifies that solvers can claim escrow funds when provided with a valid verifier signature.
   it("Should allow solver to claim with valid verifier signature", async function () {
     // Create message hash: keccak256(abi.encodePacked(intentId, approvalValue))
     const messageHash = ethers.solidityPackedKeccak256(
@@ -43,16 +43,16 @@ describe("IntentVault - Claim", function () {
     // Sign message (signMessage automatically adds Ethereum signed message prefix)
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
-    await expect(vault.connect(solver).claim(intentId, approvalValue, signature))
-      .to.emit(vault, "VaultClaimed")
+    await expect(escrow.connect(solver).claim(intentId, approvalValue, signature))
+      .to.emit(escrow, "EscrowClaimed")
       .withArgs(intentId, solver.address, amount);
 
     expect(await token.balanceOf(solver.address)).to.equal(amount);
-    expect(await token.balanceOf(vault.target)).to.equal(0);
+    expect(await token.balanceOf(escrow.target)).to.equal(0);
     
-    const vaultData = await vault.getVault(intentId);
-    expect(vaultData.isClaimed).to.equal(true);
-    expect(vaultData.amount).to.equal(0);
+    const escrowData = await escrow.getEscrow(intentId);
+    expect(escrowData.isClaimed).to.equal(true);
+    expect(escrowData.amount).to.equal(0);
   });
 
   /// Test: Invalid Signature Rejection
@@ -66,8 +66,8 @@ describe("IntentVault - Claim", function () {
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
     await expect(
-      vault.connect(solver).claim(intentId, approvalValue, signature)
-    ).to.be.revertedWithCustomError(vault, "UnauthorizedVerifier");
+      escrow.connect(solver).claim(intentId, approvalValue, signature)
+    ).to.be.revertedWithCustomError(escrow, "UnauthorizedVerifier");
   });
 
   /// Test: Invalid Approval Value Rejection
@@ -81,31 +81,31 @@ describe("IntentVault - Claim", function () {
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
     await expect(
-      vault.connect(solver).claim(intentId, invalidApproval, signature)
-    ).to.be.revertedWithCustomError(vault, "InvalidApprovalValue");
+      escrow.connect(solver).claim(intentId, invalidApproval, signature)
+    ).to.be.revertedWithCustomError(escrow, "InvalidApprovalValue");
   });
 
   /// Test: Duplicate Claim Prevention
-  /// Verifies that attempting to claim an already-claimed vault reverts.
-  it("Should revert if vault already claimed", async function () {
+  /// Verifies that attempting to claim an already-claimed escrow reverts.
+  it("Should revert if escrow already claimed", async function () {
     const messageHash = ethers.solidityPackedKeccak256(
       ["uint256", "uint8"],
       [intentId, approvalValue]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
-    await vault.connect(solver).claim(intentId, approvalValue, signature);
+    await escrow.connect(solver).claim(intentId, approvalValue, signature);
 
     await expect(
-      vault.connect(solver).claim(intentId, approvalValue, signature)
-    ).to.be.revertedWithCustomError(vault, "VaultAlreadyClaimed");
+      escrow.connect(solver).claim(intentId, approvalValue, signature)
+    ).to.be.revertedWithCustomError(escrow, "EscrowAlreadyClaimed");
   });
 
   /// Test: No Deposit Rejection
-  /// Verifies that attempting to claim a vault with no deposits reverts with NoDeposit error.
+  /// Verifies that attempting to claim an escrow with no deposits reverts with NoDeposit error.
   it("Should revert if no deposit", async function () {
     const newIntentId = intentId + 1n;
-    await vault.connect(maker).initializeVault(newIntentId, token.target);
+    await escrow.connect(maker).initializeEscrow(newIntentId, token.target);
 
     const messageHash = ethers.solidityPackedKeccak256(
       ["uint256", "uint8"],
@@ -114,8 +114,8 @@ describe("IntentVault - Claim", function () {
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
     await expect(
-      vault.connect(solver).claim(newIntentId, approvalValue, signature)
-    ).to.be.revertedWithCustomError(vault, "NoDeposit");
+      escrow.connect(solver).claim(newIntentId, approvalValue, signature)
+    ).to.be.revertedWithCustomError(escrow, "NoDeposit");
   });
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "evm-intent-framework",
   "version": "0.1.0",
-  "description": "EVM vault for cross-chain intents with verifier signature verification",
+  "description": "EVM escrow for cross-chain intents with verifier signature verification",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",

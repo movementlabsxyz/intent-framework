@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @title IntentVault
- * @notice Vault that holds funds and releases them to solvers when verifier signature checks out
- * @dev Based on Solana vault pattern with ECDSA signature verification
+ * @title IntentEscrow
+ * @notice Escrow that holds funds and releases them to solvers when verifier signature checks out
+ * @dev Based on Solana escrow pattern with ECDSA signature verification
  */
-contract IntentVault {
+contract IntentEscrow {
     using SafeERC20 for IERC20;
 
     /// @notice Authorized verifier address that can approve releases
@@ -18,8 +18,8 @@ contract IntentVault {
     /// @notice Contract-defined expiry duration (1 hour in seconds)
     uint256 public constant EXPIRY_DURATION = 1 hours;
 
-    /// @notice Vault data structure
-    struct Vault {
+    /// @notice Escrow data structure
+    struct Escrow {
         address maker;           // User who deposited funds
         address token;           // ERC20 token address
         uint256 amount;          // Amount deposited
@@ -27,27 +27,27 @@ contract IntentVault {
         uint256 expiry;          // Expiry timestamp (contract-defined). After expiry, claims are blocked but maker can cancel
     }
 
-    /// @notice Mapping from intent ID to vault data
-    mapping(uint256 => Vault) public vaults;
+    /// @notice Mapping from intent ID to escrow data
+    mapping(uint256 => Escrow) public escrows;
 
     /// @notice Events
-    event VaultInitialized(uint256 indexed intentId, address indexed vault, address indexed maker, address token);
+    event EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token);
     event DepositMade(uint256 indexed intentId, address indexed user, uint256 amount, uint256 total);
-    event VaultClaimed(uint256 indexed intentId, address indexed solver, uint256 amount);
-    event VaultCancelled(uint256 indexed intentId, address indexed maker, uint256 amount);
+    event EscrowClaimed(uint256 indexed intentId, address indexed solver, uint256 amount);
+    event EscrowCancelled(uint256 indexed intentId, address indexed maker, uint256 amount);
 
     /// @notice Errors
-    error VaultAlreadyClaimed();
+    error EscrowAlreadyClaimed();
     error NoDeposit();
     error UnauthorizedMaker();
     error InvalidSignature();
     error InvalidApprovalValue();
     error UnauthorizedVerifier();
-    error VaultExpired(); // Vault has expired (for claim operations)
-    error VaultNotExpiredYet(); // Vault has not expired yet (for cancel operations)
+    error EscrowExpired(); // Escrow has expired (for claim operations)
+    error EscrowNotExpiredYet(); // Escrow has not expired yet (for cancel operations)
 
     /**
-     * @notice Initialize the vault with verifier address
+     * @notice Initialize the escrow with verifier address
      * @param _verifier Address of the authorized verifier
      */
     constructor(address _verifier) {
@@ -56,18 +56,18 @@ contract IntentVault {
     }
 
     /**
-     * @notice Initialize a new vault for a specific intent
+     * @notice Initialize a new escrow for a specific intent
      * @param intentId Unique intent identifier
      * @param token ERC20 token address to be deposited (use address(0) for ETH)
      * @dev Expiry is automatically set to block.timestamp + EXPIRY_DURATION (contract-defined)
      */
-    function initializeVault(
+    function initializeEscrow(
         uint256 intentId,
         address token
     ) external {
-        require(vaults[intentId].maker == address(0), "Vault already initialized");
+        require(escrows[intentId].maker == address(0), "Escrow already initialized");
 
-        vaults[intentId] = Vault({
+        escrows[intentId] = Escrow({
             maker: msg.sender,
             token: token,
             amount: 0,
@@ -75,38 +75,38 @@ contract IntentVault {
             expiry: block.timestamp + EXPIRY_DURATION
         });
 
-        emit VaultInitialized(intentId, address(this), msg.sender, token);
+        emit EscrowInitialized(intentId, address(this), msg.sender, token);
     }
 
     /**
-     * @notice Deposit tokens or ETH into vault
+     * @notice Deposit tokens or ETH into escrow
      * @param intentId Intent identifier
      * @param amount Amount of tokens/ETH to deposit
      */
     function deposit(uint256 intentId, uint256 amount) external payable {
-        Vault storage vault = vaults[intentId];
+        Escrow storage escrow = escrows[intentId];
         
-        require(vault.maker != address(0), "Vault not initialized");
-        if (vault.isClaimed) revert VaultAlreadyClaimed();
+        require(escrow.maker != address(0), "Escrow not initialized");
+        if (escrow.isClaimed) revert EscrowAlreadyClaimed();
         
         require(amount > 0, "Amount must be greater than 0");
         
-        if (vault.token == address(0)) {
+        if (escrow.token == address(0)) {
             // ETH deposit
             require(msg.value == amount, "ETH amount mismatch");
-            vault.amount += amount;
+            escrow.amount += amount;
         } else {
             // ERC20 token deposit
-            require(msg.value == 0, "ETH not accepted for token vault");
-            IERC20(vault.token).safeTransferFrom(msg.sender, address(this), amount);
-            vault.amount += amount;
+            require(msg.value == 0, "ETH not accepted for token escrow");
+            IERC20(escrow.token).safeTransferFrom(msg.sender, address(this), amount);
+            escrow.amount += amount;
         }
         
-        emit DepositMade(intentId, msg.sender, amount, vault.amount);
+        emit DepositMade(intentId, msg.sender, amount, escrow.amount);
     }
 
     /**
-     * @notice Claim vault funds (solver only, requires verifier signature)
+     * @notice Claim escrow funds (solver only, requires verifier signature)
      * @param intentId Intent identifier
      * @param approvalValue Approval value (must be 1 to approve)
      * @param signature Verifier's ECDSA signature over keccak256(abi.encodePacked(intentId, approvalValue))
@@ -116,13 +116,13 @@ contract IntentVault {
         uint8 approvalValue,
         bytes memory signature
     ) external {
-        Vault storage vault = vaults[intentId];
+        Escrow storage escrow = escrows[intentId];
         
-        if (vault.isClaimed) revert VaultAlreadyClaimed();
-        if (vault.amount == 0) revert NoDeposit();
+        if (escrow.isClaimed) revert EscrowAlreadyClaimed();
+        if (escrow.amount == 0) revert NoDeposit();
         
         // Enforce expiry: claims are not allowed after expiry
-        if (block.timestamp > vault.expiry) revert VaultExpired();
+        if (block.timestamp > escrow.expiry) revert EscrowExpired();
         
         if (approvalValue != 1) revert InvalidApprovalValue();
 
@@ -135,12 +135,12 @@ contract IntentVault {
         address signer = recoverSigner(ethSignedMessageHash, signature);
         if (signer != verifier) revert UnauthorizedVerifier();
 
-        uint256 amount = vault.amount;
-        address token = vault.token;
+        uint256 amount = escrow.amount;
+        address token = escrow.token;
         
         // Mark as claimed
-        vault.isClaimed = true;
-        vault.amount = 0;
+        escrow.isClaimed = true;
+        escrow.amount = 0;
         
         // Transfer tokens or ETH to solver (msg.sender)
         if (token == address(0)) {
@@ -151,42 +151,42 @@ contract IntentVault {
             IERC20(token).safeTransfer(msg.sender, amount);
         }
         
-        emit VaultClaimed(intentId, msg.sender, amount);
+        emit EscrowClaimed(intentId, msg.sender, amount);
     }
 
     /**
-     * @notice Cancel vault and return funds to maker (only after expiry)
+     * @notice Cancel escrow and return funds to maker (only after expiry)
      * @dev Maker must wait until expiry before canceling to prevent premature withdrawal
      * @param intentId Intent identifier
      */
     function cancel(uint256 intentId) external {
-        Vault storage vault = vaults[intentId];
+        Escrow storage escrow = escrows[intentId];
         
-        if (vault.isClaimed) revert VaultAlreadyClaimed();
-        if (vault.amount == 0) revert NoDeposit();
-        if (msg.sender != vault.maker) revert UnauthorizedMaker();
+        if (escrow.isClaimed) revert EscrowAlreadyClaimed();
+        if (escrow.amount == 0) revert NoDeposit();
+        if (msg.sender != escrow.maker) revert UnauthorizedMaker();
         
         // Enforce expiry: cancellation is only allowed after expiry
         // This ensures funds remain locked until the contract-defined expiry period
-        if (block.timestamp <= vault.expiry) revert VaultNotExpiredYet();
+        if (block.timestamp <= escrow.expiry) revert EscrowNotExpiredYet();
 
-        uint256 amount = vault.amount;
-        address token = vault.token;
+        uint256 amount = escrow.amount;
+        address token = escrow.token;
         
-        // Reset vault
-        vault.amount = 0;
-        vault.isClaimed = true;
+        // Reset escrow
+        escrow.amount = 0;
+        escrow.isClaimed = true;
         
         // Transfer tokens or ETH back to maker
         if (token == address(0)) {
             // ETH transfer
-            payable(vault.maker).transfer(amount);
+            payable(escrow.maker).transfer(amount);
         } else {
             // ERC20 token transfer
-            IERC20(token).safeTransfer(vault.maker, amount);
+            IERC20(token).safeTransfer(escrow.maker, amount);
         }
         
-        emit VaultCancelled(intentId, vault.maker, amount);
+        emit EscrowCancelled(intentId, escrow.maker, amount);
     }
 
     /**
@@ -222,15 +222,15 @@ contract IntentVault {
     }
 
     /**
-     * @notice Get vault data for an intent
+     * @notice Get escrow data for an intent
      * @param intentId Intent identifier
      * @return maker Maker address
      * @return token Token address
      * @return amount Amount deposited
-     * @return isClaimed Whether vault is claimed
+     * @return isClaimed Whether escrow is claimed
      * @return expiry Expiry timestamp
      */
-    function getVault(uint256 intentId)
+    function getEscrow(uint256 intentId)
         external
         view
         returns (
@@ -241,8 +241,8 @@ contract IntentVault {
             uint256 expiry
         )
     {
-        Vault memory vault = vaults[intentId];
-        return (vault.maker, vault.token, vault.amount, vault.isClaimed, vault.expiry);
+        Escrow memory escrow = escrows[intentId];
+        return (escrow.maker, escrow.token, escrow.amount, escrow.isClaimed, escrow.expiry);
     }
 }
 

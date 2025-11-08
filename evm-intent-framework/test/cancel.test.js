@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { setupIntentVaultTests, advanceTime } = require("./helpers/setup");
+const { setupIntentEscrowTests, advanceTime } = require("./helpers/setup");
 
-describe("IntentVault - Cancel", function () {
-  let vault;
+describe("IntentEscrow - Cancel", function () {
+  let escrow;
   let token;
   let verifierWallet;
   let maker;
@@ -12,58 +12,58 @@ describe("IntentVault - Cancel", function () {
   let amount;
 
   beforeEach(async function () {
-    const fixtures = await setupIntentVaultTests();
-    vault = fixtures.vault;
+    const fixtures = await setupIntentEscrowTests();
+    escrow = fixtures.escrow;
     token = fixtures.token;
     verifierWallet = fixtures.verifierWallet;
     maker = fixtures.maker;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
 
-    await vault.connect(maker).initializeVault(intentId, token.target);
+    await escrow.connect(maker).initializeEscrow(intentId, token.target);
     
     amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
-    await token.connect(maker).approve(vault.target, amount);
-    await vault.connect(maker).deposit(intentId, amount);
+    await token.connect(maker).approve(escrow.target, amount);
+    await escrow.connect(maker).deposit(intentId, amount);
   });
 
   /// Test: Cancellation After Expiry
-  /// Verifies that makers can cancel vaults after expiry and reclaim funds.
+  /// Verifies that makers can cancel escrows after expiry and reclaim funds.
   it("Should allow maker to cancel and reclaim funds after expiry", async function () {
     // Cancellation blocked before expiry
     await expect(
-      vault.connect(maker).cancel(intentId)
-    ).to.be.revertedWithCustomError(vault, "VaultNotExpiredYet");
+      escrow.connect(maker).cancel(intentId)
+    ).to.be.revertedWithCustomError(escrow, "EscrowNotExpiredYet");
 
     // Advance time past expiry
-    const expiryDuration = await vault.EXPIRY_DURATION();
+    const expiryDuration = await escrow.EXPIRY_DURATION();
     await advanceTime(Number(expiryDuration) + 1);
     
     const initialBalance = await token.balanceOf(maker.address);
     
-    await expect(vault.connect(maker).cancel(intentId))
-      .to.emit(vault, "VaultCancelled")
+    await expect(escrow.connect(maker).cancel(intentId))
+      .to.emit(escrow, "EscrowCancelled")
       .withArgs(intentId, maker.address, amount);
 
     expect(await token.balanceOf(maker.address)).to.equal(initialBalance + amount);
-    expect(await token.balanceOf(vault.target)).to.equal(0);
+    expect(await token.balanceOf(escrow.target)).to.equal(0);
     
-    const vaultData = await vault.getVault(intentId);
-    expect(vaultData.isClaimed).to.equal(true);
-    expect(vaultData.amount).to.equal(0);
+    const escrowData = await escrow.getEscrow(intentId);
+    expect(escrowData.isClaimed).to.equal(true);
+    expect(escrowData.amount).to.equal(0);
   });
 
   /// Test: Unauthorized Cancellation Prevention
-  /// Verifies that only the maker can cancel their vault.
+  /// Verifies that only the maker can cancel their escrow.
   it("Should revert if not maker", async function () {
     await expect(
-      vault.connect(solver).cancel(intentId)
-    ).to.be.revertedWithCustomError(vault, "UnauthorizedMaker");
+      escrow.connect(solver).cancel(intentId)
+    ).to.be.revertedWithCustomError(escrow, "UnauthorizedMaker");
   });
 
   /// Test: Cancellation After Claim Prevention
-  /// Verifies that attempting to cancel an already-claimed vault reverts.
+  /// Verifies that attempting to cancel an already-claimed escrow reverts.
   it("Should revert if already claimed", async function () {
     const approvalValue = 1;
     const messageHash = ethers.solidityPackedKeccak256(
@@ -72,11 +72,11 @@ describe("IntentVault - Cancel", function () {
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
     
-    await vault.connect(solver).claim(intentId, approvalValue, signature);
+    await escrow.connect(solver).claim(intentId, approvalValue, signature);
 
     await expect(
-      vault.connect(maker).cancel(intentId)
-    ).to.be.revertedWithCustomError(vault, "VaultAlreadyClaimed");
+      escrow.connect(maker).cancel(intentId)
+    ).to.be.revertedWithCustomError(escrow, "EscrowAlreadyClaimed");
   });
 });
 

@@ -1,43 +1,43 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { setupIntentVaultTests, hexToUint256 } = require("./helpers/setup");
+const { setupIntentEscrowTests, hexToUint256 } = require("./helpers/setup");
 
-describe("IntentVault - Cross-Chain Intent ID Conversion", function () {
-  let vault;
+describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
+  let escrow;
   let token;
   let maker;
   let intentId;
 
   beforeEach(async function () {
-    const fixtures = await setupIntentVaultTests();
-    vault = fixtures.vault;
+    const fixtures = await setupIntentEscrowTests();
+    escrow = fixtures.escrow;
     token = fixtures.token;
     maker = fixtures.maker;
     intentId = fixtures.intentId;
   });
 
   /// Test: Aptos Hex to EVM uint256 Conversion
-  /// Verifies that intent IDs from Aptos hex format can be converted and used in EVM vault operations.
+  /// Verifies that intent IDs from Aptos hex format can be converted and used in EVM escrow operations.
   it("Should handle Aptos hex intent ID conversion to EVM uint256", async function () {
     // Aptos intent ID in hex format (smaller than 32 bytes)
     const aptosIntentIdHex = "0x1234";
     const evmIntentId = hexToUint256(aptosIntentIdHex);
 
-    // Initialize vault with converted intent ID
-    await vault.connect(maker).initializeVault(evmIntentId, token.target);
+    // Initialize escrow with converted intent ID
+    await escrow.connect(maker).initializeEscrow(evmIntentId, token.target);
 
-    // Verify vault was initialized correctly
-    const vaultData = await vault.getVault(evmIntentId);
-    expect(vaultData.maker).to.equal(maker.address);
-    expect(vaultData.token).to.equal(token.target);
+    // Verify escrow was initialized correctly
+    const escrowData = await escrow.getEscrow(evmIntentId);
+    expect(escrowData.maker).to.equal(maker.address);
+    expect(escrowData.token).to.equal(token.target);
 
     // Deposit and verify it works with converted intent ID
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
-    await token.connect(maker).approve(vault.target, amount);
-    await vault.connect(maker).deposit(evmIntentId, amount);
+    await token.connect(maker).approve(escrow.target, amount);
+    await escrow.connect(maker).deposit(evmIntentId, amount);
 
-    expect(await token.balanceOf(vault.target)).to.equal(amount);
+    expect(await token.balanceOf(escrow.target)).to.equal(amount);
   });
 
   /// Test: Intent ID Boundary Values
@@ -45,21 +45,21 @@ describe("IntentVault - Cross-Chain Intent ID Conversion", function () {
   it("Should handle intent ID boundary values", async function () {
     // Test maximum uint256 value
     const maxIntentId = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-    await vault.connect(maker).initializeVault(maxIntentId, token.target);
-    const maxVaultData = await vault.getVault(maxIntentId);
-    expect(maxVaultData.maker).to.equal(maker.address);
+    await escrow.connect(maker).initializeEscrow(maxIntentId, token.target);
+    const maxEscrowData = await escrow.getEscrow(maxIntentId);
+    expect(maxEscrowData.maker).to.equal(maker.address);
 
     // Test zero value
     const zeroIntentId = 0n;
-    await vault.connect(maker).initializeVault(zeroIntentId, token.target);
-    const zeroVaultData = await vault.getVault(zeroIntentId);
-    expect(zeroVaultData.maker).to.equal(maker.address);
+    await escrow.connect(maker).initializeEscrow(zeroIntentId, token.target);
+    const zeroEscrowData = await escrow.getEscrow(zeroIntentId);
+    expect(zeroEscrowData.maker).to.equal(maker.address);
 
     // Test edge value (2^128 - 1)
     const edgeIntentId = BigInt("0xffffffffffffffffffffffffffffffff");
-    await vault.connect(maker).initializeVault(edgeIntentId, token.target);
-    const edgeVaultData = await vault.getVault(edgeIntentId);
-    expect(edgeVaultData.maker).to.equal(maker.address);
+    await escrow.connect(maker).initializeEscrow(edgeIntentId, token.target);
+    const edgeEscrowData = await escrow.getEscrow(edgeIntentId);
+    expect(edgeEscrowData.maker).to.equal(maker.address);
   });
 
   /// Test: Intent ID Zero Padding
@@ -82,15 +82,15 @@ describe("IntentVault - Cross-Chain Intent ID Conversion", function () {
       // Verify padding produces correct value
       expect(paddedIntentId).to.equal(expectedValue);
 
-      // Verify vault operations work with padded intent ID
-      await vault.connect(maker).initializeVault(paddedIntentId, token.target);
-      const vaultData = await vault.getVault(paddedIntentId);
-      expect(vaultData.maker).to.equal(maker.address);
+      // Verify escrow operations work with padded intent ID
+      await escrow.connect(maker).initializeEscrow(paddedIntentId, token.target);
+      const escrowData = await escrow.getEscrow(paddedIntentId);
+      expect(escrowData.maker).to.equal(maker.address);
     }
   });
 
   /// Test: Multiple Intent IDs from Different Formats
-  /// Verifies that multiple vaults can be created with intent IDs from different Aptos formats.
+  /// Verifies that multiple escrows can be created with intent IDs from different Aptos formats.
   it("Should handle multiple intent IDs from different Aptos formats", async function () {
     const intentIds = [
       hexToUint256("0x1"),
@@ -101,18 +101,18 @@ describe("IntentVault - Cross-Chain Intent ID Conversion", function () {
       ethers.parseUnits("999999", 0) // Large number format
     ];
 
-    // Initialize vaults with different intent ID formats
+    // Initialize escrows with different intent ID formats
     for (let i = 0; i < intentIds.length; i++) {
-      await vault.connect(maker).initializeVault(intentIds[i], token.target);
-      const vaultData = await vault.getVault(intentIds[i]);
-      expect(vaultData.maker).to.equal(maker.address);
-      expect(vaultData.token).to.equal(token.target);
+      await escrow.connect(maker).initializeEscrow(intentIds[i], token.target);
+      const escrowData = await escrow.getEscrow(intentIds[i]);
+      expect(escrowData.maker).to.equal(maker.address);
+      expect(escrowData.token).to.equal(token.target);
     }
 
-    // Verify all vaults are independent
-    expect(await vault.getVault(intentIds[0])).to.not.be.undefined;
-    expect(await vault.getVault(intentIds[1])).to.not.be.undefined;
-    expect(await vault.getVault(intentIds[2])).to.not.be.undefined;
+    // Verify all escrows are independent
+    expect(await escrow.getEscrow(intentIds[0])).to.not.be.undefined;
+    expect(await escrow.getEscrow(intentIds[1])).to.not.be.undefined;
+    expect(await escrow.getEscrow(intentIds[2])).to.not.be.undefined;
   });
 });
 

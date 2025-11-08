@@ -1,8 +1,8 @@
 const { ethers } = require("hardhat");
 
-/// Shared test setup for IntentVault tests
+/// Shared test setup for IntentEscrow tests
 /// Provides common fixtures and helper functions
-async function setupIntentVaultTests() {
+async function setupIntentEscrowTests() {
   const [verifier, maker, solver] = await ethers.getSigners();
   const verifierWallet = verifier;
 
@@ -11,15 +11,15 @@ async function setupIntentVaultTests() {
   const token = await MockERC20.deploy("Test Token", "TEST");
   await token.waitForDeployment();
 
-  // Deploy vault with verifier address
-  const IntentVault = await ethers.getContractFactory("IntentVault");
-  const vault = await IntentVault.deploy(verifier.address);
-  await vault.waitForDeployment();
+  // Deploy escrow with verifier address
+  const IntentEscrow = await ethers.getContractFactory("IntentEscrow");
+  const escrow = await IntentEscrow.deploy(verifier.address);
+  await escrow.waitForDeployment();
 
   const intentId = ethers.parseUnits("1", 0); // Simple intent ID
 
   return {
-    vault,
+    escrow,
     token,
     verifier,
     maker,
@@ -45,7 +45,7 @@ function hexToUint256(hexString) {
 }
 
 module.exports = {
-  setupIntentVaultTests,
+  setupIntentEscrowTests,
   advanceTime,
   hexToUint256
 };

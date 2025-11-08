@@ -5,7 +5,7 @@
 use ed25519_dalek::SigningKey;
 use rand::RngCore;
 use base64::{engine::general_purpose, Engine as _};
-use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config};
+use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config, EvmChainConfig};
 
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
 /// Keys are encoded using standard Base64 to satisfy CryptoService requirements.
@@ -49,5 +49,18 @@ pub fn build_test_config() -> Config {
         },
         connected_chain_evm: None, // No connected EVM chain for unit tests
     }
+}
+
+/// Build a test configuration with EVM chain configuration.
+/// Extends build_test_config() to include a populated connected_chain_evm field.
+pub fn build_test_config_with_evm() -> Config {
+    let mut config = build_test_config();
+    config.connected_chain_evm = Some(EvmChainConfig {
+        rpc_url: "http://127.0.0.1:8545".to_string(),
+        escrow_contract_address: "0xEscrowAddress123".to_string(),
+        chain_id: 31337,
+        verifier_address: "0xVerifierAddress456".to_string(),
+    });
+    config
 }
 

@@ -4,5 +4,5 @@
 
 mod helpers;
 
-pub use helpers::build_test_config;
+pub use helpers::{build_test_config, build_test_config_with_evm};
 

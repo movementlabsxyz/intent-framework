@@ -222,9 +222,10 @@
               4
             ],
             "details": "Add to config_tests.rs: (1) test_evm_chain_config_structure() - Test EvmChainConfig structure, (2) test_evm_config_loading() - Test EVM config loading, (3) test_evm_config_serialization() - Test TOML serialization with EVM fields. Add to monitor_tests.rs: (4) test_evm_escrow_detection() - Test EVM escrow detection, (5) test_evm_signature_creation() - Test ECDSA signature for EVM escrows. Add to cross_chain_tests.rs: (6) test_evm_cross_chain_matching() - Test cross-chain matching with EVM escrows, (7) test_intent_id_evm_conversion() - Test intent ID conversion to EVM format.\n<info added on 2025-11-07T15:56:09.638Z>\nI need to analyze the codebase first to understand the current structure and implementation before providing an accurate update for the subtask.Based on my analysis of the codebase, I can now provide the appropriate update for the subtask. The user wants to split the original broad subtask into a focused one that only covers EVM config tests for config_tests.rs, and they want to use a `build_test_config_with_evm()` helper function that doesn't exist yet.\n\nThis subtask is now focused only on adding 5 EVM configuration tests to config_tests.rs. Tests will verify EvmChainConfig structure validation, serialization/deserialization, optional field handling, complete field population, and default value behavior. Create build_test_config_with_evm() helper function in tests/mod.rs that extends the existing build_test_config() to include a populated evm_chain field with test values (rpc_url: \"http://127.0.0.1:8545\", escrow_address: \"0xEscrowAddress123\", chain_id: 31337, verifier_address: \"0xVerifierAddress456\"). Tests should follow existing patterns in config_tests.rs using assert_eq! for field validation and toml serialization round-trip testing.\n</info added on 2025-11-07T15:56:09.638Z>",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Follow existing test patterns in config_tests.rs, use proper assert statements, test both valid configurations and error cases",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-08T22:10:22.833Z"
           },
           {
             "id": 6,
@@ -273,7 +274,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-08T21:49:41.594Z"
+        "updatedAt": "2025-11-08T22:10:22.833Z"
       },
       {
         "id": "4",
@@ -332,7 +333,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-08T21:49:41.595Z",
+      "lastModified": "2025-11-08T22:10:22.835Z",
       "taskCount": 4,
       "completedCount": 2,
       "tags": [

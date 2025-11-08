@@ -73,4 +73,3 @@ fn test_config_serialization() {
     assert_eq!(config.hub_chain.name, deserialized.hub_chain.name);
     assert_eq!(config.hub_chain.rpc_url, deserialized.hub_chain.rpc_url);
 }
-

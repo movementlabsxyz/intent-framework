@@ -1,17 +1,12 @@
-//! Unit tests for the trusted verifier service modules
+//! Unit tests for Aptos/Ed25519 cryptographic operations
 //!
-//! These tests verify core functionality without requiring external services:
-//! - Cryptographic operations (signing, verification, key generation)
-//! - Configuration loading
-//! - Data structures and validation logic
+//! These tests verify Ed25519 signature functionality for Aptos chain compatibility.
 
 use trusted_verifier::crypto::CryptoService;
 
 #[path = "mod.rs"]
 mod test_helpers;
 use test_helpers::build_test_config;
-
-// Crypto service tests
 
 /// Test that crypto service creates different key pairs for each instance
 /// Why: Ensure each verifier instance has a unique cryptographic identity to prevent key collisions

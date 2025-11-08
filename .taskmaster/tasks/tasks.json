@@ -208,10 +208,11 @@
             "title": "Add ECDSA signature tests to crypto_tests.rs",
             "description": "Add ECDSA signature functionality tests to trusted-verifier/tests/crypto_tests.rs to test EVM-specific cryptographic operations",
             "dependencies": [],
-            "details": "Add ECDSA test functions to crypto_tests.rs: (1) test_create_evm_approval_signature() - Test ECDSA signature creation, (2) test_ecdsa_signature_verification() - Test ECDSA signature verification, (3) test_get_ethereum_address() - Test Ethereum address derivation, (4) test_ecdsa_key_derivation() - Test ECDSA key derivation from Ed25519, (5) test_evm_signature_format() - Test 65-byte signature format (r || s || v), (6) test_keccak256_hashing() - Test keccak256 hashing, (7) test_ethereum_signed_message_format() - Test Ethereum signed message format. Follow existing test pattern and naming conventions.\n<info added on 2025-11-07T15:55:23.513Z>\nBased on my analysis of the codebase, I can see that Task 1.4 has already been completed and documented comprehensive planning for the EVM crypto tests. The UNIT_TEST_COVERAGE_COMPARISON.md file contains the detailed plan with 9 specific ECDSA test functions that were outlined.\n\nUpdated test specification to align with Task 1.4 planning: Implement 9 ECDSA test functions following exact naming from comprehensive plan - test_create_evm_approval_signature_success (verify ECDSA signature creation), test_create_evm_approval_signature_format_65_bytes (verify signature is exactly 65 bytes r||s||v), test_create_evm_approval_signature_verification (verify signature can be verified on-chain), test_get_ethereum_address_derivation (verify Ethereum address derivation from ECDSA key), test_evm_signature_recovery_id_calculation (verify recovery ID v is 27 or 28), test_evm_signature_keccak256_hashing (verify keccak256 hashing in message preparation), test_evm_signature_ethereum_message_prefix (verify Ethereum signed message format), test_evm_intent_id_padding (verify intent ID padding to 32 bytes), test_evm_signature_invalid_intent_id (verify error handling for invalid intent IDs). Tests follow existing crypto_tests.rs pattern with #[test] attributes, proper error handling, and comprehensive assertions. Implementation structure documented in UNIT_TEST_COVERAGE_COMPARISON.md Part 3.\n</info added on 2025-11-07T15:55:23.513Z>",
-            "status": "pending",
+            "details": "Add ECDSA test functions to crypto_tests.rs: (1) test_create_evm_approval_signature() - Test ECDSA signature creation, (2) test_ecdsa_signature_verification() - Test ECDSA signature verification, (3) test_get_ethereum_address() - Test Ethereum address derivation, (4) test_ecdsa_key_derivation() - Test ECDSA key derivation from Ed25519, (5) test_evm_signature_format() - Test 65-byte signature format (r || s || v), (6) test_keccak256_hashing() - Test keccak256 hashing, (7) test_ethereum_signed_message_format() - Test Ethereum signed message format. Follow existing test pattern and naming conventions.\n<info added on 2025-11-07T15:55:23.513Z>\nBased on my analysis of the codebase, I can see that Task 1.4 has already been completed and documented comprehensive planning for the EVM crypto tests. The UNIT_TEST_COVERAGE_COMPARISON.md file contains the detailed plan with 9 specific ECDSA test functions that were outlined.\n\nUpdated test specification to align with Task 1.4 planning: Implement 9 ECDSA test functions following exact naming from comprehensive plan - test_create_evm_approval_signature_success (verify ECDSA signature creation), test_create_evm_approval_signature_format_65_bytes (verify signature is exactly 65 bytes r||s||v), test_create_evm_approval_signature_verification (verify signature can be verified on-chain), test_get_ethereum_address_derivation (verify Ethereum address derivation from ECDSA key), test_evm_signature_recovery_id_calculation (verify recovery ID v is 27 or 28), test_evm_signature_keccak256_hashing (verify keccak256 hashing in message preparation), test_evm_signature_ethereum_message_prefix (verify Ethereum signed message format), test_evm_intent_id_padding (verify intent ID padding to 32 bytes), test_evm_signature_invalid_intent_id (verify error handling for invalid intent IDs). Tests follow existing crypto_tests.rs pattern with #[test] attributes, proper error handling, and comprehensive assertions. Implementation structure documented in UNIT_TEST_COVERAGE_COMPARISON.md Part 3.\n</info added on 2025-11-07T15:55:23.513Z>\n<info added on 2025-11-08T18:27:07.877Z>\nLet me analyze the project structure and current test implementation to understand the context better.Now let me check if there are any test results or output files to confirm the successful implementation:Let me check the test coverage documentation mentioned in the task context:Let me continue reading the ECDSA test specification from the document:Perfect! Now I have a comprehensive understanding of the implementation. Based on my analysis of the crypto_tests.rs file and the documentation, I can see that all 9 ECDSA test functions have been successfully implemented in crypto_tests.rs, exactly matching the specifications from the UNIT_TEST_COVERAGE_COMPARISON.md document.\n\nThe implementation includes all the planned test functions:\n\n1. `test_create_evm_approval_signature_success` (lines 158-170)\n2. `test_create_evm_approval_signature_format_65_bytes` (lines 174-190) \n3. `test_create_evm_approval_signature_verification` (lines 194-219)\n4. `test_get_ethereum_address_derivation` (lines 223-237)\n5. `test_evm_signature_recovery_id_calculation` (lines 241-255)\n6. `test_evm_signature_keccak256_hashing` (lines 259-275)\n7. `test_evm_signature_ethereum_message_prefix` (lines 279-297)\n8. `test_evm_intent_id_padding` (lines 301-322)\n9. `test_evm_signature_invalid_intent_id` (lines 326-342)\n\nBased on the user's completion report and the evidence in the codebase, here is the new text that should be appended to the subtask's details:\n\nIMPLEMENTATION COMPLETED: Successfully added all 9 ECDSA signature tests to crypto_tests.rs matching the comprehensive plan from UNIT_TEST_COVERAGE_COMPARISON.md. Tests cover signature creation, 65-byte format validation (r||s||v), on-chain verification compatibility, Ethereum address derivation, recovery ID calculation (v=27/28), keccak256 hashing, Ethereum message prefix handling, intent ID padding to 32 bytes, and error handling for invalid inputs. All tests follow existing crypto_tests.rs patterns with proper #[test] attributes, detailed comments explaining the \"Why\" rationale, comprehensive assertions, and error condition validation. Test suite now contains 18 total tests (9 original Ed25519 + 9 new ECDSA), providing complete cryptographic coverage for both Aptos and EVM chain compatibility.\n</info added on 2025-11-08T18:27:07.877Z>",
+            "status": "done",
             "testStrategy": "Follow the existing crypto test patterns, use assert! macros for validation, test both success and failure cases",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-08T18:26:05.077Z"
           },
           {
             "id": 5,
@@ -270,7 +271,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-08T17:50:50.700Z"
+        "updatedAt": "2025-11-08T18:26:05.077Z"
       },
       {
         "id": 4,
@@ -329,13 +330,13 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-08T17:50:50.701Z",
+      "lastModified": "2025-11-08T18:26:05.079Z",
       "taskCount": 4,
       "completedCount": 2,
       "tags": [
         "master"
       ],
-      "created": "2025-11-08T17:51:48.229Z",
+      "created": "2025-11-08T18:26:16.169Z",
       "description": "Tasks for master context"
     }
   }

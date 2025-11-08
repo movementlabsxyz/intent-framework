@@ -251,15 +251,16 @@
           },
           {
             "id": 8,
-            "title": "Add EVM escrow monitoring tests to monitor_tests.rs",
-            "description": "Add 5 EVM escrow tests to monitor_tests.rs",
+            "title": "Add EVM escrow monitoring tests to monitor_tests_evm.rs",
+            "description": "Create monitor_tests_evm.rs and add 5 EVM escrow tests",
             "dependencies": [
               4
             ],
-            "details": "Add 5 EVM escrow tests: (1) test_evm_escrow_detection_logic - Verify EVM escrow detection (chain type check), (2) test_evm_escrow_ecdsa_signature_creation - Verify ECDSA signature creation for EVM escrows, (3) test_evm_vs_aptos_escrow_differentiation - Verify correct signature type based on chain, (4) test_evm_escrow_approval_flow - Verify complete EVM escrow approval workflow, (5) test_evm_escrow_with_invalid_intent_id - Verify error handling for invalid intent IDs. Use create_mock_evm_escrow_event() helper function.",
-            "status": "pending",
+            "details": "Add 5 EVM escrow tests: (1) test_evm_escrow_detection_logic - Verify EVM escrow detection (chain type check), (2) test_evm_escrow_ecdsa_signature_creation - Verify ECDSA signature creation for EVM escrows, (3) test_evm_vs_aptos_escrow_differentiation - Verify correct signature type based on chain, (4) test_evm_escrow_approval_flow - Verify complete EVM escrow approval workflow, (5) test_evm_escrow_with_invalid_intent_id - Verify error handling for invalid intent IDs. Use create_mock_evm_escrow_event() helper function.\n<info added on 2025-11-08T22:24:38.955Z>\nI'll analyze the codebase structure to understand the current test organization and provide an informed update for this subtask.Based on the codebase analysis, I can see the existing test structure follows a clear pattern where EVM-specific tests are separated into dedicated files (crypto_tests_evm.rs, config_tests_evm.rs) alongside their general counterparts. The user request is to follow this same pattern for monitor tests.\n\n**UPDATED PLAN**: Create a new file monitor_tests_evm.rs following the established pattern of crypto_tests_evm.rs and config_tests_evm.rs. This file will contain the 5 EVM escrow monitoring tests instead of adding them to the general monitor_tests.rs file. The new file structure will match the existing EVM test files with proper module imports and helper functions. Need to implement create_mock_evm_escrow_event() helper function within the new file or extend helpers.rs to support EVM mock events, as this function doesn't currently exist in the codebase.\n</info added on 2025-11-08T22:24:38.955Z>",
+            "status": "done",
             "testStrategy": "Follow existing monitor test patterns, use #[tokio::test] for async tests, verify EVM vs Aptos differentiation",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-08T22:27:30.383Z"
           },
           {
             "id": 9,
@@ -274,7 +275,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-08T22:10:22.833Z"
+        "updatedAt": "2025-11-08T22:27:30.383Z"
       },
       {
         "id": "4",
@@ -329,12 +330,96 @@
             "parentId": "undefined"
           }
         ]
+      },
+      {
+        "id": "5",
+        "title": "Fix signature replay vulnerability by binding verifier signatures to solver addresses",
+        "description": "Fix critical security vulnerability where verifier signatures don't bind to solver addresses by implementing reserved escrows where the solver address is fixed at escrow creation time rather than changing the verifier signature format. This matches the Move intent reservation pattern.",
+        "status": "pending",
+        "dependencies": [
+          "3",
+          "4"
+        ],
+        "priority": "medium",
+        "details": "**CRITICAL SECURITY ISSUE**: Current verifier signatures only include (intentId, approvalValue) in the signed message, making them reusable by any solver who obtains a valid signature. This allows unauthorized escrow claims.\n\n**New Approach - Reserved Escrows:**\nInstead of modifying verifier signatures to include solver addresses, implement an optional reservation system where escrows can be bound to specific solver addresses at creation time. The verifier signature format remains unchanged - it just approves/rejects the intent - but the on-chain logic enforces solver restrictions.\n\n**Files to Modify:**\n\n**1. EVM Contract (evm-intent-framework/contracts/IntentEscrow.sol)**:\n- Add optional `reservedSolver` field to Escrow struct\n- Update `createEscrow()` to accept optional reserved solver address parameter\n- Modify `claim()` function to check if escrow is reserved and enforce solver restriction\n- Keep verifier signature format unchanged: keccak256(abi.encodePacked(intentId, approvalValue))\n- Add error `UnauthorizedSolver` for reserved escrow violations\n\n**2. Aptos Move Contracts**:\n- Leverage existing intent_reservation.move system that already implements solver binding\n- Update intent_as_escrow.move to use Optional<IntentReserved> from the reservation system\n- Modify `complete_escrow()` to call `intent_reservation::ensure_solver_authorized()`\n- Keep verifier signature format unchanged for Ed25519 signatures\n\n**3. Optional API Updates**:\n- Add optional `reservedSolver` parameter to escrow creation endpoints\n- No changes needed to verifier signature endpoints - they remain the same\n- Update E2E test scripts to test both reserved and unreserved escrow scenarios\n\n**Security Benefits:**\n- Prevents signature replay attacks when escrows are reserved to specific solvers\n- Maintains backward compatibility - unreserved escrows work as before\n- Matches existing Move reservation pattern for consistency\n- No changes needed to verifier service signature creation logic",
+        "testStrategy": "1. Create unit tests for reserved vs unreserved escrow scenarios on both EVM and Aptos\n2. Test that reserved escrows can only be claimed by the designated solver\n3. Test that unreserved escrows can be claimed by any solver with valid verifier signature\n4. Verify existing verifier signature format works unchanged\n5. Test edge cases: attempting to claim reserved escrow with different solver\n6. Run security audit tests to confirm vulnerability is addressed for reserved escrows\n7. Test cross-chain scenarios with both reserved and unreserved escrows\n8. Ensure backward compatibility - existing unreserved escrows continue to work",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add optional reserved solver field to EVM IntentEscrow contract",
+            "description": "Modify the Escrow struct in IntentEscrow.sol to include an optional reservedSolver field and update createEscrow function to accept this parameter.",
+            "dependencies": [],
+            "details": "Update the Escrow struct in evm-intent-framework/contracts/IntentEscrow.sol to add:\n- `address reservedSolver` field (address(0) means unreserved)\n- Modify `createEscrow()` function signature to accept optional `address reservedSolver` parameter\n- Set reservedSolver field during escrow creation\n- Add new error `UnauthorizedSolver` for when non-reserved solver attempts to claim reserved escrow\n- Update events to include reservation status",
+            "status": "pending",
+            "testStrategy": "Unit tests for createEscrow with and without reserved solver parameter",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement solver authorization check in EVM claim function",
+            "description": "Update the claim() function in IntentEscrow.sol to enforce solver restrictions when escrow is reserved to a specific address.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify the `claim()` function in evm-intent-framework/contracts/IntentEscrow.sol:108-150 to:\n- Check if `escrow.reservedSolver != address(0)` (escrow is reserved)\n- If reserved, verify `msg.sender == escrow.reservedSolver`\n- Revert with `UnauthorizedSolver` error if unauthorized solver attempts to claim\n- Keep existing verifier signature verification unchanged\n- Allow any solver to claim if escrow is unreserved (reservedSolver == address(0))",
+            "status": "pending",
+            "testStrategy": "Unit tests for claim function with reserved and unreserved escrows, testing unauthorized access attempts",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Integrate Move intent reservation system with escrow contracts",
+            "description": "Update Aptos move contracts to use the existing intent_reservation.move system for solver binding in escrows.",
+            "dependencies": [],
+            "details": "Modify move-intent-framework/sources/intent_as_escrow.move to:\n- Import and use existing `intent_reservation::IntentReserved` system from intent_reservation.move:19\n- Update `create_escrow()` function to accept optional reservation parameter\n- Integrate with existing reservation verification in the Move framework\n- Use existing `intent_reservation::ensure_solver_authorized()` function for authorization checks\n- Maintain compatibility with existing oracle signature system",
+            "status": "pending",
+            "testStrategy": "Unit tests for escrow creation and completion with Move reservation system",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Update Aptos escrow completion to enforce solver authorization",
+            "description": "Modify the complete_escrow function to check solver authorization when escrow is reserved using the Move reservation system.",
+            "dependencies": [
+              3
+            ],
+            "details": "Update `complete_escrow()` function in move-intent-framework/sources/intent_as_escrow.move:136-157 to:\n- Accept optional solver signer parameter for reservation checking\n- Call `intent_reservation::ensure_solver_authorized()` before verifier approval check\n- Maintain existing verifier signature verification flow\n- Ensure unreserved escrows continue to work without solver restrictions\n- Keep Ed25519 signature format unchanged",
+            "status": "pending",
+            "testStrategy": "Integration tests for reserved escrow completion with solver authorization",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Add comprehensive test coverage for reserved vs unreserved escrows",
+            "description": "Create extensive test suite covering both reserved and unreserved escrow scenarios across EVM and Aptos implementations.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Create comprehensive test coverage:\n- EVM tests: reserved escrow creation, claiming by authorized/unauthorized solvers\n- Aptos tests: integration with existing reservation system, solver authorization checks\n- Cross-chain tests: reserved escrows work correctly across both chains\n- Security tests: verify signature replay prevention for reserved escrows\n- Backward compatibility tests: unreserved escrows continue to work as before\n- Edge case tests: empty/zero address handling, state transitions",
+            "status": "pending",
+            "testStrategy": "Full test suite with security, functionality, and compatibility testing",
+            "parentId": "undefined"
+          },
+          {
+            "id": 6,
+            "title": "Update E2E test scripts and documentation for reserved escrow feature",
+            "description": "Update end-to-end test scripts and documentation to cover the new reserved escrow functionality while maintaining backward compatibility.",
+            "dependencies": [
+              5
+            ],
+            "details": "Update integration components:\n- Modify E2E test scripts to test both reserved and unreserved escrow flows\n- Update API documentation to describe optional reservation parameters\n- Add examples of creating reserved vs unreserved escrows\n- Update security documentation to explain how reservation prevents signature replay\n- Ensure all existing E2E flows continue to work (backward compatibility)\n- Document migration path for applications wanting to use reserved escrows",
+            "status": "pending",
+            "testStrategy": "E2E testing with both reservation modes, documentation review",
+            "parentId": "undefined"
+          }
+        ]
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-08T22:10:22.835Z",
-      "taskCount": 4,
+      "lastModified": "2025-11-08T22:27:30.384Z",
+      "taskCount": 5,
       "completedCount": 2,
       "tags": [
         "master"

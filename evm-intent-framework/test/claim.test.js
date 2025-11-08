@@ -21,12 +21,10 @@ describe("IntentEscrow - Claim", function () {
     solver = fixtures.solver;
     intentId = fixtures.intentId;
 
-    await escrow.connect(maker).initializeEscrow(intentId, token.target);
-    
     amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).deposit(intentId, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
     
     approvalValue = 1; // Approval value must be 1
   });
@@ -101,11 +99,10 @@ describe("IntentEscrow - Claim", function () {
     ).to.be.revertedWithCustomError(escrow, "EscrowAlreadyClaimed");
   });
 
-  /// Test: No Deposit Rejection
-  /// Verifies that attempting to claim an escrow with no deposits reverts with NoDeposit error.
-  it("Should revert if no deposit", async function () {
+  /// Test: Non-Existent Escrow Rejection
+  /// Verifies that attempting to claim a non-existent escrow reverts with EscrowDoesNotExist error.
+  it("Should revert if escrow does not exist", async function () {
     const newIntentId = intentId + 1n;
-    await escrow.connect(maker).initializeEscrow(newIntentId, token.target);
 
     const messageHash = ethers.solidityPackedKeccak256(
       ["uint256", "uint8"],
@@ -115,7 +112,7 @@ describe("IntentEscrow - Claim", function () {
 
     await expect(
       escrow.connect(solver).claim(newIntentId, approvalValue, signature)
-    ).to.be.revertedWithCustomError(escrow, "NoDeposit");
+    ).to.be.revertedWithCustomError(escrow, "EscrowDoesNotExist");
   });
 });
 

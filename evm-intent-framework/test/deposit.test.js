@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { setupIntentEscrowTests } = require("./helpers/setup");
 
-describe("IntentEscrow - Deposit", function () {
+describe("IntentEscrow - Create Escrow (Deposit)", function () {
   let escrow;
   let token;
   let maker;
@@ -14,19 +14,19 @@ describe("IntentEscrow - Deposit", function () {
     token = fixtures.token;
     maker = fixtures.maker;
     intentId = fixtures.intentId;
-
-    await escrow.connect(maker).initializeEscrow(intentId, token.target);
   });
 
-  /// Test: Token Deposit
-  /// Verifies that makers can deposit ERC20 tokens into an initialized escrow.
-  it("Should allow maker to deposit tokens", async function () {
+  /// Test: Token Escrow Creation
+  /// Verifies that makers can create an escrow with ERC20 tokens atomically.
+  it("Should allow maker to create escrow with tokens", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
 
-    await expect(escrow.connect(maker).deposit(intentId, amount))
-      .to.emit(escrow, "DepositMade")
+    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount))
+      .to.emit(escrow, "EscrowInitialized")
+      .withArgs(intentId, escrow.target, maker.address, token.target)
+      .and.to.emit(escrow, "DepositMade")
       .withArgs(intentId, maker.address, amount, amount);
 
     expect(await token.balanceOf(escrow.target)).to.equal(amount);
@@ -35,17 +35,19 @@ describe("IntentEscrow - Deposit", function () {
     expect(escrowData.amount).to.equal(amount);
   });
 
-  /// Test: Deposit After Claim Prevention
-  /// Verifies that deposits cannot be made to an escrow that has already been claimed.
+  /// Test: Escrow Creation After Claim Prevention
+  /// Verifies that escrows cannot be created with an intent ID that was already claimed.
   it("Should revert if escrow is already claimed", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).deposit(intentId, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
 
-    // Claim the escrow (we'll set up signature later)
-    // For now, manually mark as claimed by calling claim with proper signature
-    // Actually, let's test this in the claim section
+    // This test is covered in claim.test.js - escrow creation with same intentId will fail
+    // because escrow already exists, not because it's claimed
+    await expect(
+      escrow.connect(maker).createEscrow(intentId, token.target, amount)
+    ).to.be.revertedWith("Escrow already exists");
   });
 });
 

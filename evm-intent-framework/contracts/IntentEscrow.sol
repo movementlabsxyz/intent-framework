@@ -38,6 +38,7 @@ contract IntentEscrow {
 
     /// @notice Errors
     error EscrowAlreadyClaimed();
+    error EscrowDoesNotExist();
     error NoDeposit();
     error UnauthorizedMaker();
     error InvalidSignature();
@@ -56,17 +57,22 @@ contract IntentEscrow {
     }
 
     /**
-     * @notice Initialize a new escrow for a specific intent
+     * @notice Create a new escrow and deposit funds atomically (matches Move contract behavior)
      * @param intentId Unique intent identifier
      * @param token ERC20 token address to be deposited (use address(0) for ETH)
+     * @param amount Amount of tokens/ETH to deposit
      * @dev Expiry is automatically set to block.timestamp + EXPIRY_DURATION (contract-defined)
+     * @dev This function atomically creates the escrow and deposits funds, matching Move's create_escrow_from_fa
      */
-    function initializeEscrow(
+    function createEscrow(
         uint256 intentId,
-        address token
-    ) external {
-        require(escrows[intentId].maker == address(0), "Escrow already initialized");
+        address token,
+        uint256 amount
+    ) external payable {
+        require(escrows[intentId].maker == address(0), "Escrow already exists");
+        require(amount > 0, "Amount must be greater than 0");
 
+        // Create escrow
         escrows[intentId] = Escrow({
             maker: msg.sender,
             token: token,
@@ -76,34 +82,22 @@ contract IntentEscrow {
         });
 
         emit EscrowInitialized(intentId, address(this), msg.sender, token);
-    }
 
-    /**
-     * @notice Deposit tokens or ETH into escrow
-     * @param intentId Intent identifier
-     * @param amount Amount of tokens/ETH to deposit
-     */
-    function deposit(uint256 intentId, uint256 amount) external payable {
-        Escrow storage escrow = escrows[intentId];
-        
-        require(escrow.maker != address(0), "Escrow not initialized");
-        if (escrow.isClaimed) revert EscrowAlreadyClaimed();
-        
-        require(amount > 0, "Amount must be greater than 0");
-        
-        if (escrow.token == address(0)) {
+        // Deposit funds atomically
+        if (token == address(0)) {
             // ETH deposit
             require(msg.value == amount, "ETH amount mismatch");
-            escrow.amount += amount;
+            escrows[intentId].amount = amount;
         } else {
             // ERC20 token deposit
             require(msg.value == 0, "ETH not accepted for token escrow");
-            IERC20(escrow.token).safeTransferFrom(msg.sender, address(this), amount);
-            escrow.amount += amount;
+            IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+            escrows[intentId].amount = amount;
         }
-        
-        emit DepositMade(intentId, msg.sender, amount, escrow.amount);
+
+        emit DepositMade(intentId, msg.sender, amount, amount);
     }
+
 
     /**
      * @notice Claim escrow funds (solver only, requires verifier signature)
@@ -118,6 +112,7 @@ contract IntentEscrow {
     ) external {
         Escrow storage escrow = escrows[intentId];
         
+        if (escrow.maker == address(0)) revert EscrowDoesNotExist();
         if (escrow.isClaimed) revert EscrowAlreadyClaimed();
         if (escrow.amount == 0) revert NoDeposit();
         
@@ -162,6 +157,7 @@ contract IntentEscrow {
     function cancel(uint256 intentId) external {
         Escrow storage escrow = escrows[intentId];
         
+        if (escrow.maker == address(0)) revert EscrowDoesNotExist();
         if (escrow.isClaimed) revert EscrowAlreadyClaimed();
         if (escrow.amount == 0) revert NoDeposit();
         if (msg.sender != escrow.maker) revert UnauthorizedMaker();

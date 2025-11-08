@@ -24,21 +24,29 @@ describe("IntentEscrow - Initialization", function () {
     expect(await escrow.verifier()).to.equal(verifier.address);
   });
 
-  /// Test: Escrow Initialization
-  /// Verifies that makers can initialize a new escrow and expiry is set correctly.
-  it("Should allow maker to initialize an escrow", async function () {
-    const tx = await escrow.connect(maker).initializeEscrow(intentId, token.target);
+  /// Test: Escrow Creation
+  /// Verifies that makers can create a new escrow with funds atomically and expiry is set correctly.
+  it("Should allow maker to create an escrow", async function () {
+    const amount = ethers.parseEther("100");
+    await token.mint(maker.address, amount);
+    await token.connect(maker).approve(escrow.target, amount);
+    
+    const tx = await escrow.connect(maker).createEscrow(intentId, token.target, amount);
     const receipt = await tx.wait();
     const block = await ethers.provider.getBlock(receipt.blockNumber);
     
     await expect(tx)
       .to.emit(escrow, "EscrowInitialized")
       .withArgs(intentId, escrow.target, maker.address, token.target);
+    
+    await expect(tx)
+      .to.emit(escrow, "DepositMade")
+      .withArgs(intentId, maker.address, amount, amount);
 
     const escrowData = await escrow.getEscrow(intentId);
     expect(escrowData.maker).to.equal(maker.address);
     expect(escrowData.token).to.equal(token.target);
-    expect(escrowData.amount).to.equal(0);
+    expect(escrowData.amount).to.equal(amount);
     expect(escrowData.isClaimed).to.equal(false);
     
     // Verify expiry is set to block.timestamp + EXPIRY_DURATION
@@ -46,14 +54,17 @@ describe("IntentEscrow - Initialization", function () {
     expect(escrowData.expiry).to.equal(expectedExpiry);
   });
 
-  /// Test: Duplicate Initialization Prevention
-  /// Verifies that attempting to initialize an escrow with an existing intent ID reverts.
-  it("Should revert if escrow already initialized", async function () {
-    await escrow.connect(maker).initializeEscrow(intentId, token.target);
+  /// Test: Duplicate Creation Prevention
+  /// Verifies that attempting to create an escrow with an existing intent ID reverts.
+  it("Should revert if escrow already exists", async function () {
+    const amount = ethers.parseEther("100");
+    await token.mint(maker.address, amount);
+    await token.connect(maker).approve(escrow.target, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
     
     await expect(
-      escrow.connect(maker).initializeEscrow(intentId, token.target)
-    ).to.be.revertedWith("Escrow already initialized");
+      escrow.connect(maker).createEscrow(intentId, token.target, amount)
+    ).to.be.revertedWith("Escrow already exists");
   });
 });
 

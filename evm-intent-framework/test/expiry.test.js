@@ -24,12 +24,10 @@ describe("IntentEscrow - Expiry Handling", function () {
   /// Verifies that makers can cancel escrows after expiry and reclaim funds.
   /// Cancellation before expiry is blocked to ensure funds remain locked until expiry.
   it("Should allow maker to cancel expired escrow", async function () {
-    await escrow.connect(maker).initializeEscrow(intentId, token.target);
-    
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).deposit(intentId, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
 
     // Cancellation blocked before expiry
     await expect(
@@ -57,7 +55,10 @@ describe("IntentEscrow - Expiry Handling", function () {
   /// Test: Expiry Timestamp Validation
   /// Verifies that expiry timestamp is correctly calculated and stored.
   it("Should verify expiry timestamp is stored correctly", async function () {
-    const tx = await escrow.connect(maker).initializeEscrow(intentId, token.target);
+    const amount = ethers.parseEther("100");
+    await token.mint(maker.address, amount);
+    await token.connect(maker).approve(escrow.target, amount);
+    const tx = await escrow.connect(maker).createEscrow(intentId, token.target, amount);
     const receipt = await tx.wait();
     const block = await ethers.provider.getBlock(receipt.blockNumber);
 
@@ -68,19 +69,17 @@ describe("IntentEscrow - Expiry Handling", function () {
     
     expect(escrowData.maker).to.equal(maker.address);
     expect(escrowData.token).to.equal(token.target);
-    expect(escrowData.amount).to.equal(0);
+    expect(escrowData.amount).to.equal(amount);
     expect(escrowData.isClaimed).to.equal(false);
   });
 
   /// Test: Expired Escrow Claim Prevention
   /// Verifies that expired escrows cannot be claimed, even with valid verifier signatures.
   it("Should prevent claim on expired escrow", async function () {
-    await escrow.connect(maker).initializeEscrow(intentId, token.target);
-    
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).deposit(intentId, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
 
     // Advance time past expiry
     const expiryDuration = await escrow.EXPIRY_DURATION();

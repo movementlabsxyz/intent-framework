@@ -20,12 +20,10 @@ describe("IntentEscrow - Cancel", function () {
     solver = fixtures.solver;
     intentId = fixtures.intentId;
 
-    await escrow.connect(maker).initializeEscrow(intentId, token.target);
-    
     amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).deposit(intentId, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
   });
 
   /// Test: Cancellation After Expiry

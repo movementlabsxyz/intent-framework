@@ -90,7 +90,7 @@ This document compares unit test coverage in two areas:
 - ❌ **MISSING** - No test for `EvmChainConfig` structure
 - ❌ **MISSING** - No test for EVM chain config loading
 - ❌ **MISSING** - No test for EVM chain config serialization
-- ❌ **MISSING** - No test for optional `evm_chain` field in Config
+- ❌ **MISSING** - No test for optional `connected_chain_evm` field in Config
 - ❌ **MISSING** - No test for EVM config with escrow_contract_address, chain_id, verifier_address
 
 #### Monitor Tests (`monitor_tests.rs`)
@@ -216,7 +216,7 @@ Based on analysis from Task 1.2 and planning from Task 1.4, the following test f
 
 1. `test_evm_chain_config_structure` - Verify EvmChainConfig struct fields
 2. `test_evm_chain_config_serialization` - Verify TOML serialization/deserialization
-3. `test_config_with_evm_chain_optional` - Verify optional evm_chain field in Config
+3. `test_config_with_evm_chain_optional` - Verify optional connected_chain_evm field in Config
 4. `test_evm_chain_config_with_all_fields` - Verify all fields (rpc_url, escrow_contract_address, chain_id, verifier_address)
 5. `test_evm_chain_config_defaults` - Verify default values if applicable
 
@@ -411,7 +411,7 @@ async function createExpiredEscrow(escrow, maker, intentId, token, expiryOffset 
 /// Build test config with EVM chain configuration
 pub fn build_test_config_with_evm() -> Config {
     let mut config = build_test_config();
-    config.evm_chain = Some(EvmChainConfig {
+    config.connected_chain_evm = Some(EvmChainConfig {
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_address: "0x1234567890123456789012345678901234567890".to_string(),
         chain_id: 31337,

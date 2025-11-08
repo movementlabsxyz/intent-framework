@@ -15,10 +15,10 @@ intent_module_address = "0x123"                      # Address of the intent fra
 escrow_module_address = null                         # Address of escrow module (optional for hub)
 known_accounts = ["0xalice", "0xbob"]                # Known test accounts to poll for events (Alice and Bob addresses)
 
-# Connected Chain Configuration  
-# The connected chain is where escrow events occur and are monitored
-[connected_chain]
-name = "Connected Chain"                              # Human-readable name for the chain
+# Connected Aptos Chain Configuration  
+# The connected Aptos chain is where escrow events occur and are monitored
+[connected_chain_apt]
+name = "Connected Chain Apt"                          # Human-readable name for the chain
 rpc_url = "http://127.0.0.1:8082"                    # RPC endpoint URL for blockchain communication
 chain_id = 4                                          # Unique chain identifier
 intent_module_address = "0x123"                      # Address of the intent framework module

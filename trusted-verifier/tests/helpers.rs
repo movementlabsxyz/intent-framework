@@ -28,14 +28,14 @@ pub fn build_test_config() -> Config {
             escrow_module_address: None,
             known_accounts: Some(vec!["0x1".to_string()]),
         },
-        connected_chain: ChainConfig {
+        connected_chain_apt: Some(ChainConfig {
             name: "connected".to_string(),
             rpc_url: "http://127.0.0.1:18082".to_string(),
             chain_id: 2,
             intent_module_address: "0x2".to_string(),
             escrow_module_address: Some("0x2".to_string()),
             known_accounts: Some(vec!["0x2".to_string()]),
-        },
+        }),
         verifier: VerifierConfig {
             private_key: private_key_b64,
             public_key: public_key_b64,
@@ -47,7 +47,7 @@ pub fn build_test_config() -> Config {
             port: 3999,
             cors_origins: vec![],
         },
-        evm_chain: None, // No EVM chain for unit tests
+        connected_chain_evm: None, // No connected EVM chain for unit tests
     }
 }
 

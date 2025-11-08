@@ -6,7 +6,7 @@ This guide covers how to run the verifier locally with the dual‑chain setup, t
 
 File: [`trusted-verifier/config/verifier.toml`](../../trusted-verifier/config/verifier.toml)
 
-- hub_chain / connected_chain: `rpc_url`, `chain_id`, module addresses, `known_accounts`
+- hub_chain / connected_chain_apt: `rpc_url`, `chain_id`, module addresses, `known_accounts`
 - verifier: `private_key` (base64, 32‑byte), `public_key` (base64, 32‑byte), polling/timeout
 - api: `host`, `port`
 

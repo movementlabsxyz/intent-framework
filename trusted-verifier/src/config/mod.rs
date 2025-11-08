@@ -13,19 +13,20 @@ use serde::{Deserialize, Serialize};
 /// 
 /// This structure holds configuration for:
 /// - Hub chain connection details
-/// - Connected chain connection details  
-/// - EVM chain configuration (optional, for mixed-chain flows)
+/// - Connected Aptos chain connection details (optional, for Aptos escrow chains)
+/// - Connected EVM chain configuration (optional, for EVM escrow chains)
 /// - Verifier cryptographic keys and settings
 /// - API server configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// Hub chain configuration (where intents are created)
     pub hub_chain: ChainConfig,
-    /// Connected chain configuration (where escrow events occur)
-    pub connected_chain: ChainConfig,
-    /// EVM chain configuration (optional, for escrow on EVM)
+    /// Connected Aptos chain configuration (optional, where escrow events occur on Aptos)
     #[serde(default)]
-    pub evm_chain: Option<EvmChainConfig>,
+    pub connected_chain_apt: Option<ChainConfig>,
+    /// Connected EVM chain configuration (optional, for escrow on EVM)
+    #[serde(default)]
+    pub connected_chain_evm: Option<EvmChainConfig>,
     /// Verifier-specific configuration (keys, timeouts, etc.)
     pub verifier: VerifierConfig,
     /// API server configuration (host, port, CORS settings)
@@ -149,14 +150,7 @@ impl Config {
                 escrow_module_address: None,
                 known_accounts: None, // Should be set in config/verifier.toml
             },
-            connected_chain: ChainConfig {
-                name: "Connected Chain".to_string(),
-                rpc_url: "http://127.0.0.1:8082".to_string(),
-                chain_id: 4,
-                intent_module_address: "0x123".to_string(),
-                escrow_module_address: Some("0x123".to_string()),
-                known_accounts: None, // Should be set in config/verifier.toml
-            },
+            connected_chain_apt: None, // Optional connected Aptos chain configuration
             verifier: VerifierConfig {
                 private_key: "REPLACE_WITH_PRIVATE_KEY".to_string(),
                 public_key: "REPLACE_WITH_PUBLIC_KEY".to_string(),
@@ -168,7 +162,7 @@ impl Config {
                 port: 3333,
                 cors_origins: vec!["http://localhost:3333".to_string()],
             },
-            evm_chain: None, // Optional EVM chain configuration
+            connected_chain_evm: None, // Optional connected EVM chain configuration
         }
     }
 }

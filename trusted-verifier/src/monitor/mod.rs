@@ -200,13 +200,13 @@ impl EventMonitor {
         })
     }
     
-    /// Starts the event monitoring process for both chains.
+    /// Starts the event monitoring process for configured chains.
     /// 
-    /// This function runs two concurrent monitoring loops:
-    /// 1. Hub chain monitoring for intent events
-    /// 2. Connected chain monitoring for escrow events
+    /// This function runs monitoring loops:
+    /// 1. Hub chain monitoring for intent events (always)
+    /// 2. Connected chain monitoring for escrow events (if configured)
     /// 
-    /// The function blocks until both monitors complete (which should be never
+    /// The function blocks until all monitors complete (which should be never
     /// in normal operation, as they run infinite loops).
     /// 
     /// # Returns
@@ -214,14 +214,20 @@ impl EventMonitor {
     /// * `Ok(())` - Monitoring started successfully
     /// * `Err(anyhow::Error)` - Failed to start monitoring
     pub async fn start_monitoring(&self) -> Result<()> {
-        info!("Starting event monitoring for both chains");
+        info!("Starting event monitoring");
         
-        // Start monitoring both chains concurrently
+        // Start hub chain monitoring (always required)
         let hub_monitor = self.monitor_hub_chain();
-        let connected_monitor = self.monitor_connected_chain();
         
-        // Run both monitors concurrently (this blocks until both complete)
-        tokio::try_join!(hub_monitor, connected_monitor)?;
+        // Conditionally start connected chain monitoring if configured
+        if let Some(_) = &self.config.connected_chain_apt {
+            info!("Connected Aptos chain configured, starting connected chain monitoring");
+            let connected_monitor = self.monitor_connected_chain();
+            tokio::try_join!(hub_monitor, connected_monitor)?;
+        } else {
+            info!("No connected Aptos chain configured, monitoring hub chain only");
+            hub_monitor.await?;
+        }
         
         Ok(())
     }
@@ -275,8 +281,18 @@ impl EventMonitor {
     /// This function runs in an infinite loop, polling the connected chain
     /// for escrow deposit events. When events are found, it validates that
     /// the deposits fulfill the conditions of existing intents.
+    /// 
+    /// Returns early if no connected chain is configured.
     async fn monitor_connected_chain(&self) -> Result<()> {
-        info!("Starting connected chain monitoring for escrow events");
+        let connected_chain_apt = match &self.config.connected_chain_apt {
+            Some(chain) => chain,
+            None => {
+                info!("No connected Aptos chain configured, skipping connected chain monitoring");
+                return Ok(());
+            }
+        };
+        
+        info!("Starting connected Aptos chain monitoring for escrow events on {}", connected_chain_apt.name);
         
         loop {
             match self.poll_connected_events().await {
@@ -448,12 +464,15 @@ impl EventMonitor {
     /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
     /// * `Err(anyhow::Error)` - Failed to poll events
     pub async fn poll_connected_events(&self) -> Result<Vec<EscrowEvent>> {
+        let connected_chain_apt = self.config.connected_chain_apt.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No connected Aptos chain configured"))?;
+        
         // Create Aptos client for connected chain
-        let client = AptosClient::new(&self.config.connected_chain.rpc_url)?;
+        let client = AptosClient::new(&connected_chain_apt.rpc_url)?;
         
         // Query events from known test accounts
-        let known_accounts = self.config.connected_chain.known_accounts.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected chain"))?;
+        let known_accounts = connected_chain_apt.known_accounts.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected Aptos chain"))?;
         
         let mut escrow_events = Vec::new();
         let timestamp = std::time::SystemTime::now()
@@ -632,7 +651,7 @@ impl EventMonitor {
         
         // Determine if this is an EVM escrow or Aptos escrow
         // If we found it in Aptos escrow cache, it's Aptos; otherwise, if EVM is configured, it's EVM
-        let is_evm_escrow = matching_aptos_escrow.is_none() && self.config.evm_chain.is_some();
+        let is_evm_escrow = matching_aptos_escrow.is_none() && self.config.connected_chain_evm.is_some();
         
         // For EVM escrows, escrow_id is the intent_id (escrow is keyed by intent_id)
         // For Aptos escrows, we use the escrow object address from the cache

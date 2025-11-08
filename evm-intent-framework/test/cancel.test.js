@@ -19,7 +19,7 @@ describe("IntentEscrow - Cancel", function () {
     maker = fixtures.maker;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
-
+    
     amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);

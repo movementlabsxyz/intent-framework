@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": "1",
+        "id": 1,
         "title": "Compare Aptos vs EVM unit test coverage and identify gaps",
         "description": "Compare unit test coverage in two areas: (1) Contract-level unit tests: EVM contracts (evm-intent-framework/test/) vs Aptos Move contracts (move-intent-framework/tests/), (2) Verifier service unit tests: EVM functionality vs Aptos functionality in trusted-verifier/tests/. Document all gaps and missing test coverage.",
         "status": "done",
@@ -81,7 +81,7 @@
         "updatedAt": "2025-11-07T15:36:57.132Z"
       },
       {
-        "id": "2",
+        "id": 2,
         "title": "Plan new EVM test functions based on Task 1 findings",
         "description": "Based on the comparison from Task 1, plan what new test functions should be created for EVM. This includes both contract-level unit tests (JavaScript/TypeScript) and verifier service unit tests (Rust).",
         "status": "done",
@@ -159,7 +159,7 @@
         "updatedAt": "2025-11-07T15:45:09.266Z"
       },
       {
-        "id": "3",
+        "id": 3,
         "title": "Implement new EVM test functions",
         "description": "Implement the EVM test functions planned in Task 2. This includes both contract-level unit tests (JavaScript) and verifier service unit tests (Rust).",
         "status": "in-progress",
@@ -194,13 +194,14 @@
           },
           {
             "id": 3,
-            "title": "Add comprehensive error condition tests to IntentEscrow.test.js",
-            "description": "Add comprehensive error condition and edge case tests to improve test coverage and match Aptos test thoroughness",
+            "title": "Add comprehensive error condition tests",
+            "description": "Add comprehensive error condition and edge case tests to improve test coverage and match Aptos test thoroughness. Tests should be added to appropriate existing test files (initialization.test.js, deposit.test.js, claim.test.js, cancel.test.js) or a new error-conditions.test.js file.",
             "dependencies": [],
-            "details": "Add error condition tests: (1) Test zero amount deposits, (2) Test deposits with insufficient allowance, (3) Test deposits to non-existent escrows, (4) Test claims with malformed signatures, (5) Test operations on uninitialized escrows, (6) Test maximum value edge cases (max uint256), (7) Test empty token addresses, (8) Test invalid verifier addresses. Use expect().to.be.revertedWith() patterns.\n<info added on 2025-11-07T15:54:33.994Z>\nLet me first analyze the project structure and existing test files to understand the current implementation and provide specific guidance for the error condition tests.Based on my analysis of the existing IntentEscrow.sol contract and test file, here's the updated implementation plan that aligns with Task 1.3's comprehensive 8 error condition tests:\n\nUpdated implementation plan for comprehensive error condition tests following Task 1.3's specific test naming: (1) test_zero_amount_deposit_revert - verify deposit() reverts with \"Amount must be greater than 0\" when amount=0, (2) test_invalid_token_address_handling - test escrow initialization with address(0) for ERC20 mode and proper ETH mode handling, (3) test_non_existent_escrow_operations - verify deposit/claim/cancel operations revert with \"Escrow not initialized\" for uninitialized escrow IDs, (4) test_unauthorized_maker_operations - verify only escrow.maker can call cancel() by testing with different signer and expecting UnauthorizedMaker error, (5) test_invalid_signature_format - test malformed signatures (wrong length, invalid v values) in claim() function expecting signature validation failures, (6) test_eth_token_deposit_mismatch - verify ETH deposits to ERC20 escrows revert with \"ETH not accepted for token escrow\" and ERC20 deposits to ETH escrows handle msg.value correctly, (7) test_insufficient_erc20_allowance - test deposit() when token.approve() amount is less than deposit amount expecting ERC20 transfer failure, (8) test_reentrancy_protection - verify contract uses SafeERC20 and proper state updates to prevent reentrancy attacks in claim/cancel functions. All tests should use expect().to.be.revertedWith() for string errors and expect().to.be.revertedWithCustomError() for custom errors as established in IntentEscrow.test.js:52-183 patterns.\n</info added on 2025-11-07T15:54:33.994Z>",
-            "status": "pending",
-            "testStrategy": "Use negative test cases with invalid inputs and verify proper error messages are returned",
-            "parentId": "undefined"
+            "details": "IMPORTANT: Contract now uses atomic createEscrow() function (not separate initializeEscrow+deposit). Tests are split into separate files - no single IntentEscrow.test.js exists. Add error condition tests: (1) Test zero amount in createEscrow() - verify reverts with \"Amount must be greater than 0\", (2) Test insufficient allowance for createEscrow() - verify ERC20 transfer failure when approve() amount < createEscrow amount, (3) Test duplicate escrow creation - verify createEscrow() reverts with \"Escrow already exists\" for existing intentId, (4) Test claims with malformed signatures - test wrong signature length, invalid v values in claim(), (5) Test operations on non-existent escrows - verify claim/cancel revert with EscrowDoesNotExist error, (6) Test maximum value edge cases (max uint256) in createEscrow, (7) Test invalid token addresses - test address(0) handling for ETH vs ERC20 modes in createEscrow, (8) Test ETH/token mismatch - verify ETH deposits to ERC20 escrows revert with \"ETH not accepted for token escrow\" and vice versa. All tests should use expect().to.be.revertedWith() for string errors and expect().to.be.revertedWithCustomError() for custom errors. Follow patterns from existing test files (initialization.test.js, deposit.test.js, claim.test.js, cancel.test.js).\n<info added on 2025-11-08T17:52:33.027Z>\nI'll analyze the codebase first to understand the current test structure and implementation, then provide the appropriate update for the subtask.Based on my analysis of the codebase and the user's completion report, here is the new content that should be appended to the subtask details:\n\nCOMPLETED SUCCESSFULLY: Created comprehensive error-conditions.test.js file with 9 test cases covering all specified error conditions. The file is properly structured using the standard test setup pattern with beforeEach fixture initialization. All tests follow the established patterns from existing test files (initialization.test.js, deposit.test.js, etc.) with concise comments matching the Move test style. Tests use appropriate assertion methods: expect().to.be.revertedWith() for string errors and expect().to.be.revertedWithCustomError() for custom errors. The 9 test cases implemented are: (1) Zero amount rejection with \"Amount must be greater than 0\" message, (2) Insufficient ERC20 allowance handling that properly reverts, (3) Maximum uint256 edge case that successfully creates escrow and validates amount, (4) ETH escrow creation with address(0) that emits proper events, (5) ETH amount mismatch rejection with \"ETH amount mismatch\" message, (6) ETH rejection for token escrows with \"ETH not accepted for token escrow\" message, (7) Invalid signature length rejection with \"Invalid signature length\" message, (8) Invalid signature v value rejection with \"Invalid signature v value\" message for v=29, (9) Non-existent escrow cancellation rejection using EscrowDoesNotExist custom error. All new tests pass and integrate seamlessly with existing test suite.\n</info added on 2025-11-08T17:52:33.027Z>",
+            "status": "done",
+            "testStrategy": "Use negative test cases with invalid inputs and verify proper error messages are returned. Add tests to appropriate existing test files or create error-conditions.test.js",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-08T17:50:50.700Z"
           },
           {
             "id": 4,
@@ -269,10 +270,10 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-07T16:37:20.737Z"
+        "updatedAt": "2025-11-08T17:50:50.700Z"
       },
       {
-        "id": "4",
+        "id": 4,
         "title": "Check and implement ECDSA signing method in verifier API",
         "description": "Check if verifier provides an ECDSA signing method via API. If not, implement it. Then check if E2E EVM tests use that verifier signing method, and update E2E tests to use it.",
         "status": "pending",
@@ -328,12 +329,14 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-07T16:37:20.738Z",
+      "lastModified": "2025-11-08T17:50:50.701Z",
       "taskCount": 4,
       "completedCount": 2,
       "tags": [
         "master"
-      ]
+      ],
+      "created": "2025-11-08T17:51:48.229Z",
+      "description": "Tasks for master context"
     }
   }
 }

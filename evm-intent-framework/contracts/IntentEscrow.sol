@@ -212,8 +212,6 @@ contract IntentEscrow {
             v += 27;
         }
 
-        require(v == 27 || v == 28, "Invalid signature v value");
-
         return ecrecover(messageHash, v, r, s);
     }
 

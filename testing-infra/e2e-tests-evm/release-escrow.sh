@@ -27,24 +27,17 @@ start_verifier "$LOG_DIR/verifier-evm.log"
 
 log ""
 
-# Get EVM escrow address
+# Get EVM escrow contract address
 cd evm-intent-framework
 ESCROW_ADDRESS=$(grep -i "IntentEscrow deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
-if [ -z "$ESCROW_ADDRESS" ]; then
-    # Try old vault name for backward compatibility
-    ESCROW_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
-fi
 cd ..
 
-# Backward compatibility: also set VAULT_ADDRESS
-VAULT_ADDRESS="$ESCROW_ADDRESS"
-
 if [ -z "$ESCROW_ADDRESS" ]; then
-    log_and_echo "❌ Could not find escrow address"
+    log_and_echo "❌ Could not find escrow contract address"
     exit 1
 fi
 
-log "   Escrow address: $ESCROW_ADDRESS"
+log "   Escrow contract address: $ESCROW_ADDRESS"
 
 # Track released escrows to avoid duplicate attempts
 RELEASED_ESCROWS=""

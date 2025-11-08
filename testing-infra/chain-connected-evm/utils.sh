@@ -90,16 +90,16 @@ get_hardhat_account_address() {
     echo "$address"
 }
 
-# Extract vault address from deployment output or log files
-# Usage: extract_vault_address [deploy_output] [log_file_pattern]
-# Example: extract_vault_address "$DEPLOY_OUTPUT"
-#          extract_vault_address "" "deploy-contract*.log"
-# Extracts the IntentVault contract address from:
+# Extract escrow contract address from deployment output or log files
+# Usage: extract_escrow_contract_address [deploy_output] [log_file_pattern]
+# Example: extract_escrow_contract_address "$DEPLOY_OUTPUT"
+#          extract_escrow_contract_address "" "deploy-contract*.log"
+# Extracts the IntentEscrow contract address from:
 #   1. Deployment output (if provided)
 #   2. Log files matching pattern (if provided)
 #   3. Falls back to searching log files in tmp/intent-framework-logs/
-# Returns the vault address or exits with error if not found
-extract_vault_address() {
+# Returns the escrow contract address or exits with error if not found
+extract_escrow_contract_address() {
     local deploy_output="$1"
     local log_file_pattern="${2:-deploy-contract*.log}"
     
@@ -107,28 +107,28 @@ extract_vault_address() {
         setup_project_root
     fi
     
-    local vault_address=""
+    local contract_address=""
     
     # First, try to extract from deployment output if provided
     if [ -n "$deploy_output" ]; then
-        vault_address=$(echo "$deploy_output" | grep -i "IntentVault deployed to" | awk '{print $NF}' | tr -d '\n')
+        contract_address=$(echo "$deploy_output" | grep -i "IntentEscrow deployed to" | awk '{print $NF}' | tr -d '\n')
         
-        if [ -z "$vault_address" ]; then
+        if [ -z "$contract_address" ]; then
             # Try alternative pattern (any 0x followed by 40 hex chars)
-            vault_address=$(echo "$deploy_output" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
+            contract_address=$(echo "$deploy_output" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
         fi
     fi
     
     # If not found in output, try log files
-    if [ -z "$vault_address" ]; then
+    if [ -z "$contract_address" ]; then
         local log_dir="$PROJECT_ROOT/tmp/intent-framework-logs"
         if [ -d "$log_dir" ]; then
-            vault_address=$(grep -i "IntentVault deployed to" "$log_dir"/$log_file_pattern 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+            contract_address=$(grep -i "IntentEscrow deployed to" "$log_dir"/$log_file_pattern 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
         fi
     fi
     
-    if [ -z "$vault_address" ]; then
-        log_and_echo "❌ ERROR: Could not extract vault address"
+    if [ -z "$contract_address" ]; then
+        log_and_echo "❌ ERROR: Could not extract escrow contract address"
         if [ -n "$deploy_output" ]; then
             log_and_echo "   Deployment output:"
             echo "$deploy_output" | head -20
@@ -136,7 +136,7 @@ extract_vault_address() {
         exit 1
     fi
     
-    echo "$vault_address"
+    echo "$contract_address"
 }
 
 # Convert intent ID from Aptos format to EVM format

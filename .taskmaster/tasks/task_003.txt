@@ -7,7 +7,7 @@
 # Details:
 Implement:
 1. EVM contract unit tests (evm-intent-framework/test/):
-   - Add expiry handling tests to IntentVault.test.js
+   - Add expiry handling tests to IntentEscrow.test.js
    - Add cross-chain intent ID conversion tests
    - Add comprehensive error condition tests
    - Add edge case tests
@@ -23,35 +23,35 @@ Implement:
 Follow Aptos test patterns, adapt for EVM, ensure tests pass in CI
 
 # Subtasks:
-## 1. Add expiry handling tests to IntentVault.test.js [pending]
+## 1. Add expiry handling tests to IntentEscrow.test.js [pending]
 ### Dependencies: None
-### Description: Add comprehensive expiry handling tests to evm-intent-framework/test/IntentVault.test.js to match the coverage from Aptos tests
+### Description: Add comprehensive expiry handling tests to evm-intent-framework/test/IntentEscrow.test.js to match the coverage from Aptos tests
 ### Details:
-Add test cases to IntentVault.test.js: (1) Test that deposits are allowed before expiry time, (2) Test that deposits are rejected after expiry time, (3) Test that claims are allowed before expiry time, (4) Test that claims are rejected after expiry time, (5) Test that cancellation works before expiry, (6) Test that cancellation works after expiry. Tests should follow the existing pattern in the file using Hardhat and Chai.
+Add test cases to IntentEscrow.test.js: (1) Test that deposits are allowed before expiry time, (2) Test that deposits are rejected after expiry time, (3) Test that claims are allowed before expiry time, (4) Test that claims are rejected after expiry time, (5) Test that cancellation works before expiry, (6) Test that cancellation works after expiry. Tests should follow the existing pattern in the file using Hardhat and Chai.
 <info added on 2025-11-07T15:53:03.807Z>
 Based on the analysis of the codebase and Task 1.3 documentation:
 
-Update to match Task 1.3 plan: Revise test cases to specifically implement 3 expiry handling tests: (1) test_expired_vault_cancellation_allowed - Verify maker can cancel expired vault, (2) test_expired_vault_claim_prevention - Verify claim fails for expired vault (if enforced), (3) test_expiry_timestamp_validation - Verify expiry timestamp is stored correctly. Tests will require implementing advanceTime() helper function for time manipulation. Follow existing test pattern in evm-intent-framework/test/IntentVault.test.js with describe blocks. Helper function: advanceTime(seconds) will use ethers.provider.send with evm_increaseTime method for Hardhat time advancement.
+Update to match Task 1.3 plan: Revise test cases to specifically implement 3 expiry handling tests: (1) test_expired_escrow_cancellation_allowed - Verify maker can cancel expired escrow, (2) test_expired_escrow_claim_prevention - Verify claim fails for expired escrow (if enforced), (3) test_expiry_timestamp_validation - Verify expiry timestamp is stored correctly. Tests will require implementing advanceTime() helper function for time manipulation. Follow existing test pattern in evm-intent-framework/test/IntentEscrow.test.js with describe blocks. Helper function: advanceTime(seconds) will use ethers.provider.send with evm_increaseTime method for Hardhat time advancement.
 </info added on 2025-11-07T15:53:03.807Z>
 
-## 2. Add cross-chain intent ID conversion tests to IntentVault.test.js [pending]
+## 2. Add cross-chain intent ID conversion tests to IntentEscrow.test.js [pending]
 ### Dependencies: None
 ### Description: Add tests for cross-chain intent ID conversion functionality to ensure compatibility with Aptos chain intent IDs
 ### Details:
 Add test cases to validate intent ID conversion between EVM and Aptos formats: (1) Test that large intent IDs (>uint64 max) are handled correctly, (2) Test intent ID format validation, (3) Test intent ID uniqueness across chains, (4) Test intent ID collision detection. Follow the existing test structure using describe blocks and proper assertions.
 <info added on 2025-11-07T15:53:53.221Z>
-I need to analyze the codebase first to understand the current testing structure and provide accurate implementation details.Refined test specification to align with Task 1.3 plan. Updated 4 cross-chain intent ID conversion tests: (1) test_aptos_hex_to_evm_uint256_conversion - Convert Aptos hex intent ID to EVM uint256 using hexToUint256() helper function, (2) test_intent_id_boundary_values - Test maximum uint256 (2^256-1), zero value, and edge boundary values, (3) test_invalid_hex_format_handling - Test invalid hex strings, non-hex characters, malformed inputs with proper error handling, (4) test_intent_id_zero_padding - Test left-padding behavior for shorter intent IDs ensuring 32-byte alignment. Implementation follows existing IntentVault.test.js structure at evm-intent-framework/test/IntentVault.test.js:1-235 with describe blocks and beforeEach setup. Helper function hexToUint256() already defined in UNIT_TEST_COVERAGE_COMPARISON.md with proper hex prefix handling and BigInt conversion.
+I need to analyze the codebase first to understand the current testing structure and provide accurate implementation details.Refined test specification to align with Task 1.3 plan. Updated 4 cross-chain intent ID conversion tests: (1) test_aptos_hex_to_evm_uint256_conversion - Convert Aptos hex intent ID to EVM uint256 using hexToUint256() helper function, (2) test_intent_id_boundary_values - Test maximum uint256 (2^256-1), zero value, and edge boundary values, (3) test_invalid_hex_format_handling - Test invalid hex strings, non-hex characters, malformed inputs with proper error handling, (4) test_intent_id_zero_padding - Test left-padding behavior for shorter intent IDs ensuring 32-byte alignment. Implementation follows existing IntentEscrow.test.js structure at evm-intent-framework/test/IntentEscrow.test.js:1-235 with describe blocks and beforeEach setup. Helper function hexToUint256() already defined in UNIT_TEST_COVERAGE_COMPARISON.md with proper hex prefix handling and BigInt conversion.
 </info added on 2025-11-07T15:53:53.221Z>
 
-## 3. Add comprehensive error condition tests to IntentVault.test.js [pending]
+## 3. Add comprehensive error condition tests to IntentEscrow.test.js [pending]
 ### Dependencies: None
 ### Description: Add comprehensive error condition and edge case tests to improve test coverage and match Aptos test thoroughness
 ### Details:
-Add error condition tests: (1) Test zero amount deposits, (2) Test deposits with insufficient allowance, (3) Test deposits to non-existent vaults, (4) Test claims with malformed signatures, (5) Test operations on uninitialized vaults, (6) Test maximum value edge cases (max uint256), (7) Test empty token addresses, (8) Test invalid verifier addresses. Use expect().to.be.revertedWith() patterns.
+Add error condition tests: (1) Test zero amount deposits, (2) Test deposits with insufficient allowance, (3) Test deposits to non-existent escrows, (4) Test claims with malformed signatures, (5) Test operations on uninitialized escrows, (6) Test maximum value edge cases (max uint256), (7) Test empty token addresses, (8) Test invalid verifier addresses. Use expect().to.be.revertedWith() patterns.
 <info added on 2025-11-07T15:54:33.994Z>
-Let me first analyze the project structure and existing test files to understand the current implementation and provide specific guidance for the error condition tests.Based on my analysis of the existing IntentVault.sol contract and test file, here's the updated implementation plan that aligns with Task 1.3's comprehensive 8 error condition tests:
+Let me first analyze the project structure and existing test files to understand the current implementation and provide specific guidance for the error condition tests.Based on my analysis of the existing IntentEscrow.sol contract and test file, here's the updated implementation plan that aligns with Task 1.3's comprehensive 8 error condition tests:
 
-Updated implementation plan for comprehensive error condition tests following Task 1.3's specific test naming: (1) test_zero_amount_deposit_revert - verify deposit() reverts with "Amount must be greater than 0" when amount=0, (2) test_invalid_token_address_handling - test vault initialization with address(0) for ERC20 mode and proper ETH mode handling, (3) test_non_existent_vault_operations - verify deposit/claim/cancel operations revert with "Vault not initialized" for uninitialized vault IDs, (4) test_unauthorized_maker_operations - verify only vault.maker can call cancel() by testing with different signer and expecting UnauthorizedMaker error, (5) test_invalid_signature_format - test malformed signatures (wrong length, invalid v values) in claim() function expecting signature validation failures, (6) test_eth_token_deposit_mismatch - verify ETH deposits to ERC20 vaults revert with "ETH not accepted for token vault" and ERC20 deposits to ETH vaults handle msg.value correctly, (7) test_insufficient_erc20_allowance - test deposit() when token.approve() amount is less than deposit amount expecting ERC20 transfer failure, (8) test_reentrancy_protection - verify contract uses SafeERC20 and proper state updates to prevent reentrancy attacks in claim/cancel functions. All tests should use expect().to.be.revertedWith() for string errors and expect().to.be.revertedWithCustomError() for custom errors as established in IntentVault.test.js:52-183 patterns.
+Updated implementation plan for comprehensive error condition tests following Task 1.3's specific test naming: (1) test_zero_amount_deposit_revert - verify deposit() reverts with "Amount must be greater than 0" when amount=0, (2) test_invalid_token_address_handling - test escrow initialization with address(0) for ERC20 mode and proper ETH mode handling, (3) test_non_existent_escrow_operations - verify deposit/claim/cancel operations revert with "Escrow not initialized" for uninitialized escrow IDs, (4) test_unauthorized_maker_operations - verify only escrow.maker can call cancel() by testing with different signer and expecting UnauthorizedMaker error, (5) test_invalid_signature_format - test malformed signatures (wrong length, invalid v values) in claim() function expecting signature validation failures, (6) test_eth_token_deposit_mismatch - verify ETH deposits to ERC20 escrows revert with "ETH not accepted for token escrow" and ERC20 deposits to ETH escrows handle msg.value correctly, (7) test_insufficient_erc20_allowance - test deposit() when token.approve() amount is less than deposit amount expecting ERC20 transfer failure, (8) test_reentrancy_protection - verify contract uses SafeERC20 and proper state updates to prevent reentrancy attacks in claim/cancel functions. All tests should use expect().to.be.revertedWith() for string errors and expect().to.be.revertedWithCustomError() for custom errors as established in IntentEscrow.test.js:52-183 patterns.
 </info added on 2025-11-07T15:54:33.994Z>
 
 ## 4. Add ECDSA signature tests to crypto_tests.rs [pending]
@@ -73,18 +73,18 @@ Add to config_tests.rs: (1) test_evm_chain_config_structure() - Test EvmChainCon
 <info added on 2025-11-07T15:56:09.638Z>
 I need to analyze the codebase first to understand the current structure and implementation before providing an accurate update for the subtask.Based on my analysis of the codebase, I can now provide the appropriate update for the subtask. The user wants to split the original broad subtask into a focused one that only covers EVM config tests for config_tests.rs, and they want to use a `build_test_config_with_evm()` helper function that doesn't exist yet.
 
-This subtask is now focused only on adding 5 EVM configuration tests to config_tests.rs. Tests will verify EvmChainConfig structure validation, serialization/deserialization, optional field handling, complete field population, and default value behavior. Create build_test_config_with_evm() helper function in tests/mod.rs that extends the existing build_test_config() to include a populated evm_chain field with test values (rpc_url: "http://127.0.0.1:8545", vault_address: "0xVaultAddress123", chain_id: 31337, verifier_address: "0xVerifierAddress456"). Tests should follow existing patterns in config_tests.rs using assert_eq! for field validation and toml serialization round-trip testing.
+This subtask is now focused only on adding 5 EVM configuration tests to config_tests.rs. Tests will verify EvmChainConfig structure validation, serialization/deserialization, optional field handling, complete field population, and default value behavior. Create build_test_config_with_evm() helper function in tests/mod.rs that extends the existing build_test_config() to include a populated evm_chain field with test values (rpc_url: "http://127.0.0.1:8545", escrow_address: "0xEscrowAddress123", chain_id: 31337, verifier_address: "0xVerifierAddress456"). Tests should follow existing patterns in config_tests.rs using assert_eq! for field validation and toml serialization round-trip testing.
 </info added on 2025-11-07T15:56:09.638Z>
 
-## 6. Add edge case tests to IntentVault.test.js [pending]
+## 6. Add edge case tests to IntentEscrow.test.js [pending]
 ### Dependencies: None
-### Description: Add 5 edge case tests to IntentVault.test.js
+### Description: Add 5 edge case tests to IntentEscrow.test.js
 ### Details:
-Add 5 edge case tests: (1) test_maximum_uint256_values - Test with max uint256 for amounts and intent IDs, (2) test_empty_deposit_scenarios - Test vault with zero balance edge cases, (3) test_multiple_vaults_per_maker - Test maker creating multiple vaults, (4) test_gas_limit_scenarios - Test gas consumption for large operations, (5) test_concurrent_operations - Test multiple simultaneous vault operations. Follow existing test structure.
+Add 5 edge case tests: (1) test_maximum_uint256_values - Test with max uint256 for amounts and intent IDs, (2) test_empty_deposit_scenarios - Test escrow with zero balance edge cases, (3) test_multiple_escrows_per_maker - Test maker creating multiple escrows, (4) test_gas_limit_scenarios - Test gas consumption for large operations, (5) test_concurrent_operations - Test multiple simultaneous escrow operations. Follow existing test structure.
 
-## 7. Add integration tests to IntentVault.test.js [pending]
+## 7. Add integration tests to IntentEscrow.test.js [pending]
 ### Dependencies: None
-### Description: Add 4 integration tests to IntentVault.test.js
+### Description: Add 4 integration tests to IntentEscrow.test.js
 ### Details:
 Add 4 integration tests: (1) test_complete_deposit_to_claim_workflow - Full workflow from init to claim, (2) test_multi_token_scenarios - Test with different ERC20 tokens, (3) test_comprehensive_event_emission - Verify all events with correct parameters, (4) test_complete_cancellation_workflow - Full workflow from init to cancel. Test complete user flows end-to-end.
 

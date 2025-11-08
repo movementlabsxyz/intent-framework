@@ -59,8 +59,8 @@ pub struct ChainConfig {
 pub struct EvmChainConfig {
     /// RPC endpoint URL for EVM chain communication
     pub rpc_url: String,
-    /// Address of the IntentVault contract
-    pub vault_address: String,
+    /// Address of the IntentEscrow contract (single contract, one escrow per intentId)
+    pub escrow_contract_address: String,
     /// Chain ID (e.g., 31337 for Hardhat, 1 for Ethereum mainnet)
     pub chain_id: u64,
     /// Verifier address (ECDSA public key as Ethereum address)

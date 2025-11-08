@@ -16,24 +16,17 @@ if ! load_intent_info "INTENT_ID"; then
     exit 1
 fi
 
-# Get EVM escrow address from deployment logs
+# Get EVM escrow contract address from deployment logs
 cd evm-intent-framework
 ESCROW_ADDRESS=$(grep -i "IntentEscrow deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
 if [ -z "$ESCROW_ADDRESS" ]; then
-    # Try old vault name for backward compatibility
-    ESCROW_ADDRESS=$(grep -i "IntentVault deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
-fi
-if [ -z "$ESCROW_ADDRESS" ]; then
     # Try to get from hardhat config or last deployment
-    ESCROW_ADDRESS=$(nix develop -c bash -c "npx hardhat run scripts/deploy.js --network localhost --dry-run 2>&1 | grep -E '(IntentEscrow|IntentVault) deployed to' | awk '{print \$NF}'" 2>/dev/null | tail -1 | tr -d '\n')
+    ESCROW_ADDRESS=$(nix develop -c bash -c "npx hardhat run scripts/deploy.js --network localhost --dry-run 2>&1 | grep 'IntentEscrow deployed to' | awk '{print \$NF}'" 2>/dev/null | tail -1 | tr -d '\n')
 fi
 cd ..
 
-# Backward compatibility: also set VAULT_ADDRESS
-VAULT_ADDRESS="$ESCROW_ADDRESS"
-
 if [ -z "$ESCROW_ADDRESS" ]; then
-    log_and_echo "❌ ERROR: Could not find escrow address. Please ensure IntentEscrow is deployed."
+    log_and_echo "❌ ERROR: Could not find escrow contract address. Please ensure IntentEscrow is deployed."
     log_and_echo "   Run: ./testing-infra/chain-connected-evm/deploy-contract.sh"
     exit 1
 fi
@@ -68,47 +61,26 @@ cd evm-intent-framework
 INTENT_ID_EVM=$(convert_intent_id_to_evm "$INTENT_ID")
 log "     Intent ID (EVM): $INTENT_ID_EVM"
 
-# Initialize escrow for this intent with ETH (address(0))
-log "   - Initializing escrow for intent (ETH escrow)..."
-# Expiry is now contract-defined, no longer passed as parameter
-INIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' npx hardhat run scripts/initialize-vault-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
-INIT_EXIT_CODE=$?
-
-# Check if initialization was successful
-if [ $INIT_EXIT_CODE -ne 0 ]; then
-    log_and_echo "     ❌ ERROR: Escrow initialization failed!"
-    log_and_echo "   Initialization output: $INIT_OUTPUT"
-    log_and_echo "   See log file for details: $LOG_FILE"
-    exit 1
-fi
-
-# Verify initialization succeeded by checking for success message
-if ! echo "$INIT_OUTPUT" | grep -qi "Escrow initialized for intent"; then
-    log_and_echo "     ❌ ERROR: Escrow initialization did not complete successfully"
-    log_and_echo "   Initialization output: $INIT_OUTPUT"
-    log_and_echo "   Expected to see 'Escrow initialized for intent (ETH)' in output"
-    exit 1
-fi
-
-# Deposit 1000 ETH into escrow
-log "   - Depositing 1000 ETH into escrow..."
+# Create escrow for this intent with ETH (address(0)) and deposit funds atomically
+log "   - Creating escrow for intent (ETH escrow) with funds..."
+# Expiry is contract-defined (1 hour), creation and deposit happen atomically
 ETH_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH = 1000 * 10^18 wei
-DEPOSIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' ETH_AMOUNT_WEI='$ETH_AMOUNT_WEI' npx hardhat run scripts/deposit-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
-DEPOSIT_EXIT_CODE=$?
+CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' ETH_AMOUNT_WEI='$ETH_AMOUNT_WEI' npx hardhat run scripts/create-escrow-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+CREATE_EXIT_CODE=$?
 
-# Check if deposit was successful
-if [ $DEPOSIT_EXIT_CODE -ne 0 ]; then
-    log_and_echo "     ❌ ERROR: ETH deposit failed!"
-    log_and_echo "   Deposit output: $DEPOSIT_OUTPUT"
+# Check if creation was successful
+if [ $CREATE_EXIT_CODE -ne 0 ]; then
+    log_and_echo "     ❌ ERROR: Escrow creation failed!"
+    log_and_echo "   Creation output: $CREATE_OUTPUT"
     log_and_echo "   See log file for details: $LOG_FILE"
     exit 1
 fi
 
-# Verify deposit succeeded by checking for success message
-if ! echo "$DEPOSIT_OUTPUT" | grep -qi "Deposited.*wei.*ETH.*escrow"; then
-    log_and_echo "     ❌ ERROR: ETH deposit did not complete successfully"
-    log_and_echo "   Deposit output: $DEPOSIT_OUTPUT"
-    log_and_echo "   Expected to see 'Deposited ... wei (ETH) into escrow' in output"
+# Verify creation succeeded by checking for success message
+if ! echo "$CREATE_OUTPUT" | grep -qi "Escrow created for intent"; then
+    log_and_echo "     ❌ ERROR: Escrow creation did not complete successfully"
+    log_and_echo "   Creation output: $CREATE_OUTPUT"
+    log_and_echo "   Expected to see 'Escrow created for intent (ETH)' in output"
     exit 1
 fi
 

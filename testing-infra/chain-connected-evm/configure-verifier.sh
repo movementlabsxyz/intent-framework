@@ -20,9 +20,9 @@ cd "$PROJECT_ROOT"
 log_and_echo "✅ Configuring verifier for Connected EVM Chain..."
 log_and_echo ""
 
-# Get EVM vault address
-VAULT_ADDRESS=$(extract_vault_address)
-log_and_echo "   EVM Vault: $VAULT_ADDRESS"
+# Get EVM escrow contract address (single contract, one escrow per intentId)
+CONTRACT_ADDRESS=$(extract_escrow_contract_address)
+log_and_echo "   EVM Escrow Contract: $CONTRACT_ADDRESS"
 
 # Get verifier Ethereum address (Hardhat account 0)
 log "   - Getting verifier Ethereum address (Hardhat account 0)..."
@@ -36,19 +36,19 @@ setup_verifier_config
 if grep -q "^\[evm_chain\]" "$VERIFIER_TESTING_CONFIG"; then
     # Update existing section
     sed -i "/\[evm_chain\]/,/^\[/ s|rpc_url = .*|rpc_url = \"http://127.0.0.1:8545\"|" "$VERIFIER_TESTING_CONFIG"
-    sed -i "/\[evm_chain\]/,/^\[/ s|vault_address = .*|vault_address = \"$VAULT_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+    sed -i "/\[evm_chain\]/,/^\[/ s|escrow_contract_address = .*|escrow_contract_address = \"$CONTRACT_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
     sed -i "/\[evm_chain\]/,/^\[/ s|chain_id = .*|chain_id = 31337|" "$VERIFIER_TESTING_CONFIG"
     sed -i "/\[evm_chain\]/,/^\[/ s|verifier_address = .*|verifier_address = \"$VERIFIER_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 else
     # Add new section before [verifier] section
     if grep -q "^\[verifier\]" "$VERIFIER_TESTING_CONFIG"; then
-        sed -i "/^\[verifier\]/i [evm_chain]\nrpc_url = \"http://127.0.0.1:8545\"\nvault_address = \"$VAULT_ADDRESS\"\nchain_id = 31337\nverifier_address = \"$VERIFIER_ADDRESS\"\n" "$VERIFIER_TESTING_CONFIG"
+        sed -i "/^\[verifier\]/i [evm_chain]\nrpc_url = \"http://127.0.0.1:8545\"\nescrow_contract_address = \"$CONTRACT_ADDRESS\"\nchain_id = 31337\nverifier_address = \"$VERIFIER_ADDRESS\"\n" "$VERIFIER_TESTING_CONFIG"
     else
         # Append at end of file
         echo "" >> "$VERIFIER_TESTING_CONFIG"
         echo "[evm_chain]" >> "$VERIFIER_TESTING_CONFIG"
         echo "rpc_url = \"http://127.0.0.1:8545\"" >> "$VERIFIER_TESTING_CONFIG"
-        echo "vault_address = \"$VAULT_ADDRESS\"" >> "$VERIFIER_TESTING_CONFIG"
+        echo "escrow_contract_address = \"$CONTRACT_ADDRESS\"" >> "$VERIFIER_TESTING_CONFIG"
         echo "chain_id = 31337" >> "$VERIFIER_TESTING_CONFIG"
         echo "verifier_address = \"$VERIFIER_ADDRESS\"" >> "$VERIFIER_TESTING_CONFIG"
     fi

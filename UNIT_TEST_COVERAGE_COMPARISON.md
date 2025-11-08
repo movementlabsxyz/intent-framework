@@ -27,7 +27,7 @@ This document compares unit test coverage in two areas:
 ### EVM Tests (`evm-intent-framework/test/`)
 
 **Test Files:**
-1. ✅ `IntentVault.test.js` - IntentVault contract tests
+1. ✅ `IntentEscrow.test.js` - IntentEscrow contract tests
 
 **Total: 1 test file, ~13 test cases**
 
@@ -38,7 +38,7 @@ This document compares unit test coverage in two areas:
 - Expiry handling tests
 - Comprehensive error condition tests
 - Edge case tests (max values, empty deposits, etc.)
-- Integration tests for multiple vaults
+- Integration tests for multiple escrows
 - Event emission comprehensive tests
 
 ---
@@ -91,7 +91,7 @@ This document compares unit test coverage in two areas:
 - ❌ **MISSING** - No test for EVM chain config loading
 - ❌ **MISSING** - No test for EVM chain config serialization
 - ❌ **MISSING** - No test for optional `evm_chain` field in Config
-- ❌ **MISSING** - No test for EVM config with vault_address, chain_id, verifier_address
+- ❌ **MISSING** - No test for EVM config with escrow_contract_address, chain_id, verifier_address
 
 #### Monitor Tests (`monitor_tests.rs`)
 
@@ -151,11 +151,11 @@ This document compares unit test coverage in two areas:
 
 ### EVM Contract Unit Test Implementation Plan
 
-Based on analysis from Task 1.1 and planning from Task 1.3, the following test cases need to be added to `evm-intent-framework/test/IntentVault.test.js`:
+Based on analysis from Task 1.1 and planning from Task 1.3, the following test cases need to be added to `evm-intent-framework/test/IntentEscrow.test.js`:
 
 #### 1. Expiry Handling Tests (3 tests)
-- `test_expired_vault_cancellation_allowed` - Verify maker can cancel expired vault
-- `test_expired_vault_claim_prevention` - Verify claim fails for expired vault (if enforced)
+- `test_expired_escrow_cancellation_allowed` - Verify maker can cancel expired escrow
+- `test_expired_escrow_claim_prevention` - Verify claim fails for expired escrow (if enforced)
 - `test_expiry_timestamp_validation` - Verify expiry timestamp is stored correctly
 
 #### 2. Cross-Chain Intent ID Conversion Tests (4 tests)
@@ -167,19 +167,19 @@ Based on analysis from Task 1.1 and planning from Task 1.3, the following test c
 #### 3. Error Condition Tests (8 tests)
 - `test_zero_amount_deposit_revert` - Verify deposit with 0 amount reverts
 - `test_invalid_token_address_handling` - Test address(0) and invalid addresses
-- `test_non_existent_vault_operations` - Test operations on uninitialized vaults
+- `test_non_existent_escrow_operations` - Test operations on uninitialized escrows
 - `test_unauthorized_maker_operations` - Test maker-only operations from other addresses
 - `test_invalid_signature_format` - Test malformed signatures (wrong length, invalid v)
-- `test_eth_token_deposit_mismatch` - Test ETH sent to token vault and vice versa
+- `test_eth_token_deposit_mismatch` - Test ETH sent to token escrow and vice versa
 - `test_insufficient_erc20_allowance` - Test deposit with insufficient token allowance
 - `test_reentrancy_protection` - Test reentrancy attack scenarios
 
 #### 4. Edge Case Tests (5 tests)
 - `test_maximum_uint256_values` - Test with max uint256 for amounts and intent IDs
-- `test_empty_deposit_scenarios` - Test vault with zero balance edge cases
-- `test_multiple_vaults_per_maker` - Test maker creating multiple vaults
+- `test_empty_deposit_scenarios` - Test escrow with zero balance edge cases
+- `test_multiple_escrows_per_maker` - Test maker creating multiple escrows
 - `test_gas_limit_scenarios` - Test gas consumption for large operations
-- `test_concurrent_operations` - Test multiple simultaneous vault operations
+- `test_concurrent_operations` - Test multiple simultaneous escrow operations
 
 #### 5. Integration Tests (4 tests)
 - `test_complete_deposit_to_claim_workflow` - Full workflow from init to claim
@@ -192,7 +192,7 @@ Based on analysis from Task 1.1 and planning from Task 1.3, the following test c
 **Test Helper Functions Needed:**
 - `hexToUint256(hexString)` - Convert Aptos hex intent ID to EVM uint256
 - `advanceTime(seconds)` - Advance blockchain time for expiry testing
-- `createExpiredVault(intentId, token, expiry)` - Helper to create expired vault
+- `createExpiredEscrow(intentId, token, expiry)` - Helper to create expired escrow
 
 ---
 
@@ -217,7 +217,7 @@ Based on analysis from Task 1.2 and planning from Task 1.4, the following test f
 1. `test_evm_chain_config_structure` - Verify EvmChainConfig struct fields
 2. `test_evm_chain_config_serialization` - Verify TOML serialization/deserialization
 3. `test_config_with_evm_chain_optional` - Verify optional evm_chain field in Config
-4. `test_evm_chain_config_with_all_fields` - Verify all fields (rpc_url, vault_address, chain_id, verifier_address)
+4. `test_evm_chain_config_with_all_fields` - Verify all fields (rpc_url, escrow_contract_address, chain_id, verifier_address)
 5. `test_evm_chain_config_defaults` - Verify default values if applicable
 
 #### monitor_tests.rs - EVM Escrow Tests (5 tests)
@@ -246,21 +246,21 @@ Based on analysis from Task 1.2 and planning from Task 1.4, the following test f
 
 ### Priority 1: Critical Security Tests (Implement First)
 - EVM signature verification tests (crypto_tests.rs)
-- Error condition tests (IntentVault.test.js)
+- Error condition tests (IntentEscrow.test.js)
 - EVM escrow detection and approval flow (monitor_tests.rs)
 
 **Estimated Effort:** 2-3 days
 
 ### Priority 2: Core Functionality Tests
-- Expiry handling tests (IntentVault.test.js)
+- Expiry handling tests (IntentEscrow.test.js)
 - EVM config tests (config_tests.rs)
 - Cross-chain matching tests (cross_chain_tests.rs)
 
 **Estimated Effort:** 2-3 days
 
 ### Priority 3: Edge Cases and Integration Tests
-- Edge case tests (IntentVault.test.js)
-- Integration tests (IntentVault.test.js)
+- Edge case tests (IntentEscrow.test.js)
+- Integration tests (IntentEscrow.test.js)
 - Comprehensive event emission tests
 
 **Estimated Effort:** 1-2 days
@@ -281,20 +281,20 @@ Based on analysis from Task 1.2 and planning from Task 1.4, the following test f
 ```
 evm-intent-framework/
 ├── test/
-│   ├── IntentVault.test.js          # Main test file (existing + new tests)
+│   ├── IntentEscrow.test.js          # Main test file (existing + new tests)
 │   └── helpers/
 │       ├── testHelpers.js           # Shared test utilities
 │       └── mockData.js               # Mock data generators
 ```
 
-**Test Organization in `IntentVault.test.js`:**
+**Test Organization in `IntentEscrow.test.js`:**
 - Follow existing structure with `describe` blocks for each category
 - Use nested `describe` blocks for related test groups
 - Maintain consistent naming: `describe("Category", function() { ... })`
 
 **Structure:**
 ```javascript
-describe("IntentVault", function() {
+describe("IntentEscrow", function() {
   // Shared setup in beforeEach
   
   describe("Initialization", function() { ... });      // Existing
@@ -361,10 +361,10 @@ beforeEach(async function() {
   token = await MockERC20.deploy("Test Token", "TEST");
   await token.waitForDeployment();
   
-  // Deploy vault
-  const IntentVault = await ethers.getContractFactory("IntentVault");
-  vault = await IntentVault.deploy(verifier.address);
-  await vault.waitForDeployment();
+  // Deploy escrow
+  const IntentEscrow = await ethers.getContractFactory("IntentEscrow");
+  escrow = await IntentEscrow.deploy(verifier.address);
+  await escrow.waitForDeployment();
   
   // Default intent ID
   intentId = ethers.parseUnits("1", 0);
@@ -387,10 +387,12 @@ async function advanceTime(seconds) {
   await ethers.provider.send("evm_mine", []);
 }
 
-// Create expired vault helper
-async function createExpiredVault(vault, maker, intentId, token, expiryOffset = -3600) {
+// Create expired escrow helper
+async function createExpiredEscrow(escrow, maker, intentId, token, expiryOffset = -3600) {
   const expiry = Math.floor(Date.now() / 1000) + expiryOffset; // Negative = expired
-  await vault.connect(maker).initializeVault(intentId, token.target, expiry);
+  await escrow.connect(maker).createEscrow(intentId, token.target, amount);
+  // Advance time to make it expired
+  await advanceTime(Math.abs(expiryOffset) + 1);
   return expiry;
 }
 ```
@@ -411,7 +413,7 @@ pub fn build_test_config_with_evm() -> Config {
     let mut config = build_test_config();
     config.evm_chain = Some(EvmChainConfig {
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        vault_address: "0x1234567890123456789012345678901234567890".to_string(),
+        escrow_contract_address: "0x1234567890123456789012345678901234567890".to_string(),
         chain_id: 31337,
         verifier_address: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd".to_string(),
     });
@@ -489,7 +491,7 @@ pub fn create_mock_evm_escrow_event() -> EscrowEvent {
 #### Coverage Targets
 
 **EVM Contract Tests:**
-- **Line Coverage:** ≥ 90% for `IntentVault.sol`
+- **Line Coverage:** ≥ 90% for `IntentEscrow.sol`
 - **Branch Coverage:** ≥ 85% (all code paths tested)
 - **Function Coverage:** 100% (all public/external functions)
 - **Event Coverage:** 100% (all events emitted and verified)
@@ -572,7 +574,7 @@ pub fn create_mock_evm_escrow_event() -> EscrowEvent {
 cd evm-intent-framework && npm test
 
 # Run specific test file
-cd evm-intent-framework && npx hardhat test test/IntentVault.test.js
+cd evm-intent-framework && npx hardhat test test/IntentEscrow.test.js
 
 # Run verifier service tests
 cd trusted-verifier && cargo test
@@ -608,7 +610,7 @@ cd ../trusted-verifier && cargo test
 #### Adding New Tests
 
 **When to Add Tests:**
-- New functionality added to `IntentVault.sol`
+- New functionality added to `IntentEscrow.sol`
 - New EVM features in verifier service
 - Bug fixes (add regression test)
 - Edge cases discovered in production

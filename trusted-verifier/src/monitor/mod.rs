@@ -634,10 +634,10 @@ impl EventMonitor {
         // If we found it in Aptos escrow cache, it's Aptos; otherwise, if EVM is configured, it's EVM
         let is_evm_escrow = matching_aptos_escrow.is_none() && self.config.evm_chain.is_some();
         
-        // For EVM escrows, escrow_id is the intent_id (vault is keyed by intent_id)
+        // For EVM escrows, escrow_id is the intent_id (escrow is keyed by intent_id)
         // For Aptos escrows, we use the escrow object address from the cache
         let escrow_id = if is_evm_escrow {
-            // EVM: Use intent_id as escrow_id (vault key)
+            // EVM: Use intent_id as escrow_id (escrow key)
             drop(escrow_cache);
             fulfillment.intent_id.clone()
         } else {

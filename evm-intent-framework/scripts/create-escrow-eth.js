@@ -1,24 +1,26 @@
 const hre = require("hardhat");
 
 async function main() {
-  const escrowAddress = process.env.ESCROW_ADDRESS || process.env.VAULT_ADDRESS;
+  const escrowAddress = process.env.ESCROW_ADDRESS;
   const intentIdHex = process.env.INTENT_ID_EVM;
+  const amountWei = process.env.ETH_AMOUNT_WEI;
 
-  if (!escrowAddress || !intentIdHex) {
-    throw new Error("Missing required environment variables: ESCROW_ADDRESS (or VAULT_ADDRESS), INTENT_ID_EVM");
+  if (!escrowAddress || !intentIdHex || !amountWei) {
+    throw new Error("Missing required environment variables: ESCROW_ADDRESS, INTENT_ID_EVM, ETH_AMOUNT_WEI");
   }
 
   const signers = await hre.ethers.getSigners();
   const escrow = await hre.ethers.getContractAt("IntentEscrow", escrowAddress);
   const intentId = BigInt(intentIdHex);
+  const amount = BigInt(amountWei);
   
   // Use address(0) for ETH
   // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
-  // Expiry is now contract-defined (1 hour), no longer a parameter
+  // Expiry is contract-defined
   const ethAddress = "0x0000000000000000000000000000000000000000";
   
-  await escrow.connect(signers[1]).initializeEscrow(intentId, ethAddress);
-  console.log("Escrow initialized for intent (ETH):", intentId.toString());
+  await escrow.connect(signers[1]).createEscrow(intentId, ethAddress, amount, { value: amount });
+  console.log("Escrow created for intent (ETH):", intentId.toString());
 }
 
 main()

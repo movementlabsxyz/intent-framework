@@ -2,7 +2,7 @@
 //! 
 //! This binary reads the verifier configuration and outputs the Ethereum address
 //! derived from the ECDSA public key. This address should be used as the verifier
-//! address in the IntentVault contract deployment.
+//! address in the IntentEscrow contract deployment.
 
 use anyhow::Result;
 use trusted_verifier::config::Config;

@@ -15,7 +15,7 @@ log "===================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 
 log ""
-log "📦 Deploying IntentVault to EVM chain..."
+log "📦 Deploying IntentEscrow to EVM chain..."
 log "============================================="
 
 # Check if Hardhat node is running
@@ -51,17 +51,17 @@ fi
 log "   ✅ Verifier Ethereum address: $VERIFIER_ETH_ADDRESS"
 log "   RPC URL: http://127.0.0.1:8545"
 
-# Deploy vault contract (run in nix develop)
+# Deploy escrow contract (run in nix develop)
 log ""
-log "📤 Deploying IntentVault..."
+log "📤 Deploying IntentEscrow..."
 DEPLOY_OUTPUT=$(run_hardhat_command "npx hardhat run scripts/deploy.js --network localhost" "VERIFIER_ADDRESS='$VERIFIER_ETH_ADDRESS'" 2>&1 | tee -a "$LOG_FILE")
 
 # Extract contract address from output
-VAULT_ADDRESS=$(extract_vault_address "$DEPLOY_OUTPUT")
+CONTRACT_ADDRESS=$(extract_escrow_contract_address "$DEPLOY_OUTPUT")
 
 log ""
-log "✅ IntentVault deployed successfully!"
-log "   Contract Address: $VAULT_ADDRESS"
+log "✅ IntentEscrow deployed successfully!"
+log "   Contract Address: $CONTRACT_ADDRESS"
 log ""
 log "📋 Contract Details:"
 log "   Network:      localhost"
@@ -69,7 +69,7 @@ log "   RPC URL:      http://127.0.0.1:8545"
 log "   Chain ID:     31337 (Hardhat default)"
 log ""
 log "🔍 Verify deployment:"
-log "   npx hardhat verify --network localhost $VAULT_ADDRESS <verifier_address>"
+log "   npx hardhat verify --network localhost $CONTRACT_ADDRESS <verifier_address>"
 
 log ""
 log "✅ EVM contracts deployed"
@@ -79,7 +79,7 @@ log "==========================="
 log "EVM Chain:"
 log "   RPC URL:  http://127.0.0.1:8545"
 log "   Chain ID: 31337"
-log "   Vault:    $VAULT_ADDRESS"
+log "   Contract: $CONTRACT_ADDRESS"
 log "   Verifier: $VERIFIER_ETH_ADDRESS"
 log ""
 log "📡 API Examples:"

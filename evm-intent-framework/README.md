@@ -12,7 +12,7 @@ The `IntentEscrow` contract implements a secure escrow system where:
 
 ## Architecture
 
-Based on the Solana escrow pattern (`movement_intent/solana-vault`) but adds ECDSA signature verification similar to the Aptos escrow system.
+ECDSA signature verification similar to the Aptos escrow system.
 
 ### Flow
 

@@ -25,7 +25,7 @@ known_accounts = ["5c0199e4b45770462709942d6730e06376b896421b608fe3e2ec8e61b8b64
 # Cryptographic keys and timing parameters for the verifier
 [evm_chain]
 rpc_url = "http://127.0.0.1:8545"
-vault_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+escrow_contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 chain_id = 31337
 verifier_address = "0xf8ee8a600f9ab9b67135a533d20502eba6b52c95"
 

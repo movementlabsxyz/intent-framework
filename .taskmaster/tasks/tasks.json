@@ -2,7 +2,7 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Compare Aptos vs EVM unit test coverage and identify gaps",
         "description": "Compare unit test coverage in two areas: (1) Contract-level unit tests: EVM contracts (evm-intent-framework/test/) vs Aptos Move contracts (move-intent-framework/tests/), (2) Verifier service unit tests: EVM functionality vs Aptos functionality in trusted-verifier/tests/. Document all gaps and missing test coverage.",
         "status": "done",
@@ -81,7 +81,7 @@
         "updatedAt": "2025-11-07T15:36:57.132Z"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Plan new EVM test functions based on Task 1 findings",
         "description": "Based on the comparison from Task 1, plan what new test functions should be created for EVM. This includes both contract-level unit tests (JavaScript/TypeScript) and verifier service unit tests (Rust).",
         "status": "done",
@@ -159,7 +159,7 @@
         "updatedAt": "2025-11-07T15:45:09.266Z"
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Implement new EVM test functions",
         "description": "Implement the EVM test functions planned in Task 2. This includes both contract-level unit tests (JavaScript) and verifier service unit tests (Rust).",
         "status": "in-progress",
@@ -232,9 +232,10 @@
             "description": "Add 5 edge case tests to IntentEscrow.test.js",
             "dependencies": [],
             "details": "Add 5 edge case tests: (1) test_maximum_uint256_values - Test with max uint256 for amounts and intent IDs, (2) test_empty_deposit_scenarios - Test escrow with zero balance edge cases, (3) test_multiple_escrows_per_maker - Test maker creating multiple escrows, (4) test_gas_limit_scenarios - Test gas consumption for large operations, (5) test_concurrent_operations - Test multiple simultaneous escrow operations. Follow existing test structure.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test boundary conditions and extreme values, verify gas usage and concurrent operation handling",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-08T21:34:31.966Z"
           },
           {
             "id": 7,
@@ -271,10 +272,10 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-08T18:26:05.077Z"
+        "updatedAt": "2025-11-08T21:34:31.966Z"
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Check and implement ECDSA signing method in verifier API",
         "description": "Check if verifier provides an ECDSA signing method via API. If not, implement it. Then check if E2E EVM tests use that verifier signing method, and update E2E tests to use it.",
         "status": "pending",
@@ -330,14 +331,12 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-08T18:26:05.079Z",
+      "lastModified": "2025-11-08T21:34:31.968Z",
       "taskCount": 4,
       "completedCount": 2,
       "tags": [
         "master"
-      ],
-      "created": "2025-11-08T18:26:16.169Z",
-      "description": "Tasks for master context"
+      ]
     }
   }
 }

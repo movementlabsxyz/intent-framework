@@ -16,11 +16,10 @@ ECDSA signature verification similar to the Aptos escrow system.
 
 ### Flow
 
-1. **Initialize**: Maker creates an escrow for an intent ID with a token (expiry is contract-defined: 1 hour)
-2. **Deposit**: Maker deposits ERC20 tokens into the escrow
-3. **Verify** (off-chain): Verifier monitors conditions and signs approval
-4. **Claim**: Solver provides verifier signature to claim funds
-5. **Cancel** (optional): Maker can cancel and reclaim after expiry
+1. **Create**: Maker creates an escrow and deposits funds atomically (expiry is contract-defined)
+2. **Verify** (off-chain): Verifier monitors conditions and signs approval
+3. **Claim**: Solver provides verifier signature to claim funds
+4. **Cancel** (optional): Maker can cancel and reclaim after expiry
 
 ## Signature Verification
 
@@ -42,11 +41,8 @@ The contract uses `ecrecover()` to verify the signature matches the authorized v
 ### Functions
 
 ```solidity
-// Initialize an escrow for an intent (expiry is contract-defined: 1 hour)
-function initializeEscrow(uint256 intentId, address token) external
-
-// Deposit tokens into escrow
-function deposit(uint256 intentId, uint256 amount) external
+// Create an escrow and deposit funds atomically (expiry is contract-defined)
+function createEscrow(uint256 intentId, address token, uint256 amount) external
 
 // Claim funds with verifier signature
 function claim(uint256 intentId, uint8 approvalValue, bytes memory signature) external
@@ -82,12 +78,9 @@ const { ethers } = require("hardhat");
 const IntentEscrow = await ethers.getContractFactory("IntentEscrow");
 const escrow = await IntentEscrow.deploy(verifierAddress);
 
-// Maker initializes escrow (expiry is contract-defined: 1 hour)
-await escrow.connect(maker).initializeEscrow(intentId, tokenAddress);
-
-// Maker deposits tokens
+// Maker creates escrow and deposits tokens atomically (expiry is contract-defined)
 await token.connect(maker).approve(escrow.address, amount);
-await escrow.connect(maker).deposit(intentId, amount);
+await escrow.connect(maker).createEscrow(intentId, tokenAddress, amount);
 
 // Verifier signs approval (off-chain)
 const messageHash = ethers.solidityPackedKeccak256(

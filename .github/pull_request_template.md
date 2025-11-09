@@ -41,7 +41,7 @@ Related to #
 - [ ] Documentation updated
 - [ ] No new warnings generated
 - [ ] Tests added/updated for new functionality
-- [ ] Breaking changes documented
+- [ ] Breaking changes documented in relevant READMEs
 
 ### Testing
 

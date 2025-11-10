@@ -224,13 +224,13 @@ sequenceDiagram
 
 10. **Failed or expired claims**: Trigger a small collateral penalty (0.5–1%), with remainder unlocked automatically
 
-### 2.5 Architectural Principles
+### 2.4 Architectural Principles
 
-For detailed architectural principles and design philosophy, see the [Architecture Documentation](../.taskmaster/docs/README.md):
+For detailed architectural principles and design philosophy, see the [Architecture Documentation](README.md):
 
-- **[RPG Methodology Principles](../.taskmaster/docs/rpg-methodology.md)** - Design philosophy and domain-based organization principles (Dual-Semantics, Explicit Dependencies, Topological Order, Progressive Refinement)
-- **[Component-to-Domain Mapping](../.taskmaster/docs/architecture-component-mapping.md)** - How components are organized into domains and inter-domain interaction patterns
-- **[Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md)** - Precise domain boundary definitions and interface specifications for Intent Management, Escrow, Settlement, and Verification domains
+- **[RPG Methodology Principles](rpg-methodology.md)** - Design philosophy and domain-based organization principles (Dual-Semantics, Explicit Dependencies, Topological Order, Progressive Refinement)
+- **[Component-to-Domain Mapping](architecture-component-mapping.md)** - How components are organized into domains and inter-domain interaction patterns
+- **[Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md)** - Precise domain boundary definitions and interface specifications for Intent Management, Escrow, Settlement, and Verification domains
 
 ## 3. Functional Requirements and Data Structures
 
@@ -238,7 +238,7 @@ This section specifies the functional capabilities and behaviors that the system
 
 ### 3.1 Intent Creation
 
-The system must support creating intents with the following capabilities. For data structure definitions and interface specifications, see [Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](../.taskmaster/docs/data-models.md).
+The system must support creating intents with the following capabilities. For data structure definitions and interface specifications, see [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](data-models.md).
 
 #### 3.1.1 Unreserved Intent Creation
 
@@ -328,7 +328,7 @@ The system must support executing intents through a two-phase session model (ses
 
 ### 3.4 Event Emission
 
-The system must emit events for intent discovery and cross-chain coordination. For event structure definitions and cross-chain event correlation patterns, see [Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](../.taskmaster/docs/data-models.md).
+The system must emit events for intent discovery and cross-chain coordination. For event structure definitions and cross-chain event correlation patterns, see [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](data-models.md).
 
 #### 3.4.1 Intent Creation Events
 
@@ -389,7 +389,7 @@ The system must emit events for intent discovery and cross-chain coordination. F
 
 ### 3.6 Escrow Operations
 
-For Move on-chain escrow operations, the system must support escrow session management. For escrow interface specifications and cross-chain escrow flows, see [Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md#escrow-boundaries-and-interfaces) and [Cross-Chain Flows](#cross-chain-flows).
+For Move on-chain escrow operations, the system must support escrow session management. For escrow interface specifications and cross-chain escrow flows, see [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md#escrow-boundaries-and-interfaces) and [Cross-Chain Flows](#cross-chain-flows).
 
 #### 3.6.1 Move On-Chain Escrow Session Management
 
@@ -541,3 +541,4 @@ For Move on-chain escrow operations, the system must support escrow session mana
 ## 8. Constraints and Assumptions
 
 ## 9. Future Enhancements
+

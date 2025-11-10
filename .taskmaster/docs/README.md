@@ -61,6 +61,18 @@ Documentation of how the Intent Framework handles specific scenarios in the curr
 - Edge Cases (Non-Revocable Escrow Intents, Reserved Solver Enforcement, Zero-Amount Cross-Chain Swaps, Concurrent Intent Fulfillment)
 - Real-World Usage Patterns (DEX Integration, Cross-Chain Arbitrage, Payment Channels, Escrow Services)
 
+### [Requirements Document](requirements.md)
+
+Working document specifying functional and non-functional requirements for the Intent Framework, including future cross-chain flows (Inflow and Outflow), intent creation capabilities, execution models, and system requirements.
+
+**Key Sections**:
+
+- Cross-Chain Flows (Inflow and Outflow with detailed sequence diagrams)
+- Intent Creation Requirements (Unreserved, Reserved, Oracle-Guarded, Escrow)
+- Move On-Chain Intent Execution (session model)
+- Trusted Verifier Service Requirements
+- Non-Functional Requirements (Reliability, Usability, Compatibility)
+
 ## How to Use These Documents
 
 1. **New to the codebase?** Start with [Component-to-Domain Mapping](architecture-component-mapping.md) to understand how components are organized into domains.

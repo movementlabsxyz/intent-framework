@@ -2,18 +2,6 @@
 
 This document provides precise definitions of domain boundaries, external interfaces, internal components, data ownership, and interaction protocols following RPG methodology principles.
 
-**Related Architecture Documentation**:
-
-- [Component-to-Domain Mapping](architecture-component-mapping.md) - Source file mapping to domains and inter-domain interaction patterns
-- [RPG Methodology Principles](rpg-methodology.md) - Architectural methodology underlying these boundary definitions
-- [Protocol Specification](../../docs/protocol.md#cross-chain-flow) - Cross-chain intent protocol implementation details
-
-**Component Documentation**:
-
-- [Move Intent Framework](../../docs/move-intent-framework/README.md) - Move contract implementation details
-- [EVM Intent Framework](../../docs/evm-intent-framework/README.md) - Solidity contract implementation details
-- [Trusted Verifier](../../docs/trusted-verifier/README.md) - Verifier service implementation details
-
 ## Intent Management: Boundaries and Interfaces
 
 ### Intent Management: Domain Boundaries

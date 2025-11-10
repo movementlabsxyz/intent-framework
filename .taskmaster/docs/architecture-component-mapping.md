@@ -9,18 +9,6 @@ This document provides a comprehensive mapping of all source files in the Intent
 
 This analysis forms the foundation for the architecture document.
 
-**Related Architecture Documentation**:
-
-- [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md) - Precise domain boundary definitions and interface specifications
-- [RPG Methodology Principles](rpg-methodology.md) - Architectural methodology underlying this domain structure
-- [Protocol Specification](../../docs/protocol.md#cross-chain-flow) - Cross-chain intent protocol implementation details
-
-**Component Documentation**:
-
-- [Move Intent Framework](../../docs/move-intent-framework/README.md) - Move contract implementation details
-- [EVM Intent Framework](../../docs/evm-intent-framework/README.md) - Solidity contract implementation details
-- [Trusted Verifier](../../docs/trusted-verifier/README.md) - Verifier service implementation details
-
 ## Topological Order (Build Sequence)
 
 Following RPG methodology, domains are organized in topological order from foundation to dependent layers:

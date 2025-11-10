@@ -200,6 +200,3 @@ Applying RPG methodology to the Intent Framework architecture provides:
 
 - RPG methodology principles from Microsoft Research
 - Task Master RPG template: `.taskmaster/templates/example_prd_rpg.txt`
-- [Component-to-Domain Mapping](architecture-component-mapping.md) - Application of RPG principles to Intent Framework domains
-- [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md) - Detailed domain boundary definitions following RPG methodology
-- [Protocol Specification](../../docs/protocol.md#cross-chain-flow) - Cross-chain intent protocol implementation

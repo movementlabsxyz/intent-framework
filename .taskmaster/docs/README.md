@@ -35,6 +35,17 @@ Explains the Repository Planning Graph (RPG) methodology principles and how they
 - Topological Order
 - Progressive Refinement
 
+### [Data Models Documentation](data-models.md)
+
+Comprehensive reference for all data structures used across the Intent Framework, including intent structs, escrow structs, event structures, and cross-chain data linking patterns.
+
+**Key Sections**:
+- Intent Management Domain (Move data structures)
+- Event Structures (Move event emissions)
+- Escrow Domain (Move and Solidity escrow structures)
+- Verification Domain (Rust normalized event structures)
+- Cross-Chain Data Linking patterns
+
 ## How to Use These Documents
 
 1. **New to the codebase?** Start with [Component-to-Domain Mapping](architecture-component-mapping.md) to understand how components are organized into domains.
@@ -43,7 +54,9 @@ Explains the Repository Planning Graph (RPG) methodology principles and how they
 
 3. **Understanding the design philosophy?** Read [RPG Methodology Principles](rpg-methodology.md) to understand why the architecture is organized this way.
 
-4. **Planning implementation?** Use the Topological Order sections to understand build dependencies and implementation sequence.
+4. **Need data structure details?** See [Data Models Documentation](data-models.md) for field-by-field documentation of all data structures.
+
+5. **Planning implementation?** Use the Topological Order sections to understand build dependencies and implementation sequence.
 
 ## Related Documentation
 
@@ -60,9 +73,11 @@ RPG Methodology Principles
 Component-to-Domain Mapping
     ↓ (references detailed boundaries)
 Domain Boundaries and Interfaces
+    ↓ (references data structures)
+Data Models Documentation
     ↓ (all reference)
 Protocol Specification (public docs/)
 ```
 
-All three architecture documents cross-reference each other and link to public component documentation for implementation details.
+All architecture documents cross-reference each other and link to public component documentation for implementation details.
 

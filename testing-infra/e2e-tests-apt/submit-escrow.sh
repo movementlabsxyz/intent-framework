@@ -24,6 +24,7 @@ CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
+BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
 
 log ""
 log "📋 Chain Information:"
@@ -32,6 +33,7 @@ log "   Connected Chain (Chain 2): $CHAIN2_ADDRESS"
 log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
+log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
 # Load oracle public key from verifier config (base64 encoded, needs to be converted to hex)
 # Use verifier_testing.toml for tests - required, panic if not found
@@ -93,11 +95,13 @@ log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
 SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 
 # Submit escrow intent using Alice's account on Chain 2 (connected chain)
+# Reserved solver: Bob on Chain 2 - funds will go to Bob when escrow is claimed
 log "   - Creating escrow intent on Chain 2..."
 log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN2"
+log "     Reserved solver: $BOB_CHAIN2_ADDRESS (Bob on Chain 2)"
 aptos move run --profile alice-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
-    --args "address:${SOURCE_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${SOURCE_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Escrow intent created on Chain 2!"

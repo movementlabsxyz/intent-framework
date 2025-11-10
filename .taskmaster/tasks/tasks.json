@@ -1,97 +1,11 @@
 {
   "master": {
-    "tasks": [
-      {
-        "id": "1",
-        "title": "Fix signature replay vulnerability by requiring reserved solver in escrow",
-        "description": "Fix critical security vulnerability where verifier signatures don't bind to solver addresses by requiring all escrows to specify a reserved solver address. The solver address is stored in the escrow at creation time and is mandatory (not optional). When claiming, the escrow enforces that funds are transferred to the reserved solver address. Anyone can send the claim transaction, but the funds must always go to the reserved solver. This matches the Move intent reservation pattern where IntentReserved stores the solver address.",
-        "status": "done",
-        "dependencies": [],
-        "priority": "medium",
-        "details": "**CRITICAL SECURITY ISSUE**: Current verifier signatures only include (intentId, approvalValue) in the signed message, making them reusable by any solver who obtains a valid signature. This allows unauthorized escrow claims.\n\n**New Approach - Required Reserved Escrows:**\nInstead of modifying verifier signatures to include solver addresses, require all escrows to specify a reserved solver address. The solver address is stored in the escrow struct at creation time and is mandatory (not optional). The verifier signature format remains unchanged - it just approves/rejects the intent - but the on-chain logic enforces that funds are always transferred to the reserved solver address. Anyone can send the claim transaction, but the recipient must always be the reserved solver.\n\n**Files to Modify:**\n\n**1. EVM Contract (evm-intent-framework/contracts/IntentEscrow.sol)**:\n- Add required `reservedSolver` field to Escrow struct to store the receiving solver address\n- Update `createEscrow()` to require reserved solver address parameter (must not be address(0))\n- Store the solver address in the escrow when created\n- Modify `claim()` function to always transfer funds to `escrow.reservedSolver` (not msg.sender)\n- Add require check: `require(reservedSolver != address(0), \"Reserved solver must be specified\")`\n- Keep verifier signature format unchanged: keccak256(abi.encodePacked(intentId, approvalValue))\n\n**2. Aptos Move Contracts**:\n- Leverage existing intent_reservation.move system where IntentReserved struct stores the solver address\n- Update intent_as_escrow.move to require IntentReserved (not Optional<IntentReserved>)\n- The IntentReserved struct stores the solver address that should receive the funds\n- Modify `create_escrow_from_fa()` in intent_as_escrow_entry.move to require reserved_solver parameter\n- Modify `complete_escrow()` to deposit escrowed assets to the reserved solver address from IntentReserved\n- Access the IntentReserved from the TradeIntent to get the solver address\n- Keep verifier signature format unchanged for Ed25519 signatures\n\n**3. API Updates**:\n- Update escrow creation endpoints to require `reservedSolver` parameter\n- No changes needed to verifier signature endpoints - they remain the same\n- Update E2E test scripts to always specify a reserved solver address\n\n**Security Benefits:**\n- Prevents signature replay attacks by requiring all escrows to specify a solver address\n- The escrow itself stores which solver receives the funds, making the restriction on-chain and enforceable\n- Anyone can send the claim transaction, but funds always go to the reserved solver\n- Matches existing Move reservation pattern where IntentReserved stores the solver address\n- No changes needed to verifier service signature creation logic",
-        "testStrategy": "1. Create unit tests for escrows with required reserved solver address on both EVM and Aptos\n2. Test that escrows always transfer funds to the reserved solver address, regardless of who sends the transaction\n3. Test that createEscrow/create_escrow_from_fa requires a solver address (reverts if address(0) or missing)\n4. Verify existing verifier signature format works unchanged\n5. Test edge cases: different accounts sending claim transaction, but funds always go to reserved solver\n6. Run security audit tests to confirm vulnerability is addressed by requiring reserved solver\n7. Test cross-chain scenarios with escrows that have reserved solvers\n8. Update all existing tests to specify reserved solver addresses",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Add required reserved solver field to EVM IntentEscrow contract",
-            "description": "Modify the Escrow struct in IntentEscrow.sol to include a required reservedSolver field that stores which solver address can receive/claim the escrow, and update createEscrow function to require this parameter.",
-            "dependencies": [],
-            "details": "Update the Escrow struct in evm-intent-framework/contracts/IntentEscrow.sol to add:\n- `address reservedSolver` field that stores which solver address receives the funds when escrow is claimed (address(0) means unreserved, funds go to msg.sender)\n- Modify `createEscrow()` function signature to accept optional `address reservedSolver` parameter\n- Store the reservedSolver address in the escrow struct during escrow creation\n- Update events to include the listed solver address (reservation status)",
-            "status": "done",
-            "testStrategy": "Unit tests for createEscrow with listed solver address and without (unreserved)",
-            "parentId": "undefined",
-            "updatedAt": "2025-11-10T08:20:17.393Z"
-          },
-          {
-            "id": 2,
-            "title": "Implement solver recipient check in EVM claim function",
-            "description": "Update the claim() function in IntentEscrow.sol to transfer funds to the solver address listed in the escrow (if one is listed), rather than always transferring to msg.sender.",
-            "dependencies": [
-              1
-            ],
-            "details": "Modify the `claim()` function in evm-intent-framework/contracts/IntentEscrow.sol:108-150 to:\n- Check if `escrow.reservedSolver != address(0)` (escrow lists a specific solver)\n- If the escrow lists a solver, transfer funds to `escrow.reservedSolver` instead of `msg.sender`\n- If escrow does not list a solver (reservedSolver == address(0)), transfer to `msg.sender` as before\n- Anyone can send the transaction, but funds always go to the reserved solver if one is listed\n- Keep existing verifier signature verification unchanged\n- Update events to include the actual recipient address (reservedSolver or msg.sender)",
-            "status": "done",
-            "testStrategy": "Unit tests for claim function: funds go to reserved solver address when listed, regardless of who sends transaction. Test unreserved escrows transfer to msg.sender.",
-            "parentId": "undefined",
-            "updatedAt": "2025-11-10T08:26:18.658Z"
-          },
-          {
-            "id": 3,
-            "title": "Integrate Move intent reservation system with escrow contracts",
-            "description": "Update Aptos move contracts to use the existing intent_reservation.move system where IntentReserved stores the solver address that can claim the escrow.",
-            "dependencies": [],
-            "details": "Modify move-intent-framework/sources/intent_as_escrow.move to:\n- Import and use existing `intent_reservation::IntentReserved` system from intent_reservation.move:19\n- The IntentReserved struct stores the solver address (solver: address) that can claim the escrow\n- Update `create_escrow()` function to require reservation parameter (not Optional<IntentReserved>)\n- Store the IntentReserved (with solver address) in the escrow when created\n- Integrate with existing reservation verification in the Move framework\n- Use existing `intent_reservation::ensure_solver_authorized()` function to verify the solver matches the reserved address\n- Maintain compatibility with existing oracle signature system",
-            "status": "done",
-            "testStrategy": "Unit tests for escrow creation and completion with Move reservation system where IntentReserved stores the solver address",
-            "parentId": "undefined",
-            "updatedAt": "2025-11-10T09:08:33.893Z"
-          },
-          {
-            "id": 4,
-            "title": "Update Aptos escrow completion to transfer funds to reserved solver",
-            "description": "Modify the complete_escrow function to deposit escrowed assets to the solver address from the escrow's IntentReserved (which is now required), rather than the transaction signer.",
-            "dependencies": [
-              3
-            ],
-            "details": "Update `complete_escrow()` function in move-intent-framework/sources/intent_as_escrow.move to:\n- Access IntentReserved from the TradeSession (which is always present since escrows require reservations)\n- Deposit escrowed assets to `intent_reserved.solver` from the reservation\n- The `ensure_solver_authorized()` function already verifies the solver signer matches the reserved solver\n- Anyone can send the transaction, but funds always go to the reserved solver\n- Maintain existing verifier signature verification flow\n- Keep Ed25519 signature format unchanged\n- Update `create_escrow_from_fa()` to require reserved_solver parameter",
-            "status": "done",
-            "testStrategy": "Integration tests for escrow completion: funds always go to reserved solver address, regardless of who sends transaction",
-            "parentId": "undefined"
-          },
-          {
-            "id": 5,
-            "title": "Add comprehensive test coverage for reserved escrows",
-            "description": "Create extensive test suite covering escrows with required reserved solver addresses across EVM and Aptos implementations.",
-            "dependencies": [
-              2,
-              4
-            ],
-            "details": "Create comprehensive test coverage:\n- EVM tests: escrow creation with required reserved solver address, different accounts sending claim transaction but funds always go to reserved solver\n- EVM tests: verify that createEscrow reverts if reservedSolver is address(0)\n- Aptos tests: integration with IntentReserved system where escrow requires solver address, different accounts sending transaction but funds always go to reserved solver\n- Aptos tests: verify that create_escrow requires reservation parameter\n- Cross-chain tests: escrows with reserved solvers work correctly across both chains\n- Security tests: verify signature replay prevention (funds always go to reserved solver)\n- Edge case tests: verify all escrows must specify a solver address, state transitions",
-            "status": "done",
-            "testStrategy": "Full test suite covering escrows with required reserved solver addresses, including security and functionality testing",
-            "parentId": "undefined"
-          },
-          {
-            "id": 6,
-            "title": "Update E2E test scripts and documentation for required reserved escrows",
-            "description": "Update end-to-end test scripts and documentation to reflect that all escrows must specify a reserved solver address.",
-            "dependencies": [
-              5
-            ],
-            "details": "Update integration components:\n- Modify E2E test scripts to always specify a reserved solver address when creating escrows\n- Update API documentation to describe required reservedSolver parameter\n- Update examples to show escrow creation with reserved solver (no unreserved examples)\n- Update security documentation to explain how requiring a reserved solver prevents signature replay\n- Update all documentation to reflect that reservations are required, not optional\n- Remove references to unreserved escrows from documentation",
-            "status": "done",
-            "testStrategy": "E2E testing with escrows that have reserved solvers, documentation review",
-            "parentId": "undefined"
-          }
-        ],
-        "updatedAt": "2025-11-10T09:08:33.893Z"
-      }
-    ],
+    "tasks": [],
     "metadata": {
       "version": "1.0.0",
       "lastModified": "2025-11-10T09:08:33.894Z",
-      "taskCount": 1,
-      "completedCount": 1,
+      "taskCount": 0,
+      "completedCount": 0,
       "tags": [
         "master"
       ]

@@ -23,9 +23,9 @@ describe("IntentEscrow - Create Escrow (Deposit)", function () {
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
 
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount))
+    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target)
+      .withArgs(intentId, escrow.target, maker.address, token.target, ethers.ZeroAddress)
       .and.to.emit(escrow, "DepositMade")
       .withArgs(intentId, maker.address, amount, amount);
 
@@ -41,12 +41,12 @@ describe("IntentEscrow - Create Escrow (Deposit)", function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
 
     // This test is covered in claim.test.js - escrow creation with same intentId will fail
     // because escrow already exists, not because it's claimed
     await expect(
-      escrow.connect(maker).createEscrow(intentId, token.target, amount)
+      escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress)
     ).to.be.revertedWith("Escrow already exists");
   });
 });

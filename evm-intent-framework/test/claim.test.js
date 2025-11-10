@@ -24,7 +24,7 @@ describe("IntentEscrow - Claim", function () {
     amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
     
     approvalValue = 1; // Approval value must be 1
   });

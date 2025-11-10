@@ -63,9 +63,10 @@ log "     Intent ID (EVM): $INTENT_ID_EVM"
 
 # Create escrow for this intent with ETH (address(0)) and deposit funds atomically
 log "   - Creating escrow for intent (ETH escrow) with funds..."
-# Expiry is contract-defined (1 hour), creation and deposit happen atomically
+# Reserved solver: Bob - funds will go to Bob when escrow is claimed
+BOB_ADDRESS=$(get_hardhat_account_address "2")
 ETH_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH = 1000 * 10^18 wei
-CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' ETH_AMOUNT_WEI='$ETH_AMOUNT_WEI' npx hardhat run scripts/create-escrow-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' ETH_AMOUNT_WEI='$ETH_AMOUNT_WEI' RESERVED_SOLVER='$BOB_ADDRESS' npx hardhat run scripts/create-escrow-eth.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 CREATE_EXIT_CODE=$?
 
 # Check if creation was successful

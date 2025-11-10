@@ -31,13 +31,13 @@ describe("IntentEscrow - Initialization", function () {
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
     
-    const tx = await escrow.connect(maker).createEscrow(intentId, token.target, amount);
+    const tx = await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
     const receipt = await tx.wait();
     const block = await ethers.provider.getBlock(receipt.blockNumber);
     
     await expect(tx)
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target);
+      .withArgs(intentId, escrow.target, maker.address, token.target, ethers.ZeroAddress);
     
     await expect(tx)
       .to.emit(escrow, "DepositMade")
@@ -60,10 +60,10 @@ describe("IntentEscrow - Initialization", function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
     
     await expect(
-      escrow.connect(maker).createEscrow(intentId, token.target, amount)
+      escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress)
     ).to.be.revertedWith("Escrow already exists");
   });
 });

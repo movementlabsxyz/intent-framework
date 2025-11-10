@@ -10,6 +10,10 @@
 - Follow conventional commit format when applicable (e.g., `feat:`, `fix:`, `refactor:`)
 - Focus on what changed and why, not who/what tool made the change
 
+## Documentation
+
+For information on how documentation is organized and how to navigate it, see [docs/docs-guide.md](docs/docs-guide.md).
+
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
 @./.taskmaster/CLAUDE.md

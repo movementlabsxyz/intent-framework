@@ -38,12 +38,12 @@ aptos move test --dev --named-addresses aptos_intent=0x123
 
 The test suite includes:
 
-- **Core Intent Tests**: [`intent_tests.move`](../tests/intent_tests.move) - Tests for the base intent framework
-- **Fungible Asset Tests**: [`fa_tests.move`](../tests/fa_tests.move) - Tests for fungible asset trading
-- **Reservation Tests**: [`intent_reservation_tests.move`](../tests/intent_reservation_tests.move) - Tests for the reservation system
-- **Oracle Tests**: [`fa_intent_with_oracle_tests.move`](../tests/fa_intent_with_oracle_tests.move) - Tests for oracle-based intents
-- **Entry Flow Tests**: [`fa_entryflow_tests.move`](../tests/fa_entryflow_tests.move) - Tests for complete intent flows
-- **Test Utilities**: [`fa_test_utils.move`](../tests/fa_test_utils.move) - Shared test helper functions
+- **Core Intent Tests**: [`intent_tests.move`](../../move-intent-framework/tests/intent_tests.move) - Tests for the base intent framework
+- **Fungible Asset Tests**: [`fa_tests.move`](../../move-intent-framework/tests/fa_tests.move) - Tests for fungible asset trading
+- **Reservation Tests**: [`intent_reservation_tests.move`](../../move-intent-framework/tests/intent_reservation_tests.move) - Tests for the reservation system
+- **Oracle Tests**: [`fa_intent_with_oracle_tests.move`](../../move-intent-framework/tests/fa_intent_with_oracle_tests.move) - Tests for oracle-based intents
+- **Entry Flow Tests**: [`fa_entryflow_tests.move`](../../move-intent-framework/tests/fa_entryflow_tests.move) - Tests for complete intent flows
+- **Test Utilities**: [`fa_test_utils.move`](../../move-intent-framework/tests/fa_test_utils.move) - Shared test helper functions
 
 ### Test Categories
 

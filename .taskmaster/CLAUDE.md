@@ -171,6 +171,7 @@ git commit -m "<type of change>: <description>
 ```
 
 **Commit Rule:**
+
 - **ALWAYS commit after completing each subtask or task** - This ensures incremental progress is saved
 - **Do NOT run `git add`** - Files should already be staged by the user before committing
 - Don't mention the subtask or task ID in the commit message.

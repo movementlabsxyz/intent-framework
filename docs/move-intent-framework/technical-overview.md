@@ -46,7 +46,7 @@ This directory contains the core Move modules that implement the Intent Framewor
 
 #### 1. Base Intent Module
 
-[`intent.move`](../sources/intent.move) - The core generic framework that defines the fundamental intent system. This module provides the abstract structures and functions for creating, managing, and executing any type of conditional trade intent.
+[`intent.move`](../../move-intent-framework/sources/intent.move) - The core generic framework that defines the fundamental intent system. This module provides the abstract structures and functions for creating, managing, and executing any type of conditional trade intent.
 
 - **TradeIntent<Source, Args>**: Stores the offered resource, trade conditions, expiry time, and witness type requirements. Acts as the immutable record of what someone wants to trade.
 - **TradeSession<Args>**: Created when someone starts an intent session. Contains the trade conditions and witness requirements, allowing the session opener to fulfill the trade.
@@ -56,7 +56,7 @@ This directory contains the core Move modules that implement the Intent Framewor
 
 #### 2. Implementation for Fungible Asset
 
-[`fa_intent.move`](../sources/fa_intent.move) - A concrete implementation of the intent framework specifically designed for fungible asset trading. This module handles the creation and execution of limit orders between different fungible assets.
+[`fa_intent.move`](../../move-intent-framework/sources/fa_intent.move) - A concrete implementation of the intent framework specifically designed for fungible asset trading. This module handles the creation and execution of limit orders between different fungible assets.
 
 - **FungibleAssetLimitOrder**: Defines the specific trade parameters (wanted token type, amount, issuer) for fungible asset limit orders.
 - **LimitOrderEvent**: Emits events when intents are created, providing transparency and allowing external systems to discover available trades.
@@ -64,7 +64,7 @@ This directory contains the core Move modules that implement the Intent Framewor
 
 #### 3. Intent Reservation System
 
-[`intent_reservation.move`](../sources/intent_reservation.move) - Provides the reservation system for reserved intents, including signature verification and solver authorization.
+[`intent_reservation.move`](../../move-intent-framework/sources/intent_reservation.move) - Provides the reservation system for reserved intents, including signature verification and solver authorization.
 
 - **IntentDraft**: Off-chain data structure for sharing intent details without solver information.
 - **IntentToSign**: Data structure that solvers sign to commit to solving a specific intent.
@@ -72,7 +72,7 @@ This directory contains the core Move modules that implement the Intent Framewor
 
 #### 4. Oracle-Guarded Intent System
 
-[`fa_intent_with_oracle.move`](../sources/fa_intent_with_oracle.move) - Extends the fungible asset intent flow with oracle signature requirements for conditional execution based on external data.
+[`fa_intent_with_oracle.move`](../../move-intent-framework/sources/fa_intent_with_oracle.move) - Extends the fungible asset intent flow with oracle signature requirements for conditional execution based on external data.
 
 - **OracleSignatureRequirement**: Defines minimum reported values and authorized oracle public keys.
 - **OracleGuardedLimitOrder**: Trading conditions that include oracle requirements.

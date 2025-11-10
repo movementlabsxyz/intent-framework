@@ -4,7 +4,7 @@ This guide covers how to run the verifier locally with the dual‑chain setup, t
 
 ## Configuration
 
-File: [`trusted-verifier/config/verifier.toml`](../../trusted-verifier/config/verifier.toml)
+File: `trusted-verifier/config/verifier.toml` (relative to project root)
 
 - hub_chain / connected_chain_apt: `rpc_url`, `chain_id`, module addresses, `known_accounts`
 - connected_chain_evm: `rpc_url`, `chain_id`, `escrow_contract_address` (optional, for EVM chain support)

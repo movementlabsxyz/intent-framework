@@ -9,6 +9,7 @@ This directory contains internal architectural guidance documents for the Intent
 Maps all source files to their respective domains and documents inter-domain interaction patterns. This is the primary reference for understanding how components are organized and how domains interact.
 
 **Key Sections**:
+
 - Domain Architecture Overview (visual diagram)
 - Topological Order (build sequence)
 - Domain Definitions
@@ -20,6 +21,7 @@ Maps all source files to their respective domains and documents inter-domain int
 Provides precise definitions of domain boundaries, external interfaces, internal components, data ownership, and interaction protocols following RPG methodology principles.
 
 **Key Sections**:
+
 - Intent Management: Boundaries and Interfaces
 - Escrow: Boundaries and Interfaces
 - Settlement: Boundaries and Interfaces
@@ -30,6 +32,7 @@ Provides precise definitions of domain boundaries, external interfaces, internal
 Explains the Repository Planning Graph (RPG) methodology principles and how they apply to the Intent Framework architecture. This document provides the theoretical foundation for the domain-based organization.
 
 **Key Sections**:
+
 - Dual-Semantics (Functional vs. Structural)
 - Explicit Dependencies
 - Topological Order
@@ -40,11 +43,23 @@ Explains the Repository Planning Graph (RPG) methodology principles and how they
 Comprehensive reference for all data structures used across the Intent Framework, including intent structs, escrow structs, event structures, and cross-chain data linking patterns.
 
 **Key Sections**:
+
 - Intent Management Domain (Move data structures)
 - Event Structures (Move event emissions)
 - Escrow Domain (Move and Solidity escrow structures)
 - Verification Domain (Rust normalized event structures)
 - Cross-Chain Data Linking patterns
+
+### [Use Cases and Scenarios Documentation](use-cases.md)
+
+Documentation of how the Intent Framework handles specific scenarios in the current implementation, including happy path flows, error cases, edge cases, and real-world usage patterns.
+
+**Key Sections**:
+
+- Happy Path Use Cases (Standard Cross-Chain Swap, Oracle-Guarded Intent, Intent-as-Escrow, Reserved Intent)
+- Error Cases (Intent Expiry, Invalid Witness, Unauthorized Access, Cross-Chain Failures, Token Type Mismatches)
+- Edge Cases (Non-Revocable Escrow Intents, Reserved Solver Enforcement, Zero-Amount Cross-Chain Swaps, Concurrent Intent Fulfillment)
+- Real-World Usage Patterns (DEX Integration, Cross-Chain Arbitrage, Payment Channels, Escrow Services)
 
 ## How to Use These Documents
 
@@ -56,7 +71,9 @@ Comprehensive reference for all data structures used across the Intent Framework
 
 4. **Need data structure details?** See [Data Models Documentation](data-models.md) for field-by-field documentation of all data structures.
 
-5. **Planning implementation?** Use the Topological Order sections to understand build dependencies and implementation sequence.
+5. **Understanding system behavior?** See [Use Cases and Scenarios Documentation](use-cases.md) for how the system handles specific scenarios.
+
+6. **Planning implementation?** Use the Topological Order sections to understand build dependencies and implementation sequence.
 
 ## Related Documentation
 

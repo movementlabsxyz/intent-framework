@@ -168,7 +168,7 @@
         "id": "3",
         "title": "Create data models documentation that centralizes all data structures used in the intent framework",
         "description": "Create comprehensive documentation that centralizes all data structures used in the intent framework, including Intent structs, Escrow structs, Event structures, and cross-chain data linking patterns.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "1",
           "2"
@@ -196,9 +196,10 @@
               1
             ],
             "details": "Document Move intent structures from intent.move:33-41 (TradeIntent<Source, Args> with offered_resource, argument, self_delete_ref, expiry_time, witness_type, reservation, revocable fields), intent.move:44-49 (TradeSession<Args>), fa_intent.move:31-36 (FungibleAssetLimitOrder with desired_metadata, desired_amount, issuer, intent_id), and fa_intent.move:23-27 (FungibleStoreManager with extend_ref, delete_ref). Include type information, field purposes, and witness pattern usage.",
-            "status": "pending",
+            "status": "cancelled",
             "testStrategy": "Cross-reference all documented structures with actual Move source code to ensure field types, names, and descriptions match implementation exactly.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:02:24.245Z"
           },
           {
             "id": 3,
@@ -208,9 +209,10 @@
               1
             ],
             "details": "Document event structures from fa_intent.move:47-72 (LimitOrderEvent with intent_address, intent_id, source_metadata, source_amount, desired_metadata, desired_amount, issuer, expiry_time, revocable), fa_intent.move:63-72 (LimitOrderFulfillmentEvent), fa_intent_with_oracle.move (OracleLimitOrderEvent). Include event emission patterns from fa_intent.move:132-142 and cross-chain correlation logic using intent_id field for linking events across chains.",
-            "status": "pending",
+            "status": "cancelled",
             "testStrategy": "Verify all event field names and types match the actual Move source code and validate that emission patterns are accurately documented by reviewing the create_fa_to_fa_intent function.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:02:25.425Z"
           },
           {
             "id": 4,
@@ -220,9 +222,10 @@
               1
             ],
             "details": "Document Solidity structures from IntentEscrow.sol:22-29 (Escrow struct with maker, token, amount, isClaimed, expiry, reservedSolver fields) and events from IntentEscrow.sol:35-38 (EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled events). Include field types, purposes, and relationship to Move intent structures. Document the expiry mechanism and reserved solver addressing patterns.",
-            "status": "pending",
+            "status": "cancelled",
             "testStrategy": "Cross-reference all documented Solidity structures with IntentEscrow.sol implementation to ensure accuracy of field types, event parameters, and contract logic descriptions.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:02:26.571Z"
           },
           {
             "id": 5,
@@ -234,20 +237,21 @@
               4
             ],
             "details": "Document Rust structures from monitor/mod.rs:33-55 (IntentEvent), monitor/mod.rs:62-86 (EscrowEvent), monitor/mod.rs:93-100 (FulfillmentEvent) and their correlation logic. Include cross-chain data linking patterns using intent_id field for matching events between hub and connected chains, reserved solver addressing preservation, and serialization formats (BCS, JSON) for cross-chain communication. Document state transition diagrams and witness pattern usage across chains.",
-            "status": "pending",
+            "status": "cancelled",
             "testStrategy": "Verify all Rust structure definitions match the actual source code and validate that cross-chain correlation logic is accurately described by reviewing the trusted-verifier implementation.",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:02:27.728Z"
           }
         ],
-        "updatedAt": "2025-11-10T16:44:53.244Z"
+        "updatedAt": "2025-11-10T17:02:29.503Z"
       },
       {
         "id": "4",
         "title": "Create use cases and scenarios documentation",
         "description": "Create comprehensive use cases documentation that shows how the current system handles specific scenarios including happy path flows, error cases, edge cases, and real-world usage patterns.",
-        "details": "This task involves creating `docs/use-cases.md` that documents current implementation behavior across the intent framework system, organized by scenario type:\n\n## Happy Path Use Cases:\n1. **Standard Cross-Chain Swap**: Document the complete flow from intent.move (TradeIntent creation) --> escrow creation (IntentEscrow.sol) --> fulfillment (LimitOrderFulfillmentEvent) --> verifier approval --> escrow claim\n2. **Oracle-Guarded Intent**: Document OracleLimitOrderEvent flow using fa_intent_with_oracle.move with OracleGuardedLimitOrder struct and signature verification\n3. **Intent-as-Escrow**: Document simplified escrow flow using intent_as_escrow.move with EscrowConfig\n4. **Reserved Intent**: Document solver reservation flow using intent_reservation.move with IntentToSign and IntentReserved structs\n\n## Error Cases:\n1. **Intent Expiry**: Document behavior when TradeIntent expires (EINTENT_EXPIRED) and EVM escrow expiry handling\n2. **Invalid Witness**: Document EINVALID_WITNESS error from intent.move when wrong witness type provided\n3. **Unauthorized Access**: Document ENOT_OWNER and ENOT_REVOCABLE errors for intent revocation attempts\n4. **Cross-Chain Failures**: Document verifier signature validation failures and escrow claim rejections\n5. **Token Type Mismatches**: Document ENOT_DESIRED_TOKEN errors from fa_intent.move\n\n## Edge Cases:\n1. **Non-Revocable Escrow Intents**: Document verifier requirement that escrow intents must have `revocable = false`\n2. **Reserved Solver Enforcement**: Document how EVM escrow always transfers to reservedSolver regardless of claim caller\n3. **Zero-Amount Cross-Chain Swaps**: Document behavior in fa_intent_cross_chain.move where source tokens aren't locked\n4. **Concurrent Intent Fulfillment**: Document race conditions and prevention mechanisms\n\n## Real-World Usage Patterns:\n1. **DEX Integration**: How external systems create intents for automated market making\n2. **Cross-Chain Arbitrage**: Using the framework for cross-chain price arbitrage opportunities\n3. **Payment Channels**: Using intents for conditional payment releases\n4. **Escrow Services**: Using intent-as-escrow for trustless P2P transactions\n\nEach scenario should reference specific source files, struct definitions, error codes, and event emissions from the actual implementation.",
+        "details": "This task involves creating `.taskmaster/docs/use-cases.md` that documents current implementation behavior across the intent framework system, organized by scenario type:\n\n## Happy Path Use Cases:\n1. **Standard Cross-Chain Swap**: Document the complete flow from intent.move (TradeIntent creation) --> escrow creation (IntentEscrow.sol) --> fulfillment (LimitOrderFulfillmentEvent) --> verifier approval --> escrow claim\n2. **Oracle-Guarded Intent**: Document OracleLimitOrderEvent flow using fa_intent_with_oracle.move with OracleGuardedLimitOrder struct and signature verification\n3. **Intent-as-Escrow**: Document simplified escrow flow using intent_as_escrow.move with EscrowConfig\n4. **Reserved Intent**: Document solver reservation flow using intent_reservation.move with IntentToSign and IntentReserved structs\n\n## Error Cases:\n1. **Intent Expiry**: Document behavior when TradeIntent expires (EINTENT_EXPIRED) and EVM escrow expiry handling\n2. **Invalid Witness**: Document EINVALID_WITNESS error from intent.move when wrong witness type provided\n3. **Unauthorized Access**: Document ENOT_OWNER and ENOT_REVOCABLE errors for intent revocation attempts\n4. **Cross-Chain Failures**: Document verifier signature validation failures and escrow claim rejections\n5. **Token Type Mismatches**: Document ENOT_DESIRED_TOKEN errors from fa_intent.move\n\n## Edge Cases:\n1. **Non-Revocable Escrow Intents**: Document verifier requirement that escrow intents must have `revocable = false`\n2. **Reserved Solver Enforcement**: Document how EVM escrow always transfers to reservedSolver regardless of claim caller\n3. **Zero-Amount Cross-Chain Swaps**: Document behavior in fa_intent_cross_chain.move where source tokens aren't locked\n4. **Concurrent Intent Fulfillment**: Document race conditions and prevention mechanisms\n\n## Real-World Usage Patterns:\n1. **DEX Integration**: How external systems create intents for automated market making\n2. **Cross-Chain Arbitrage**: Using the framework for cross-chain price arbitrage opportunities\n3. **Payment Channels**: Using intents for conditional payment releases\n4. **Escrow Services**: Using intent-as-escrow for trustless P2P transactions\n\nEach scenario should reference specific source files, struct definitions, error codes, and event emissions from the actual implementation.",
         "testStrategy": "1. Verify all scenarios reference actual code structures by cross-checking Move contracts (intent.move, fa_intent.move, fa_intent_with_oracle.move, intent_as_escrow.move) and Solidity contract (IntentEscrow.sol)\n2. Validate error codes and event names match implementation (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent, EscrowInitialized, EscrowClaimed)\n3. Ensure cross-chain flow documentation matches sequence in protocol.md#cross-chain-flow\n4. Test that each use case can be traced through the codebase using the referenced files and line numbers\n5. Validate edge cases align with actual implementation constraints (revocable=false requirement, reservedSolver enforcement)\n6. Ensure real-world patterns reflect current capabilities without speculating on unimplemented features",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "1",
           "2",
@@ -261,9 +265,10 @@
             "description": "Create detailed documentation for the four main happy path scenarios showing complete end-to-end flows with specific code references.",
             "dependencies": [],
             "details": "Document the complete flows for: 1) Standard Cross-Chain Swap (TradeIntent creation via intent.move --> IntentEscrow.sol --> LimitOrderFulfillmentEvent --> verifier approval --> escrow claim), 2) Oracle-Guarded Intent (OracleLimitOrderEvent flow using fa_intent_with_oracle.move with OracleGuardedLimitOrder struct), 3) Intent-as-Escrow (simplified escrow using intent_as_escrow.move with EscrowConfig), and 4) Reserved Intent (solver reservation using intent_reservation.move with IntentToSign and IntentReserved structs). Each scenario must reference actual struct definitions, function names, and event emissions from source files.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify all referenced structs, functions, and events exist in the actual source code by cross-checking with move-intent-framework/sources/ files and evm-intent-framework/contracts/ files",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:07:43.035Z"
           },
           {
             "id": 2,
@@ -271,9 +276,10 @@
             "description": "Create comprehensive error case documentation covering intent expiry, invalid witness, unauthorized access, cross-chain failures, and token type mismatches.",
             "dependencies": [],
             "details": "Document specific error scenarios: 1) Intent Expiry (EINTENT_EXPIRED from intent.move and EVM escrow expiry handling), 2) Invalid Witness (EINVALID_WITNESS error when wrong witness type provided), 3) Unauthorized Access (ENOT_OWNER and ENOT_REVOCABLE errors for intent revocation), 4) Cross-Chain Failures (verifier signature validation failures and escrow claim rejections), and 5) Token Type Mismatches (ENOT_DESIRED_TOKEN and EAMOUNT_NOT_MEET from fa_intent.move). Each error must include the exact error code constant, triggering conditions, and affected modules.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Cross-reference all error codes with actual constant definitions in source files and verify triggering conditions match implementation logic",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:07:44.188Z"
           },
           {
             "id": 3,
@@ -281,9 +287,10 @@
             "description": "Document edge cases including non-revocable escrow requirements, reserved solver enforcement, zero-amount cross-chain swaps, and concurrent intent fulfillment prevention.",
             "dependencies": [],
             "details": "Document specific edge cases: 1) Non-Revocable Escrow Intents (verifier requirement that escrow intents must have revocable = false as documented in intent_as_escrow.move), 2) Reserved Solver Enforcement (how EVM IntentEscrow.sol always transfers to reservedSolver regardless of claim caller), 3) Zero-Amount Cross-Chain Swaps (behavior in fa_intent_cross_chain.move where source tokens aren't locked), and 4) Concurrent Intent Fulfillment (race condition prevention mechanisms). Include specific line references and implementation details.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify each edge case by examining the specific implementation in source files, including security comments and enforcement mechanisms",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:07:45.320Z"
           },
           {
             "id": 4,
@@ -295,13 +302,14 @@
               3
             ],
             "details": "Document practical usage scenarios: 1) DEX Integration (how external systems create intents for automated market making using the intent framework), 2) Cross-Chain Arbitrage (using the framework for cross-chain price arbitrage opportunities with verifier coordination), 3) Payment Channels (using intents for conditional payment releases with oracle verification), and 4) Escrow Services (using intent-as-escrow for trustless P2P transactions). Each pattern should show how the documented flows, error handling, and edge cases apply in practice.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Validate usage patterns align with the documented flows and error handling capabilities from previous subtasks",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:07:47.707Z"
           },
           {
             "id": 5,
-            "title": "Create and organize docs/use-cases.md with comprehensive structure",
+            "title": "Create and organize .taskmaster/docs/use-cases.md with comprehensive structure",
             "description": "Assemble all documented use cases into a well-organized markdown file that serves as the central reference for system behavior scenarios.",
             "dependencies": [
               1,
@@ -309,12 +317,14 @@
               3,
               4
             ],
-            "details": "Create docs/use-cases.md with clear sections for: Happy Path Use Cases, Error Cases, Edge Cases, and Real-World Usage Patterns. Each section should include detailed descriptions, code references with file:line_number format, struct definitions, error codes, and event emissions. Ensure the document follows the existing documentation structure and includes navigation links to related protocol documentation. Add cross-references to existing docs like protocol.md#cross-chain-flow for consistency.",
-            "status": "pending",
+            "details": "Create .taskmaster/docs/use-cases.md with clear sections for: Happy Path Use Cases, Error Cases, Edge Cases, and Real-World Usage Patterns. Each section should include detailed descriptions, code references with file:line_number format, struct definitions, error codes, and event emissions. Ensure the document follows the existing architectural documentation structure in .taskmaster/docs/ and includes navigation links to related protocol documentation. Add cross-references to existing docs like protocol.md#cross-chain-flow for consistency.",
+            "status": "done",
             "testStrategy": "Verify the final document is complete, well-structured, and all code references are accurate by spot-checking file paths and line numbers",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T17:07:49.042Z"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-10T17:07:49.042Z"
       },
       {
         "id": "5",
@@ -389,9 +399,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-10T16:44:53.245Z",
+      "lastModified": "2025-11-10T17:07:49.043Z",
       "taskCount": 5,
-      "completedCount": 2,
+      "completedCount": 4,
       "tags": [
         "master"
       ]

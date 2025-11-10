@@ -25,7 +25,7 @@ contract IntentEscrow {
         uint256 amount;          // Amount deposited
         bool isClaimed;          // Whether funds have been claimed
         uint256 expiry;          // Expiry timestamp (contract-defined). After expiry, claims are blocked but maker can cancel
-        address reservedSolver;  // Solver address that receives funds when escrow is claimed (address(0) means unreserved, funds go to msg.sender)
+        address reservedSolver;  // Solver address that receives funds when escrow is claimed (always set, never address(0))
     }
 
     /// @notice Mapping from intent ID to escrow data
@@ -62,10 +62,10 @@ contract IntentEscrow {
      * @param intentId Unique intent identifier
      * @param token ERC20 token address to be deposited (use address(0) for ETH)
      * @param amount Amount of tokens/ETH to deposit
-     * @param reservedSolver Optional solver address that will receive funds when escrow is claimed (address(0) means unreserved, funds go to msg.sender)
+     * @param reservedSolver Solver address that will receive funds when escrow is claimed (must not be address(0))
      * @dev Expiry is automatically set to block.timestamp + EXPIRY_DURATION (contract-defined)
      * @dev This function atomically creates the escrow and deposits funds, matching Move's create_escrow_from_fa
-     * @dev If reservedSolver is set, funds will always be transferred to that address regardless of who calls claim()
+     * @dev Funds will always be transferred to reservedSolver address regardless of who calls claim()
      */
     function createEscrow(
         uint256 intentId,
@@ -75,6 +75,7 @@ contract IntentEscrow {
     ) external payable {
         require(escrows[intentId].maker == address(0), "Escrow already exists");
         require(amount > 0, "Amount must be greater than 0");
+        require(reservedSolver != address(0), "Reserved solver must be specified");
 
         // Create escrow
         escrows[intentId] = Escrow({
@@ -143,7 +144,8 @@ contract IntentEscrow {
         escrow.amount = 0;
         
         // Determine recipient: if escrow lists a solver, transfer to that address; otherwise transfer to msg.sender
-        address recipient = escrow.reservedSolver != address(0) ? escrow.reservedSolver : msg.sender;
+        // Funds always go to the reserved solver (enforced at creation)
+        address recipient = escrow.reservedSolver;
         
         // Transfer tokens or ETH to recipient
         if (token == address(0)) {
@@ -231,7 +233,7 @@ contract IntentEscrow {
      * @return amount Amount deposited
      * @return isClaimed Whether escrow is claimed
      * @return expiry Expiry timestamp
-     * @return reservedSolver Solver address that receives funds (address(0) if unreserved)
+     * @return reservedSolver Solver address that receives funds (always set)
      */
     function getEscrow(uint256 intentId)
         external

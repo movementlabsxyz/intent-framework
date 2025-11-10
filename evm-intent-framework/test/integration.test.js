@@ -30,9 +30,9 @@ describe("IntentEscrow - Integration Tests", function () {
     await token.connect(maker).approve(escrow.target, amount);
     
     // Step 2: Create escrow and verify EscrowInitialized event
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress))
+    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, ethers.ZeroAddress);
+      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
     
     // Step 3: Verify escrow state
     const escrowDataBefore = await escrow.getEscrow(intentId);
@@ -86,15 +86,15 @@ describe("IntentEscrow - Integration Tests", function () {
     // Create escrows with different tokens
     await token1.mint(maker.address, amount1);
     await token1.connect(maker).approve(escrow.target, amount1);
-    await escrow.connect(maker).createEscrow(intentId1, token1.target, amount1, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(intentId1, token1.target, amount1, solver.address);
     
     await token2.mint(maker.address, amount2);
     await token2.connect(maker).approve(escrow.target, amount2);
-    await escrow.connect(maker).createEscrow(intentId2, token2.target, amount2, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(intentId2, token2.target, amount2, solver.address);
     
     await token3.mint(maker.address, amount3);
     await token3.connect(maker).approve(escrow.target, amount3);
-    await escrow.connect(maker).createEscrow(intentId3, token3.target, amount3, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(intentId3, token3.target, amount3, solver.address);
     
     // Verify all escrows were created correctly
     const escrow1 = await escrow.getEscrow(intentId1);
@@ -122,9 +122,9 @@ describe("IntentEscrow - Integration Tests", function () {
     await token.connect(maker).approve(escrow.target, amount);
     
     // Test EscrowInitialized event
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress))
+    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, ethers.ZeroAddress);
+      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
     
     // Test EscrowClaimed event
     const approvalValue = 1;
@@ -148,9 +148,9 @@ describe("IntentEscrow - Integration Tests", function () {
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
     
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress))
+    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, ethers.ZeroAddress);
+      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
     
     // Step 2: Verify escrow state before expiry
     const escrowDataBefore = await escrow.getEscrow(intentId);

@@ -23,7 +23,7 @@ describe("IntentEscrow - Cancel", function () {
     amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
   });
 
   /// Test: Cancellation After Expiry

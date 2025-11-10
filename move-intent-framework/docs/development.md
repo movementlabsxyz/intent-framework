@@ -87,7 +87,7 @@ aptos_intent = "0x123"
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-framework.git"
-rev = "mainnet"
+rev = "<commit-hash>"  # See Move.toml for the actual pinned commit
 subdir = "aptos-framework"
 ```
 
@@ -95,7 +95,7 @@ subdir = "aptos-framework"
 - **Package Name**: `aptos-intent`
 - **Address**: Uses `_` for deployment flexibility
 - **Dev Address**: `0x123` for testing
-- **Dependencies**: Aptos Framework from mainnet branch
+- **Dependencies**: Aptos Framework pinned to a specific commit (see `Move.toml` for the exact commit hash)
 
 ### Development Environment
 
@@ -112,7 +112,7 @@ Enter the environment with `nix develop` from the project root.
 ### Aptos Framework
 
 - **Source**: [Aptos Framework](https://github.com/aptos-labs/aptos-framework)
-- **Branch**: `mainnet`
+- **Version**: Pinned to a specific commit hash (see `Move.toml` for the exact commit)
 - **Purpose**: Core blockchain functionality, fungible assets, cryptography
 
 ### Aptos CLI

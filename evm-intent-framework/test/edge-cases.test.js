@@ -31,7 +31,7 @@ describe("IntentEscrow - Edge Cases", function () {
     await token.connect(maker).approve(escrow.target, maxAmount);
 
     // Create escrow with max intent ID and max amount
-    await expect(escrow.connect(maker).createEscrow(maxIntentId, token.target, maxAmount, ethers.ZeroAddress))
+    await expect(escrow.connect(maker).createEscrow(maxIntentId, token.target, maxAmount, solver.address))
       .to.emit(escrow, "EscrowInitialized");
     
     const escrowData = await escrow.getEscrow(maxIntentId);
@@ -48,7 +48,7 @@ describe("IntentEscrow - Edge Cases", function () {
     await token.mint(maker.address, minAmount);
     await token.connect(maker).approve(escrow.target, minAmount);
 
-    await expect(escrow.connect(maker).createEscrow(testIntentId, token.target, minAmount, ethers.ZeroAddress))
+    await expect(escrow.connect(maker).createEscrow(testIntentId, token.target, minAmount, solver.address))
       .to.emit(escrow, "EscrowInitialized");
     
     const escrowData = await escrow.getEscrow(testIntentId);
@@ -68,7 +68,7 @@ describe("IntentEscrow - Edge Cases", function () {
     // Create multiple escrows with sequential intent IDs
     for (let i = 0; i < numEscrows; i++) {
       const testIntentId = intentId + BigInt(i);
-      await expect(escrow.connect(maker).createEscrow(testIntentId, token.target, amount, ethers.ZeroAddress))
+      await expect(escrow.connect(maker).createEscrow(testIntentId, token.target, amount, solver.address))
         .to.emit(escrow, "EscrowInitialized");
       
       const escrowData = await escrow.getEscrow(testIntentId);
@@ -91,7 +91,7 @@ describe("IntentEscrow - Edge Cases", function () {
     const gasEstimates = [];
     for (let i = 0; i < numEscrows; i++) {
       const testIntentId = intentId + BigInt(i);
-      const tx = await escrow.connect(maker).createEscrow(testIntentId, token.target, amount, ethers.ZeroAddress);
+      const tx = await escrow.connect(maker).createEscrow(testIntentId, token.target, amount, solver.address);
       const receipt = await tx.wait();
       gasEstimates.push(receipt.gasUsed);
     }
@@ -118,7 +118,7 @@ describe("IntentEscrow - Edge Cases", function () {
     const promises = [];
     for (let i = 0; i < numEscrows; i++) {
       const testIntentId = intentId + BigInt(i);
-      promises.push(escrow.connect(maker).createEscrow(testIntentId, token.target, amount, ethers.ZeroAddress));
+      promises.push(escrow.connect(maker).createEscrow(testIntentId, token.target, amount, solver.address));
     }
 
     // Wait for all transactions

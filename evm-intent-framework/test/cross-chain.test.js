@@ -6,6 +6,7 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
   let escrow;
   let token;
   let maker;
+  let solver;
   let intentId;
 
   beforeEach(async function () {
@@ -13,6 +14,7 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
     escrow = fixtures.escrow;
     token = fixtures.token;
     maker = fixtures.maker;
+    solver = fixtures.solver;
     intentId = fixtures.intentId;
   });
 
@@ -27,7 +29,7 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(evmIntentId, token.target, amount, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(evmIntentId, token.target, amount, solver.address);
 
     // Verify escrow was created correctly
     const escrowData = await escrow.getEscrow(evmIntentId);
@@ -47,21 +49,21 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
 
     // Test maximum uint256 value
     const maxIntentId = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-    await escrow.connect(maker).createEscrow(maxIntentId, token.target, amount, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(maxIntentId, token.target, amount, solver.address);
     const maxEscrowData = await escrow.getEscrow(maxIntentId);
     expect(maxEscrowData.maker).to.equal(maker.address);
     expect(maxEscrowData.amount).to.equal(amount);
 
     // Test zero value
     const zeroIntentId = 0n;
-    await escrow.connect(maker).createEscrow(zeroIntentId, token.target, amount, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(zeroIntentId, token.target, amount, solver.address);
     const zeroEscrowData = await escrow.getEscrow(zeroIntentId);
     expect(zeroEscrowData.maker).to.equal(maker.address);
     expect(zeroEscrowData.amount).to.equal(amount);
 
     // Test edge value (2^128 - 1)
     const edgeIntentId = BigInt("0xffffffffffffffffffffffffffffffff");
-    await escrow.connect(maker).createEscrow(edgeIntentId, token.target, amount, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(edgeIntentId, token.target, amount, solver.address);
     const edgeEscrowData = await escrow.getEscrow(edgeIntentId);
     expect(edgeEscrowData.maker).to.equal(maker.address);
     expect(edgeEscrowData.amount).to.equal(amount);
@@ -92,7 +94,7 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
       expect(paddedIntentId).to.equal(expectedValue);
 
       // Verify escrow operations work with padded intent ID
-      await escrow.connect(maker).createEscrow(paddedIntentId, token.target, amount, ethers.ZeroAddress);
+      await escrow.connect(maker).createEscrow(paddedIntentId, token.target, amount, solver.address);
       const escrowData = await escrow.getEscrow(paddedIntentId);
       expect(escrowData.maker).to.equal(maker.address);
       expect(escrowData.amount).to.equal(amount);
@@ -117,7 +119,7 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
 
     // Create escrows with different intent ID formats
     for (let i = 0; i < intentIds.length; i++) {
-      await escrow.connect(maker).createEscrow(intentIds[i], token.target, amount, ethers.ZeroAddress);
+      await escrow.connect(maker).createEscrow(intentIds[i], token.target, amount, solver.address);
       const escrowData = await escrow.getEscrow(intentIds[i]);
       expect(escrowData.maker).to.equal(maker.address);
       expect(escrowData.token).to.equal(token.target);

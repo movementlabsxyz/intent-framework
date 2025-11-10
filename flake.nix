@@ -27,6 +27,7 @@
             pkgs.pkg-config
             pkgs.nodejs
             pkgs.nodePackages.npm
+            pkgs.git
             aptosCli
           ];
 

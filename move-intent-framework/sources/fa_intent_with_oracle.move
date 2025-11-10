@@ -14,6 +14,7 @@ module aptos_intent::fa_intent_with_oracle {
     use aptos_framework::object::{Self, DeleteRef, ExtendRef, Object};
     use aptos_framework::primary_fungible_store;
     use aptos_intent::intent::{Self, TradeSession, TradeIntent};
+    use aptos_intent::intent_reservation::{Self, IntentReserved};
     use aptos_std::ed25519;
 
     // ============================================================================
@@ -125,6 +126,7 @@ module aptos_intent::fa_intent_with_oracle {
     /// - `requirement`: Oracle public key and minimum reported value used for verification
     /// - `revocable`: Whether the intent can be revoked by the owner
     /// - `intent_id`: The original intent ID from hub chain (for escrows) or same as intent_address (for regular intents)
+    /// - `reservation`: Optional reservation specifying which solver can claim the escrow
     ///
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created oracle-guarded intent
@@ -137,6 +139,7 @@ module aptos_intent::fa_intent_with_oracle {
         requirement: OracleSignatureRequirement,
         revocable: bool,
         intent_id: address,
+        reservation: Option<IntentReserved>,
     ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         // Capture metadata and amount before depositing
         let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
@@ -160,7 +163,7 @@ module aptos_intent::fa_intent_with_oracle {
             expiry_time,
             issuer,
             OracleGuardedWitness {},
-            option::none(),
+            reservation,
             revocable,
         );
 
@@ -187,15 +190,22 @@ module aptos_intent::fa_intent_with_oracle {
     /// so the solver can learn the oracle requirement alongside the trade data.
     ///
     /// # Arguments
+    /// - `solver`: Signer of the solver attempting to claim the escrow
     /// - `intent`: Object reference to the oracle-guarded intent
     ///
     /// # Returns
     /// - `FungibleAsset`: The unlocked supply that the solver can now move
     /// - `TradeSession<OracleGuardedLimitOrder>`: "Hot potato" session tracking the intent arguments
+    ///
+    /// # Aborts
+    /// - If the intent is reserved and the solver is not the authorized solver
     public fun start_fa_offering_session(
+        solver: &signer,
         intent: Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>
     ): (FungibleAsset, TradeSession<OracleGuardedLimitOrder>) {
         let (store_manager, session) = intent::start_intent_session(intent);
+        let reservation = intent::get_reservation(&session);
+        intent_reservation::ensure_solver_authorized(solver, reservation);
         (destroy_store_manager(store_manager), session)
     }
 

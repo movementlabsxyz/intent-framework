@@ -27,7 +27,7 @@ describe("IntentEscrow - Expiry Handling", function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
 
     // Cancellation blocked before expiry
     await expect(
@@ -58,7 +58,7 @@ describe("IntentEscrow - Expiry Handling", function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    const tx = await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
+    const tx = await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
     const receipt = await tx.wait();
     const block = await ethers.provider.getBlock(receipt.blockNumber);
 
@@ -79,7 +79,7 @@ describe("IntentEscrow - Expiry Handling", function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
     await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount, ethers.ZeroAddress);
+    await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
 
     // Advance time past expiry
     const expiryDuration = await escrow.EXPIRY_DURATION();

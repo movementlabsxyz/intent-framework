@@ -6,21 +6,26 @@
 
 The Aptos Intent Framework provides a simple escrow system through the `intent_as_escrow.move` module. This abstraction makes it easy to lock tokens and wait for verifier approval. The actual swap conditions and logic happen off-chain or on another chain - this chain just locks tokens and awaits binary yes/no from the verifier.
 
+**Important**: Escrows created through `intent_as_escrow` **must** specify a reserved solver address. While the underlying `fa_intent_with_oracle` intent type supports optional reservations, escrows enforce this requirement for security (preventing signature replay attacks).
+
 ## Simple Escrow API
 
 The `intent_as_escrow.move` module provides a clean interface for escrow functionality:
 
 ```move
-// 1. Create escrow
+// 1. Create escrow (must specify solver address)
+let reservation = intent_reservation::new_reservation(solver_address);
 let escrow_intent = intent_as_escrow::create_escrow(
     user,
     source_asset,
     verifier_public_key,
     expiry_time,
+    intent_id, // Intent ID from hub chain (for cross-chain matching)
+    reservation, // Required - escrow must specify a solver address
 );
 
-// 2. Solver takes escrow
-let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(escrow_intent);
+// 2. Solver takes escrow (solver signer must match reserved solver)
+let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(solver, escrow_intent);
 
 // 3. Verifier approves/rejects
 let (approval_value, verifier_signature) = intent_as_escrow::create_oracle_approval(
@@ -28,8 +33,9 @@ let (approval_value, verifier_signature) = intent_as_escrow::create_oracle_appro
     true, // approve = true, reject = false
 );
 
-// 4. Complete escrow
+// 4. Complete escrow (solver signer must match reserved solver)
 intent_as_escrow::complete_escrow(
+    solver,
     session,
     solver_payment,
     approval_value,
@@ -40,10 +46,10 @@ intent_as_escrow::complete_escrow(
 ## API Functions
 
 ### Core Functions
-- **`create_escrow()`** - Create escrow with verifier requirement (just locks tokens)
-- **`start_escrow_session()`** - Start escrow for solver
-- **`complete_escrow()`** - Complete with verifier approval
-- **`revoke_escrow()`** - Revoke and return assets to user
+- **`create_escrow()`** - Create escrow with verifier requirement (just locks tokens). **Requires** `reservation` parameter with solver address (unlike general `fa_intent_with_oracle` intents, escrows must always be reserved).
+- **`start_escrow_session()`** - Start escrow for solver. Requires solver signer that matches the reserved solver address.
+- **`complete_escrow()`** - Complete with verifier approval. Requires solver signer that matches the reserved solver address.
+- **`revoke_escrow()`** - Revoke and return assets to user (not available - escrows are non-revocable)
 
 ### Helper Functions
 - **`create_oracle_approval()`** - Generate verifier signature for approval/rejection
@@ -56,10 +62,13 @@ intent_as_escrow::complete_escrow(
 User locks tokens and specifies:
 - Which verifier can approve
 - When escrow expires
+- **Which solver address will receive funds** (required for escrows)
 - (No swap parameters - actual logic is off-chain)
 
 ### 2. Solver Participation
 Solver takes the escrowed assets (actual swap logic happens off-chain)
+- The solver address must be specified at escrow creation
+- Only the specified solver can start the session (enforced on-chain)
 
 ### 3. Verifier Verification
 Verifier:
@@ -82,6 +91,7 @@ The escrow system is deployed on a single Aptos chain. The verifier (oracle) mon
 - **Timelock**: Escrow expires automatically
 - **Verifier Verification**: Only authorized verifier can approve
 - **Signature Verification**: Ed25519 signatures prevent forgery
+- **Solver Reservation**: All escrows must specify a solver address at creation, preventing unauthorized claims and signature replay attacks
 - **Event Transparency**: All actions are auditable
 
 ## Usage Examples
@@ -89,11 +99,14 @@ The escrow system is deployed on a single Aptos chain. The verifier (oracle) mon
 ### Simple Token Escrow
 ```move
 // User locks TokenA and waits for verifier approval
+let reservation = intent_reservation::new_reservation(solver_address);
 let escrow = intent_as_escrow::create_escrow(
     user,
     token_a_asset,
     verifier_public_key,
     expiry_time,
+    intent_id, // Intent ID from hub chain
+    reservation, // Required - must specify solver address
 );
 ```
 
@@ -106,5 +119,5 @@ let (approval, signature) = intent_as_escrow::create_oracle_approval(
 );
 
 // Escrow releases tokens to solver
-intent_as_escrow::complete_escrow(session, payment, approval, signature);
+intent_as_escrow::complete_escrow(solver, session, payment, approval, signature);
 ```

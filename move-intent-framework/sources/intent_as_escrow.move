@@ -29,13 +29,14 @@
 /// 
 /// ============================================================================
 module aptos_intent::intent_as_escrow {
-    use std::option::{Self as option};
+    use std::option::{Self as option, Option};
     use std::signer;
     use std::error;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
     use aptos_framework::object::Object;
     use aptos_intent::fa_intent_with_oracle;
-    use aptos_intent::intent::{TradeIntent, TradeSession};
+    use aptos_intent::intent::{Self, TradeIntent, TradeSession};
+    use aptos_intent::intent_reservation::{Self, IntentReserved};
     use aptos_std::ed25519;
 
     // ============================================================================
@@ -72,15 +73,20 @@ module aptos_intent::intent_as_escrow {
     /// - `verifier_public_key`: Public key of authorized verifier
     /// - `expiry_time`: Unix timestamp when escrow expires
     /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
+    /// - `reservation`: Required reservation specifying which solver can claim the escrow
     /// 
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created escrow
+    /// 
+    /// # Aborts
+    /// - If reservation is None (escrows must always be reserved for a specific solver)
     public fun create_escrow(
         user: &signer,
         source_asset: FungibleAsset,
         verifier_public_key: ed25519::UnvalidatedPublicKey,
         expiry_time: u64,
         intent_id: address,
+        reservation: IntentReserved,
     ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
         // Create verifier requirement: verifier must provide approval value >= 1 (approve)
         let requirement = fa_intent_with_oracle::new_oracle_signature_requirement(
@@ -104,26 +110,33 @@ module aptos_intent::intent_as_escrow {
             //      This ensures funds can ONLY be released by verifier approval/rejection
             //      Verifiers can safely trigger actions elsewhere based on deposit events
             intent_id,
+            option::some(reservation), // Escrows must always be reserved for a specific solver
         )
     }
 
     /// Starts an escrow session for a solver to fulfill
     /// 
     /// # Arguments
+    /// - `solver`: Signer of the solver attempting to claim the escrow
     /// - `intent`: Handle to the escrow intent
     /// 
     /// # Returns
     /// - `FungibleAsset`: The escrowed asset that solver can claim
     /// - `TradeSession<...>`: Session for completing the escrow
+    ///
+    /// # Aborts
+    /// - If the escrow is reserved and the solver is not the authorized solver
     public fun start_escrow_session(
+        solver: &signer,
         intent: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>
     ): (FungibleAsset, TradeSession<fa_intent_with_oracle::OracleGuardedLimitOrder>) {
-        fa_intent_with_oracle::start_fa_offering_session(intent)
+        fa_intent_with_oracle::start_fa_offering_session(solver, intent)
     }
 
     /// Completes an escrow with verifier approval
     /// 
     /// # Arguments
+    /// - `solver`: Signer of the solver completing the escrow
     /// - `session`: Active escrow session
     /// - `solver_payment`: Asset provided by solver to fulfill escrow
     /// - `verifier_approval`: Verifier's approval decision (1 = approve, 0 = reject)
@@ -133,12 +146,17 @@ module aptos_intent::intent_as_escrow {
     /// - If verifier approval is 0 (reject)
     /// - If verifier signature verification fails
     /// - If solver payment doesn't match escrow requirements
+    /// - If the escrow is reserved and the solver is not the authorized solver
     public fun complete_escrow(
+        solver: &signer,
         session: TradeSession<fa_intent_with_oracle::OracleGuardedLimitOrder>,
         solver_payment: FungibleAsset,
         verifier_approval: u64,
         verifier_signature: ed25519::Signature,
     ) {
+        // Verify solver is authorized if escrow is reserved
+        let reservation = intent::get_reservation(&session);
+        intent_reservation::ensure_solver_authorized(solver, reservation);
         // Verify verifier approved the escrow
         assert!(verifier_approval == ORACLE_APPROVE, error::invalid_argument(ORACLE_REJECT));
 

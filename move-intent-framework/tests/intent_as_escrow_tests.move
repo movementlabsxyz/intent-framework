@@ -7,6 +7,7 @@ module aptos_intent::intent_as_escrow_tests {
     use aptos_intent::intent_as_escrow;
     use aptos_intent::fa_intent_with_oracle;
     use aptos_intent::fa_test_utils::register_and_mint_tokens;
+    use aptos_intent::intent_reservation;
     use aptos_std::ed25519;
 
     // ============================================================================
@@ -47,18 +48,20 @@ module aptos_intent::intent_as_escrow_tests {
         let (verifier_secret_key, validated_pk) = ed25519::generate_keys();
         let verifier_public_key = ed25519::public_key_to_unvalidated(&validated_pk);
         
-        // User creates escrow
+        // User creates escrow (must specify reserved solver)
         let source_asset = primary_fungible_store::withdraw(user, source_token_type, 50);
+        let reservation = intent_reservation::new_reservation(signer::address_of(solver));
         let escrow_intent = intent_as_escrow::create_escrow(
             user,
             source_asset,
             verifier_public_key,
             timestamp::now_seconds() + 3600, // 1 hour expiry
             @0x1, // dummy intent_id for testing
+            reservation, // Escrow must be reserved for a specific solver
         );
         
         // Solver starts escrow session
-        let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(escrow_intent);
+        let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(solver, escrow_intent);
         primary_fungible_store::deposit(signer::address_of(solver), escrowed_asset);
         
         // Verifier approves the escrow
@@ -68,6 +71,7 @@ module aptos_intent::intent_as_escrow_tests {
         // Solver provides payment (source token type)
         let solver_payment = primary_fungible_store::withdraw(solver, source_token_type, 50);
         intent_as_escrow::complete_escrow(
+            solver,
             session,
             solver_payment,
             approval_value,
@@ -106,15 +110,17 @@ module aptos_intent::intent_as_escrow_tests {
         let verifier_public_key = ed25519::public_key_to_unvalidated(&validated_pk);
         
         let source_asset = primary_fungible_store::withdraw(user, source_token_type, 50);
+        let reservation = intent_reservation::new_reservation(signer::address_of(solver));
         let escrow_intent = intent_as_escrow::create_escrow(
             user,
             source_asset,
             verifier_public_key,
             timestamp::now_seconds() + 3600,
             @0x1, // dummy intent_id for testing
+            reservation, // Escrow must be reserved for a specific solver
         );
         
-        let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(escrow_intent);
+        let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(solver, escrow_intent);
         primary_fungible_store::deposit(signer::address_of(solver), escrowed_asset);
         
         // Verifier rejects the escrow
@@ -124,6 +130,7 @@ module aptos_intent::intent_as_escrow_tests {
         // This should abort because oracle rejected
         let solver_payment = primary_fungible_store::withdraw(solver, source_token_type, 50);
         intent_as_escrow::complete_escrow(
+            solver,
             session,
             solver_payment,
             approval_value,
@@ -152,12 +159,14 @@ module aptos_intent::intent_as_escrow_tests {
         let verifier_public_key = ed25519::public_key_to_unvalidated(&validated_pk);
         
         let source_asset = primary_fungible_store::withdraw(user, source_token_type, 50);
+        let reservation = intent_reservation::new_reservation(signer::address_of(solver));
         let escrow_intent = intent_as_escrow::create_escrow(
             user,
             source_asset,
             verifier_public_key,
             timestamp::now_seconds() + 3600,
             @0x1, // dummy intent_id for testing
+            reservation, // Escrow must be reserved for a specific solver
         );
         
         // User tries to revoke the escrow directly - this should fail because escrow is non-revocable
@@ -166,12 +175,14 @@ module aptos_intent::intent_as_escrow_tests {
 
     #[test(
         aptos_framework = @0x1,
-        user = @0xcafe
+        user = @0xcafe,
+        solver = @0xbeef
     )]
     /// Test the CLI-friendly wrapper function for creating escrow with any fungible asset
     fun test_create_escrow_from_fa(
         aptos_framework: &signer,
         user: &signer,
+        solver: &signer,
     ) {
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -185,7 +196,7 @@ module aptos_intent::intent_as_escrow_tests {
         // Convert to vector<u8> for the wrapper function
         let verifier_public_key_bytes = ed25519::unvalidated_public_key_to_bytes(&verifier_public_key);
         
-        // Test the wrapper function: create escrow from FA
+        // Test the wrapper function: create escrow from FA (must specify reserved solver)
         aptos_intent::intent_as_escrow_entry::create_escrow_from_fa(
             user,
             fa_metadata,
@@ -193,6 +204,7 @@ module aptos_intent::intent_as_escrow_tests {
             verifier_public_key_bytes,
             timestamp::now_seconds() + 3600,
             @0x1, // dummy intent_id for testing
+            signer::address_of(solver), // Reserved solver address
         );
         
         // Verify user's balance decreased by 50

@@ -22,6 +22,7 @@ module aptos_intent::intent_as_escrow_entry {
     /// - `verifier_public_key`: Public key of authorized verifier (32 bytes as hex)
     /// - `expiry_time`: Unix timestamp when escrow expires
     /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
+    /// - `reserved_solver`: Address of the solver who will receive funds when escrow is claimed
     public entry fun create_escrow_from_fa(
         user: &signer,
         source_metadata: Object<fungible_asset::Metadata>,
@@ -29,15 +30,22 @@ module aptos_intent::intent_as_escrow_entry {
         verifier_public_key: vector<u8>, // 32 bytes
         expiry_time: u64,
         intent_id: address,
+        reserved_solver: address,
     ) {
+        use aptos_intent::intent_reservation;
+        
         // Withdraw tokens as a FungibleAsset from the caller's primary FA store
         let fa: FungibleAsset = primary_fungible_store::withdraw(user, source_metadata, amount);
 
         // Build ed25519::UnvalidatedPublicKey correctly
         let oracle_pk = ed25519::new_unvalidated_public_key_from_bytes(verifier_public_key);
 
+        // Create reservation for the specified solver
+        // Escrows must always be reserved for a specific solver
+        let reservation = intent_reservation::new_reservation(reserved_solver);
+
         // Call the general escrow creation function
-        intent_as_escrow::create_escrow(user, fa, oracle_pk, expiry_time, intent_id);
+        intent_as_escrow::create_escrow(user, fa, oracle_pk, expiry_time, intent_id, reservation);
     }
 
     /// CLI-friendly wrapper for completing escrow with any fungible asset.
@@ -64,7 +72,7 @@ module aptos_intent::intent_as_escrow_entry {
         verifier_signature_bytes: vector<u8>,
     ) {
         // Start escrow session to get the escrowed assets and create a session
-        let (escrowed_asset, session) = start_escrow_session(escrow_intent);
+        let (escrowed_asset, session) = start_escrow_session(solver, escrow_intent);
         
         // Infer payment metadata from the escrowed asset BEFORE depositing (FungibleAsset doesn't have copy)
         // Uses placeholder metadata matching source asset
@@ -80,7 +88,7 @@ module aptos_intent::intent_as_escrow_entry {
         let verifier_signature = ed25519::new_signature_from_bytes(verifier_signature_bytes);
         
         // Complete the escrow with verifier approval
-        complete_escrow(session, solver_payment, verifier_approval, verifier_signature);
+        complete_escrow(solver, session, solver_payment, verifier_approval, verifier_signature);
     }
 }
 

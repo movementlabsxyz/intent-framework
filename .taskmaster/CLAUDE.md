@@ -42,6 +42,12 @@ task-master generate                                         # Update task markd
 - `.taskmaster/tasks/tasks.json` - Main task data file (auto-managed)
 - `.taskmaster/config.json` - AI model configuration (use `task-master models` to modify)
 - `.taskmaster/docs/prd.txt` - Product Requirements Document for parsing
+- `.taskmaster/docs/rpg-methodology.md` - RPG architectural methodology principles
+- `.taskmaster/docs/domain-boundaries-and-interfaces.md` - Domain boundary definitions
+- `.taskmaster/docs/architecture-component-mapping.md` - Component-to-domain mapping analysis
+
+**Architecture Guiding Documents**: Architecture principles and methodology documents are stored in `.taskmaster/docs/` rather than the public `docs/` directory. These include architectural methodology (RPG principles), domain boundary definitions, component-to-domain mapping analysis, and other internal architectural guidance that informs development decisions but is not part of the public API documentation.
+
 - `.taskmaster/tasks/*.txt` - Individual task files (auto-generated from tasks.json)
 - `.env` - API keys for CLI usage
 
@@ -54,7 +60,7 @@ task-master generate                                         # Update task markd
 
 ### Directory Structure
 
-```
+```text
 project/
 ├── .taskmaster/
 │   ├── tasks/              # Task files directory
@@ -63,6 +69,9 @@ project/
 │   │   └── task-2.md
 │   ├── docs/              # Documentation directory
 │   │   ├── prd.txt        # Product requirements
+│   │   ├── rpg-methodology.md  # RPG architectural methodology principles
+│   │   ├── domain-boundaries-and-interfaces.md  # Domain boundary definitions
+│   │   └── architecture-component-mapping.md  # Component-to-domain mapping
 │   ├── reports/           # Analysis reports directory
 │   │   └── task-complexity-report.json
 │   ├── templates/         # Template files

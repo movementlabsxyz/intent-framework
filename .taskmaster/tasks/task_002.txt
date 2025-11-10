@@ -1,11 +1,11 @@
 # Task ID: 2
 # Title: Create architecture document organizing system by domains
-# Status: pending
+# Status: in-progress
 # Dependencies: 1
 # Priority: medium
 # Description: Create comprehensive architecture documentation that organizes the cross-chain intent framework by domain following RPG methodology for structured system design.
 # Details:
-This task involves creating docs/architecture.md that applies RPG (Repository Planning Graph) methodology to organize the intent framework system by logical domains. The document should:
+This task involves creating internal architecture documentation in `.taskmaster/docs/` that applies RPG (Repository Planning Graph) methodology to organize the intent framework system by logical domains. Architecture documentation is stored in `.taskmaster/docs/` rather than the public `docs/` directory, as these are internal architectural guidance documents that inform development decisions but are not part of the public API documentation. The documents should:
 
 ## Domain Structure Analysis:
 1. **Intent Management Domain**: Core intent creation, validation, and execution logic centered around the intent.move and fa_intent.move modules. This includes intent lifecycle management, type-safe witness systems, and event emissions.
@@ -20,7 +20,7 @@ This task involves creating docs/architecture.md that applies RPG (Repository Pl
 - Executive summary of the domain-driven architecture approach
 - Domain definitions with clear boundaries and responsibilities
 - Component mapping showing which source files belong to each domain
-- Inter-domain interaction patterns and data flows (referencing existing cross-chain-flow.md)
+- Inter-domain interaction patterns and data flows (referencing protocol.md#cross-chain-flow)
 - Current implementation status for each domain with specific file references
 - Dependencies between domains using the RPG methodology's explicit dependency modeling
 - Integration patterns showing how domains communicate
@@ -36,40 +36,47 @@ The document should serve as the foundational architecture reference that other 
 # Test Strategy:
 1. Verify all source files are correctly categorized into their respective domains by cross-referencing with actual codebase structure
 2. Validate domain boundaries make logical sense and don't create circular dependencies
-3. Ensure all components mentioned in existing documentation (cross-chain-flow.md, component READMEs) are properly mapped to domains
+3. Ensure all components mentioned in existing documentation (protocol.md#cross-chain-flow, component READMEs) are properly mapped to domains
 4. Check that inter-domain interaction patterns accurately reflect the implemented cross-chain flow
 5. Verify implementation status accurately reflects current codebase state
-6. Review document follows RPG methodology principles with explicit dependencies and clear functional/structural separation
-7. Ensure document integrates well with existing docs/ structure and doesn't duplicate content from technical-overview.md
+6. Review documents follow RPG methodology principles with explicit dependencies and clear functional/structural separation
+7. Ensure architecture documentation is properly located in `.taskmaster/docs/` as internal architectural guidance, not in public `docs/` directory
+8. Verify that public documentation properly references internal architecture docs where appropriate
 
 # Subtasks:
-## 1. Analyze codebase structure and map components to domains [pending]
+## 1. Analyze codebase structure and map components to domains [done]
 ### Dependencies: None
 ### Description: Perform comprehensive analysis of the intent framework codebase to identify all components and understand their relationships, then map them to the four proposed domains (Intent Management, Escrow, Settlement, Verification).
 ### Details:
 Conduct thorough review of all source files in move-intent-framework/sources/, evm-intent-framework/contracts/, and trusted-verifier/src/ directories. Create detailed mapping of each file to its corresponding domain, analyzing their responsibilities and interactions. Document current implementation status and identify any components that don't fit cleanly into the proposed domain structure. This analysis will form the foundation for the architecture document structure.
 
-## 2. Research and document RPG methodology principles [pending]
+**Completed**: Created comprehensive component-to-domain mapping document (`.taskmaster/docs/architecture-component-mapping.md`) organizing all Intent Framework source files into four logical domains with detailed file-by-file analysis. Documented Intent Management domain (intent.move, fa_intent.move, fa_intent_with_oracle.move, fa_intent_cross_chain.move, intent_reservation.move), Escrow domain (intent_as_escrow.move, intent_as_escrow_entry.move, IntentEscrow.sol), Settlement domain (fulfillment/completion functions distributed across other modules), and Verification domain (monitor/mod.rs, validator/mod.rs, crypto/mod.rs, api/mod.rs, config/mod.rs, aptos_client.rs). Mapped cross-domain dependencies, identified critical security constraints (non-revocable escrow requirement), and documented that all 30+ production components are implemented and functional. Architecture documentation is stored in `.taskmaster/docs/` as internal architectural guidance.
+
+## 2. Research and document RPG methodology principles [done]
 ### Dependencies: 2.1
 ### Description: Research Repository Planning Graph methodology and understand its core principles for domain-driven architecture design, then adapt these principles for the intent framework context.
 ### Details:
 Study RPG methodology focusing on explicit dependency modeling, domain boundary definition, and component interaction patterns. Document how RPG principles apply to cross-chain intent systems, particularly around dependency graphs between domains and clear separation of concerns. Create guidelines for applying RPG concepts to the intent framework's domain structure, ensuring the architecture document follows these principles consistently.
 
-## 3. Define domain boundaries and responsibilities [pending]
+**Completed**: Documented RPG methodology principles in `.taskmaster/docs/rpg-methodology.md` covering the four core RPG principles (Dual-Semantics, Explicit Dependencies, Topological Order, Progressive Refinement) and how they apply to the Intent Framework's four-domain architecture. Included a Mermaid dependency graph illustrating domain relationships. This document serves as internal architectural guidance stored in `.taskmaster/docs/`.
+
+## 3. Define domain boundaries and responsibilities [done]
 ### Dependencies: 2.1, 2.2
 ### Description: Create precise definitions for each of the four domains with clear boundaries, responsibilities, and interfaces, ensuring no overlap or gaps in functionality coverage.
 ### Details:
 Based on the codebase analysis, define Intent Management Domain (intent.move, fa_intent.move lifecycle), Escrow Domain (intent_as_escrow.move, IntentEscrow.sol custody), Settlement Domain (fulfillment and cross-chain coordination), and Verification Domain (trusted-verifier service). Document each domain's core responsibilities, external interfaces, internal components, and strict boundaries. Include data ownership rules and interaction protocols between domains following RPG methodology.
 
+**Completed**: Created comprehensive domain boundary definitions in `.taskmaster/docs/domain-boundaries-and-interfaces.md` following RPG methodology principles. Documented complete specifications for all four domains including: precise in-scope/out-of-scope boundaries, public entry functions and APIs, events emitted, exported data structures, internal implementation components, data ownership rules, and explicit interaction protocols with other domains. The boundaries ensure no functional overlaps between Intent Management, Escrow, Settlement, and Verification domains while maintaining clear interaction pathways. This document is stored in `.taskmaster/docs/` as internal architectural guidance.
+
 ## 4. Document inter-domain interaction patterns and dependencies [pending]
 ### Dependencies: 2.3
 ### Description: Create comprehensive documentation of how domains communicate and depend on each other, including data flows, event patterns, and dependency graphs using RPG methodology.
 ### Details:
-Document all communication patterns between domains including event flows (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent), API calls, and data sharing mechanisms. Create explicit dependency graphs showing which domains depend on others and in what contexts. Reference existing cross-chain-flow.md for current implementation patterns and expand these into formal inter-domain protocols. Include error handling and rollback scenarios between domains.
+Document all communication patterns between domains including event flows (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent), API calls, and data sharing mechanisms. Create explicit dependency graphs showing which domains depend on others and in what contexts. Reference protocol.md#cross-chain-flow for current implementation patterns and expand these into formal inter-domain protocols. Include error handling and rollback scenarios between domains. This documentation should be added to `.taskmaster/docs/architecture-component-mapping.md` or `.taskmaster/docs/domain-boundaries-and-interfaces.md` as internal architectural guidance.
 
 ## 5. Create and review complete architecture document [pending]
 ### Dependencies: 2.1, 2.2, 2.3, 2.4
-### Description: Synthesize all analysis into a comprehensive docs/architecture.md document that serves as the foundational architecture reference for the intent framework system.
+### Description: Synthesize all analysis into comprehensive architecture documentation in `.taskmaster/docs/` that serves as the foundational architecture reference for the intent framework system.
 ### Details:
-Create docs/architecture.md with executive summary, complete domain definitions with file mappings, RPG-based dependency modeling, inter-domain interaction patterns, current implementation status with specific file references, and integration guidelines. Include references to existing documentation (cross-chain-flow.md, technical overviews) and ensure the document serves as a clear mental model for developers. Format for easy navigation with clear sections and cross-references.
+Synthesize all architecture documentation in `.taskmaster/docs/` into a cohesive set of internal architectural guidance documents. Ensure `.taskmaster/docs/architecture-component-mapping.md`, `.taskmaster/docs/domain-boundaries-and-interfaces.md`, and `.taskmaster/docs/rpg-methodology.md` work together to provide a complete architectural reference. Include references to public documentation (protocol.md#cross-chain-flow, component READMEs) and ensure the documents serve as a clear mental model for developers. Format for easy navigation with clear sections and cross-references. Note that architecture documentation is stored in `.taskmaster/docs/` as internal architectural guidance, not in the public `docs/` directory.
 

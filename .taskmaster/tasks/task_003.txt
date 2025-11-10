@@ -48,7 +48,7 @@ This task involves creating `docs/data-models.md` that comprehensively documents
 # Test Strategy:
 1. Verify all data structures mentioned are accurately documented by cross-referencing actual source files in move-intent-framework/sources/, evm-intent-framework/contracts/, and trusted-verifier/src/
 2. Ensure field types and descriptions match the actual implementation code
-3. Validate that cross-chain data linking patterns are correctly documented by reviewing cross-chain-flow.md
+3. Validate that cross-chain data linking patterns are correctly documented by reviewing protocol.md#cross-chain-flow
 4. Check that event structure documentation aligns with actual event definitions in Move and Solidity files
 5. Verify witness pattern documentation matches intent.move implementation
 6. Confirm serialization format documentation by examining how data is handled in the trusted verifier Rust code

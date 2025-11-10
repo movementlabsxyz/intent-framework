@@ -9,7 +9,50 @@ This document provides a comprehensive mapping of all source files in the Intent
 
 This analysis forms the foundation for the architecture document.
 
+## Topological Order (Build Sequence)
+
+Following RPG methodology, domains are organized in topological order from foundation to dependent layers:
+
+```mermaid
+graph TB
+    subgraph Foundation["Foundation Layer (No Dependencies)"]
+        IM[Intent Management Domain<br/>intent.move, fa_intent.move<br/>fa_intent_with_oracle.move<br/>fa_intent_cross_chain.move<br/>intent_reservation.move]
+    end
+    
+    subgraph Layer1["Layer 1 (Depends on Foundation)"]
+        EM[Escrow Domain<br/>intent_as_escrow.move<br/>IntentEscrow.sol]
+    end
+    
+    subgraph Layer2["Layer 2 (Depends on Foundation + Layer 1)"]
+        SM[Settlement Domain<br/>Fulfillment Functions<br/>Completion Functions<br/>Claim Functions]
+        VM[Verification Domain<br/>monitor/mod.rs, validator/mod.rs<br/>crypto/mod.rs, api/mod.rs]
+    end
+    
+    IM -->|Provides reservation &<br/>oracle-intent systems| EM
+    IM -->|Provides fulfillment<br/>functions| SM
+    IM -->|Emits events| VM
+    EM -->|Provides completion<br/>functions| SM
+    EM -->|Emits escrow events| VM
+    VM -->|Validates & approves| SM
+    
+    style IM fill:#e1f5ff,stroke:#0066cc,stroke-width:3px
+    style EM fill:#fff4e1,stroke:#cc6600,stroke-width:2px
+    style SM fill:#e8f5e9,stroke:#006600,stroke-width:2px
+    style VM fill:#f3e5f5,stroke:#6600cc,stroke-width:2px
+    style Foundation fill:#f0f0f0,stroke:#333,stroke-width:2px
+    style Layer1 fill:#f5f5f5,stroke:#666,stroke-width:1px
+    style Layer2 fill:#fafafa,stroke:#999,stroke-width:1px
+```
+
+**Build Order**:
+
+1. **Foundation**: Intent Management (implement first - no dependencies)
+2. **Layer 1**: Escrow (depends on Intent Management)
+3. **Layer 2**: Settlement and Verification (depend on Foundation + Layer 1)
+
 ## Domain Architecture Overview
+
+This diagram shows all domain relationships and interactions, while the Topological Order diagram above focuses on build sequence and layering.
 
 ```mermaid
 graph TB
@@ -285,36 +328,51 @@ graph TB
 
 ## Cross-Domain Dependencies
 
-### Intent Management → Escrow
+Dependencies follow topological order: Foundation → Layer 1 → Layer 2
+
+### Foundation Layer Dependencies
+
+**Intent Management Domain**: No dependencies (foundation layer)
+
+### Layer 1 Dependencies
+
+**Escrow Domain** → **Intent Management Domain**:
 
 - Escrow uses oracle-intent system (`fa_intent_with_oracle`) for implementation
 - Escrow requires intent reservation system (`intent_reservation`) for solver addresses
 
-### Escrow → Verification
+### Layer 2 Dependencies
 
-- Escrow emits events (`OracleLimitOrderEvent`) monitored by verifier
-- Escrow requires verifier public key for signature verification
-
-### Settlement → Intent Management
+**Settlement Domain** → **Intent Management Domain** (Foundation):
 
 - Settlement uses intent fulfillment functions from `fa_intent`
 - Settlement validates witness types from `intent` module
 
-### Settlement → Escrow
+**Settlement Domain** → **Escrow Domain** (Layer 1):
 
 - Settlement completes escrows using `complete_escrow()` / `claim()`
 - Settlement requires verifier approval signatures
 
-### Verification → Intent Management
+**Verification Domain** → **Intent Management Domain** (Foundation):
 
 - Verifier monitors `LimitOrderEvent` and `LimitOrderFulfillmentEvent`
 - Verifier validates intent safety requirements
 
-### Verification → Escrow
+**Verification Domain** → **Escrow Domain** (Layer 1):
 
 - Verifier monitors `EscrowInitialized` / `OracleLimitOrderEvent`
 - Verifier validates escrow non-revocability
 - Verifier generates approval signatures for escrow release
+
+**Verification Domain** → **Settlement Domain** (Layer 2):
+
+- Verifier provides approval signatures for escrow release
+
+---
+
+## Domain Boundaries and Interfaces
+
+Detailed architectural definitions of domain boundaries, external interfaces, internal components, data ownership, and interaction protocols are documented internally in `.taskmaster/docs/domain-boundaries-and-interfaces.md`. This internal document follows RPG methodology principles and serves as architectural guidance for development decisions.
 
 ---
 

@@ -37,7 +37,7 @@ Each scenario should reference specific source files, struct definitions, error 
 # Test Strategy:
 1. Verify all scenarios reference actual code structures by cross-checking Move contracts (intent.move, fa_intent.move, fa_intent_with_oracle.move, intent_as_escrow.move) and Solidity contract (IntentEscrow.sol)
 2. Validate error codes and event names match implementation (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent, EscrowInitialized, EscrowClaimed)
-3. Ensure cross-chain flow documentation matches sequence in docs/cross-chain-flow.md
+3. Ensure cross-chain flow documentation matches sequence in protocol.md#cross-chain-flow
 4. Test that each use case can be traced through the codebase using the referenced files and line numbers
 5. Validate edge cases align with actual implementation constraints (revocable=false requirement, reservedSolver enforcement)
 6. Ensure real-world patterns reflect current capabilities without speculating on unimplemented features
@@ -71,5 +71,5 @@ Document practical usage scenarios: 1) DEX Integration (how external systems cre
 ### Dependencies: 4.1, 4.2, 4.3, 4.4
 ### Description: Assemble all documented use cases into a well-organized markdown file that serves as the central reference for system behavior scenarios.
 ### Details:
-Create docs/use-cases.md with clear sections for: Happy Path Use Cases, Error Cases, Edge Cases, and Real-World Usage Patterns. Each section should include detailed descriptions, code references with file:line_number format, struct definitions, error codes, and event emissions. Ensure the document follows the existing documentation structure and includes navigation links to related protocol documentation. Add cross-references to existing docs like cross-chain-flow.md for consistency.
+Create docs/use-cases.md with clear sections for: Happy Path Use Cases, Error Cases, Edge Cases, and Real-World Usage Patterns. Each section should include detailed descriptions, code references with file:line_number format, struct definitions, error codes, and event emissions. Ensure the document follows the existing documentation structure and includes navigation links to related protocol documentation. Add cross-references to existing docs like protocol.md#cross-chain-flow for consistency.
 

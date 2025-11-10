@@ -2,12 +2,12 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Create protocol specification document (docs/protocol.md) that documents the current implemented cross-chain intent protocol",
         "description": "Document the complete cross-chain intent protocol including sequence diagrams, event structures, data flow, and verifier validation processes.",
         "details": "This task involves creating comprehensive protocol documentation that covers the entire cross-chain intent framework implementation. The document should include:\n\n## Core Components Documentation:\n- **Intent Framework**: Document Move-based intent creation and fulfillment on hub chain (fa_intent.move) including LimitOrderEvent and LimitOrderFulfillmentEvent structures\n- **Escrow System**: Document both Move-based escrow (intent_as_escrow.move) and EVM-based escrow (IntentEscrow.sol) with OracleLimitOrderEvent emissions\n- **Trusted Verifier**: Document the Rust verifier service architecture including event monitoring, cross-chain validation, and cryptographic approval mechanisms\n\n## Sequence Diagrams Required:\n- Cross-chain flow from docs/cross-chain-flow.md showing Alice creating intent on hub, escrow on connected chain, Bob fulfilling, and verifier approving\n- Detailed step-by-step on-chain operations including exact event emissions and data structures\n- Verifier validation workflow showing event polling, safety checks (non-revocable validation), and signature generation\n\n## Data Structures and Events:\n- Document all event structures: LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent, EscrowInitialized, DepositMade, etc.\n- Include field definitions, data types, and cross-chain linking mechanisms (intent_id relationships)\n- Document configuration structures (Config, ChainConfig, EvmChainConfig, VerifierConfig)\n\n## Implementation Details:\n- Document the security requirements including non-revocable intent validation\n- Explain reserved solver address mechanism and fund transfer patterns\n- Detail cryptographic operations (Ed25519 for Aptos, ECDSA for EVM)\n- Document API endpoints and their usage\n\n## Technical Architecture:\n- Component interaction patterns between hub chain, connected chains, and verifier\n- Event monitoring and caching mechanisms\n- Cross-chain validation logic and approval workflows\n\nReference existing documentation structure from docs/ directory and follow the established patterns from docs/trusted-verifier/README.md and docs/cross-chain-flow.md. The document should serve as the definitive technical reference for the protocol implementation.",
         "testStrategy": "1. Verify documentation completeness by cross-referencing all source files (Move contracts, Solidity contracts, Rust verifier code)\n2. Validate sequence diagrams match actual implementation flow from cross-chain-flow.md\n3. Ensure all event structures and data types are accurately documented\n4. Verify technical accuracy by comparing against actual code in trusted-verifier/src/, move-intent-framework/sources/, and evm-intent-framework/contracts/\n5. Test documentation clarity by having another developer review for completeness and understanding\n6. Validate that security requirements and constraints are properly documented\n7. Ensure the document follows existing documentation standards from docs/docs-guide.md",
-        "status": "pending",
+        "status": "done",
         "dependencies": [],
         "priority": "medium",
         "subtasks": [
@@ -16,9 +16,11 @@
             "title": "Analyze codebase and document core protocol components and event structures",
             "description": "Examine all Move contracts, Solidity contracts, and Rust verifier code to identify and document the complete protocol structure including all event types, data structures, and component relationships.",
             "dependencies": [],
-            "details": "This subtask involves a comprehensive analysis of the codebase to understand all components and their interactions. Review move-intent-framework/sources/ (intent.move, fa_intent.move, fa_intent_with_oracle.move, intent_as_escrow.move), evm-intent-framework/contracts/ (IntentEscrow.sol), and trusted-verifier/src/ to identify: 1) All event structures (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent, EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled), 2) Core data structures (TradeIntent, FungibleAssetLimitOrder, Escrow struct, etc.), 3) Component relationships and dependencies, 4) Cross-chain linking mechanisms using intent_id fields, 5) Security patterns (non-revocable validation, reserved solver addresses), 6) Configuration structures from trusted verifier",
-            "status": "pending",
-            "testStrategy": "Verify documentation accuracy by cross-referencing with actual source files and ensuring all events, structs, and key functions are captured correctly with proper field definitions and relationships"
+            "details": "This subtask involves a comprehensive analysis of the codebase to understand all components and their interactions. Review move-intent-framework/sources/ (intent.move, fa_intent.move, fa_intent_with_oracle.move, intent_as_escrow.move), evm-intent-framework/contracts/ (IntentEscrow.sol), and trusted-verifier/src/ to identify: 1) All event structures (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent, EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled), 2) Core data structures (TradeIntent, FungibleAssetLimitOrder, Escrow struct, etc.), 3) Component relationships and dependencies, 4) Cross-chain linking mechanisms using intent_id fields, 5) Security patterns (non-revocable validation, reserved solver addresses), 6) Configuration structures from trusted verifier\n<info added on 2025-11-10T11:53:39.947Z>\nI'll first analyze the codebase to understand the current implementation and then generate the subtask update based on the user's request.Initial codebase analysis successfully completed. Comprehensive protocol documentation created in docs/protocol.md (386 lines) covering all three major domains: Intent Framework (hub chain Move contracts fa_intent.move, intent.move, intent_reservation.move), Escrow System (Move escrow intent_as_escrow.move and EVM escrow IntentEscrow.sol), and Trusted Verifier (Rust service with monitor, validator, crypto, and api modules). All event structures documented with exact source file references: LimitOrderEvent and LimitOrderFulfillmentEvent (fa_intent.move:50-72), OracleLimitOrderEvent (fa_intent_with_oracle.move:76-87), and EVM escrow events from IntentEscrow.sol:35-38. Complete data structure definitions included for TradeIntent, FungibleAssetLimitOrder, OracleGuardedLimitOrder, Escrow struct, and verifier data structures (IntentEvent, EscrowEvent, EscrowApproval) with accurate source references. Security patterns thoroughly documented including non-revocable escrow validation and reserved solver address requirements. Cross-chain linking mechanism via intent_id fields fully explained. Detailed sequence diagram and validation workflow included. All findings from codebase analysis successfully translated into comprehensive protocol specification ready for next phase.\n</info added on 2025-11-10T11:53:39.947Z>",
+            "status": "done",
+            "testStrategy": "Verify documentation accuracy by cross-referencing with actual source files and ensuring all events, structs, and key functions are captured correctly with proper field definitions and relationships",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T11:53:47.679Z"
           },
           {
             "id": 2,
@@ -28,8 +30,10 @@
               1
             ],
             "details": "Based on the component analysis, create detailed sequence diagrams that show: 1) Standard cross-chain flow (Alice creates intent on hub --> escrow on connected chain --> Bob fulfills --> verifier approves --> escrow claim), 2) Oracle-guarded intent flow using OracleLimitOrderEvent, 3) Error/failure scenarios and validation flows, 4) Step-by-step on-chain operations with exact event emissions, 5) Verifier validation workflow showing event polling, safety checks (non-revocable validation), and signature generation, 6) Data flow between hub chain (Move), connected chains (EVM), and verifier (Rust), 7) Timeline and ordering constraints for each phase of the protocol",
-            "status": "pending",
-            "testStrategy": "Validate sequence diagrams against existing cross-chain-flow.md and actual implementation by tracing through code paths and ensuring all event emissions, validation steps, and state transitions are accurately represented"
+            "status": "done",
+            "testStrategy": "Validate sequence diagrams against existing cross-chain-flow.md and actual implementation by tracing through code paths and ensuring all event emissions, validation steps, and state transitions are accurately represented",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T11:54:40.558Z"
           },
           {
             "id": 3,
@@ -39,8 +43,10 @@
               1
             ],
             "details": "Document all data structures found in the codebase analysis: 1) Move contract structures: TradeIntent<Source, Args>, FungibleAssetLimitOrder, FungibleStoreManager, OracleSignatureRequirement, and their field definitions, 2) Event structures: LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent with complete field documentation including intent_id linking mechanisms, 3) EVM contract structures: Escrow struct with maker, token, amount, isClaimed, expiry, reservedSolver fields, 4) EVM events: EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled, 5) Cross-chain data linking patterns explaining how intent_id enables linking between hub chain intents and connected chain escrows, 6) Configuration structures from verifier (Config, ChainConfig, EvmChainConfig, VerifierConfig), 7) Type relationships and witness patterns used for type safety",
-            "status": "pending",
-            "testStrategy": "Verify all documented structures match actual implementation by checking field names, types, and relationships in source code. Ensure cross-chain linking mechanisms are accurately described by examining how intent_id is used across contracts"
+            "status": "done",
+            "testStrategy": "Verify all documented structures match actual implementation by checking field names, types, and relationships in source code. Ensure cross-chain linking mechanisms are accurately described by examining how intent_id is used across contracts",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T11:55:14.660Z"
           },
           {
             "id": 4,
@@ -52,8 +58,10 @@
               3
             ],
             "details": "Document the technical implementation details: 1) Security requirements including non-revocable intent validation and why it's critical for cross-chain safety, 2) Reserved solver address mechanism and fund transfer patterns ensuring funds always go to designated solver regardless of transaction sender, 3) Cryptographic operations (Ed25519 for Aptos hub chain, ECDSA for EVM connected chains), 4) Component interaction patterns between hub chain (Move), connected chains (EVM), and verifier (Rust), 5) Event monitoring and caching mechanisms in the verifier, 6) Cross-chain validation logic and approval workflows, 7) API endpoints from trusted-verifier (/health, /events, /approval, /public-key), 8) Configuration and deployment patterns, 9) Error handling and recovery mechanisms across all components",
-            "status": "pending",
-            "testStrategy": "Cross-reference implementation details with actual code in trusted-verifier/src/, verify API endpoints exist in api/mod.rs, validate cryptographic operations match what's implemented in crypto/mod.rs, and ensure security requirements align with code patterns"
+            "status": "done",
+            "testStrategy": "Cross-reference implementation details with actual code in trusted-verifier/src/, verify API endpoints exist in api/mod.rs, validate cryptographic operations match what's implemented in crypto/mod.rs, and ensure security requirements align with code patterns",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T11:55:41.016Z"
           },
           {
             "id": 5,
@@ -66,20 +74,23 @@
               4
             ],
             "details": "Create the final docs/protocol.md document by: 1) Following the documentation structure established in docs-guide.md and existing patterns from docs/trusted-verifier/README.md, 2) Organizing content with clear sections: Core Components Documentation, Sequence Diagrams, Data Structures and Events, Implementation Details, Technical Architecture, 3) Including all sequence diagrams as Mermaid code blocks, 4) Providing comprehensive cross-references to source files using file_path:line_number format for easy navigation, 5) Ensuring consistency with existing documentation in docs/cross-chain-flow.md, 6) Adding navigation links and table of contents for easy reference, 7) Including examples and usage patterns where appropriate, 8) Formatting for clarity and maintainability following established markdown conventions",
-            "status": "pending",
-            "testStrategy": "Review final document for completeness by checking all requirements from original task description are covered, validate all cross-references work correctly, ensure Mermaid diagrams render properly, and verify consistency with existing documentation patterns"
+            "status": "done",
+            "testStrategy": "Review final document for completeness by checking all requirements from original task description are covered, validate all cross-references work correctly, ensure Mermaid diagrams render properly, and verify consistency with existing documentation patterns",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T12:16:19.230Z"
           }
-        ]
+        ],
+        "updatedAt": "2025-11-10T12:16:19.230Z"
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Create architecture document organizing system by domains",
         "description": "Create comprehensive architecture documentation that organizes the cross-chain intent framework by domain following RPG methodology for structured system design.",
         "details": "This task involves creating docs/architecture.md that applies RPG (Repository Planning Graph) methodology to organize the intent framework system by logical domains. The document should:\n\n## Domain Structure Analysis:\n1. **Intent Management Domain**: Core intent creation, validation, and execution logic centered around the intent.move and fa_intent.move modules. This includes intent lifecycle management, type-safe witness systems, and event emissions.\n\n2. **Escrow Domain**: Cross-chain asset custody and release mechanisms including both Move-based escrow (intent_as_escrow.move) and EVM-based escrow (IntentEscrow.sol). Handles fund locking, verifier integration, and conditional release.\n\n3. **Settlement Domain**: Transaction completion and finalization processes across chains, including the fulfillment mechanisms, cross-chain coordination, and asset transfers.\n\n4. **Verification Domain**: Trusted verifier service (trusted-verifier Rust crate) that monitors chain events, validates cross-chain state, and provides cryptographic approvals for escrow releases.\n\n## Document Structure:\n- Executive summary of the domain-driven architecture approach\n- Domain definitions with clear boundaries and responsibilities\n- Component mapping showing which source files belong to each domain\n- Inter-domain interaction patterns and data flows (referencing existing cross-chain-flow.md)\n- Current implementation status for each domain with specific file references\n- Dependencies between domains using the RPG methodology's explicit dependency modeling\n- Integration patterns showing how domains communicate\n\n## Technical Analysis Required:\n- Review all Move contracts in move-intent-framework/sources/ to understand intent and escrow components\n- Analyze Solidity contracts in evm-intent-framework/contracts/ for EVM integration\n- Examine Rust verifier service structure in trusted-verifier/src/ for verification architecture\n- Cross-reference with existing technical documentation in docs/ folders\n\nThe document should serve as the foundational architecture reference that other technical documentation builds upon, providing a clear domain-based mental model of the entire system.",
         "testStrategy": "1. Verify all source files are correctly categorized into their respective domains by cross-referencing with actual codebase structure\n2. Validate domain boundaries make logical sense and don't create circular dependencies\n3. Ensure all components mentioned in existing documentation (cross-chain-flow.md, component READMEs) are properly mapped to domains\n4. Check that inter-domain interaction patterns accurately reflect the implemented cross-chain flow\n5. Verify implementation status accurately reflects current codebase state\n6. Review document follows RPG methodology principles with explicit dependencies and clear functional/structural separation\n7. Ensure document integrates well with existing docs/ structure and doesn't duplicate content from technical-overview.md",
         "status": "pending",
         "dependencies": [
-          1
+          "1"
         ],
         "priority": "medium",
         "subtasks": [
@@ -90,7 +101,8 @@
             "dependencies": [],
             "details": "Conduct thorough review of all source files in move-intent-framework/sources/, evm-intent-framework/contracts/, and trusted-verifier/src/ directories. Create detailed mapping of each file to its corresponding domain, analyzing their responsibilities and interactions. Document current implementation status and identify any components that don't fit cleanly into the proposed domain structure. This analysis will form the foundation for the architecture document structure.",
             "status": "pending",
-            "testStrategy": "Cross-reference the component mapping with actual file structure and verify that all source files are accounted for and properly categorized"
+            "testStrategy": "Cross-reference the component mapping with actual file structure and verify that all source files are accounted for and properly categorized",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -101,7 +113,8 @@
             ],
             "details": "Study RPG methodology focusing on explicit dependency modeling, domain boundary definition, and component interaction patterns. Document how RPG principles apply to cross-chain intent systems, particularly around dependency graphs between domains and clear separation of concerns. Create guidelines for applying RPG concepts to the intent framework's domain structure, ensuring the architecture document follows these principles consistently.",
             "status": "pending",
-            "testStrategy": "Validate that the documented RPG principles are correctly applied throughout the architecture document and that domain boundaries follow RPG best practices"
+            "testStrategy": "Validate that the documented RPG principles are correctly applied throughout the architecture document and that domain boundaries follow RPG best practices",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -113,7 +126,8 @@
             ],
             "details": "Based on the codebase analysis, define Intent Management Domain (intent.move, fa_intent.move lifecycle), Escrow Domain (intent_as_escrow.move, IntentEscrow.sol custody), Settlement Domain (fulfillment and cross-chain coordination), and Verification Domain (trusted-verifier service). Document each domain's core responsibilities, external interfaces, internal components, and strict boundaries. Include data ownership rules and interaction protocols between domains following RPG methodology.",
             "status": "pending",
-            "testStrategy": "Ensure each source file maps to exactly one domain and that all domain responsibilities are covered without gaps or overlaps"
+            "testStrategy": "Ensure each source file maps to exactly one domain and that all domain responsibilities are covered without gaps or overlaps",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -124,7 +138,8 @@
             ],
             "details": "Document all communication patterns between domains including event flows (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent), API calls, and data sharing mechanisms. Create explicit dependency graphs showing which domains depend on others and in what contexts. Reference existing cross-chain-flow.md for current implementation patterns and expand these into formal inter-domain protocols. Include error handling and rollback scenarios between domains.",
             "status": "pending",
-            "testStrategy": "Verify all documented interaction patterns match actual implementation by tracing through source code and existing documentation"
+            "testStrategy": "Verify all documented interaction patterns match actual implementation by tracing through source code and existing documentation",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -138,20 +153,21 @@
             ],
             "details": "Create docs/architecture.md with executive summary, complete domain definitions with file mappings, RPG-based dependency modeling, inter-domain interaction patterns, current implementation status with specific file references, and integration guidelines. Include references to existing documentation (cross-chain-flow.md, technical overviews) and ensure the document serves as a clear mental model for developers. Format for easy navigation with clear sections and cross-references.",
             "status": "pending",
-            "testStrategy": "Validate document completeness by ensuring all source files are referenced, all domains are fully described, and the document provides clear guidance for system understanding and future development"
+            "testStrategy": "Validate document completeness by ensuring all source files are referenced, all domains are fully described, and the document provides clear guidance for system understanding and future development",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Create data models documentation that centralizes all data structures used in the intent framework",
         "description": "Create comprehensive documentation that centralizes all data structures used in the intent framework, including Intent structs, Escrow structs, Event structures, and cross-chain data linking patterns.",
         "details": "This task involves creating `docs/data-models.md` that comprehensively documents all data structures used across the intent framework, organized by domain and including actual implementation references.\n\n## Core Data Structure Categories:\n\n### 1. Intent Data Models (Move - intent.move)\n- **TradeIntent<Source, Args>**: Core intent structure with `offered_resource`, `argument`, `self_delete_ref`, `expiry_time`, `witness_type`, `reservation`, and `revocable` fields\n- **TradeSession<Args>**: Hot potato session type containing `argument`, `witness_type`, and `reservation`\n- **FungibleAssetLimitOrder**: Trading conditions with `desired_metadata`, `desired_amount`, `issuer`, and optional `intent_id` for cross-chain linking\n- **FungibleStoreManager**: Asset management with `extend_ref` and `delete_ref`\n\n### 2. Event Structures (Move - fa_intent.move)\n- **LimitOrderEvent**: Intent creation event with `intent_address`, `intent_id`, `source_metadata`, `source_amount`, `desired_metadata`, `desired_amount`, `issuer`, `expiry_time`, `revocable`\n- **LimitOrderFulfillmentEvent**: Intent fulfillment event with `intent_address`, `intent_id`, `solver`, `provided_metadata`, `provided_amount`, `timestamp`\n- **OracleLimitOrderEvent**: Escrow creation event with similar fields plus `min_reported_value`\n\n### 3. Escrow Data Models (Solidity - IntentEscrow.sol)\n- **Escrow struct**: Contains `maker`, `token`, `amount`, `isClaimed`, `expiry`, `reservedSolver`\n- **EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled events**\n\n### 4. Verifier Data Models (Rust - trusted-verifier)\n- **IntentEvent, EscrowEvent, FulfillmentEvent**: Normalized event structures for cross-chain monitoring\n- **EventHandle, AptosEvent**: Aptos blockchain event structures\n- **ApprovalSignature**: Cryptographic approval structure\n\n### 5. Cross-Chain Data Linking\n- **intent_id pattern**: How intents are linked across chains using optional `intent_id` field\n- **Event correlation**: How events are matched between hub and connected chains\n- **Reserved solver addressing**: How solver addresses are preserved across chains\n\n## Implementation Requirements:\n1. Reference actual source files with line numbers for each data structure\n2. Show field-by-field documentation with types and purposes\n3. Document cross-references between related structures\n4. Include examples of how data flows between chains\n5. Document witness pattern usage in Move contracts\n6. Show event emission patterns and their correlation logic\n7. Include state transition diagrams for key structures\n8. Document serialization formats (BCS, JSON) used for cross-chain communication\n9. Reference existing documentation in docs/move-intent-framework/api-reference.md for consistency",
         "testStrategy": "1. Verify all data structures mentioned are accurately documented by cross-referencing actual source files in move-intent-framework/sources/, evm-intent-framework/contracts/, and trusted-verifier/src/\n2. Ensure field types and descriptions match the actual implementation code\n3. Validate that cross-chain data linking patterns are correctly documented by reviewing cross-chain-flow.md\n4. Check that event structure documentation aligns with actual event definitions in Move and Solidity files\n5. Verify witness pattern documentation matches intent.move implementation\n6. Confirm serialization format documentation by examining how data is handled in the trusted verifier Rust code\n7. Validate that all referenced line numbers and file paths are accurate\n8. Ensure consistency with existing API reference documentation\n9. Test that the documentation provides sufficient detail for developers to understand data flow and structure relationships",
         "status": "pending",
         "dependencies": [
-          1,
-          2
+          "1",
+          "2"
         ],
         "priority": "medium",
         "subtasks": [
@@ -162,7 +178,8 @@
             "dependencies": [],
             "details": "Create docs/data-models.md with introduction explaining the intent framework's data model architecture, cross-chain data flow, and organization by domain. Include overview of how data structures interact across Move, Solidity, and Rust components. Reference existing files: intent.move:25-41 (TradeIntent), fa_intent.move:30-36 (FungibleAssetLimitOrder), IntentEscrow.sol:21-29 (Escrow struct), and monitor/mod.rs:28-100 (event structures).",
             "status": "pending",
-            "testStrategy": "Verify the file is created with proper markdown structure and all referenced source files exist by cross-checking with move-intent-framework/sources/, evm-intent-framework/contracts/, and trusted-verifier/src/ directories."
+            "testStrategy": "Verify the file is created with proper markdown structure and all referenced source files exist by cross-checking with move-intent-framework/sources/, evm-intent-framework/contracts/, and trusted-verifier/src/ directories.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -173,7 +190,8 @@
             ],
             "details": "Document Move intent structures from intent.move:33-41 (TradeIntent<Source, Args> with offered_resource, argument, self_delete_ref, expiry_time, witness_type, reservation, revocable fields), intent.move:44-49 (TradeSession<Args>), fa_intent.move:31-36 (FungibleAssetLimitOrder with desired_metadata, desired_amount, issuer, intent_id), and fa_intent.move:23-27 (FungibleStoreManager with extend_ref, delete_ref). Include type information, field purposes, and witness pattern usage.",
             "status": "pending",
-            "testStrategy": "Cross-reference all documented structures with actual Move source code to ensure field types, names, and descriptions match implementation exactly."
+            "testStrategy": "Cross-reference all documented structures with actual Move source code to ensure field types, names, and descriptions match implementation exactly.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -184,7 +202,8 @@
             ],
             "details": "Document event structures from fa_intent.move:47-72 (LimitOrderEvent with intent_address, intent_id, source_metadata, source_amount, desired_metadata, desired_amount, issuer, expiry_time, revocable), fa_intent.move:63-72 (LimitOrderFulfillmentEvent), fa_intent_with_oracle.move (OracleLimitOrderEvent). Include event emission patterns from fa_intent.move:132-142 and cross-chain correlation logic using intent_id field for linking events across chains.",
             "status": "pending",
-            "testStrategy": "Verify all event field names and types match the actual Move source code and validate that emission patterns are accurately documented by reviewing the create_fa_to_fa_intent function."
+            "testStrategy": "Verify all event field names and types match the actual Move source code and validate that emission patterns are accurately documented by reviewing the create_fa_to_fa_intent function.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -195,7 +214,8 @@
             ],
             "details": "Document Solidity structures from IntentEscrow.sol:22-29 (Escrow struct with maker, token, amount, isClaimed, expiry, reservedSolver fields) and events from IntentEscrow.sol:35-38 (EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled events). Include field types, purposes, and relationship to Move intent structures. Document the expiry mechanism and reserved solver addressing patterns.",
             "status": "pending",
-            "testStrategy": "Cross-reference all documented Solidity structures with IntentEscrow.sol implementation to ensure accuracy of field types, event parameters, and contract logic descriptions."
+            "testStrategy": "Cross-reference all documented Solidity structures with IntentEscrow.sol implementation to ensure accuracy of field types, event parameters, and contract logic descriptions.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -208,21 +228,22 @@
             ],
             "details": "Document Rust structures from monitor/mod.rs:33-55 (IntentEvent), monitor/mod.rs:62-86 (EscrowEvent), monitor/mod.rs:93-100 (FulfillmentEvent) and their correlation logic. Include cross-chain data linking patterns using intent_id field for matching events between hub and connected chains, reserved solver addressing preservation, and serialization formats (BCS, JSON) for cross-chain communication. Document state transition diagrams and witness pattern usage across chains.",
             "status": "pending",
-            "testStrategy": "Verify all Rust structure definitions match the actual source code and validate that cross-chain correlation logic is accurately described by reviewing the trusted-verifier implementation."
+            "testStrategy": "Verify all Rust structure definitions match the actual source code and validate that cross-chain correlation logic is accurately described by reviewing the trusted-verifier implementation.",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Create use cases and scenarios documentation",
         "description": "Create comprehensive use cases documentation that shows how the current system handles specific scenarios including happy path flows, error cases, edge cases, and real-world usage patterns.",
         "details": "This task involves creating `docs/use-cases.md` that documents current implementation behavior across the intent framework system, organized by scenario type:\n\n## Happy Path Use Cases:\n1. **Standard Cross-Chain Swap**: Document the complete flow from intent.move (TradeIntent creation) --> escrow creation (IntentEscrow.sol) --> fulfillment (LimitOrderFulfillmentEvent) --> verifier approval --> escrow claim\n2. **Oracle-Guarded Intent**: Document OracleLimitOrderEvent flow using fa_intent_with_oracle.move with OracleGuardedLimitOrder struct and signature verification\n3. **Intent-as-Escrow**: Document simplified escrow flow using intent_as_escrow.move with EscrowConfig\n4. **Reserved Intent**: Document solver reservation flow using intent_reservation.move with IntentToSign and IntentReserved structs\n\n## Error Cases:\n1. **Intent Expiry**: Document behavior when TradeIntent expires (EINTENT_EXPIRED) and EVM escrow expiry handling\n2. **Invalid Witness**: Document EINVALID_WITNESS error from intent.move when wrong witness type provided\n3. **Unauthorized Access**: Document ENOT_OWNER and ENOT_REVOCABLE errors for intent revocation attempts\n4. **Cross-Chain Failures**: Document verifier signature validation failures and escrow claim rejections\n5. **Token Type Mismatches**: Document ENOT_DESIRED_TOKEN errors from fa_intent.move\n\n## Edge Cases:\n1. **Non-Revocable Escrow Intents**: Document verifier requirement that escrow intents must have `revocable = false`\n2. **Reserved Solver Enforcement**: Document how EVM escrow always transfers to reservedSolver regardless of claim caller\n3. **Zero-Amount Cross-Chain Swaps**: Document behavior in fa_intent_cross_chain.move where source tokens aren't locked\n4. **Concurrent Intent Fulfillment**: Document race conditions and prevention mechanisms\n\n## Real-World Usage Patterns:\n1. **DEX Integration**: How external systems create intents for automated market making\n2. **Cross-Chain Arbitrage**: Using the framework for cross-chain price arbitrage opportunities\n3. **Payment Channels**: Using intents for conditional payment releases\n4. **Escrow Services**: Using intent-as-escrow for trustless P2P transactions\n\nEach scenario should reference specific source files, struct definitions, error codes, and event emissions from the actual implementation.",
         "testStrategy": "1. Verify all scenarios reference actual code structures by cross-checking Move contracts (intent.move, fa_intent.move, fa_intent_with_oracle.move, intent_as_escrow.move) and Solidity contract (IntentEscrow.sol)\n2. Validate error codes and event names match implementation (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent, EscrowInitialized, EscrowClaimed)\n3. Ensure cross-chain flow documentation matches sequence in docs/cross-chain-flow.md\n4. Test that each use case can be traced through the codebase using the referenced files and line numbers\n5. Validate edge cases align with actual implementation constraints (revocable=false requirement, reservedSolver enforcement)\n6. Ensure real-world patterns reflect current capabilities without speculating on unimplemented features",
         "status": "pending",
         "dependencies": [
-          1,
-          2,
-          3
+          "1",
+          "2",
+          "3"
         ],
         "priority": "medium",
         "subtasks": [
@@ -233,7 +254,8 @@
             "dependencies": [],
             "details": "Document the complete flows for: 1) Standard Cross-Chain Swap (TradeIntent creation via intent.move --> IntentEscrow.sol --> LimitOrderFulfillmentEvent --> verifier approval --> escrow claim), 2) Oracle-Guarded Intent (OracleLimitOrderEvent flow using fa_intent_with_oracle.move with OracleGuardedLimitOrder struct), 3) Intent-as-Escrow (simplified escrow using intent_as_escrow.move with EscrowConfig), and 4) Reserved Intent (solver reservation using intent_reservation.move with IntentToSign and IntentReserved structs). Each scenario must reference actual struct definitions, function names, and event emissions from source files.",
             "status": "pending",
-            "testStrategy": "Verify all referenced structs, functions, and events exist in the actual source code by cross-checking with move-intent-framework/sources/ files and evm-intent-framework/contracts/ files"
+            "testStrategy": "Verify all referenced structs, functions, and events exist in the actual source code by cross-checking with move-intent-framework/sources/ files and evm-intent-framework/contracts/ files",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -242,7 +264,8 @@
             "dependencies": [],
             "details": "Document specific error scenarios: 1) Intent Expiry (EINTENT_EXPIRED from intent.move and EVM escrow expiry handling), 2) Invalid Witness (EINVALID_WITNESS error when wrong witness type provided), 3) Unauthorized Access (ENOT_OWNER and ENOT_REVOCABLE errors for intent revocation), 4) Cross-Chain Failures (verifier signature validation failures and escrow claim rejections), and 5) Token Type Mismatches (ENOT_DESIRED_TOKEN and EAMOUNT_NOT_MEET from fa_intent.move). Each error must include the exact error code constant, triggering conditions, and affected modules.",
             "status": "pending",
-            "testStrategy": "Cross-reference all error codes with actual constant definitions in source files and verify triggering conditions match implementation logic"
+            "testStrategy": "Cross-reference all error codes with actual constant definitions in source files and verify triggering conditions match implementation logic",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -251,7 +274,8 @@
             "dependencies": [],
             "details": "Document specific edge cases: 1) Non-Revocable Escrow Intents (verifier requirement that escrow intents must have revocable = false as documented in intent_as_escrow.move), 2) Reserved Solver Enforcement (how EVM IntentEscrow.sol always transfers to reservedSolver regardless of claim caller), 3) Zero-Amount Cross-Chain Swaps (behavior in fa_intent_cross_chain.move where source tokens aren't locked), and 4) Concurrent Intent Fulfillment (race condition prevention mechanisms). Include specific line references and implementation details.",
             "status": "pending",
-            "testStrategy": "Verify each edge case by examining the specific implementation in source files, including security comments and enforcement mechanisms"
+            "testStrategy": "Verify each edge case by examining the specific implementation in source files, including security comments and enforcement mechanisms",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -264,7 +288,8 @@
             ],
             "details": "Document practical usage scenarios: 1) DEX Integration (how external systems create intents for automated market making using the intent framework), 2) Cross-Chain Arbitrage (using the framework for cross-chain price arbitrage opportunities with verifier coordination), 3) Payment Channels (using intents for conditional payment releases with oracle verification), and 4) Escrow Services (using intent-as-escrow for trustless P2P transactions). Each pattern should show how the documented flows, error handling, and edge cases apply in practice.",
             "status": "pending",
-            "testStrategy": "Validate usage patterns align with the documented flows and error handling capabilities from previous subtasks"
+            "testStrategy": "Validate usage patterns align with the documented flows and error handling capabilities from previous subtasks",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -278,19 +303,20 @@
             ],
             "details": "Create docs/use-cases.md with clear sections for: Happy Path Use Cases, Error Cases, Edge Cases, and Real-World Usage Patterns. Each section should include detailed descriptions, code references with file:line_number format, struct definitions, error codes, and event emissions. Ensure the document follows the existing documentation structure and includes navigation links to related protocol documentation. Add cross-references to existing docs like cross-chain-flow.md for consistency.",
             "status": "pending",
-            "testStrategy": "Verify the final document is complete, well-structured, and all code references are accurate by spot-checking file paths and line numbers"
+            "testStrategy": "Verify the final document is complete, well-structured, and all code references are accurate by spot-checking file paths and line numbers",
+            "parentId": "undefined"
           }
         ]
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Update cross-chain-flow.md with detailed protocol references and navigation links",
         "description": "Enhance the existing cross-chain-flow.md document to include more detailed protocol information and reference the new protocol.md document, ensuring consistency with the detailed protocol specification.",
         "details": "This task involves updating docs/cross-chain-flow.md to provide more comprehensive cross-chain intent framework documentation that aligns with the forthcoming detailed protocol.md specification. The update should:\n\n## Content Enhancement:\n1. **Expand High-Level Flow Description**: Add more context about the intent framework's purpose and how it enables cross-chain operations with verifier-based approval\n2. **Enhanced Sequence Diagram**: Improve the existing Mermaid diagram with additional detail about event types (LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent) and data flow\n3. **Detailed Step Descriptions**: Expand the current 5 steps with more technical detail about Move contracts (fa_intent.move, intent_as_escrow.move) and Solidity contracts (IntentEscrow.sol)\n4. **Add Technical Context**: Include information about witness types, reservation systems, and verifier public key mechanisms\n\n## Protocol Integration:\n1. **Add Protocol Reference Section**: Create a section that references the detailed protocol.md document once available (Task 1 dependency)\n2. **Cross-Reference Links**: Add navigation links between high-level flow concepts and detailed protocol specifications\n3. **Consistency Checks**: Ensure terminology and process descriptions align with the detailed protocol documentation\n\n## Navigation and Structure:\n1. **Add Table of Contents**: Include section navigation for the enhanced document\n2. **Link to Related Documentation**: Reference component-specific docs (move-intent-framework/, evm-intent-framework/, trusted-verifier/)\n3. **Add 'See Also' Section**: Point to protocol.md, architecture.md, and use-cases.md documents\n\n## Technical Accuracy:\n1. **Validate Event Names**: Ensure all referenced events (LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent) match actual implementation\n2. **Contract References**: Verify Move module names and Solidity contract names are accurate\n3. **Process Flow Accuracy**: Cross-check the documented flow against the actual implementation in the codebase\n\nThe updated document should serve as an enhanced entry point that provides sufficient detail for understanding the cross-chain flow while maintaining clear navigation paths to the comprehensive protocol documentation.",
         "testStrategy": "1. Verify all referenced contracts and modules exist by checking move-intent-framework/sources/ and evm-intent-framework/contracts/ directories\n2. Validate event names and structures match actual implementation by reviewing Move and Solidity source files\n3. Test Mermaid diagram renders correctly and accurately represents the cross-chain flow\n4. Ensure all internal links work correctly and reference existing documentation files\n5. Cross-check terminology and process descriptions with existing component documentation for consistency\n6. Verify the document maintains appropriate balance between high-level overview and technical detail\n7. Confirm navigation structure aligns with the documentation guide principles in docs-guide.md",
         "status": "pending",
         "dependencies": [
-          1
+          "1"
         ],
         "priority": "medium",
         "subtasks": [
@@ -301,7 +327,8 @@
             "dependencies": [],
             "details": "Create a proper table of contents section at the top of cross-chain-flow.md that includes all major sections. Add navigation links to component-specific documentation (docs/move-intent-framework/, docs/evm-intent-framework/, docs/trusted-verifier/) and references to protocol.md, architecture.md, and use-cases.md documents. Include a 'See Also' section that provides clear navigation paths to detailed documentation.",
             "status": "pending",
-            "testStrategy": "Verify all links are properly formatted and reference valid file paths. Ensure table of contents matches actual document sections and is properly formatted in markdown."
+            "testStrategy": "Verify all links are properly formatted and reference valid file paths. Ensure table of contents matches actual document sections and is properly formatted in markdown.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -310,7 +337,8 @@
             "dependencies": [],
             "details": "Expand the opening section to provide comprehensive context about how the intent framework enables cross-chain operations. Include detailed explanations of verifier public key mechanisms, witness types (FungibleAssetRecipientWitness), reservation systems using IntentReserved, and the role of reserved solver addresses. Reference actual Move contract structures and explain the security model behind non-revocable escrow requirements.",
             "status": "pending",
-            "testStrategy": "Verify all technical terms reference actual implementation structures from move-intent-framework/sources/ and evm-intent-framework/contracts/. Ensure witness types and reservation patterns match actual code in intent_reservation.move."
+            "testStrategy": "Verify all technical terms reference actual implementation structures from move-intent-framework/sources/ and evm-intent-framework/contracts/. Ensure witness types and reservation patterns match actual code in intent_reservation.move.",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -319,7 +347,8 @@
             "dependencies": [],
             "details": "Update the current sequence diagram at lines 5-24 to include specific event emission details. Add participant details for event types, show the specific data fields being transmitted (intent_address, intent_id, source_metadata, desired_metadata, etc.), and include the cross-chain correlation logic using intent_id linking. Ensure event names match actual implementation from fa_intent.move:50-72 and fa_intent_with_oracle.move:76.",
             "status": "pending",
-            "testStrategy": "Validate all event names match actual struct definitions in Move source files. Verify sequence diagram syntax is correct and renders properly in markdown. Cross-check data field names with actual event structures."
+            "testStrategy": "Validate all event names match actual struct definitions in Move source files. Verify sequence diagram syntax is correct and renders properly in markdown. Cross-check data field names with actual event structures.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -330,7 +359,8 @@
             ],
             "details": "Expand each step in the Flow Steps section (lines 26-35) with detailed technical information. Include specific function calls (create_fa_to_fa_intent, createEscrow, complete_escrow_from_fa), event emission patterns, data structure details (FungibleAssetLimitOrder, Escrow struct), and cross-reference actual contract implementations. Add security details about reserved solver enforcement and expiry mechanisms.",
             "status": "pending",
-            "testStrategy": "Verify all function names and contract references match actual implementation files. Ensure data structure names and field references are accurate by cross-checking with move-intent-framework/sources/ and evm-intent-framework/contracts/IntentEscrow.sol."
+            "testStrategy": "Verify all function names and contract references match actual implementation files. Ensure data structure names and field references are accurate by cross-checking with move-intent-framework/sources/ and evm-intent-framework/contracts/IntentEscrow.sol.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -343,22 +373,20 @@
             ],
             "details": "Add a new Protocol References section that provides clear navigation to protocol.md (Task 1 dependency). Include cross-reference links between high-level flow concepts and detailed protocol specifications. Validate that all event names (LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent), contract names (fa_intent.move, intent_as_escrow.move, IntentEscrow.sol), and process descriptions align with actual implementation and will be consistent with the detailed protocol documentation.",
             "status": "pending",
-            "testStrategy": "Verify all referenced events and contracts exist in the actual codebase by checking move-intent-framework/sources/ and evm-intent-framework/contracts/ directories. Ensure terminology consistency with existing documentation in docs/move-intent-framework/ and docs/trusted-verifier/."
+            "testStrategy": "Verify all referenced events and contracts exist in the actual codebase by checking move-intent-framework/sources/ and evm-intent-framework/contracts/ directories. Ensure terminology consistency with existing documentation in docs/move-intent-framework/ and docs/trusted-verifier/.",
+            "parentId": "undefined"
           }
         ]
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-10T09:08:33.894Z",
-      "taskCount": 0,
-      "completedCount": 0,
+      "lastModified": "2025-11-10T12:16:19.231Z",
+      "taskCount": 5,
+      "completedCount": 1,
       "tags": [
         "master"
-      ],
-      "created": "2025-11-10T11:35:24.100Z",
-      "description": "Tasks for master context",
-      "updated": "2025-11-10T11:39:57.017Z"
+      ]
     }
   }
 }

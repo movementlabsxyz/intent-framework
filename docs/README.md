@@ -6,7 +6,7 @@ The Intent Framework enables cross-chain escrow operations with verifier-based a
 
 ## Getting Started
 
-- **[Cross-Chain Flow](cross-chain-flow.md)** - Overview of the cross-chain intent and escrow flow with sequence diagrams
+- **[Protocol overview](protocol.md)** - Overview of the cross-chain intent system through sequence diagrams and flow steps
 - **[Documentation Guide](docs-guide.md)** - How to navigate and understand the documentation structure
 
 ## Components

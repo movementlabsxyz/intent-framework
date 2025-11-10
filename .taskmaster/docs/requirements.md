@@ -2,6 +2,27 @@
 
 > **Note**: This is a working document and may be deleted once sufficient progress has been made and the requirements are reflected in the implementation and other documentation.
 
+## Document Scope
+
+This document specifies **requirements** for the Intent Framework—what the system must support and how it should behave. It focuses on requirements not covered in the other taskmaster architecture documents:
+
+- **[Section 2: Cross-Chain Architecture](#2-system-overview)** - Future cross-chain flow requirements (Inflow and Outflow) with sequence diagrams. These flows are not yet implemented; other taskmaster docs describe current implementation.
+
+- **[Section 3: Functional Requirements](#3-functional-requirements)** - High-level functional capabilities the system must support.
+
+- **[Section 4: Non-Functional Requirements](#4-non-functional-requirements)** - System-level quality attributes (reliability, availability, usability, compatibility) not covered by architecture docs.
+
+- **[Section 5: Performance Requirements](#5-performance-requirements)** - (Empty)
+
+- **[Section 6: Deployment Requirements](#6-deployment-requirements)** - (Empty)
+
+- **[Section 7: Testing Requirements](#7-testing-requirements)** - Testing capabilities the system must support.
+
+- **[Section 8: Constraints and Assumptions](#8-constraints-and-assumptions)** - (Empty)
+
+- **[Section 9: Future Enhancements](#9-future-enhancements)** - (Empty)
+
+
 ## 1. Introduction
 
 The Intent Framework is a system for creating conditional trading intents. It enables users to create time-bound, conditional offers that can be executed by third parties (solvers) when specific conditions are met. The framework provides a generic system for creating tradeable intents with built-in expiry, witness validation, and owner revocation capabilities, enabling sophisticated trading mechanisms like limit orders and conditional swaps.
@@ -16,34 +37,9 @@ The framework can also function as an escrow mechanism, allowing funds to be loc
 
 ## 2. System Overview
 
-The system follows a modular architecture with clear separation between on-chain smart contract logic and off-chain verification services.
+The system follows a modular architecture with clear separation between on-chain smart contract logic and off-chain verification services. For detailed component organization and domain boundaries, see [Component-to-Domain Mapping](architecture-component-mapping.md) and [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md).
 
-### 2.1 Move Intent Framework
-
-Deployed smart contracts handle intent lifecycle management, event emission for intent discovery, witness-based verification system for condition enforcement, and integration with native blockchain asset standards.
-
-```text
-move-intent-framework/sources/
-├── intent.move                  # Core generic intent framework with abstract structures for conditional trades
-├── fa_intent.move              # Concrete implementation for fungible asset limit orders
-├── fa_intent_with_oracle.move # External data validation for conditional execution
-├── intent_as_escrow.move       # Escrow abstraction layer for conditional payments
-└── intent_reservation.move     # Solver authorization system for reserved intents
-```
-
-### 2.2 Trusted Verifier Service
-
-Event monitoring service for intent and escrow events, cross-chain condition validation, cryptographic approval/rejection service, and REST API for signature retrieval.
-
-```text
-trusted-verifier/src/
-├── monitor/              # Polls blockchain events for intent creation and escrow operations
-├── validator/            # Validates fulfillment conditions across connected chains
-├── crypto/               # Generates Ed25519 signatures for intent and escrow completion
-└── api/                  # REST API exposing health checks, event queries, and signature endpoints
-```
-
-### 2.3 Cross-Chain Architecture
+### 2.1 Cross-Chain Architecture
 
 For cross-chain scenarios, the system operates with a hub-and-spoke model:
 
@@ -224,179 +220,49 @@ sequenceDiagram
 
 10. **Failed or expired claims**: Trigger a small collateral penalty (0.5–1%), with remainder unlocked automatically
 
-### 2.4 Architectural Principles
+### 2.2 Architectural Principles
 
 For detailed architectural principles and design philosophy, see the [Architecture Documentation](README.md):
 
-- **[RPG Methodology Principles](rpg-methodology.md)** - Design philosophy and domain-based organization principles (Dual-Semantics, Explicit Dependencies, Topological Order, Progressive Refinement)
+- **[RPG Methodology Principles](rpg-methodology.md)** - Design philosophy and domain-based organization principles
 - **[Component-to-Domain Mapping](architecture-component-mapping.md)** - How components are organized into domains and inter-domain interaction patterns
-- **[Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md)** - Precise domain boundary definitions and interface specifications for Intent Management, Escrow, Settlement, and Verification domains
+- **[Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md)** - Precise domain boundary definitions and interface specifications
 
-## 3. Functional Requirements and Data Structures
+## 3. Functional Requirements
 
-This section specifies the functional capabilities and behaviors that the system must support, including the operations it must perform, the features it must provide, and how it must respond to user actions and system events.
+This section specifies functional capabilities that the system must support. For detailed interface specifications, data structures, and current implementation details, see [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md), [Data Models Documentation](data-models.md), and [Use Cases and Scenarios Documentation](use-cases.md).
 
-### 3.1 Intent Creation
+### 3.1 Intent Creation and Execution
 
-The system must support creating intents with the following capabilities. For data structure definitions and interface specifications, see [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](data-models.md).
+The system must support creating and executing intents with the following capabilities:
 
-#### 3.1.1 Unreserved Intent Creation
+- **Unreserved Intent Creation**: Create intents executable by any solver
+- **Reserved Intent Creation**: Enable off-chain negotiation and solver signature verification (Ed25519) to authorize specific solvers
+- **Oracle-Guarded Intent Creation**: Create intents with external data validation requirements and oracle signature verification
+- **Escrow Intent Creation**: Create escrow intents for conditional payments with verifier approval requirements
+- **Move On-Chain Intent Execution**: Support two-phase session model (`start_intent_session()`, `finish_intent_session()`) for intents fulfilled entirely on a single chain
+- **Intent Revocation**: Support revoking intents by creator (if `revocable = true`)
+- **Expiry Handling**: Automatically prevent execution of expired intents
+- **Event Emission**: Emit events for intent discovery and cross-chain coordination
 
-- Create intents that can be executed by any solver
-- Lock offered resources on-chain with specified trading conditions
-- Define expiry time (Unix timestamp) for automatic cleanup
-- Configure revocability (whether creator can revoke before execution)
-- Emit events upon intent creation for solver discovery
+### 3.2 Cross-Chain Intent Execution
 
-#### 3.1.2 Reserved Intent Creation
+For cross-chain intent flows involving multiple chains and verifiers, see [Cross-Chain Flows](#cross-chain-flows) (Inflow and Outflow). The system must support:
 
-- Enable off-chain negotiation between intent creator and specific solver
-- Support solver signature verification (Ed25519) to authorize specific solver
-- Create intent reservations that restrict execution to authorized solvers
-- Validate solver signatures before accepting reserved intents
-- Ensure only authorized solver can execute reserved intents
+- Solver fulfillment submission with cross-chain transaction references (`fill_intent(intent_id, tx_hash)`)
+- Cross-chain transaction validation with multi-RPC quorum (≥2 matching receipts)
+- Verifier finalization with collateral management and slashing mechanisms
+- Instant credit model where solver provides tokens before verification completes
 
-#### 3.1.3 Oracle-Guarded Intent Creation
+### 3.3 Trusted Verifier Service
 
-- Create intents with external data validation requirements
-- Specify minimum threshold values for oracle-reported data
-- Authorize specific oracle public keys for signature validation
-- Require oracle signature witness during execution to verify external conditions
-- Support conditional execution based on oracle data (e.g., price feeds)
+The system must provide a verifier service with the following capabilities:
 
-#### 3.1.4 Escrow Intent Creation
-
-- Create escrow intents for conditional payments
-- Lock tokens awaiting verifier approval/rejection
-- Specify verifier public key for authorization
-- Require escrow intents to be non-revocable (`revocable = false`)
-- Support linking escrow to intent IDs for cross-chain matching
-
-### 3.2 Move On-Chain Intent Execution
-
-The system must support executing intents through a two-phase session model (session initiation and completion), with validation checks applied throughout the execution process. This applies to the Move Intent Framework's on-chain execution model for intents fulfilled entirely on a single chain. For cross-chain intent flows involving multiple chains and verifiers, see [Cross-Chain Flows](#cross-chain-flows) (Inflow and Outflow).
-
-#### 3.2.1 Session Initiation
-
-- Provide `start_intent_session()` to begin intent fulfillment
-- Verify intent has not expired before allowing session start
-- Unlock offered resources and transfer to session opener
-- Create `TradeSession` object containing trading conditions
-- Check reservation requirements (if reserved intent, verify solver authorization)
-- Return session object that must be completed or revoked
-
-#### 3.2.2 Session Completion
-
-- Provide `finish_intent_session()` to complete intent fulfillment
-- Require appropriate witness proving trading conditions were met
-- Verify witness type matches intent requirements at compile-time
-- Transfer locked resources to solver upon successful completion
-- Validate oracle signatures if intent is oracle-guarded
-- Emit fulfillment events upon successful completion
-
-#### 3.2.3 Execution Validation
-
-- Verify expiry time has not been exceeded
-- Validate solver authorization for reserved intents
-- Check oracle signature and reported values meet thresholds
-- Ensure correct witness type is provided
-- Validate asset amounts and types match intent requirements
-
-### 3.3 Further Intent Management Features
-
-#### 3.3.1 Intent Revocation
-
-- Support revoking intents by creator (if `revocable = true`)
-- Return locked resources to original creator upon revocation
-- Prevent revocation of non-revocable intents (especially escrow intents)
-- Validate ownership before allowing revocation
-- Clean up intent objects after revocation
-
-#### 3.3.2 Expiry Handling
-
-- Automatically prevent execution of expired intents
-- Check expiry time during session start and completion
-- Return error code `EINTENT_EXPIRED` when intent has expired
-- Support cleanup of expired intent objects (via expiry time validation)
-
-#### 3.3.3 Intent State Tracking
-
-- Track intent creation, execution, and completion states
-- Maintain immutable records of intent parameters
-- Support querying intent status and parameters
-- Track reservation status for reserved intents
-
-### 3.4 Event Emission
-
-The system must emit events for intent discovery and cross-chain coordination. For event structure definitions and cross-chain event correlation patterns, see [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](data-models.md).
-
-#### 3.4.1 Intent Creation Events
-
-- Emit events when intents are created for solver discovery
-- Include intent ID, source/desired asset metadata, amounts, expiry time, offerer, and solver (if reserved)
-- Emit events for oracle-guarded intents with oracle/verifier requirements
-- Emit events for escrow intents with escrow-specific information
-- Make events discoverable by external systems (solvers, verifiers, indexers)
-- Support event correlation across chains via shared identifiers
-
-#### 3.4.2 Fulfillment Events
-
-- Emit events when intents are successfully fulfilled
-- Include intent ID, solver address, and fulfillment details
-- Support event monitoring by verifier services for cross-chain coordination
-- Enable verifier to correlate fulfillment events with escrow events across chains
-
-### 3.5 Trusted Verifier Service
-
-#### 3.5.1 Event Monitoring
-
-- Monitor blockchain events from hub and connected chains
-- Poll or subscribe to intent creation events (`LimitOrderEvent`, `OracleLimitOrderEvent`)
-- Poll or subscribe to escrow deposit events on connected chains
-- Poll or subscribe to fulfillment events on hub chain
-- Cache and process events in real-time
-
-#### 3.5.2 Cross-Chain Validation
-
-- Validate that escrow deposits on connected chains match intent requirements on hub chain
-- Verify intent ID matching between hub intent and connected escrow
-- Check that source amounts in escrow meet or exceed desired amounts in hub intent
-- Validate metadata matches between intent and escrow
-- Ensure expiry times are consistent
-- Verify escrow intents are non-revocable before any cross-chain actions
-
-#### 3.5.3 Approval/Rejection Service
-
-- Generate Ed25519 signatures for approval/rejection decisions
-- Provide approval signatures when hub intent is fulfilled and escrow conditions match
-- Provide rejection signatures when conditions are not met
-- Expose approval signatures via REST API endpoint
-- Support retrieval of verifier public key for signature verification
-
-#### 3.5.4 Security Validation
-
-- Enforce that escrow intents have `revocable = false` before approval
-- Reject any escrow intent that allows user revocation
-- Validate cryptographic signatures (Ed25519) for solver authorization
-- Verify oracle signatures when required
-
-#### 3.5.5 REST API
-
-- Provide health check endpoint (`GET /health`)
-- Expose cached event data (`GET /events`)
-- Allow approval signature creation (`POST /approval`)
-- Expose verifier public key (`GET /public-key`)
-
-### 3.6 Escrow Operations
-
-For Move on-chain escrow operations, the system must support escrow session management. For escrow interface specifications and cross-chain escrow flows, see [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md#escrow-boundaries-and-interfaces) and [Cross-Chain Flows](#cross-chain-flows).
-
-#### 3.6.1 Move On-Chain Escrow Session Management
-
-- Support starting escrow session to take escrowed assets
-- Enable verifier to approve or reject escrow release
-- Require verifier signature for escrow completion
-- Support cancellation of escrow if rejected or expired
+- **Event Monitoring**: Monitor blockchain events from hub and connected chains, cache and process events in real-time
+- **Cross-Chain Validation**: Validate escrow deposits match intent requirements, verify intent ID matching, validate metadata and amounts
+- **Approval/Rejection Service**: Generate Ed25519 signatures for approval/rejection decisions, expose via REST API
+- **Security Validation**: Enforce non-revocable escrow requirement, validate cryptographic signatures
+- **REST API**: Provide health check, event queries, approval signature creation, and public key retrieval endpoints
 
 ## 4. Non-Functional Requirements
 
@@ -541,4 +407,3 @@ For Move on-chain escrow operations, the system must support escrow session mana
 ## 8. Constraints and Assumptions
 
 ## 9. Future Enhancements
-

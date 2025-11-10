@@ -1,5 +1,7 @@
 # Requirements Document
 
+> **Note**: This is a working document and may be deleted once sufficient progress has been made and the requirements are reflected in the implementation and other documentation.
+
 ## 1. Introduction
 
 The Intent Framework is a system for creating conditional trading intents. It enables users to create time-bound, conditional offers that can be executed by third parties (solvers) when specific conditions are met. The framework provides a generic system for creating tradeable intents with built-in expiry, witness validation, and owner revocation capabilities, enabling sophisticated trading mechanisms like limit orders and conditional swaps.
@@ -41,11 +43,7 @@ trusted-verifier/src/
 └── api/                  # REST API exposing health checks, event queries, and signature endpoints
 ```
 
-### 2.3 Intent Execution Flows
-
-Intent execution follows a two-phase session model: `start_intent_session()` initiates fulfillment, and `finish_intent_session()` completes with witness verification. Execution may be restricted based on reservation status or require oracle attestation depending on intent configuration.
-
-### 2.4 Cross-Chain Architecture
+### 2.3 Cross-Chain Architecture
 
 For cross-chain scenarios, the system operates with a hub-and-spoke model:
 
@@ -55,15 +53,184 @@ For cross-chain scenarios, the system operates with a hub-and-spoke model:
 
 The verifier ensures that escrow operations on connected chains match the intent requirements on the hub chain before providing approval signatures.
 
+#### Cross-Chain Flows
+
+The cross-chain intent protocol supports two primary flows: **Inflow** (Connected Chain → Movement) and **Outflow** (Movement → Connected Chain). These flows enable smooth "deposit → instant credit" UX while maintaining system security through solver collateral and partial slashing mechanisms.
+
+##### Inflow (Connected Chain → Movement)
+
+This flow enables users to deposit tokens on a connected chain and receive equivalent tokens on Movement (hub chain).
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant SolverNetwork as Solver Network
+    participant Connected as Connected Chain<br/>(Solana/Base/Ethereum/Sui/Aptos)
+    participant Verifier as Trusted Verifier
+    participant Movement as Movement<br/>(Hub Chain)
+
+    Note over User,Movement: Phase 1: Off-Chain Intent Request
+    User->>SolverNetwork: Creates unreserved intent, broadcasts to solver network
+
+    Note over User,Movement: Phase 2: Solver Offers
+    SolverNetwork->>User: Solvers sign offers and return to user
+
+    Note over User,Movement: Phase 3: User Selection & Deposit
+    User->>User: Selects solver offer, signs it (for hub)
+    alt Bypass Mode
+        User->>Connected: Sends deposit tx with USDC in escrow
+        User->>Movement: Commits intent selection directly
+    else Verifier-Gated Mode
+        User->>Verifier: Sends deposit tx + intent selection
+        Verifier->>Connected: Commits escrow creation
+        Verifier->>Movement: Commits intent selection
+    end
+
+    Note over User,Movement: Phase 4: Solver Detection & Credit
+    SolverNetwork->>Connected: Detects deposit (directly or via trusted monitoring)
+    SolverNetwork->>Movement: Transfers equivalent USDC.e to user's wallet
+
+    Note over User,Movement: Phase 5: Solver Fulfillment
+    SolverNetwork->>Movement: Submits fill_intent(intent_id, tx_hash)
+
+    Note over User,Movement: Phase 6: Verifier Validation
+    Verifier->>Verifier: Validates in real-time:<br/>- Confirms min_conf finality<br/>- Verifies token = USDC<br/>- Verifies destination & amount<br/>- Uses multi-RPC quorum (≥2 receipts)
+
+    alt Valid
+        Verifier->>Connected: Calls finalize(intent_id, solver)
+        Connected->>SolverNetwork: Transfers escrowed USDC.e → solver (minus fee)
+        Connected->>SolverNetwork: Releases solver's locked collateral
+    else Invalid/Expired
+        Note over Connected: Intent remains OPEN
+        alt Solver claimed but didn't deliver
+            Connected->>SolverNetwork: Slashes 0.5-1% of collateral
+            Connected->>SolverNetwork: Unlocks remainder
+        end
+    end
+```
+
+**Flow Steps**:
+
+1. **User off-chain intent request**: User creates unreserved intent and broadcasts to solver network
+
+2. **Solvers sign offers**: Solvers respond with signed offers and return to user
+
+3. **User signs offer**: User selects a solver offer, signs it (for hub), and sends deposit transaction with USDC in escrow for connected chain (e.g., Solana, Base, Ethereum, Sui, Aptos) to the verifier
+
+   **Alternative Options**: User/relayer can commit this on-chain directly (bypass mode) or verifier can submit commit (verifier-gated mode)
+
+4. **Verifier commits both actions on-chain**: Verifier commits the user's intent selection and escrow creation
+
+5. **Solver detects the deposit**: Solver detects deposit (directly or via trusted monitoring), then transfers equivalent USDC.e to the user's wallet on Movement
+
+6. **Solver submits fulfillment**: Solver submits `fill_intent(intent_id, tx_hash)` on Movement, referencing the user's original connected-chain transaction
+
+7. **Verifier validates in real-time**:
+   - Confirms minimum confirmation finality (e.g., finalized Solana / 3–12 blocks EVM)
+   - Verifies token = USDC, destination == expected deposit address, and amount ≥ required
+   - Uses multi-RPC quorum (≥2 matching receipts)
+
+8. **If valid → finalize**: `finalize(intent_id, solver)` is called on-chain on connected chain:
+   - Protocol transfers user's escrowed USDC.e → solver (minus protocol fee)
+   - Solver's locked collateral for that claim is released (configurable, may be set to 0 for trusted permissioned solvers)
+
+9. **If invalid or expired → intent remains OPEN**:
+   - If solver claimed but didn't deliver before deadline, a small fraction (0.5–1%) of its locked collateral is slashed; the rest unlocks
+
+This process creates a smooth "deposit → instant credit" UX for users while keeping system risk bounded through solver collateral and partial slashing.
+
+##### Outflow (Movement → Connected Chain)
+
+This flow enables users to withdraw tokens from Movement to a connected chain.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant SolverNetwork as Solver Network
+    participant Movement as Movement<br/>(Hub Chain)
+    participant Verifier as Trusted Verifier
+    participant Connected as Connected Chain<br/>(Destination)
+
+    Note over User,Connected: Phase 1: Off-Chain Intent Request
+    User->>SolverNetwork: Creates unreserved intent, broadcasts to solvers
+
+    Note over User,Connected: Phase 2: Solver Offers
+    SolverNetwork->>User: Solvers sign offers and return to user
+
+    Note over User,Connected: Phase 3: User Selection & Reserved Intent
+    User->>User: Selects solver offer, signs it
+    alt Bypass Mode
+        User->>Movement: Creates reserved intent directly<br/>(locks USDC.e escrow)
+    else Verifier-Gated Mode
+        User->>Verifier: Sends intent selection + solver offer
+        Verifier->>Movement: Commits reserved intent on-chain
+    end
+    Note right of Movement: Reserved intent parameters:<br/>(amount, dst_chain, dst_token=USDC,<br/>dst_addr, expiry, min_conf_dst,<br/>fee_cap, nonce, selected_quote_id,<br/>solver_offer_sig)
+
+    Note over User,Connected: Phase 4: User Posts Intent
+    User->>Movement: Posts intent to withdraw USDC.e<br/>(amount, dst_chain, dst_addr, expiry, min_conf)
+
+    Note over User,Connected: Phase 5: Solver Claims Intent
+    SolverNetwork->>Movement: Claims intent, locks collateral<br/>(lock_ratio ≈ 10-20%, configurable to 0)
+
+    Note over User,Connected: Phase 6: Commit Anchoring
+    alt Bypass Mode
+        Note over Movement: Already committed in Phase 3
+    else Verifier-Gated Mode
+        Verifier->>Movement: Commits reserved intent on-chain
+    end
+
+    Note over User,Connected: Phase 7: Solver Sends USDC
+    SolverNetwork->>Connected: Sends USDC to dst_addr
+    SolverNetwork->>SolverNetwork: Obtains tx_hash
+
+    Note over User,Connected: Phase 8: Solver Submits Fulfillment
+    SolverNetwork->>Movement: Submits fill_intent(intent_id, dst_tx_hash[, block_no, receipt_or_proof])
+
+    Note over User,Connected: Phase 9: Verifier Validation
+    Verifier->>Verifier: Validates transaction
+    alt Valid
+        Verifier->>Movement: Finalizes and transfers user escrow → solver (minus fee)
+        Note over Movement: Alternatively: solver fulfills reserved intent with verifier approval
+    else Invalid/Expired
+        Movement->>SolverNetwork: Triggers collateral penalty (0.5-1%)
+        Movement->>SolverNetwork: Unlocks remainder automatically
+    end
+```
+
+**Flow Steps**:
+
+1. **User off-chain intent request**: User creates unreserved intent and broadcasts to solver network
+
+2. **Solvers sign offers**: Solvers respond with signed offers and return to user
+
+3. **User selects & signs offer**: User selects a solver offer, signs it, then creates a reserved intent on Movement (locks USDC.e escrow) with parameters: `(amount, dst_chain, dst_token=USDC, dst_addr, expiry, min_conf_dst, fee_cap, nonce, selected_quote_id, solver_offer_sig)`
+
+   **Bypass option**: User/relayer can commit this on-chain directly (since solver offer is attached). If verifier-gated: verifier can submit this commit instead
+
+4. **User posts intent**: User posts an intent on Movement to withdraw USDC.e to a connected chain `(amount, dst_chain, dst_addr, expiry, min_conf)`
+
+5. **Solver claims intent**: Solver claims the intent, locking a portion of its long-term collateral (`lock_ratio ≈ 10–20%`). Note: initially solvers may be permissioned and trusted, requiring configuration to 0 collateral
+
+6. **Commit anchoring** (one of):
+   - **Bypass mode**: Already committed in Step 3 (nothing to do here)
+   - **Verifier-gated mode**: Verifier commits the reserved intent on-chain (mirroring Inflow's "commit both actions")
+
+7. **Solver sends USDC**: Solver sends USDC on destination chain to `dst_addr`, obtains `tx_hash`, and submits it to Movement
+
+8. **Solver submits fulfillment**: Solver submits `fill_intent(intent_id, dst_tx_hash[, block_no, receipt_or_proof])` on Movement
+
+9. **Verifier validates**: Verifier validates the transaction; if correct, finalizes and transfers user escrow → solver (minus fee). Alternatively, solver can fulfill the reserved intent with verifier approval
+
+10. **Failed or expired claims**: Trigger a small collateral penalty (0.5–1%), with remainder unlocked automatically
+
 ### 2.5 Architectural Principles
 
-The system is designed with the following principles:
+For detailed architectural principles and design philosophy, see the [Architecture Documentation](../.taskmaster/docs/README.md):
 
-- **Generic and Extensible**: Base intent module can be implemented for any conditional trade type
-- **Type-Safe Verification**: Move's type system enforces witness creation only through proper verification paths
-- **Event-Driven Discovery**: Intent availability is broadcast via events for external system integration
-- **Security First**: Escrow operations require non-revocable intents; witness system prevents condition bypass
-- **Modular Design**: Clear separation between generic framework and concrete implementations
+- **[RPG Methodology Principles](../.taskmaster/docs/rpg-methodology.md)** - Design philosophy and domain-based organization principles (Dual-Semantics, Explicit Dependencies, Topological Order, Progressive Refinement)
+- **[Component-to-Domain Mapping](../.taskmaster/docs/architecture-component-mapping.md)** - How components are organized into domains and inter-domain interaction patterns
+- **[Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md)** - Precise domain boundary definitions and interface specifications for Intent Management, Escrow, Settlement, and Verification domains
 
 ## 3. Functional Requirements and Data Structures
 
@@ -71,7 +238,7 @@ This section specifies the functional capabilities and behaviors that the system
 
 ### 3.1 Intent Creation
 
-The system must support creating intents with the following capabilities:
+The system must support creating intents with the following capabilities. For data structure definitions and interface specifications, see [Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](../.taskmaster/docs/data-models.md).
 
 #### 3.1.1 Unreserved Intent Creation
 
@@ -81,26 +248,6 @@ The system must support creating intents with the following capabilities:
 - Configure revocability (whether creator can revoke before execution)
 - Emit events upon intent creation for solver discovery
 
-Relevant structures:
-
-```move
-struct TradeIntent<Source: store, Args: store + drop> has key {
-    offered_resource: Source,
-    argument: Args,
-    expiry_time: u64,
-    witness_type: TypeInfo,
-    reservation: Option<IntentReserved>, // None for unreserved intents
-    revocable: bool,
-}
-
-struct FungibleAssetLimitOrder has store, drop {
-    desired_metadata: Object<Metadata>,
-    desired_amount: u64,
-    issuer: address,
-    intent_id: Option<address>,
-}
-```
-
 #### 3.1.2 Reserved Intent Creation
 
 - Enable off-chain negotiation between intent creator and specific solver
@@ -108,35 +255,6 @@ struct FungibleAssetLimitOrder has store, drop {
 - Create intent reservations that restrict execution to authorized solvers
 - Validate solver signatures before accepting reserved intents
 - Ensure only authorized solver can execute reserved intents
-
-Relevant structures:
-
-`TradeIntent` from 3.1.1 with `reservation: Some(IntentReserved)`
-
-```move
-struct IntentReserved has store, drop {
-    solver: address,
-}
-
-struct IntentDraft has copy, drop {
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
-    desired_metadata: Object<Metadata>,
-    desired_amount: u64,
-    expiry_time: u64,
-    issuer: address,
-}
-
-struct IntentToSign has copy, drop {
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
-    desired_metadata: Object<Metadata>,
-    desired_amount: u64,
-    expiry_time: u64,
-    issuer: address,
-    solver: address,
-}
-```
 
 #### 3.1.3 Oracle-Guarded Intent Creation
 
@@ -146,29 +264,6 @@ struct IntentToSign has copy, drop {
 - Require oracle signature witness during execution to verify external conditions
 - Support conditional execution based on oracle data (e.g., price feeds)
 
-Relevant structures:
-
-`TradeIntent` from 3.1.1 with `argument: OracleGuardedLimitOrder`
-
-```move
-struct OracleGuardedLimitOrder has store, drop {
-    desired_metadata: Object<Metadata>,
-    desired_amount: u64,
-    issuer: address,
-    requirement: OracleSignatureRequirement,
-}
-
-struct OracleSignatureRequirement has store, drop, copy {
-    min_reported_value: u64,
-    public_key: ed25519::UnvalidatedPublicKey,
-}
-
-struct OracleSignatureWitness has drop {
-    reported_value: u64,
-    signature: ed25519::Signature,
-}
-```
-
 #### 3.1.4 Escrow Intent Creation
 
 - Create escrow intents for conditional payments
@@ -177,22 +272,9 @@ struct OracleSignatureWitness has drop {
 - Require escrow intents to be non-revocable (`revocable = false`)
 - Support linking escrow to intent IDs for cross-chain matching
 
-Relevant structures:
+### 3.2 Move On-Chain Intent Execution
 
-`TradeIntent` from 3.1.1 with `argument: OracleGuardedLimitOrder` and `revocable: false`
-
-```move
-struct EscrowConfig has store, drop {
-    desired_metadata: Object<Metadata>,
-    desired_amount: u64,
-    oracle_public_key: ed25519::UnvalidatedPublicKey, // Verifier public key
-    expiry_time: u64,
-}
-```
-
-### 3.2 Intent Execution
-
-The system must support executing intents through a two-phase session model (session initiation and completion), with validation checks applied throughout the execution process:
+The system must support executing intents through a two-phase session model (session initiation and completion), with validation checks applied throughout the execution process. This applies to the Move Intent Framework's on-chain execution model for intents fulfilled entirely on a single chain. For cross-chain intent flows involving multiple chains and verifiers, see [Cross-Chain Flows](#cross-chain-flows) (Inflow and Outflow).
 
 #### 3.2.1 Session Initiation
 
@@ -246,62 +328,23 @@ The system must support executing intents through a two-phase session model (ses
 
 ### 3.4 Event Emission
 
+The system must emit events for intent discovery and cross-chain coordination. For event structure definitions and cross-chain event correlation patterns, see [Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md#intent-management-boundaries-and-interfaces) and [Data Models Documentation](../.taskmaster/docs/data-models.md).
+
 #### 3.4.1 Intent Creation Events
 
-- Emit `LimitOrderEvent` when fungible asset intents are created
+- Emit events when intents are created for solver discovery
 - Include intent ID, source/desired asset metadata, amounts, expiry time, offerer, and solver (if reserved)
-- Emit `OracleLimitOrderEvent` for oracle-guarded intents with oracle requirements
-- Emit `OracleLimitOrderEvent` for escrow intents (escrow uses oracle-guarded intent system internally)
-- Include oracle/verifier public key and minimum reported value in oracle events
-- Make events discoverable by external systems and solvers
-
-Event structures:
-
-```move
-struct LimitOrderEvent has store, drop {
-    intent_address: address,
-    intent_id: address,
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
-    desired_metadata: Object<Metadata>,
-    desired_amount: u64,
-    issuer: address,
-    expiry_time: u64,
-    revocable: bool,
-}
-
-struct OracleLimitOrderEvent has store, drop {
-    intent_address: address,
-    intent_id: address,
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
-    desired_metadata: Object<Metadata>,
-    desired_amount: u64,
-    issuer: address,
-    expiry_time: u64,
-    min_reported_value: u64,
-    revocable: bool,
-}
-```
+- Emit events for oracle-guarded intents with oracle/verifier requirements
+- Emit events for escrow intents with escrow-specific information
+- Make events discoverable by external systems (solvers, verifiers, indexers)
+- Support event correlation across chains via shared identifiers
 
 #### 3.4.2 Fulfillment Events
 
 - Emit events when intents are successfully fulfilled
 - Include intent ID, solver address, and fulfillment details
 - Support event monitoring by verifier services for cross-chain coordination
-
-Event structure:
-
-```move
-struct LimitOrderFulfillmentEvent has store, drop {
-    intent_address: address,
-    intent_id: address,
-    solver: address,
-    provided_metadata: Object<Metadata>,
-    provided_amount: u64,
-    timestamp: u64,
-}
-```
+- Enable verifier to correlate fulfillment events with escrow events across chains
 
 ### 3.5 Trusted Verifier Service
 
@@ -346,26 +389,14 @@ struct LimitOrderFulfillmentEvent has store, drop {
 
 ### 3.6 Escrow Operations
 
-#### 3.6.1 Escrow Creation
+For Move on-chain escrow operations, the system must support escrow session management. For escrow interface specifications and cross-chain escrow flows, see [Domain Boundaries and Interfaces](../.taskmaster/docs/domain-boundaries-and-interfaces.md#escrow-boundaries-and-interfaces) and [Cross-Chain Flows](#cross-chain-flows).
 
-- Create escrow intents that lock tokens awaiting verifier approval
-- Specify authorized verifier public key
-- Set expiry time for automatic cleanup
-- Require escrow intents to be non-revocable
-
-#### 3.6.2 Escrow Session Management
+#### 3.6.1 Move On-Chain Escrow Session Management
 
 - Support starting escrow session to take escrowed assets
 - Enable verifier to approve or reject escrow release
 - Require verifier signature for escrow completion
-- Support revocation of escrow if rejected or expired
-
-#### 3.6.3 Verifier Approval/Rejection
-
-- Generate Ed25519 signatures for approval (value = 1) or rejection (value = 0)
-- Verify verifier signatures match authorized public key
-- Release escrowed assets only upon approval
-- Return assets to creator upon rejection or expiry
+- Support cancellation of escrow if rejected or expired
 
 ## 4. Non-Functional Requirements
 

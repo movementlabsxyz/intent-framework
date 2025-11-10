@@ -1,0 +1,72 @@
+# Task ID: 5
+# Title: Update cross-chain-flow.md with detailed protocol references and navigation links
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Enhance the existing cross-chain-flow.md document to include more detailed protocol information and reference the new protocol.md document, ensuring consistency with the detailed protocol specification.
+# Details:
+This task involves updating docs/cross-chain-flow.md to provide more comprehensive cross-chain intent framework documentation that aligns with the forthcoming detailed protocol.md specification. The update should:
+
+## Content Enhancement:
+1. **Expand High-Level Flow Description**: Add more context about the intent framework's purpose and how it enables cross-chain operations with verifier-based approval
+2. **Enhanced Sequence Diagram**: Improve the existing Mermaid diagram with additional detail about event types (LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent) and data flow
+3. **Detailed Step Descriptions**: Expand the current 5 steps with more technical detail about Move contracts (fa_intent.move, intent_as_escrow.move) and Solidity contracts (IntentEscrow.sol)
+4. **Add Technical Context**: Include information about witness types, reservation systems, and verifier public key mechanisms
+
+## Protocol Integration:
+1. **Add Protocol Reference Section**: Create a section that references the detailed protocol.md document once available (Task 1 dependency)
+2. **Cross-Reference Links**: Add navigation links between high-level flow concepts and detailed protocol specifications
+3. **Consistency Checks**: Ensure terminology and process descriptions align with the detailed protocol documentation
+
+## Navigation and Structure:
+1. **Add Table of Contents**: Include section navigation for the enhanced document
+2. **Link to Related Documentation**: Reference component-specific docs (move-intent-framework/, evm-intent-framework/, trusted-verifier/)
+3. **Add 'See Also' Section**: Point to protocol.md, architecture.md, and use-cases.md documents
+
+## Technical Accuracy:
+1. **Validate Event Names**: Ensure all referenced events (LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent) match actual implementation
+2. **Contract References**: Verify Move module names and Solidity contract names are accurate
+3. **Process Flow Accuracy**: Cross-check the documented flow against the actual implementation in the codebase
+
+The updated document should serve as an enhanced entry point that provides sufficient detail for understanding the cross-chain flow while maintaining clear navigation paths to the comprehensive protocol documentation.
+
+# Test Strategy:
+1. Verify all referenced contracts and modules exist by checking move-intent-framework/sources/ and evm-intent-framework/contracts/ directories
+2. Validate event names and structures match actual implementation by reviewing Move and Solidity source files
+3. Test Mermaid diagram renders correctly and accurately represents the cross-chain flow
+4. Ensure all internal links work correctly and reference existing documentation files
+5. Cross-check terminology and process descriptions with existing component documentation for consistency
+6. Verify the document maintains appropriate balance between high-level overview and technical detail
+7. Confirm navigation structure aligns with the documentation guide principles in docs-guide.md
+
+# Subtasks:
+## 1. Add enhanced table of contents and navigation structure [pending]
+### Dependencies: None
+### Description: Add a comprehensive table of contents to cross-chain-flow.md and include proper navigation links to related documentation sections within the docs/ directory structure.
+### Details:
+Create a proper table of contents section at the top of cross-chain-flow.md that includes all major sections. Add navigation links to component-specific documentation (docs/move-intent-framework/, docs/evm-intent-framework/, docs/trusted-verifier/) and references to protocol.md, architecture.md, and use-cases.md documents. Include a 'See Also' section that provides clear navigation paths to detailed documentation.
+
+## 2. Expand high-level flow description with technical context [pending]
+### Dependencies: None
+### Description: Enhance the existing flow description to include more detailed context about the intent framework's purpose, verifier-based approval mechanisms, and witness type systems.
+### Details:
+Expand the opening section to provide comprehensive context about how the intent framework enables cross-chain operations. Include detailed explanations of verifier public key mechanisms, witness types (FungibleAssetRecipientWitness), reservation systems using IntentReserved, and the role of reserved solver addresses. Reference actual Move contract structures and explain the security model behind non-revocable escrow requirements.
+
+## 3. Enhance sequence diagram with detailed event types and data flow [pending]
+### Dependencies: None
+### Description: Improve the existing Mermaid sequence diagram to include specific event details (LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent) and show complete data flow between components.
+### Details:
+Update the current sequence diagram at lines 5-24 to include specific event emission details. Add participant details for event types, show the specific data fields being transmitted (intent_address, intent_id, source_metadata, desired_metadata, etc.), and include the cross-chain correlation logic using intent_id linking. Ensure event names match actual implementation from fa_intent.move:50-72 and fa_intent_with_oracle.move:76.
+
+## 4. Expand step descriptions with detailed contract references [pending]
+### Dependencies: 5.3
+### Description: Enhance the current 5-step flow description with comprehensive technical details about Move contracts (fa_intent.move, intent_as_escrow.move) and Solidity contracts (IntentEscrow.sol).
+### Details:
+Expand each step in the Flow Steps section (lines 26-35) with detailed technical information. Include specific function calls (create_fa_to_fa_intent, createEscrow, complete_escrow_from_fa), event emission patterns, data structure details (FungibleAssetLimitOrder, Escrow struct), and cross-reference actual contract implementations. Add security details about reserved solver enforcement and expiry mechanisms.
+
+## 5. Add protocol reference section and consistency validation [pending]
+### Dependencies: 5.1, 5.2, 5.4
+### Description: Create a dedicated protocol reference section that links to the detailed protocol.md document and ensure all terminology aligns with the comprehensive protocol specification.
+### Details:
+Add a new Protocol References section that provides clear navigation to protocol.md (Task 1 dependency). Include cross-reference links between high-level flow concepts and detailed protocol specifications. Validate that all event names (LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent), contract names (fa_intent.move, intent_as_escrow.move, IntentEscrow.sol), and process descriptions align with actual implementation and will be consistent with the detailed protocol documentation.
+

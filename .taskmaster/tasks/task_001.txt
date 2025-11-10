@@ -1,0 +1,77 @@
+# Task ID: 1
+# Title: Create protocol specification document (docs/protocol.md) that documents the current implemented cross-chain intent protocol
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Document the complete cross-chain intent protocol including sequence diagrams, event structures, data flow, and verifier validation processes.
+# Details:
+This task involves creating comprehensive protocol documentation that covers the entire cross-chain intent framework implementation. The document should include:
+
+## Core Components Documentation:
+- **Intent Framework**: Document Move-based intent creation and fulfillment on hub chain (fa_intent.move) including LimitOrderEvent and LimitOrderFulfillmentEvent structures
+- **Escrow System**: Document both Move-based escrow (intent_as_escrow.move) and EVM-based escrow (IntentEscrow.sol) with OracleLimitOrderEvent emissions
+- **Trusted Verifier**: Document the Rust verifier service architecture including event monitoring, cross-chain validation, and cryptographic approval mechanisms
+
+## Sequence Diagrams Required:
+- Cross-chain flow from docs/cross-chain-flow.md showing Alice creating intent on hub, escrow on connected chain, Bob fulfilling, and verifier approving
+- Detailed step-by-step on-chain operations including exact event emissions and data structures
+- Verifier validation workflow showing event polling, safety checks (non-revocable validation), and signature generation
+
+## Data Structures and Events:
+- Document all event structures: LimitOrderEvent, OracleLimitOrderEvent, LimitOrderFulfillmentEvent, EscrowInitialized, DepositMade, etc.
+- Include field definitions, data types, and cross-chain linking mechanisms (intent_id relationships)
+- Document configuration structures (Config, ChainConfig, EvmChainConfig, VerifierConfig)
+
+## Implementation Details:
+- Document the security requirements including non-revocable intent validation
+- Explain reserved solver address mechanism and fund transfer patterns
+- Detail cryptographic operations (Ed25519 for Aptos, ECDSA for EVM)
+- Document API endpoints and their usage
+
+## Technical Architecture:
+- Component interaction patterns between hub chain, connected chains, and verifier
+- Event monitoring and caching mechanisms
+- Cross-chain validation logic and approval workflows
+
+Reference existing documentation structure from docs/ directory and follow the established patterns from docs/trusted-verifier/README.md and docs/cross-chain-flow.md. The document should serve as the definitive technical reference for the protocol implementation.
+
+# Test Strategy:
+1. Verify documentation completeness by cross-referencing all source files (Move contracts, Solidity contracts, Rust verifier code)
+2. Validate sequence diagrams match actual implementation flow from cross-chain-flow.md
+3. Ensure all event structures and data types are accurately documented
+4. Verify technical accuracy by comparing against actual code in trusted-verifier/src/, move-intent-framework/sources/, and evm-intent-framework/contracts/
+5. Test documentation clarity by having another developer review for completeness and understanding
+6. Validate that security requirements and constraints are properly documented
+7. Ensure the document follows existing documentation standards from docs/docs-guide.md
+
+# Subtasks:
+## 1. Analyze codebase and document core protocol components and event structures [pending]
+### Dependencies: None
+### Description: Examine all Move contracts, Solidity contracts, and Rust verifier code to identify and document the complete protocol structure including all event types, data structures, and component relationships.
+### Details:
+This subtask involves a comprehensive analysis of the codebase to understand all components and their interactions. Review move-intent-framework/sources/ (intent.move, fa_intent.move, fa_intent_with_oracle.move, intent_as_escrow.move), evm-intent-framework/contracts/ (IntentEscrow.sol), and trusted-verifier/src/ to identify: 1) All event structures (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent, EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled), 2) Core data structures (TradeIntent, FungibleAssetLimitOrder, Escrow struct, etc.), 3) Component relationships and dependencies, 4) Cross-chain linking mechanisms using intent_id fields, 5) Security patterns (non-revocable validation, reserved solver addresses), 6) Configuration structures from trusted verifier
+
+## 2. Create detailed sequence diagrams for cross-chain intent protocol flows [pending]
+### Dependencies: 1.1
+### Description: Design comprehensive Mermaid sequence diagrams showing the complete cross-chain intent workflow including intent creation, escrow setup, fulfillment, verifier validation, and fund release processes.
+### Details:
+Based on the component analysis, create detailed sequence diagrams that show: 1) Standard cross-chain flow (Alice creates intent on hub --> escrow on connected chain --> Bob fulfills --> verifier approves --> escrow claim), 2) Oracle-guarded intent flow using OracleLimitOrderEvent, 3) Error/failure scenarios and validation flows, 4) Step-by-step on-chain operations with exact event emissions, 5) Verifier validation workflow showing event polling, safety checks (non-revocable validation), and signature generation, 6) Data flow between hub chain (Move), connected chains (EVM), and verifier (Rust), 7) Timeline and ordering constraints for each phase of the protocol
+
+## 3. Document all data structures, events, and cross-chain linking mechanisms [pending]
+### Dependencies: 1.1
+### Description: Create comprehensive documentation of all protocol data structures including field definitions, data types, relationships, and cross-chain linking patterns using intent_id.
+### Details:
+Document all data structures found in the codebase analysis: 1) Move contract structures: TradeIntent<Source, Args>, FungibleAssetLimitOrder, FungibleStoreManager, OracleSignatureRequirement, and their field definitions, 2) Event structures: LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent with complete field documentation including intent_id linking mechanisms, 3) EVM contract structures: Escrow struct with maker, token, amount, isClaimed, expiry, reservedSolver fields, 4) EVM events: EscrowInitialized, DepositMade, EscrowClaimed, EscrowCancelled, 5) Cross-chain data linking patterns explaining how intent_id enables linking between hub chain intents and connected chain escrows, 6) Configuration structures from verifier (Config, ChainConfig, EvmChainConfig, VerifierConfig), 7) Type relationships and witness patterns used for type safety
+
+## 4. Document technical architecture and implementation details [pending]
+### Dependencies: 1.1, 1.2, 1.3
+### Description: Create detailed documentation of the protocol's technical architecture including security requirements, cryptographic operations, API endpoints, and component interaction patterns.
+### Details:
+Document the technical implementation details: 1) Security requirements including non-revocable intent validation and why it's critical for cross-chain safety, 2) Reserved solver address mechanism and fund transfer patterns ensuring funds always go to designated solver regardless of transaction sender, 3) Cryptographic operations (Ed25519 for Aptos hub chain, ECDSA for EVM connected chains), 4) Component interaction patterns between hub chain (Move), connected chains (EVM), and verifier (Rust), 5) Event monitoring and caching mechanisms in the verifier, 6) Cross-chain validation logic and approval workflows, 7) API endpoints from trusted-verifier (/health, /events, /approval, /public-key), 8) Configuration and deployment patterns, 9) Error handling and recovery mechanisms across all components
+
+## 5. Compile and write the complete protocol specification document [pending]
+### Dependencies: 1.1, 1.2, 1.3, 1.4
+### Description: Combine all documented components, sequence diagrams, data structures, and technical details into a comprehensive protocol.md document following the established documentation structure.
+### Details:
+Create the final docs/protocol.md document by: 1) Following the documentation structure established in docs-guide.md and existing patterns from docs/trusted-verifier/README.md, 2) Organizing content with clear sections: Core Components Documentation, Sequence Diagrams, Data Structures and Events, Implementation Details, Technical Architecture, 3) Including all sequence diagrams as Mermaid code blocks, 4) Providing comprehensive cross-references to source files using file_path:line_number format for easy navigation, 5) Ensuring consistency with existing documentation in docs/cross-chain-flow.md, 6) Adding navigation links and table of contents for easy reference, 7) Including examples and usage patterns where appropriate, 8) Formatting for clarity and maintainability following established markdown conventions
+

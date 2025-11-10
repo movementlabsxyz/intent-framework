@@ -68,7 +68,6 @@ For quick start instructions, see the [component README](../../trusted-verifier/
 
 For detailed API documentation, see [api.md](api.md). For usage guide, see [guide.md](guide.md).
 
-
 ## Dependencies
 
 **Aptos Integration**: This project uses a pinned version of `aptos-core` for stable Rust compatibility:

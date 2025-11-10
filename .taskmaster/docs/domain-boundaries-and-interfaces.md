@@ -2,6 +2,18 @@
 
 This document provides precise definitions of domain boundaries, external interfaces, internal components, data ownership, and interaction protocols following RPG methodology principles.
 
+**Related Architecture Documentation**:
+
+- [Component-to-Domain Mapping](architecture-component-mapping.md) - Source file mapping to domains and inter-domain interaction patterns
+- [RPG Methodology Principles](rpg-methodology.md) - Architectural methodology underlying these boundary definitions
+- [Protocol Specification](../../docs/protocol.md#cross-chain-flow) - Cross-chain intent protocol implementation details
+
+**Component Documentation**:
+
+- [Move Intent Framework](../../docs/move-intent-framework/README.md) - Move contract implementation details
+- [EVM Intent Framework](../../docs/evm-intent-framework/README.md) - Solidity contract implementation details
+- [Trusted Verifier](../../docs/trusted-verifier/README.md) - Verifier service implementation details
+
 ## Intent Management: Boundaries and Interfaces
 
 ### Intent Management: Domain Boundaries
@@ -65,9 +77,7 @@ This document provides precise definitions of domain boundaries, external interf
 
 ### Intent Management: Interaction Protocols
 
-- **To Escrow**: Provides reservation system (`IntentReserved`) and oracle-intent system (`fa_intent_with_oracle`)
-- **To Settlement**: Provides fulfillment functions (`fulfill_cross_chain_request_intent`, `finish_intent_session`)
-- **To Verification**: Emits events (`LimitOrderEvent`, `LimitOrderFulfillmentEvent`) for monitoring
+For comprehensive inter-domain interaction patterns, see [Inter-Domain Interaction Patterns and Dependencies](architecture-component-mapping.md#inter-domain-interaction-patterns-and-dependencies) in the architecture component mapping document.
 
 ---
 
@@ -137,9 +147,7 @@ This document provides precise definitions of domain boundaries, external interf
 
 ### Escrow: Interaction Protocols
 
-- **From Intent Management**: Uses reservation system (`IntentReserved`) and oracle-intent system (`fa_intent_with_oracle`)
-- **To Settlement**: Provides completion functions (`complete_escrow`, `claim`)
-- **To Verification**: Emits events (`OracleLimitOrderEvent`, `EscrowInitialized`) and requires verifier public key for signature verification
+For comprehensive inter-domain interaction patterns, see [Inter-Domain Interaction Patterns and Dependencies](architecture-component-mapping.md#inter-domain-interaction-patterns-and-dependencies) in the architecture component mapping document.
 
 ---
 
@@ -194,9 +202,7 @@ This document provides precise definitions of domain boundaries, external interf
 
 ### Settlement: Interaction Protocols
 
-- **From Intent Management**: Uses fulfillment functions (`fulfill_cross_chain_request_intent`, `finish_fa_intent_session`)
-- **From Escrow**: Uses completion functions (`complete_escrow`, `claim`)
-- **From Verification**: Requires approval signatures for escrow release
+For comprehensive inter-domain interaction patterns, see [Inter-Domain Interaction Patterns and Dependencies](architecture-component-mapping.md#inter-domain-interaction-patterns-and-dependencies) in the architecture component mapping document.
 
 ---
 
@@ -261,7 +267,4 @@ This document provides precise definitions of domain boundaries, external interf
 
 ### Verification: Interaction Protocols
 
-- **From Intent Management**: Monitors `LimitOrderEvent` and `LimitOrderFulfillmentEvent`
-- **From Escrow**: Monitors `OracleLimitOrderEvent` / `EscrowInitialized`
-- **To Settlement**: Provides approval signatures for escrow release
-- **To External Systems**: Provides REST API for event and approval retrieval
+For comprehensive inter-domain interaction patterns, see [Inter-Domain Interaction Patterns and Dependencies](architecture-component-mapping.md#inter-domain-interaction-patterns-and-dependencies) in the architecture component mapping document.

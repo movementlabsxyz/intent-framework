@@ -88,7 +88,7 @@
         "description": "Create comprehensive architecture documentation that organizes the cross-chain intent framework by domain following RPG methodology for structured system design.",
         "details": "This task involves creating internal architecture documentation in `.taskmaster/docs/` that applies RPG (Repository Planning Graph) methodology to organize the intent framework system by logical domains. Architecture documentation is stored in `.taskmaster/docs/` rather than the public `docs/` directory, as these are internal architectural guidance documents that inform development decisions but are not part of the public API documentation. The documents should:\n\n## Domain Structure Analysis:\n1. **Intent Management Domain**: Core intent creation, validation, and execution logic centered around the intent.move and fa_intent.move modules. This includes intent lifecycle management, type-safe witness systems, and event emissions.\n\n2. **Escrow Domain**: Cross-chain asset custody and release mechanisms including both Move-based escrow (intent_as_escrow.move) and EVM-based escrow (IntentEscrow.sol). Handles fund locking, verifier integration, and conditional release.\n\n3. **Settlement Domain**: Transaction completion and finalization processes across chains, including the fulfillment mechanisms, cross-chain coordination, and asset transfers.\n\n4. **Verification Domain**: Trusted verifier service (trusted-verifier Rust crate) that monitors chain events, validates cross-chain state, and provides cryptographic approvals for escrow releases.\n\n## Document Structure:\n- Executive summary of the domain-driven architecture approach\n- Domain definitions with clear boundaries and responsibilities\n- Component mapping showing which source files belong to each domain\n- Inter-domain interaction patterns and data flows (referencing protocol.md#cross-chain-flow)\n- Current implementation status for each domain with specific file references\n- Dependencies between domains using the RPG methodology's explicit dependency modeling\n- Integration patterns showing how domains communicate\n\n## Technical Analysis Required:\n- Review all Move contracts in move-intent-framework/sources/ to understand intent and escrow components\n- Analyze Solidity contracts in evm-intent-framework/contracts/ for EVM integration\n- Examine Rust verifier service structure in trusted-verifier/src/ for verification architecture\n- Cross-reference with existing technical documentation in docs/ folders\n\nThe document should serve as the foundational architecture reference that other technical documentation builds upon, providing a clear domain-based mental model of the entire system.",
         "testStrategy": "1. Verify all source files are correctly categorized into their respective domains by cross-referencing with actual codebase structure\n2. Validate domain boundaries make logical sense and don't create circular dependencies\n3. Ensure all components mentioned in existing documentation (protocol.md#cross-chain-flow, component READMEs) are properly mapped to domains\n4. Check that inter-domain interaction patterns accurately reflect the implemented cross-chain flow\n5. Verify implementation status accurately reflects current codebase state\n6. Review documents follow RPG methodology principles with explicit dependencies and clear functional/structural separation\n7. Ensure architecture documentation is properly located in `.taskmaster/docs/` as internal architectural guidance, not in public `docs/` directory\n8. Verify that public documentation properly references internal architecture docs where appropriate",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           "1"
         ],
@@ -140,9 +140,10 @@
               3
             ],
             "details": "Document all communication patterns between domains including event flows (LimitOrderEvent, LimitOrderFulfillmentEvent, OracleLimitOrderEvent), API calls, and data sharing mechanisms. Create explicit dependency graphs showing which domains depend on others and in what contexts. Reference protocol.md#cross-chain-flow for current implementation patterns and expand these into formal inter-domain protocols. Include error handling and rollback scenarios between domains. This documentation should be added to `.taskmaster/docs/architecture-component-mapping.md` or `.taskmaster/docs/domain-boundaries-and-interfaces.md` as internal architectural guidance.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify all documented interaction patterns match actual implementation by tracing through source code and existing documentation",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T16:07:44.035Z"
           },
           {
             "id": 5,
@@ -155,12 +156,13 @@
               4
             ],
             "details": "Synthesize all architecture documentation in `.taskmaster/docs/` into a cohesive set of internal architectural guidance documents. Ensure `.taskmaster/docs/architecture-component-mapping.md`, `.taskmaster/docs/domain-boundaries-and-interfaces.md`, and `.taskmaster/docs/rpg-methodology.md` work together to provide a complete architectural reference. Include references to public documentation (protocol.md#cross-chain-flow, component READMEs) and ensure the documents serve as a clear mental model for developers. Format for easy navigation with clear sections and cross-references. Note that architecture documentation is stored in `.taskmaster/docs/` as internal architectural guidance, not in the public `docs/` directory.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Validate document completeness by ensuring all source files are referenced, all domains are fully described, and the document provides clear guidance for system understanding and future development",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-10T16:28:09.833Z"
           }
         ],
-        "updatedAt": "2025-11-10T13:35:59.735Z"
+        "updatedAt": "2025-11-10T16:28:09.833Z"
       },
       {
         "id": "3",
@@ -385,9 +387,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-10T13:35:59.736Z",
+      "lastModified": "2025-11-10T16:28:09.834Z",
       "taskCount": 5,
-      "completedCount": 1,
+      "completedCount": 2,
       "tags": [
         "master"
       ]

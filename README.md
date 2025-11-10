@@ -9,6 +9,8 @@ A framework for creating conditional trading intents with the following componen
 
 For complete documentation, see [docs/](docs/README.md).
 
+For contributing guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Quick start
 
 - Enter dev shell with pinned toolchain (Rust, Aptos CLI):

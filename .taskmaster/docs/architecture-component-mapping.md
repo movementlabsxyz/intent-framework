@@ -9,6 +9,18 @@ This document provides a comprehensive mapping of all source files in the Intent
 
 This analysis forms the foundation for the architecture document.
 
+**Related Architecture Documentation**:
+
+- [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md) - Precise domain boundary definitions and interface specifications
+- [RPG Methodology Principles](rpg-methodology.md) - Architectural methodology underlying this domain structure
+- [Protocol Specification](../../docs/protocol.md#cross-chain-flow) - Cross-chain intent protocol implementation details
+
+**Component Documentation**:
+
+- [Move Intent Framework](../../docs/move-intent-framework/README.md) - Move contract implementation details
+- [EVM Intent Framework](../../docs/evm-intent-framework/README.md) - Solidity contract implementation details
+- [Trusted Verifier](../../docs/trusted-verifier/README.md) - Verifier service implementation details
+
 ## Topological Order (Build Sequence)
 
 Following RPG methodology, domains are organized in topological order from foundation to dependent layers:
@@ -326,47 +338,138 @@ graph TB
 
 ---
 
-## Cross-Domain Dependencies
+## Inter-Domain Interaction Patterns and Dependencies
 
-Dependencies follow topological order: Foundation → Layer 1 → Layer 2
+This section documents comprehensive communication patterns between domains, including event flows, data sharing, API calls, and error handling. Dependencies follow topological order: Foundation → Layer 1 → Layer 2.
 
-### Foundation Layer Dependencies
+### Event Flow Patterns
 
-**Intent Management Domain**: No dependencies (foundation layer)
+**Intent Management → Verification** (Event Emission):
 
-### Layer 1 Dependencies
+- `LimitOrderEvent`: Emitted when intent is created (`fa_intent.move`)
+  - Contains: `intent_id`, `source_metadata`, `source_amount`, `desired_metadata`, `desired_amount`, `expiry_time`, `revocable`
+  - Purpose: Verifier monitors for new intents requiring validation
+- `LimitOrderFulfillmentEvent`: Emitted when intent is fulfilled (`fa_intent.move`)
+  - Contains: `intent_id`, `solver`, `provided_metadata`, `provided_amount`, `timestamp`
+  - Purpose: Verifier validates fulfillment before approving escrow release
+- `OracleLimitOrderEvent`: Emitted for oracle-guarded intents (`fa_intent_with_oracle.move`)
+  - Contains: Same as `LimitOrderEvent` plus `min_reported_value`
+  - Purpose: Used by escrow system and monitored by verifier
 
-**Escrow Domain** → **Intent Management Domain**:
+**Escrow → Verification** (Event Emission):
 
-- Escrow uses oracle-intent system (`fa_intent_with_oracle`) for implementation
-- Escrow requires intent reservation system (`intent_reservation`) for solver addresses
+- `OracleLimitOrderEvent` (Move): Emitted when escrow is created (`intent_as_escrow.move`)
+  - Contains: Escrow details with `intent_id` for cross-chain correlation
+  - Purpose: Verifier monitors escrow creation and validates safety
+- `EscrowInitialized` (EVM): Emitted when escrow is created (`IntentEscrow.sol`)
+  - Contains: `intentId`, `maker`, `token`, `amount`, `reservedSolver`, `expiry`
+  - Purpose: Verifier monitors EVM escrow creation
+- `EscrowClaimed`, `EscrowCancelled` (EVM): Emitted on escrow completion/cancellation
+  - Purpose: Verifier tracks escrow lifecycle
 
-### Layer 2 Dependencies
+**Verification → Settlement** (Approval Provision):
 
-**Settlement Domain** → **Intent Management Domain** (Foundation):
+- Approval signatures provided via REST API (`/approvals/:escrow_id`) or direct function calls
+- Contains: Cryptographic signature (Ed25519 for Move, ECDSA for EVM), approval value
+- Purpose: Settlement uses signatures to authorize escrow release
 
-- Settlement uses intent fulfillment functions from `fa_intent`
-- Settlement validates witness types from `intent` module
+### Functional Dependencies
 
-**Settlement Domain** → **Escrow Domain** (Layer 1):
+**Escrow → Intent Management** (Layer 1 → Foundation):
 
-- Settlement completes escrows using `complete_escrow()` / `claim()`
-- Settlement requires verifier approval signatures
+- **Reservation System**: Escrow uses `IntentReserved` structure from `intent_reservation.move` to enforce reserved solver addresses
+- **Oracle-Intent System**: Escrow implementation uses `fa_intent_with_oracle.move` for oracle-guarded intent mechanics
+- **Function Calls**: `create_escrow()` internally uses `create_fa_to_fa_intent_with_oracle()` from Intent Management
 
-**Verification Domain** → **Intent Management Domain** (Foundation):
+**Settlement → Intent Management** (Layer 2 → Foundation):
 
-- Verifier monitors `LimitOrderEvent` and `LimitOrderFulfillmentEvent`
-- Verifier validates intent safety requirements
+- **Fulfillment Functions**: Settlement calls `fulfill_cross_chain_request_intent()` and `finish_fa_intent_session()` from `fa_intent.move`
+- **Witness Validation**: Settlement uses witness type system from `intent.move` to validate fulfillment conditions
+- **Session Management**: Settlement consumes `TradeSession` hot potato types from Intent Management
 
-**Verification Domain** → **Escrow Domain** (Layer 1):
+**Settlement → Escrow** (Layer 2 → Layer 1):
 
-- Verifier monitors `EscrowInitialized` / `OracleLimitOrderEvent`
-- Verifier validates escrow non-revocability
-- Verifier generates approval signatures for escrow release
+- **Completion Functions**: Settlement calls `complete_escrow()` (Move) or `claim()` (EVM) to release escrowed funds
+- **Approval Verification**: Settlement verifies verifier signatures before releasing funds
+- **Reserved Solver Enforcement**: Settlement ensures funds go to reserved solver regardless of transaction sender
 
-**Verification Domain** → **Settlement Domain** (Layer 2):
+**Verification → Intent Management** (Layer 2 → Foundation):
 
-- Verifier provides approval signatures for escrow release
+- **Event Monitoring**: Verifier polls `LimitOrderEvent` and `LimitOrderFulfillmentEvent` via blockchain RPC
+- **Safety Validation**: Verifier calls `validate_intent_safety()` to check intent requirements (expiry, revocability)
+- **Fulfillment Validation**: Verifier calls `validate_fulfillment()` to verify fulfillment conditions match intent
+
+**Verification → Escrow** (Layer 2 → Layer 1):
+
+- **Event Monitoring**: Verifier polls `OracleLimitOrderEvent` (Move) and `EscrowInitialized` (EVM)
+- **Safety Validation**: Verifier calls `validate_escrow_safety()` to ensure `revocable = false` (CRITICAL)
+- **Approval Generation**: Verifier calls `sign_approval()` to generate cryptographic signatures for escrow release
+
+### Data Flow Patterns
+
+**Cross-Chain Correlation**:
+
+- `intent_id` field links intents on hub chain to escrows on connected chains
+- Verifier uses `intent_id` to match events across chains via `match_events_by_intent_id()`
+- Data flows: Hub Intent → `intent_id` → Connected Escrow → Verifier Correlation → Approval
+
+**Reserved Solver Flow**:
+
+- Intent Management: Provides `IntentReserved` structure with solver address
+- Escrow: Stores `reserved_solver` / `reservedSolver` at creation (immutable)
+- Settlement: Transfers funds to reserved solver regardless of transaction sender
+- Verification: Validates reserved solver matches intent fulfillment
+
+**Approval Signature Flow**:
+
+- Verification: Generates approval signature using Ed25519 (Move) or ECDSA (EVM)
+- Settlement: Retrieves signature via REST API (`/approvals/:escrow_id`) or cached events
+- Escrow: Verifies signature matches verifier public key before releasing funds
+
+### API Call Patterns
+
+**External Systems → Verification**:
+
+- `GET /events`: Retrieve cached events (intents, escrows, fulfillments)
+- `GET /approvals/:escrow_id`: Retrieve approval signature for specific escrow
+- `POST /approval`: Manually trigger approval generation (for testing/debugging)
+
+**Settlement → Verification**:
+
+- Settlement queries `/approvals/:escrow_id` to retrieve approval signatures
+- Settlement validates signature format and verifier public key before use
+
+### Error Handling and Rollback Scenarios
+
+**Intent Expiry**:
+
+- Intent Management: Rejects fulfillment attempts after `expiry_time`
+- Settlement: Cannot fulfill expired intents
+- Escrow: Can be cancelled after expiry (EVM only), returns funds to maker
+
+**Invalid Verifier Signature**:
+
+- Escrow: Rejects `complete_escrow()` / `claim()` calls with invalid signatures
+- Settlement: Must retry with valid signature or wait for verifier approval
+- Verification: Signature validation failures logged but don't prevent retry
+
+**Escrow Safety Validation Failure**:
+
+- Verification: Rejects escrows with `revocable = true` (CRITICAL security check)
+- Escrow: Creation fails if verifier validation rejects (pre-creation validation)
+- Settlement: Cannot proceed if verifier hasn't approved
+
+**Cross-Chain Correlation Failure**:
+
+- Verification: Cannot match events if `intent_id` mismatch or missing
+- Settlement: Cannot proceed without verifier approval (requires correlation)
+- Error: Escrow remains locked until manual intervention or expiry
+
+**Reserved Solver Mismatch**:
+
+- Escrow: Rejects completion if reserved solver doesn't match (Move: session validation, EVM: enforced in `claim()`)
+- Settlement: Funds always go to reserved solver, transaction sender irrelevant
+- Verification: Validates reserved solver matches fulfillment before approval
 
 ---
 

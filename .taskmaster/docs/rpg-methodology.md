@@ -95,6 +95,7 @@ graph TB
 4. **Layer 2**: Verification domain monitors and validates across Intent Management and Escrow domains (depends on Foundation + Layer 1)
 
 **Implementation Sequence**:
+
 - **Phase 1**: Implement Intent Management (can be developed and tested independently)
 - **Phase 2**: Implement Escrow (requires Intent Management)
 - **Phase 3**: Implement Settlement and Verification (require both Foundation and Layer 1)
@@ -199,5 +200,6 @@ Applying RPG methodology to the Intent Framework architecture provides:
 
 - RPG methodology principles from Microsoft Research
 - Task Master RPG template: `.taskmaster/templates/example_prd_rpg.txt`
-- Component mapping: `docs/architecture-component-mapping.md`
-
+- [Component-to-Domain Mapping](architecture-component-mapping.md) - Application of RPG principles to Intent Framework domains
+- [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md) - Detailed domain boundary definitions following RPG methodology
+- [Protocol Specification](../../docs/protocol.md#cross-chain-flow) - Cross-chain intent protocol implementation

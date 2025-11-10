@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, error};
+use base64::{Engine as _, engine::general_purpose};
 
 use crate::config::Config;
 use crate::validator::CrossChainValidator;
@@ -199,13 +200,13 @@ impl EventMonitor {
         })
     }
     
-    /// Starts the event monitoring process for both chains.
+    /// Starts the event monitoring process for configured chains.
     /// 
-    /// This function runs two concurrent monitoring loops:
-    /// 1. Hub chain monitoring for intent events
-    /// 2. Connected chain monitoring for escrow events
+    /// This function runs monitoring loops:
+    /// 1. Hub chain monitoring for intent events (always)
+    /// 2. Connected chain monitoring for escrow events (if configured)
     /// 
-    /// The function blocks until both monitors complete (which should be never
+    /// The function blocks until all monitors complete (which should be never
     /// in normal operation, as they run infinite loops).
     /// 
     /// # Returns
@@ -213,14 +214,20 @@ impl EventMonitor {
     /// * `Ok(())` - Monitoring started successfully
     /// * `Err(anyhow::Error)` - Failed to start monitoring
     pub async fn start_monitoring(&self) -> Result<()> {
-        info!("Starting event monitoring for both chains");
+        info!("Starting event monitoring");
         
-        // Start monitoring both chains concurrently
+        // Start hub chain monitoring (always required)
         let hub_monitor = self.monitor_hub_chain();
-        let connected_monitor = self.monitor_connected_chain();
         
-        // Run both monitors concurrently (this blocks until both complete)
-        tokio::try_join!(hub_monitor, connected_monitor)?;
+        // Conditionally start connected chain monitoring if configured
+        if let Some(_) = &self.config.connected_chain_apt {
+            info!("Connected Aptos chain configured, starting connected chain monitoring");
+            let connected_monitor = self.monitor_connected_chain();
+            tokio::try_join!(hub_monitor, connected_monitor)?;
+        } else {
+            info!("No connected Aptos chain configured, monitoring hub chain only");
+            hub_monitor.await?;
+        }
         
         Ok(())
     }
@@ -274,8 +281,18 @@ impl EventMonitor {
     /// This function runs in an infinite loop, polling the connected chain
     /// for escrow deposit events. When events are found, it validates that
     /// the deposits fulfill the conditions of existing intents.
+    /// 
+    /// Returns early if no connected chain is configured.
     async fn monitor_connected_chain(&self) -> Result<()> {
-        info!("Starting connected chain monitoring for escrow events");
+        let connected_chain_apt = match &self.config.connected_chain_apt {
+            Some(chain) => chain,
+            None => {
+                info!("No connected Aptos chain configured, skipping connected chain monitoring");
+                return Ok(());
+            }
+        };
+        
+        info!("Starting connected Aptos chain monitoring for escrow events on {}", connected_chain_apt.name);
         
         loop {
             match self.poll_connected_events().await {
@@ -447,12 +464,15 @@ impl EventMonitor {
     /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
     /// * `Err(anyhow::Error)` - Failed to poll events
     pub async fn poll_connected_events(&self) -> Result<Vec<EscrowEvent>> {
+        let connected_chain_apt = self.config.connected_chain_apt.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No connected Aptos chain configured"))?;
+        
         // Create Aptos client for connected chain
-        let client = AptosClient::new(&self.config.connected_chain.rpc_url)?;
+        let client = AptosClient::new(&connected_chain_apt.rpc_url)?;
         
         // Query events from known test accounts
-        let known_accounts = self.config.connected_chain.known_accounts.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected chain"))?;
+        let known_accounts = connected_chain_apt.known_accounts.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected Aptos chain"))?;
         
         let mut escrow_events = Vec::new();
         let timestamp = std::time::SystemTime::now()
@@ -624,25 +644,58 @@ impl EventMonitor {
     pub async fn validate_and_approve_fulfillment(&self, fulfillment: &FulfillmentEvent) -> Result<()> {
         info!("Generating approval after fulfillment observed: intent_id {}", fulfillment.intent_id);
         
-        // Find matching escrow by intent_id
+        // Check if this is an Aptos escrow by looking in the escrow cache
+        // Aptos escrows are monitored and cached, EVM escrows are not
         let escrow_cache = self.escrow_cache.read().await;
-        let matching_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
+        let matching_aptos_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
         
-        let escrow_id = match matching_escrow {
-            Some(escrow) => escrow.escrow_id.clone(),
-            None => {
-                error!("No matching escrow found for fulfillment: {} (intent_id: {})", 
-                       fulfillment.intent_address, fulfillment.intent_id);
-                return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
+        // Determine if this is an EVM escrow or Aptos escrow
+        // If we found it in Aptos escrow cache, it's Aptos; otherwise, if EVM is configured, it's EVM
+        let is_evm_escrow = matching_aptos_escrow.is_none() && self.config.connected_chain_evm.is_some();
+        
+        // For EVM escrows, escrow_id is the intent_id (escrow is keyed by intent_id)
+        // For Aptos escrows, we use the escrow object address from the cache
+        let escrow_id = if is_evm_escrow {
+            // EVM: Use intent_id as escrow_id (escrow key)
+            drop(escrow_cache);
+            fulfillment.intent_id.clone()
+        } else {
+            // Aptos: Use escrow object address from cache
+            match matching_aptos_escrow {
+                Some(escrow) => {
+                    let escrow_id = escrow.escrow_id.clone();
+                    drop(escrow_cache);
+                    escrow_id
+                },
+                None => {
+                    drop(escrow_cache);
+                    error!("No matching escrow found for fulfillment: {} (intent_id: {})", 
+                           fulfillment.intent_address, fulfillment.intent_id);
+                    return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
+                }
             }
         };
-        drop(escrow_cache);
         
-        // Generate approval signature for escrow release
-        // Both conditions are already met:
-        // - Escrow was validated earlier (or will be validated before solver fulfills)
-        // - Fulfillment was validated by Move contract (event only emitted if valid)
-        let approval_sig = self.crypto.create_approval_signature(true)?;
+        let (approval_value, signature_bytes, timestamp) = if is_evm_escrow {
+            // EVM escrow: Create ECDSA signature
+            info!("Creating ECDSA signature for EVM escrow (intent_id: {})", fulfillment.intent_id);
+            
+            // Remove 0x prefix from intent_id if present
+            let intent_id_hex = fulfillment.intent_id.strip_prefix("0x").unwrap_or(&fulfillment.intent_id);
+            
+            // Create ECDSA signature for EVM
+            let ecdsa_sig_bytes = self.crypto.create_evm_approval_signature(intent_id_hex, 1)?;
+            
+            // Convert bytes to base64 for storage (EscrowApproval expects String)
+            let signature_base64 = general_purpose::STANDARD.encode(&ecdsa_sig_bytes);
+            
+            (1u64, signature_base64, chrono::Utc::now().timestamp() as u64)
+        } else {
+            // Aptos escrow: Create Ed25519 signature (existing flow)
+            info!("Creating Ed25519 signature for Aptos escrow (escrow_id: {})", escrow_id);
+            let approval_sig = self.crypto.create_approval_signature(true)?;
+            (approval_sig.approval_value, approval_sig.signature, approval_sig.timestamp)
+        };
         
         // Store approval signature
         {
@@ -652,12 +705,13 @@ impl EventMonitor {
                 approval_cache.push(EscrowApproval {
                     escrow_id: escrow_id.clone(),
                     intent_id: fulfillment.intent_id.clone(),
-                    approval_value: approval_sig.approval_value,
-                    signature: approval_sig.signature.clone(),
-                    timestamp: approval_sig.timestamp,
+                    approval_value,
+                    signature: signature_bytes,
+                    timestamp,
                 });
                 
-                info!("✅ Generated approval signature for escrow: {} (intent_id: {})", 
+                info!("✅ Generated {} approval signature for escrow: {} (intent_id: {})", 
+                      if is_evm_escrow { "ECDSA" } else { "Ed25519" },
                       escrow_id, fulfillment.intent_id);
             } else {
                 info!("Approval signature already exists for escrow: {}", escrow_id);

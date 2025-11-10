@@ -156,4 +156,10 @@ module aptos_intent::intent_reservation {
             assert!(signer::address_of(solver_signer) == intent_reserved.solver, EUNAUTHORIZED_SOLVER);
         }
     }
+
+    /// Creates an IntentReserved struct for testing or direct use.
+    /// This is a simple constructor that doesn't require signature verification.
+    public fun new_reservation(solver: address): IntentReserved {
+        IntentReserved { solver }
+    }
 }

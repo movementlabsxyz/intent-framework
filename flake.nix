@@ -25,11 +25,14 @@
             pkgs.coreutils
             pkgs.openssl
             pkgs.pkg-config
+            pkgs.nodejs
+            pkgs.nodePackages.npm
+            pkgs.git
             aptosCli
           ];
 
           shellHook = ''
-            echo "[nix] Dev shell ready: rustc $(rustc --version | awk '{print $2}') | cargo $(cargo --version | awk '{print $2}') | aptos $(aptos --version 2>/dev/null || echo 'unknown')"
+            echo "[nix] Dev shell ready: rustc $(rustc --version | awk '{print $2}') | cargo $(cargo --version | awk '{print $2}') | aptos $(aptos --version 2>/dev/null || echo 'unknown') | node $(node --version 2>/dev/null || echo 'unknown')"
             export OPENSSL_DIR=${pkgs.openssl.dev}
             export OPENSSL_LIB_DIR=${pkgs.openssl.out}/lib
             export OPENSSL_INCLUDE_DIR=${pkgs.openssl.dev}/include

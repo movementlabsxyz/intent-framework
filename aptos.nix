@@ -7,7 +7,7 @@ let
     else throw "Unsupported platform ${stdenv.system}";
 
   # Aptos CLI v7.10.2 release asset hashes (base64 Nix form)
-  sha256 = if os == "MacOSX" then "sha256-cM/70SrBkBZB+hsyByAlHjBKVy6wFk0A6jE6MaZauEI="
+  sha256 = if os == "MacOSX" then "sha256-cM/70SrBkBZB+hsyByAlHjBKVy6wFkjQ6jE6MaZauEI="
             else "sha256-ZS+tWYCKbBynbUua0jvhOv++a03Ho625kj3ldUJRB80=";
 
 in stdenv.mkDerivation rec {

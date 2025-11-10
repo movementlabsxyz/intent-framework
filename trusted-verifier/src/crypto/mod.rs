@@ -12,9 +12,15 @@
 
 use anyhow::Result;
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
+use k256::{
+    ecdsa::{SigningKey as EcdsaSigningKey, Signature as EcdsaSignature, VerifyingKey as EcdsaVerifyingKey},
+};
+use elliptic_curve::sec1::ToEncodedPoint;
+use sha3::{Keccak256, Digest};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 use base64::{Engine as _, engine::general_purpose};
+use hex;
 
 use crate::config::Config;
 
@@ -47,10 +53,13 @@ pub struct ApprovalSignature {
 /// verification, and other cryptographic operations required for secure
 /// cross-chain validation and approval signatures.
 pub struct CryptoService {
-    /// Private key for signing operations
+    /// Private key for signing operations (Ed25519 for Aptos)
     signing_key: SigningKey,
-    /// Public key for signature verification
+    /// Public key for signature verification (Ed25519 for Aptos)
     verifying_key: VerifyingKey,
+    /// ECDSA signing key for EVM operations (secp256k1)
+    /// Derived from Ed25519 private key by taking first 32 bytes
+    ecdsa_signing_key: EcdsaSigningKey,
 }
 
 impl CryptoService {
@@ -97,9 +106,16 @@ impl CryptoService {
         
         info!("Crypto service initialized with key pair from config");
         
+        // Derive ECDSA key from Ed25519 private key for EVM compatibility
+        // Use the Ed25519 private key bytes as seed for ECDSA (taking first 32 bytes)
+        let ecdsa_secret_bytes: [u8; 32] = secret_key_bytes;
+        let ecdsa_signing_key = EcdsaSigningKey::from_bytes(&ecdsa_secret_bytes.into())
+            .map_err(|e| anyhow::anyhow!("Failed to create ECDSA signing key: {}", e))?;
+        
         Ok(Self {
             signing_key,
             verifying_key,
+            ecdsa_signing_key,
         })
     }
     
@@ -203,5 +219,143 @@ impl CryptoService {
     /// The public key encoded as a base64 string
     pub fn get_public_key(&self) -> String {
         general_purpose::STANDARD.encode(self.verifying_key.to_bytes())
+    }
+    
+    /// Creates an ECDSA signature for EVM escrow release.
+    /// 
+    /// This function creates an ECDSA signature compatible with Ethereum/EVM
+    /// for releasing escrow funds. The message format is:
+    /// keccak256(abi.encodePacked(intentId, approvalValue))
+    /// 
+    /// Then applies Ethereum signed message format:
+    /// keccak256("\x19Ethereum Signed Message:\n32" || messageHash)
+    /// 
+    /// # Arguments
+    /// 
+    /// * `intent_id` - The intent ID as a hex string (without 0x prefix)
+    /// * `approval_value` - Approval value: 1 = approve, 0 = reject
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(Vec<u8>)` - ECDSA signature bytes (65 bytes: r || s || v)
+    /// * `Err(anyhow::Error)` - Failed to create signature
+    pub fn create_evm_approval_signature(&self, intent_id: &str, approval_value: u8) -> Result<Vec<u8>> {
+        // Remove 0x prefix if present
+        let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
+        
+        // Convert hex string to bytes (intent_id should be 32 bytes)
+        let intent_id_bytes = hex::decode(intent_id_hex)
+            .map_err(|e| anyhow::anyhow!("Invalid intent_id hex: {}", e))?;
+        
+        // Pad intent_id to 32 bytes if needed (left-pad with zeros)
+        let mut intent_id_padded = [0u8; 32];
+        if intent_id_bytes.len() <= 32 {
+            intent_id_padded[32 - intent_id_bytes.len()..].copy_from_slice(&intent_id_bytes);
+        } else {
+            return Err(anyhow::anyhow!("Intent ID too long: {} bytes", intent_id_bytes.len()));
+        }
+        
+        // Create message: abi.encodePacked(intentId, approvalValue)
+        let mut message = Vec::with_capacity(33);
+        message.extend_from_slice(&intent_id_padded);
+        message.push(approval_value);
+        
+        // Hash with keccak256
+        let mut hasher = Keccak256::new();
+        hasher.update(&message);
+        let message_hash = hasher.finalize();
+        
+        // Apply Ethereum signed message prefix
+        // keccak256("\x19Ethereum Signed Message:\n32" || messageHash)
+        let prefix = b"\x19Ethereum Signed Message:\n32";
+        let mut prefixed_message = Vec::with_capacity(prefix.len() + 32);
+        prefixed_message.extend_from_slice(prefix);
+        prefixed_message.extend_from_slice(&message_hash);
+        
+        let mut prefixed_hasher = Keccak256::new();
+        prefixed_hasher.update(&prefixed_message);
+        let final_hash = prefixed_hasher.finalize();
+        
+        // Convert GenericArray to [u8; 32] for signing
+        let hash_array: [u8; 32] = final_hash.into();
+        
+        // Sign with ECDSA using precomputed hash (creates compact signature: r || s, 64 bytes)
+        use k256::ecdsa::signature::hazmat::PrehashSigner;
+        let signature: EcdsaSignature = self.ecdsa_signing_key.sign_prehash(&hash_array)
+            .map_err(|e| anyhow::anyhow!("Failed to sign precomputed hash: {}", e))?;
+        
+        // Extract r and s from signature (each 32 bytes, total 64 bytes)
+        let sig_bytes = signature.to_bytes();
+        if sig_bytes.len() != 64 {
+            return Err(anyhow::anyhow!("Invalid signature length: expected 64 bytes, got {}", sig_bytes.len()));
+        }
+        let r = &sig_bytes[..32];
+        let s = &sig_bytes[32..64];
+        
+        // Calculate recovery ID by trying both 0 and 1
+        // The recovery ID determines which public key can recover from the signature
+        let verifying_key = self.ecdsa_signing_key.verifying_key();
+        let public_key_point = verifying_key.to_encoded_point(false);
+        let public_key_bytes = public_key_point.as_bytes();
+        
+        // Try recovery ID 0
+        let recovery_id_0 = k256::ecdsa::RecoveryId::try_from(0u8).unwrap();
+        let recovery_id = if let Ok(recovered) = EcdsaVerifyingKey::recover_from_prehash(&hash_array, &signature, recovery_id_0) {
+            let recovered_point = recovered.to_encoded_point(false);
+            if recovered_point.as_bytes() == public_key_bytes {
+                0u8
+            } else {
+                1u8
+            }
+        } else {
+            // If recovery with ID 0 fails, try ID 1
+            1u8
+        };
+        
+        // Convert recovery ID to Ethereum format (27 or 28)
+        let v = recovery_id + 27;
+        
+        // Construct final signature: r || s || v (65 bytes total)
+        let mut final_sig = Vec::with_capacity(65);
+        final_sig.extend_from_slice(r);
+        final_sig.extend_from_slice(s);
+        final_sig.push(v);
+        
+        info!("Created ECDSA signature for EVM escrow release (intent_id: {}, approval_value: {})", 
+              intent_id, approval_value);
+        
+        Ok(final_sig)
+    }
+    
+    /// Derives the Ethereum address from the ECDSA public key.
+    /// 
+    /// The Ethereum address is computed as:
+    /// keccak256(uncompressed_public_key)[12:32] (last 20 bytes)
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(String)` - Ethereum address as hex string (with 0x prefix)
+    /// * `Err(anyhow::Error)` - Failed to derive address
+    pub fn get_ethereum_address(&self) -> Result<String> {
+        let verifying_key = self.ecdsa_signing_key.verifying_key();
+        let public_key_point = verifying_key.to_encoded_point(false); // Uncompressed format
+        let public_key_bytes = public_key_point.as_bytes();
+        
+        // Remove the 0x04 prefix (uncompressed point indicator) - we want just the coordinates
+        // Uncompressed format: 0x04 || x (32 bytes) || y (32 bytes) = 65 bytes total
+        if public_key_bytes.len() != 65 || public_key_bytes[0] != 0x04 {
+            return Err(anyhow::anyhow!("Invalid public key format: expected 65 bytes with 0x04 prefix"));
+        }
+        
+        // Hash the public key (without the 0x04 prefix)
+        let mut hasher = Keccak256::new();
+        hasher.update(&public_key_bytes[1..]); // Skip the 0x04 prefix
+        let hash = hasher.finalize();
+        
+        // Ethereum address is the last 20 bytes of the hash
+        let address_bytes = &hash[12..32];
+        let address_hex = format!("0x{}", hex::encode(address_bytes));
+        
+        Ok(address_hex)
     }
 }

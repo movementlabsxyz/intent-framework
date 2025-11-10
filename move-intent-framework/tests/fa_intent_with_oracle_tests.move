@@ -143,9 +143,10 @@ module aptos_intent::fa_intent_with_oracle_tests {
             requirement,
             true, // revocable by default for tests
             @0x1, // dummy intent_id for testing
+            std::option::none(), // unreserved intent
         );
 
-        let (unlocked_fa, session) = fa_intent_with_oracle::start_fa_offering_session(intent);
+        let (unlocked_fa, session) = fa_intent_with_oracle::start_fa_offering_session(solver, intent);
         primary_fungible_store::deposit(signer::address_of(solver), unlocked_fa);
 
         (oracle_secret_key, session, desired_fa_type, offered_fa_type)

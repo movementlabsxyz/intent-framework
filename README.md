@@ -2,8 +2,14 @@
 
 A framework for creating conditional trading intents with the following components
 
-- [move-intent-framework README](move-intent-framework/README.md)
-- [trusted verifier](trusted-verifier/docs/README.md)
+- [move-intent-framework](docs/move-intent-framework/README.md)
+- [evm-intent-framework](docs/evm-intent-framework/README.md)
+- [trusted verifier](docs/trusted-verifier/README.md)
+- [testing infrastructure](docs/testing-infra/README.md)
+
+For complete documentation, see [docs/](docs/README.md).
+
+For contributing guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Quick start
 
@@ -15,13 +21,23 @@ nix develop
 
 ### Testing
 
+#### Unit Tests (no Docker required)
+
+Run from project root:
+
+```bash
+nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123"
+nix develop -c bash -c "cd trusted-verifier && cargo test"
+nix develop -c bash -c "cd evm-intent-framework && npm test"
 ```
-cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123 && cd ..
 
-# the following test is also required for the trusted-verifier integration test
-./trusted-verifier/tests/integration/run-cross-chain-verifier.sh 1
+#### E2E Integration Tests (requires Docker)
 
-cd trusted-verifier && cargo test --locked && cd ..
+Run from project root:
+
+```bash
+nix develop -c bash -c "./testing-infra/e2e-tests-apt/run-tests.sh"
+nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests.sh"
 ```
 
 ## Requirements

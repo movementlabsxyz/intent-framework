@@ -13,15 +13,20 @@ use serde::{Deserialize, Serialize};
 /// 
 /// This structure holds configuration for:
 /// - Hub chain connection details
-/// - Connected chain connection details  
+/// - Connected Aptos chain connection details (optional, for Aptos escrow chains)
+/// - Connected EVM chain configuration (optional, for EVM escrow chains)
 /// - Verifier cryptographic keys and settings
 /// - API server configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// Hub chain configuration (where intents are created)
     pub hub_chain: ChainConfig,
-    /// Connected chain configuration (where escrow events occur)
-    pub connected_chain: ChainConfig,
+    /// Connected Aptos chain configuration (optional, where escrow events occur on Aptos)
+    #[serde(default)]
+    pub connected_chain_apt: Option<ChainConfig>,
+    /// Connected EVM chain configuration (optional, for escrow on EVM)
+    #[serde(default)]
+    pub connected_chain_evm: Option<EvmChainConfig>,
     /// Verifier-specific configuration (keys, timeouts, etc.)
     pub verifier: VerifierConfig,
     /// API server configuration (host, port, CORS settings)
@@ -46,6 +51,21 @@ pub struct ChainConfig {
     pub escrow_module_address: Option<String>,
     /// Known test accounts to poll for events
     pub known_accounts: Option<Vec<String>>,
+}
+
+/// Configuration for an EVM-compatible chain (Ethereum, Hardhat, etc.)
+/// 
+/// Used when escrows are hosted on EVM chains instead of Move-based chains.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvmChainConfig {
+    /// RPC endpoint URL for EVM chain communication
+    pub rpc_url: String,
+    /// Address of the IntentEscrow contract (single contract, one escrow per intentId)
+    pub escrow_contract_address: String,
+    /// Chain ID (e.g., 31337 for Hardhat, 1 for Ethereum mainnet)
+    pub chain_id: u64,
+    /// Verifier address (ECDSA public key as Ethereum address)
+    pub verifier_address: String,
 }
 
 /// Verifier-specific configuration including cryptographic keys and timing parameters.
@@ -95,11 +115,13 @@ impl Config {
     /// - `Ok(Config)` - Successfully loaded configuration
     /// - `Err(anyhow::Error)` - Failed to load configuration or file doesn't exist
     pub fn load() -> anyhow::Result<Self> {
-        let config_path = "config/verifier.toml";
+        // Check for custom config path via environment variable (for tests)
+        let config_path = std::env::var("VERIFIER_CONFIG_PATH")
+            .unwrap_or_else(|_| "config/verifier.toml".to_string());
         
-        if std::path::Path::new(config_path).exists() {
+        if std::path::Path::new(&config_path).exists() {
             // Load existing configuration
-            let content = std::fs::read_to_string(config_path)?;
+            let content = std::fs::read_to_string(&config_path)?;
             let config: Config = toml::from_str(&content)?;
             Ok(config)
         } else {
@@ -128,14 +150,7 @@ impl Config {
                 escrow_module_address: None,
                 known_accounts: None, // Should be set in config/verifier.toml
             },
-            connected_chain: ChainConfig {
-                name: "Connected Chain".to_string(),
-                rpc_url: "http://127.0.0.1:8082".to_string(),
-                chain_id: 4,
-                intent_module_address: "0x123".to_string(),
-                escrow_module_address: Some("0x123".to_string()),
-                known_accounts: None, // Should be set in config/verifier.toml
-            },
+            connected_chain_apt: None, // Optional connected Aptos chain configuration
             verifier: VerifierConfig {
                 private_key: "REPLACE_WITH_PRIVATE_KEY".to_string(),
                 public_key: "REPLACE_WITH_PUBLIC_KEY".to_string(),
@@ -144,9 +159,10 @@ impl Config {
             },
             api: ApiConfig {
                 host: "127.0.0.1".to_string(),
-                port: 3000,
-                cors_origins: vec!["http://localhost:3000".to_string()],
+                port: 3333,
+                cors_origins: vec!["http://localhost:3333".to_string()],
             },
+            connected_chain_evm: None, // Optional connected EVM chain configuration
         }
     }
 }

@@ -48,4 +48,3 @@ Related to #
 - [ ] Unit tests pass
 - [ ] Integration tests pass
 - [ ] E2E tests pass
-- [ ] Manual testing completed

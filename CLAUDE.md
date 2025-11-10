@@ -14,6 +14,17 @@
 
 For information on how documentation is organized and how to navigate it, see [docs/docs-guide.md](docs/docs-guide.md).
 
+### Markdown Style Guidelines
+
+**IMPORTANT:** All markdown files must follow these formatting rules:
+
+- **Blank lines around headings**: There must be a blank line before and after all headings (MD022)
+- **Blank lines around lists**: There must be a blank line before bullet lists and numbered lists (MD032)
+- **No multiple blank lines**: Use only one blank line between sections (MD012)
+
+These rules ensure consistent formatting and prevent linting errors. Always check linting errors before committing documentation changes.
+
 ## Task Master AI Instructions
+
 **Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
 @./.taskmaster/CLAUDE.md

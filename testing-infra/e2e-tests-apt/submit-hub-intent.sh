@@ -64,12 +64,46 @@ log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
 SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
+# NOTE: Cross-chain request intents must be reserved. This requires:
+# 1. Off-chain negotiation with solver (Bob)
+# 2. Solver signs IntentToSign structure (BCS-encoded)
+# 3. Pass solver address and signature to create_cross_chain_request_intent_entry
+#
+# In production, the solver would sign off-chain using their private key.
+# For e2e tests, we can use the e2e_utils::get_intent_to_sign_hash function to get the hash:
+# 1. Call e2e_utils::get_intent_to_sign_hash() to get the BCS-encoded hash via event
+# 2. Sign the hash with Ed25519 using Bob's private key (requires helper script)
+# 3. Convert signature to hex format
+# 4. Use the signature in create_cross_chain_request_intent_entry
+#
 log "   - Creating cross-chain request intent on Chain 1..."
 log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN1"
 log "     Desired FA metadata: $DESIRED_FA_METADATA_CHAIN1"
+log "     Solver (Bob) address: $BOB_CHAIN1_ADDRESS"
+log "     Generating solver signature..."
+
+# Generate solver signature using helper function
+SOLVER_SIGNATURE=$(generate_solver_signature \
+    "bob-chain1" \
+    "$CHAIN1_ADDRESS" \
+    "$SOURCE_FA_METADATA_CHAIN1" \
+    "$DESIRED_FA_METADATA_CHAIN1" \
+    "100000000" \
+    "$EXPIRY_TIME" \
+    "$ALICE_CHAIN1_ADDRESS" \
+    "$BOB_CHAIN1_ADDRESS" \
+    "1" \
+    "$LOG_FILE")
+
+if [ -z "$SOLVER_SIGNATURE" ]; then
+    log_and_echo "     ❌ Failed to generate solver signature"
+    exit 1
+fi
+
+log "     ✅ Solver signature generated: ${SOLVER_SIGNATURE:0:20}..."
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
-    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "vector<u8>:${SOLVER_SIGNATURE}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"

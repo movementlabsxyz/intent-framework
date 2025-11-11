@@ -1,10 +1,16 @@
 #[test_only]
 module aptos_intent::fa_intent_cross_chain_tests {
     use std::signer;
+    use std::option;
     use aptos_framework::timestamp;
     use aptos_framework::object;
     use aptos_framework::primary_fungible_store;
+    use aptos_framework::fungible_asset::FungibleAsset;
+    use aptos_std::ed25519;
     use aptos_intent::fa_intent_cross_chain;
+    use aptos_intent::fa_intent;
+    use aptos_intent::intent_reservation;
+    use aptos_intent::utils;
 
     // ============================================================================
     // TESTS
@@ -34,14 +40,51 @@ module aptos_intent::fa_intent_cross_chain_tests {
         // Requestor creates a cross-chain request intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
         let dummy_intent_id = @0x1234;
-        let intent_address = fa_intent_cross_chain::create_cross_chain_request_intent(
-            requestor,
+        let solver_address = signer::address_of(solver);
+        let expiry_time = timestamp::now_seconds() + 3600;
+        
+        // Generate key pair for solver (simulating off-chain key generation)
+        let (solver_secret_key, solver_public_key) = utils::generate_key_pair();
+        
+        // Step 1: Create draft intent (off-chain)
+        let draft_intent = fa_intent_cross_chain::create_cross_chain_draft_intent(
             source_metadata,
             desired_metadata,
-            100, // Wants 100 tokens from solver
-            timestamp::now_seconds() + 3600,
-            dummy_intent_id,
+            100,
+            expiry_time,
+            signer::address_of(requestor),
         );
+        
+        // Step 2: Add solver to draft and create intent to sign
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        
+        // Step 3: Solver signs the intent (off-chain)
+        let intent_hash = intent_reservation::hash_intent(intent_to_sign);
+        let solver_signature = ed25519::sign_arbitrary_bytes(&solver_secret_key, intent_hash);
+        let solver_signature_bytes = ed25519::signature_to_bytes(&solver_signature);
+        
+        // Step 4: Requestor creates intent on-chain with solver's signature
+        // Use verify_and_create_reservation_with_public_key since we have the public key
+        let reservation_result = intent_reservation::verify_and_create_reservation_with_public_key(
+            intent_to_sign,
+            solver_signature_bytes,
+            &solver_public_key,
+        );
+        assert!(option::is_some(&reservation_result), 0);
+        
+        // Create the intent with the verified reservation
+        let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, source_metadata, 0);
+        let intent_obj = fa_intent::create_fa_to_fa_intent(
+            fa,
+            desired_metadata,
+            100,
+            expiry_time,
+            signer::address_of(requestor),
+            reservation_result, // Reserved for solver
+            false, // Non-revocable
+            option::some(dummy_intent_id),
+        );
+        let intent_address = object::object_address(&intent_obj);
         
         // Verify intent was created
         assert!(intent_address != @0x0);
@@ -91,14 +134,28 @@ module aptos_intent::fa_intent_cross_chain_tests {
         
         // Requestor creates a cross-chain request intent wanting 1000 tokens
         let dummy_intent_id = @0x123;
-        let intent_address = fa_intent_cross_chain::create_cross_chain_request_intent(
-            requestor,
-            source_metadata,
+        let solver_address = signer::address_of(solver);
+        let expiry_time = timestamp::now_seconds() + 3600;
+        
+        // NOTE: In Move tests, we cannot extract the private key from a &signer to sign arbitrary data.
+        // verify_and_create_reservation() gets the public key from account::get_authentication_key(solver),
+        // but we can't get the matching private key from the signer to create a valid signature.
+        // For this test, we use intent_reservation::new_reservation to bypass signature verification.
+        let reservation = intent_reservation::new_reservation(solver_address);
+        
+        // Create the intent directly (bypassing signature verification for testing)
+        let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, source_metadata, 0);
+        let intent_obj = fa_intent::create_fa_to_fa_intent(
+            fa,
             desired_metadata,
-            1000, // Wants 1000 tokens
-            timestamp::now_seconds() + 3600,
-            dummy_intent_id,
+            1000,
+            expiry_time,
+            signer::address_of(requestor),
+            option::some(reservation), // Reserved for solver
+            false, // Non-revocable
+            option::some(dummy_intent_id),
         );
+        let intent_address = object::object_address(&intent_obj);
         
         // Convert address to object reference
         let intent_obj = object::address_to_object(intent_address);

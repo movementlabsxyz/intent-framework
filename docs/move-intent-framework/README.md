@@ -6,15 +6,6 @@ This framework integrates with the blockchain's native fungible asset standard a
 
 For detailed technical specifications and design rationale, see [AIP-511: Aptos Intent Framework](https://github.com/aptos-foundation/AIPs/pull/511).
 
-### Verifier Implementation Requirements
-
-When implementing verifiers for escrow systems:
-
-- **Always verify** that escrow intents have `revocable = false`
-- **Reject any escrow intent** that allows user revocation
-- **Document this requirement** in your verifier implementation
-- **Test thoroughly** to ensure revocation is impossible
-
 ## Quick Start
 
 For quick start instructions, see the [component README](../../move-intent-framework/README.md).

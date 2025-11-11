@@ -1,0 +1,270 @@
+//! Intent Signature Generation Utility
+//! 
+//! This binary generates an Ed25519 signature for an IntentToSign structure.
+//! It calls the Move function to get the hash, then signs it with the solver's private key.
+//! 
+//! ## Usage
+//! 
+//! ```bash
+//! cargo run --bin sign_intent -- \
+//!   --profile bob-chain1 \
+//!   --chain-address 0x123 \
+//!   --source-metadata 0xabc \
+//!   --desired-metadata 0xdef \
+//!   --desired-amount 100000000 \
+//!   --expiry-time 1234567890 \
+//!   --issuer 0xalice \
+//!   --solver 0xbob \
+//!   --chain-num 1
+//! ```
+
+use anyhow::{Context, Result};
+use ed25519_dalek::{SigningKey, Signer};
+use base64::{Engine as _, engine::general_purpose};
+use serde_json::Value;
+use std::process::Command;
+use std::str;
+
+fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    
+    if args.len() < 2 || args[1] == "--help" || args[1] == "-h" {
+        eprintln!("Usage: sign_intent --profile <profile> --chain-address <address> --source-metadata <address> --desired-metadata <address> --desired-amount <u64> --expiry-time <u64> --issuer <address> --solver <address> --chain-num <1|2>");
+        eprintln!("\nExample:");
+        eprintln!("  sign_intent --profile bob-chain1 --chain-address 0x123 --source-metadata 0xabc --desired-metadata 0xdef --desired-amount 100000000 --expiry-time 1234567890 --issuer 0xalice --solver 0xbob --chain-num 1");
+        std::process::exit(1);
+    }
+
+    // Parse arguments
+    let mut profile = None;
+    let mut chain_address = None;
+    let mut source_metadata = None;
+    let mut source_amount = 0u64;
+    let mut desired_metadata = None;
+    let mut desired_amount = None;
+    let mut expiry_time = None;
+    let mut issuer = None;
+    let mut solver = None;
+    let mut chain_num = None;
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--profile" => {
+                profile = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--chain-address" => {
+                chain_address = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--source-metadata" => {
+                source_metadata = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--source-amount" => {
+                source_amount = args[i + 1].parse().context("Invalid source-amount")?;
+                i += 2;
+            }
+            "--desired-metadata" => {
+                desired_metadata = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--desired-amount" => {
+                desired_amount = Some(args[i + 1].parse().context("Invalid desired-amount")?);
+                i += 2;
+            }
+            "--expiry-time" => {
+                expiry_time = Some(args[i + 1].parse().context("Invalid expiry-time")?);
+                i += 2;
+            }
+            "--issuer" => {
+                issuer = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--solver" => {
+                solver = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--chain-num" => {
+                chain_num = Some(args[i + 1].parse().context("Invalid chain-num")?);
+                i += 2;
+            }
+            _ => {
+                eprintln!("Unknown argument: {}", args[i]);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    let profile = profile.context("--profile is required")?;
+    let chain_address = chain_address.context("--chain-address is required")?;
+    let source_metadata = source_metadata.context("--source-metadata is required")?;
+    let desired_metadata = desired_metadata.context("--desired-metadata is required")?;
+    let desired_amount = desired_amount.context("--desired-amount is required")?;
+    let expiry_time = expiry_time.context("--expiry-time is required")?;
+    let issuer = issuer.context("--issuer is required")?;
+    let solver = solver.context("--solver is required")?;
+    let chain_num = chain_num.context("--chain-num is required")?;
+
+    // Step 1: Call Move function to get the hash
+    let hash = get_intent_hash(
+        &profile,
+        &chain_address,
+        &source_metadata,
+        source_amount,
+        &desired_metadata,
+        desired_amount,
+        expiry_time,
+        &issuer,
+        &solver,
+        chain_num,
+    )?;
+
+    // Step 2: Get private key from Aptos config
+    let private_key = get_private_key_from_profile(&profile)?;
+
+    // Step 3: Sign the hash
+    let signing_key = SigningKey::from_bytes(&private_key);
+    let signature = signing_key.sign(&hash);
+    let signature_bytes = signature.to_bytes();
+
+    // Step 4: Output signature as hex (with 0x prefix)
+    let signature_hex = format!("0x{}", hex::encode(signature_bytes));
+    println!("{}", signature_hex);
+
+    Ok(())
+}
+
+fn get_intent_hash(
+    profile: &str,
+    chain_address: &str,
+    source_metadata: &str,
+    source_amount: u64,
+    desired_metadata: &str,
+    desired_amount: u64,
+    expiry_time: u64,
+    issuer: &str,
+    solver: &str,
+    chain_num: u8,
+) -> Result<Vec<u8>> {
+    // Determine REST port
+    let rest_port = if chain_num == 1 { "8080" } else { "8082" };
+
+    // Call Move function
+    let output = Command::new("aptos")
+        .args(&[
+            "move", "run",
+            "--profile", profile,
+            "--assume-yes",
+            "--function-id", &format!("0x{}::e2e_utils::get_intent_to_sign_hash", chain_address),
+            "--args",
+            &format!("address:{}", source_metadata),
+            &format!("u64:{}", source_amount),
+            &format!("address:{}", desired_metadata),
+            &format!("u64:{}", desired_amount),
+            &format!("u64:{}", expiry_time),
+            &format!("address:{}", issuer),
+            &format!("address:{}", solver),
+        ])
+        .output()
+        .context("Failed to execute aptos move run")?;
+
+    if !output.status.success() {
+        let stderr = str::from_utf8(&output.stderr).unwrap_or("");
+        anyhow::bail!("aptos move run failed: {}", stderr);
+    }
+
+    // Wait for transaction to be processed
+    std::thread::sleep(std::time::Duration::from_secs(2));
+
+    // Get solver address from profile
+    let solver_address_output = Command::new("aptos")
+        .args(&["config", "show-profiles"])
+        .output()
+        .context("Failed to get profile address")?;
+
+    let profiles_json: Value = serde_json::from_slice(&solver_address_output.stdout)
+        .context("Failed to parse profiles JSON")?;
+    
+    let solver_address = profiles_json["Result"][profile]["account"]
+        .as_str()
+        .context("Failed to get solver address from profile")?;
+
+    // Query REST API for the latest transaction event
+    let url = format!("http://127.0.0.1:{}/v1/accounts/{}/transactions?limit=1", rest_port, solver_address);
+    let response = reqwest::blocking::get(&url)
+        .context("Failed to query REST API")?
+        .json::<Value>()
+        .context("Failed to parse REST API response")?;
+
+    // Extract hash from IntentHashEvent
+    // The event structure: { "type": "...::e2e_utils::IntentHashEvent", "data": { "hash": "0x..." } }
+    let events = response[0]["events"].as_array().context("No events found")?;
+    for event in events {
+        if let Some(event_type) = event["type"].as_str() {
+            if event_type.contains("IntentHashEvent") {
+                // The hash might be in different formats - try both string and array
+                if let Some(hash_hex) = event["data"]["hash"].as_str() {
+                    // Remove 0x prefix if present and decode hex
+                    let hash_hex = hash_hex.strip_prefix("0x").unwrap_or(hash_hex);
+                    let hash = hex::decode(hash_hex).context("Failed to decode hash hex")?;
+                    return Ok(hash);
+                } else if let Some(hash_array) = event["data"]["hash"].as_array() {
+                    // If it's an array of numbers, convert to bytes
+                    let hash: Result<Vec<u8>, _> = hash_array
+                        .iter()
+                        .map(|v| {
+                            v.as_u64()
+                                .and_then(|n| u8::try_from(n).ok())
+                                .context("Invalid hash array element")
+                        })
+                        .collect();
+                    return Ok(hash?);
+                }
+            }
+        }
+    }
+
+    anyhow::bail!("IntentHashEvent not found in transaction events. Response: {}", serde_json::to_string_pretty(&response)?);
+}
+
+fn get_private_key_from_profile(profile: &str) -> Result<[u8; 32]> {
+    // Get private key from Aptos config
+    // Aptos stores keys in ~/.aptos/config.yaml
+    let home = std::env::var("HOME").context("HOME environment variable not set")?;
+    let config_path = format!("{}/.aptos/config.yaml", home);
+
+    // Read and parse YAML config
+    let config_content = std::fs::read_to_string(&config_path)
+        .context("Failed to read Aptos config file")?;
+
+    // Parse YAML to find the profile's private key
+    // Note: Aptos CLI stores private keys, but they might be encrypted
+    // For e2e tests, we assume the key is stored in plaintext or we use a different method
+    
+    // Alternative: Use aptos key extract to get the key
+    // But aptos CLI doesn't have a direct command for this
+    
+    // For now, we'll try to extract from config.yaml
+    // The structure is: profiles.<profile>.private_key
+    let yaml: serde_yaml::Value = serde_yaml::from_str(&config_content)
+        .context("Failed to parse YAML config")?;
+
+    let private_key_b64 = yaml["profiles"][profile]["private_key"]
+        .as_str()
+        .context("Private key not found in profile. Make sure the profile exists and has a private key.")?;
+
+    // Decode base64 private key
+    let private_key_bytes = general_purpose::STANDARD.decode(private_key_b64)
+        .context("Failed to decode private key from base64")?;
+
+    if private_key_bytes.len() != 32 {
+        anyhow::bail!("Invalid private key length: expected 32 bytes, got {}", private_key_bytes.len());
+    }
+
+    let mut key_array = [0u8; 32];
+    key_array.copy_from_slice(&private_key_bytes);
+    Ok(key_array)
+}
+

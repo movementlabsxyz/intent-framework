@@ -5,6 +5,7 @@ A framework for creating conditional trading intents with the following componen
 - [move-intent-framework](docs/move-intent-framework/README.md)
 - [evm-intent-framework](docs/evm-intent-framework/README.md)
 - [trusted verifier](docs/trusted-verifier/README.md)
+- [solver tools](docs/solver/README.md)
 - [testing infrastructure](docs/testing-infra/README.md)
 
 For complete documentation, see [docs/](docs/README.md).

@@ -35,8 +35,11 @@ sequenceDiagram
     participant Solver
 
     Note over User,Solver: Phase 1: Intent Creation on Hub Chain
-    User->>Hub: create_cross_chain_request_intent_entry(<br/>source_metadata, desired_metadata,<br/>desired_amount, expiry_time, intent_id)
-    Note right of Hub: Intent is unreserved<br/>(any solver can fulfill)<br/>⚠️ TODO: Request intent should be reserved
+    User->>User: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
+    User->>Solver: Send draft
+    Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
+    Solver->>User: Returns signature
+    User->>Hub: create_cross_chain_request_intent_entry(<br/>source_metadata, desired_metadata,<br/>desired_amount, expiry_time, intent_id,<br/>solver, solver_signature)
     Hub->>Verifier: LimitOrderEvent(intent_id, source_amount=0,<br/>desired_amount, expiry, revocable=false)
 
     Note over User,Solver: Phase 2: Escrow Creation on Connected Chain
@@ -45,8 +48,7 @@ sequenceDiagram
     else EVM Chain
         User->>Connected: createEscrow(intentId, token,<br/>amount, reservedSolver)
     end
-    Note right of Connected: Solver specified here<br/>(reserved_solver)
-    Connected->>Connected: Lock assets (MUST be non-revocable)
+    Connected->>Connected: Lock assets
     Connected->>Verifier: OracleLimitOrderEvent/EscrowInitialized(<br/>intent_id, reserved_solver, revocable=false)
 
     Note over User,Solver: Phase 3: Intent Fulfillment on Hub Chain
@@ -55,11 +57,11 @@ sequenceDiagram
 
     Note over User,Solver: Phase 4: Verifier Validation and Approval
     Verifier->>Verifier: Match intent_id between<br/>fulfillment and escrow
-    Verifier->>Verifier: Validate escrow.revocable == false<br/>(CRITICAL)
     Verifier->>Verifier: Validate fulfillment<br/>conditions met
     Verifier->>Verifier: Generate approval signature
 
     Note over User,Solver: Phase 5: Escrow Release on Connected Chain
+    Verifier->>Solver: Delivers approval signature<br/>(Ed25519 for Move, ECDSA for EVM)
     alt Move Chain
         Note over Solver: Anyone can call<br/>(funds go to reserved_solver)
         Solver->>Connected: complete_escrow_from_fa(<br/>escrow_intent, payment_amount,<br/>verifier_approval, verifier_signature_bytes)
@@ -73,11 +75,15 @@ sequenceDiagram
 
 ### Flow Steps
 
-1. **Hub**: User creates cross-chain request intent using `create_cross_chain_request_intent_entry()` with `intent_id` (emits `LimitOrderEvent` with `source_amount=0`, `revocable=false`). The intent is unreserved, meaning any solver can fulfill it. ⚠️ **TODO**: The request intent should be a reserved intent (include solver parameter).
-2. **Connected**: User creates escrow using `create_escrow_from_fa()` (Move) or `createEscrow()` (EVM) with `intent_id`, verifier public key, and **reserved solver address** (emits `OracleLimitOrderEvent`/`EscrowInitialized`, `revocable=false`). The solver is specified here, not in the hub intent.
-3. **Hub**: Solver fulfills the intent using `fulfill_cross_chain_request_intent()` (emits `LimitOrderFulfillmentEvent`)
-4. **Verifier**: observes fulfillment + escrow, generates approval signature (BCS(u64=1))
-5. **Anyone**: submits `complete_escrow_from_fa()` (Move) or `claim()` (EVM) on connected chain with approval signature. The transaction can be sent by anyone, but funds always transfer to the reserved solver address specified at escrow creation.
+1. **Off-chain (before Hub)**: User and solver negotiate using the reserved intent flow:
+   - **Step 1**: User creates draft using `create_cross_chain_draft_intent()` (or `create_draft_intent()` with `source_amount=0`)
+   - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
+2. **Hub**: User calls `create_cross_chain_request_intent_entry()` with `intent_id`, `solver` address, and `solver_signature`. The function verifies the signature and creates a reserved intent (emits `LimitOrderEvent` with `source_amount=0`, `revocable=false`). The intent is **reserved** for the specified solver, ensuring solver commitment across chains.
+3. **Connected Chain**: User creates escrow using `create_escrow_from_fa()` (Move) or `createEscrow()` (EVM) with `intent_id`, verifier public key, and **reserved solver address** (emits `OracleLimitOrderEvent`/`EscrowInitialized`, `revocable=false`).
+4. **Solver**: Observes the request intent on Hub chain (from step 2) and the escrow on Connected Chain (from step 3).
+5. **Hub**: Solver fulfills the intent using `fulfill_cross_chain_request_intent()` (emits `LimitOrderFulfillmentEvent`)
+6. **Verifier**: observes fulfillment + escrow, generates approval signature (BCS(u64=1))
+7. **Anyone**: submits `complete_escrow_from_fa()` (Move) or `claim()` (EVM) on connected chain with approval signature from verifier (Ed25519 for Move, ECDSA for EVM). The transaction can be sent by anyone, but funds always transfer to the reserved solver address specified at escrow creation.
 
 **Note**: All escrows must specify a reserved solver address at creation. Funds are always transferred to the reserved solver when the escrow is claimed, regardless of who sends the transaction.
 

@@ -330,7 +330,7 @@ extract_apt_metadata() {
     fi
     
     # Run aptos move command to get APT metadata
-    local aptos_cmd="aptos move run --profile $profile --assume-yes --function-id \"0x${chain_address}::test_fa_helper::get_apt_metadata_address\""
+    local aptos_cmd="aptos move run --profile $profile --assume-yes --function-id \"0x${chain_address}::e2e_utils::get_apt_metadata_address\""
     
     if [ -n "$log_file" ]; then
         if ! eval "$aptos_cmd >> \"$log_file\" 2>&1"; then
@@ -359,5 +359,46 @@ extract_apt_metadata() {
     
     # Output metadata address
     echo "$metadata"
+}
+
+# Generate solver signature for IntentToSign
+# Usage: generate_solver_signature <profile> <chain_address> <source_metadata> <desired_metadata> <desired_amount> <expiry_time> <issuer> <solver> <chain_num> [log_file]
+# Example: generate_solver_signature "bob-chain1" "$CHAIN1_ADDRESS" "$SOURCE_FA_METADATA_CHAIN1" "$DESIRED_FA_METADATA_CHAIN1" "100000000" "$EXPIRY_TIME" "$ALICE_CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "1"
+# Returns the signature as hex string (with 0x prefix)
+generate_solver_signature() {
+    local profile="$1"
+    local chain_address="$2"
+    local source_metadata="$3"
+    local desired_metadata="$4"
+    local desired_amount="$5"
+    local expiry_time="$6"
+    local issuer="$7"
+    local solver="$8"
+    local chain_num="$9"
+    local log_file="${10:-$LOG_FILE}"
+
+    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$source_metadata" ] || [ -z "$desired_metadata" ] || [ -z "$desired_amount" ] || [ -z "$expiry_time" ] || [ -z "$issuer" ] || [ -z "$solver" ] || [ -z "$chain_num" ]; then
+        log_and_echo "❌ ERROR: generate_solver_signature() requires all parameters"
+        exit 1
+    fi
+
+    # Get project root
+    local project_root
+    project_root=$(cd "$(dirname "$0")/.." && pwd)
+
+    # Run the Rust binary to generate signature
+    local signature
+    if [ -n "$log_file" ]; then
+        signature=$(cd "$project_root" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tee -a \"$log_file\" | tail -1")
+    else
+        signature=$(cd "$project_root" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tail -1")
+    fi
+
+    if [ -z "$signature" ] || [[ ! "$signature" =~ ^0x[0-9a-fA-F]+$ ]]; then
+        log_and_echo "❌ ERROR: Failed to generate solver signature"
+        exit 1
+    fi
+
+    echo "$signature"
 }
 

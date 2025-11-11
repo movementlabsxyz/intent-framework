@@ -1,0 +1,24 @@
+[package]
+name = "solver"
+version = "0.1.0"
+edition = "2021"
+authors = ["Intent Framework Team"]
+description = "Solver tools for intent framework - signature generation and intent management"
+
+[dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+hex = "0.4"
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "blocking"] }
+
+# Cryptography
+ed25519-dalek = "2.1.0"
+base64 = "0.21"
+
+# Error handling
+anyhow = "1.0"
+

@@ -1,6 +1,7 @@
 module aptos_intent::fa_intent_cross_chain {
     use std::signer;
     use std::option;
+    use std::error;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self as object, Object};
     use aptos_framework::fungible_asset::{FungibleAsset, Metadata};
@@ -10,12 +11,38 @@ module aptos_intent::fa_intent_cross_chain {
         FungibleAssetLimitOrder,
     };
     use aptos_intent::intent::{Self as intent, TradeIntent};
+    use aptos_intent::intent_reservation;
+
+    /// The solver signature is invalid and cannot be verified.
+    const EINVALID_SIGNATURE: u64 = 2;
 
     // ============================================================================
     // GENERIC CROSS-CHAIN INTENT FUNCTIONS
     // ============================================================================
 
-    /// Creates a cross-chain request intent that requests tokens without locking any tokens.
+    /// Creates a draft intent for cross-chain request (source_amount = 0).
+    /// This is step 1 of the reserved intent flow:
+    /// 1. User creates draft using this function (off-chain)
+    /// 2. Solver signs the draft and returns signature (off-chain)
+    /// 3. User calls create_cross_chain_request_intent_entry with the signature (on-chain)
+    public fun create_cross_chain_draft_intent(
+        source_metadata: Object<Metadata>,
+        desired_metadata: Object<Metadata>,
+        desired_amount: u64,
+        expiry_time: u64,
+        issuer: address,
+    ): intent_reservation::IntentDraft {
+        intent_reservation::create_draft_intent(
+            source_metadata,
+            0, // source_amount is 0 for cross-chain request intents
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            issuer,
+        )
+    }
+
+    /// Entry function to create a cross-chain request intent that requests tokens without locking any tokens.
     /// The tokens are locked in an escrow on a different chain.
     ///
     /// # Arguments
@@ -25,39 +52,13 @@ module aptos_intent::fa_intent_cross_chain {
     /// - `desired_amount`: Amount of desired tokens
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `intent_id`: Intent ID for cross-chain linking
+    /// - `solver`: Address of the solver authorized to fulfill this intent
+    /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
     /// 
     /// # Note
     /// This intent is special: it has 0 tokens locked because tokens are in escrow elsewhere.
     /// This function accepts any fungible asset metadata, enabling cross-chain swaps with any FA pair.
-    public fun create_cross_chain_request_intent(
-        account: &signer,
-        source_metadata: Object<Metadata>,
-        desired_metadata: Object<Metadata>,
-        desired_amount: u64,
-        expiry_time: u64,
-        intent_id: address,
-    ): address {
-        // Withdraw 0 tokens of source type (no tokens locked, just requesting for cross-chain swap)
-        let fa: FungibleAsset = primary_fungible_store::withdraw(account, source_metadata, 0);
-        
-        let intent_obj = fa_intent::create_fa_to_fa_intent(
-            fa,
-            desired_metadata,
-            desired_amount,
-            expiry_time,
-            signer::address_of(account),
-            option::none(), // Unreserved
-            false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
-                   // Ensures consistent safety guarantees for verifiers across chains
-            option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
-        );
-        
-        // Event is already emitted by create_fa_to_fa_intent with the correct intent_id
-        object::object_address(&intent_obj)
-    }
-    
-    /// Entry function wrapper for CLI convenience.
-    /// Accepts metadata objects and intent_id for cross-chain linking.
+    /// Cross-chain request intents MUST be reserved to ensure solver commitment across chains.
     public entry fun create_cross_chain_request_intent_entry(
         account: &signer,
         source_metadata: Object<Metadata>,
@@ -65,9 +66,44 @@ module aptos_intent::fa_intent_cross_chain {
         desired_amount: u64,
         expiry_time: u64,
         intent_id: address,
+        solver: address,
+        solver_signature: vector<u8>,
     ) {
-        // Create cross-chain request intent with reserved intent_id
-        create_cross_chain_request_intent(account, source_metadata, desired_metadata, desired_amount, expiry_time, intent_id);
+        // Withdraw 0 tokens of source type (no tokens locked, just requesting for cross-chain swap)
+        let fa: FungibleAsset = primary_fungible_store::withdraw(account, source_metadata, 0);
+        
+        // Verify solver signature and create reservation
+        // For cross-chain intents, source_amount is 0 (tokens are on another chain)
+        let intent_to_sign = intent_reservation::new_intent_to_sign(
+            source_metadata,
+            0, // source_amount is 0 for cross-chain request intents
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            signer::address_of(account),
+            solver,
+        );
+        let reservation_result = intent_reservation::verify_and_create_reservation(
+            intent_to_sign,
+            solver_signature,
+        );
+        // Fail if signature verification failed - cross-chain intents must be reserved
+        assert!(option::is_some(&reservation_result), error::invalid_argument(EINVALID_SIGNATURE));
+        
+        let _intent_obj = fa_intent::create_fa_to_fa_intent(
+            fa,
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            signer::address_of(account),
+            reservation_result, // Reserved for specific solver
+            false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
+                   // Ensures consistent safety guarantees for verifiers across chains
+            option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
+        );
+        
+        // Event is already emitted by create_fa_to_fa_intent with the correct intent_id
+        // Intent address can be obtained from the LimitOrderEvent if needed
     }
 
     /// Entry function for solver to fulfill a cross-chain request intent.

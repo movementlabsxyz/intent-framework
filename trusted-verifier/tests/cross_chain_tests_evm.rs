@@ -65,8 +65,8 @@ fn test_intent_id_conversion_to_evm_format() {
     // The conversion pads hex strings to 32 bytes
     
     // Test 1: Short hex string (should be padded)
-    let aptos_intent_id_short = "0x1234";
-    let intent_id_hex = aptos_intent_id_short.strip_prefix("0x").unwrap_or(aptos_intent_id_short);
+    let mvmt_intent_id_short = "0x1234";
+    let intent_id_hex = mvmt_intent_id_short.strip_prefix("0x").unwrap_or(mvmt_intent_id_short);
     let intent_id_bytes = hex::decode(intent_id_hex).unwrap();
     
     // Pad to 32 bytes
@@ -80,15 +80,15 @@ fn test_intent_id_conversion_to_evm_format() {
     assert_eq!(intent_id_padded[31], 0x34, "Second byte should be at correct position");
 
     // Test 2: Full 32-byte hex string (no padding needed)
-    let aptos_intent_id_full = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let intent_id_hex_full = aptos_intent_id_full.strip_prefix("0x").unwrap_or(aptos_intent_id_full);
+    let mvmt_intent_id_full = "0x1234567890123456789012345678901234567890123456789012345678901234";
+    let intent_id_hex_full = mvmt_intent_id_full.strip_prefix("0x").unwrap_or(mvmt_intent_id_full);
     let intent_id_bytes_full = hex::decode(intent_id_hex_full).unwrap();
     
     assert_eq!(intent_id_bytes_full.len(), 32, "Full intent ID should be 32 bytes");
     
     // Test 3: Empty hex string (should pad to all zeros)
-    let aptos_intent_id_empty = "0x";
-    let intent_id_hex_empty = aptos_intent_id_empty.strip_prefix("0x").unwrap_or(aptos_intent_id_empty);
+    let mvmt_intent_id_empty = "0x";
+    let intent_id_hex_empty = mvmt_intent_id_empty.strip_prefix("0x").unwrap_or(mvmt_intent_id_empty);
     let intent_id_bytes_empty = if intent_id_hex_empty.is_empty() {
         Vec::new()
     } else {

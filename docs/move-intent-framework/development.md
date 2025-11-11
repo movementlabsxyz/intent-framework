@@ -22,7 +22,7 @@ This document covers development setup, testing, configuration, and dependencies
 
    ```bash
    # From project root
-   nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123"
+   nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123"
    ```
 
 ## Testing
@@ -31,7 +31,7 @@ This document covers development setup, testing, configuration, and dependencies
 
 Run all tests with:
 ```bash
-aptos move test --dev --named-addresses aptos_intent=0x123
+aptos move test --dev --named-addresses mvmt_intent=0x123
 ```
 
 ### Test Structure
@@ -58,13 +58,13 @@ The test suite includes:
 
 ```bash
 # Run only intent tests
-aptos move test --dev --named-addresses aptos_intent=0x123 --filter intent_tests
+aptos move test --dev --named-addresses mvmt_intent=0x123 --filter intent_tests
 
 # Run only fungible asset tests
-aptos move test --dev --named-addresses aptos_intent=0x123 --filter fa_tests
+aptos move test --dev --named-addresses mvmt_intent=0x123 --filter fa_tests
 
 # Run only reservation tests
-aptos move test --dev --named-addresses aptos_intent=0x123 --filter intent_reservation_tests
+aptos move test --dev --named-addresses mvmt_intent=0x123 --filter intent_reservation_tests
 ```
 
 ## Configuration
@@ -80,10 +80,10 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-aptos_intent = "_"
+mvmt_intent = "_"
 
 [dev-addresses]
-aptos_intent = "0x123"
+mvmt_intent = "0x123"
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-framework.git"
@@ -149,10 +149,10 @@ nix develop
 # Get your account address
 INTENT=$(aptos config show-profiles | jq -r '.Result.default.account')
 # Deploy
-aptos move publish --named-addresses aptos_intent=0x$INTENT --skip-fetch-latest-git-deps
+aptos move publish --named-addresses mvmt_intent=0x$INTENT --skip-fetch-latest-git-deps
 
 # 5. Verify deployment
-aptos move test --dev --named-addresses aptos_intent=0x123
+aptos move test --dev --named-addresses mvmt_intent=0x123
 ```
 
 **Note**: The deploy command publishes to whatever network your Aptos CLI is configured for. For local development, you must first configure Aptos CLI to point to your local Docker chain (port 8080) using `aptos init --profile local --network local`.
@@ -169,8 +169,8 @@ aptos init --profile local --network local
 aptos init --profile local2 --network local --rest-url http://127.0.0.1:8082
 
 # Deploy to specific chain
-aptos move publish --profile local --named-addresses aptos_intent=0x<your_address>
-aptos move publish --profile local2 --named-addresses aptos_intent=0x<your_address>
+aptos move publish --profile local --named-addresses mvmt_intent=0x<your_address>
+aptos move publish --profile local2 --named-addresses mvmt_intent=0x<your_address>
 ```
 
 ### Manual Deployment
@@ -180,7 +180,7 @@ aptos move publish --profile local2 --named-addresses aptos_intent=0x<your_addre
 aptos config show-profiles | jq -r '.Result.default.account'
 
 # Deploy with your address
-aptos move publish --named-addresses aptos_intent=0x<your_address> --skip-fetch-latest-git-deps
+aptos move publish --named-addresses mvmt_intent=0x<your_address> --skip-fetch-latest-git-deps
 ```
 
 ## Development Workflow

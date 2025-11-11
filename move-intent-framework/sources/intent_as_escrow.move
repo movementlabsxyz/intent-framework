@@ -28,15 +28,15 @@
 /// OF AN ESCROW SYSTEM AND CREATES A CRITICAL SECURITY VULNERABILITY./// 
 /// 
 /// ============================================================================
-module aptos_intent::intent_as_escrow {
+module mvmt_intent::intent_as_escrow {
     use std::option::{Self as option};
     use std::signer;
     use std::error;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
     use aptos_framework::object::Object;
-    use aptos_intent::fa_intent_with_oracle;
-    use aptos_intent::intent::{Self, TradeIntent, TradeSession};
-    use aptos_intent::intent_reservation::{Self, IntentReserved};
+    use mvmt_intent::fa_intent_with_oracle;
+    use mvmt_intent::intent::{Self, TradeIntent, TradeSession};
+    use mvmt_intent::intent_reservation::{Self, IntentReserved};
     use aptos_std::ed25519;
 
     // ============================================================================

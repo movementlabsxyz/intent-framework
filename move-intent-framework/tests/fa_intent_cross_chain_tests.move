@@ -1,5 +1,5 @@
 #[test_only]
-module aptos_intent::fa_intent_cross_chain_tests {
+module mvmt_intent::fa_intent_cross_chain_tests {
     use std::signer;
     use std::option;
     use aptos_framework::timestamp;
@@ -7,10 +7,10 @@ module aptos_intent::fa_intent_cross_chain_tests {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::fungible_asset::FungibleAsset;
     use aptos_std::ed25519;
-    use aptos_intent::fa_intent_cross_chain;
-    use aptos_intent::fa_intent;
-    use aptos_intent::intent_reservation;
-    use aptos_intent::utils;
+    use mvmt_intent::fa_intent_cross_chain;
+    use mvmt_intent::fa_intent;
+    use mvmt_intent::intent_reservation;
+    use mvmt_intent::utils;
 
     // ============================================================================
     // TESTS
@@ -34,8 +34,8 @@ module aptos_intent::fa_intent_cross_chain_tests {
         
         // Create test fungible assets for cross-chain swap
         // Source FA (locked on connected chain) and desired FA (requested on hub chain)
-        let (source_metadata, _) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
-        let (desired_metadata, _desired_mint_ref) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
+        let (source_metadata, _) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (desired_metadata, _desired_mint_ref) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
@@ -113,7 +113,7 @@ module aptos_intent::fa_intent_cross_chain_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    #[expected_failure(abort_code = 65537, location = aptos_intent::fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
+    #[expected_failure(abort_code = 65537, location = mvmt_intent::fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
     /// Test: Cross-chain request intent fulfillment with insufficient amount
     /// Verifies that fulfillment fails when provided_amount < desired_amount.
     ///
@@ -129,8 +129,8 @@ module aptos_intent::fa_intent_cross_chain_tests {
         timestamp::set_time_has_started_for_testing(aptos_framework);
         
         // Create test fungible assets for cross-chain swap
-        let (source_metadata, _) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
-        let (desired_metadata, _desired_mint_ref) = aptos_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
+        let (source_metadata, _) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (desired_metadata, _desired_mint_ref) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent wanting 1000 tokens
         let dummy_intent_id = @0x123;

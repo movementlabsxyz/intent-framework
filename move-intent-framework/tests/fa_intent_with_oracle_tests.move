@@ -1,5 +1,5 @@
 #[test_only]
-module aptos_intent::fa_intent_with_oracle_tests {
+module mvmt_intent::fa_intent_with_oracle_tests {
     use std::bcs;
     use std::option;
     use std::signer;
@@ -7,9 +7,9 @@ module aptos_intent::fa_intent_with_oracle_tests {
     use aptos_framework::object::Object;
     use aptos_framework::timestamp;
     use aptos_framework::primary_fungible_store;
-    use aptos_intent::intent::TradeSession;
-    use aptos_intent::fa_intent_with_oracle;
-    use aptos_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::intent::TradeSession;
+    use mvmt_intent::fa_intent_with_oracle;
+    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
     use aptos_std::ed25519;
 
 

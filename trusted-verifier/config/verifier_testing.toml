@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 4
-intent_module_address = "0x8d1457e25dc942203c400202a547b7c48d17f4683f722c467a40edabcd4dfd03"
-known_accounts = ["839a709fa9053b085862ee01f8b662b887720e368954a6648e4b96404f6a8505", "15c38203d5a426e0aaeed4a9cdc7e4592a6c6dbcb8b22f14ed22366436b975a8"]
+intent_module_address = "0x1fdfa034cf735bf1fa5ffd4a74c40dd6b90a871e2041c3a39db814fbd9300cc0"
+known_accounts = ["8d8ae90daac1c6d0f5a585005bfcf54b580e662d881dfc2303368b6f616595ea", "5b8dbb027540979fa8c2ca3d0456673d0449a00fc9b7e9bafc7cee815209266f"]
 
 # Connected Aptos Chain Configuration  
 # The connected Aptos chain is where escrow events occur and are monitored
@@ -17,9 +17,9 @@ known_accounts = ["839a709fa9053b085862ee01f8b662b887720e368954a6648e4b96404f6a8
 name = "Connected Chain Apt"
 rpc_url = "http://127.0.0.1:8082"
 chain_id = 4
-intent_module_address = "0x9a3a79e018ca61b682f28cda05e39cf7b00bf8276af729fb8da04be30ae68bdb"
-escrow_module_address = "0x9a3a79e018ca61b682f28cda05e39cf7b00bf8276af729fb8da04be30ae68bdb"
-known_accounts = ["e60e9dcd623001da61f10d1b5a82e9b8651099e115751c9ef93f857c6c0303c2"]
+intent_module_address = "0x1b7324fd4cb866e1f340fd8cfbd16863fa8c2e6c564a4461e467dc87459fb936"
+escrow_module_address = "0x1b7324fd4cb866e1f340fd8cfbd16863fa8c2e6c564a4461e467dc87459fb936"
+known_accounts = ["bdfc80578f54e02fd544ff7e8650b3ebe20161241fa420d33667783fd66b1fcd"]
 
 # Verifier Configuration
 # Cryptographic keys and timing parameters for the verifier

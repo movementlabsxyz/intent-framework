@@ -1,5 +1,5 @@
 #[test_only]
-module aptos_intent::utils {
+module mvmt_intent::utils {
     use aptos_std::ed25519;
 
     // ============================================================================

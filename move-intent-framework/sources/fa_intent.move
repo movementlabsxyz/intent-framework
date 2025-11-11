@@ -1,12 +1,12 @@
-module aptos_intent::fa_intent {
+module mvmt_intent::fa_intent {
     use std::error;
     use std::signer;
     use std::option::{Self, Option};
     use std::vector;
     use aptos_framework::event;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata, FungibleStore};
-    use aptos_intent::intent::{Self, TradeSession, TradeIntent};
-    use aptos_intent::intent_reservation::{Self, IntentReserved};
+    use mvmt_intent::intent::{Self, TradeSession, TradeIntent};
+    use mvmt_intent::intent_reservation::{Self, IntentReserved};
     use aptos_framework::object::{Self, DeleteRef, ExtendRef, Object};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;

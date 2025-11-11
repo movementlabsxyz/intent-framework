@@ -39,7 +39,7 @@ async fn test_contracts_deployed_on_chain1() {
     let response = result.unwrap();
     assert!(response.status().is_success(), "Modules endpoint should return success");
     
-    // Parse the response to check if the aptos_intent module exists
+    // Parse the response to check if the mvmt_intent module exists
     let modules: Vec<serde_json::Value> = response.json().await
         .expect("Failed to parse modules response");
     
@@ -50,7 +50,7 @@ async fn test_contracts_deployed_on_chain1() {
             .unwrap_or(false)
     });
     
-    assert!(has_intent_module, "aptos_intent module should be deployed on Hub Chain at address {}", account_address);
+    assert!(has_intent_module, "mvmt_intent module should be deployed on Hub Chain at address {}", account_address);
 }
 
 /// Test that intent framework contracts are deployed on the chains
@@ -86,7 +86,7 @@ async fn test_contracts_deployed_on_chain2() {
     let response = result.unwrap();
     assert!(response.status().is_success(), "Modules endpoint should return success");
     
-    // Parse the response to check if the aptos_intent module exists
+    // Parse the response to check if the mvmt_intent module exists
     let modules: Vec<serde_json::Value> = response.json().await
         .expect("Failed to parse modules response");
     
@@ -97,6 +97,6 @@ async fn test_contracts_deployed_on_chain2() {
             .unwrap_or(false)
     });
     
-    assert!(has_intent_module, "aptos_intent module should be deployed on Connected Chain at address {}", account_address);
+    assert!(has_intent_module, "mvmt_intent module should be deployed on Connected Chain at address {}", account_address);
 }
 

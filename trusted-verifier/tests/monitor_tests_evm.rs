@@ -96,7 +96,7 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
         escrow_cache.push(trusted_verifier::monitor::EscrowEvent {
             chain: "connected".to_string(),
             escrow_id: "0xaptos_escrow".to_string(),
-            intent_id: "0xaptos_intent".to_string(),
+            intent_id: "0xmvmt_intent".to_string(),
             issuer: "0xissuer".to_string(),
             source_metadata: "{}".to_string(),
             source_amount: 1000,
@@ -111,7 +111,7 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
     // Test Aptos escrow - should use Ed25519 signature
     let aptos_fulfillment = FulfillmentEvent {
         chain: "hub".to_string(),
-        intent_id: "0xaptos_intent".to_string(),
+        intent_id: "0xmvmt_intent".to_string(),
         intent_address: "0xaptos_addr".to_string(),
         solver: "0xsolver".to_string(),
         provided_metadata: "{}".to_string(),

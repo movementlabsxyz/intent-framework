@@ -1,4 +1,4 @@
-module aptos_intent::e2e_utils {
+module mvmt_intent::e2e_utils {
     use std::option;
     use std::signer;
     use aptos_framework::coin;
@@ -6,7 +6,7 @@ module aptos_intent::e2e_utils {
     use aptos_framework::object;
     use aptos_framework::event;
     use aptos_framework::fungible_asset::Metadata;
-    use aptos_intent::intent_reservation;
+    use mvmt_intent::intent_reservation;
 
     #[event]
     struct APTMetadataAddressEvent has store, drop {

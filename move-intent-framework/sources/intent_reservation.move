@@ -1,4 +1,4 @@
-module aptos_intent::intent_reservation {
+module mvmt_intent::intent_reservation {
     use std::bcs;
     use std::option::{Self, Option};
     use std::signer;

@@ -1,12 +1,12 @@
 
 #[test_only]
-module aptos_intent::intent_reservation_tests {
+module mvmt_intent::intent_reservation_tests {
     use std::signer;
     use std::option;
     use aptos_std::ed25519;
-    use aptos_intent::fa_intent;
-    use aptos_intent::intent_reservation;
-    use aptos_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::fa_intent;
+    use mvmt_intent::intent_reservation;
+    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
 
     const SOURCE_AMOUNT: u64 = 50;
     const DESIRED_AMOUNT: u64 = 25;

@@ -1,11 +1,11 @@
-module aptos_intent::intent {
+module mvmt_intent::intent {
     use std::error;
     use std::signer;
     use std::option::Option;
     use aptos_framework::object::{Self, DeleteRef, Object};
     use aptos_framework::timestamp;
     use aptos_framework::type_info::{Self, TypeInfo};
-    use aptos_intent::intent_reservation::IntentReserved;
+    use mvmt_intent::intent_reservation::IntentReserved;
 
     /// The offered intent has expired
     const EINTENT_EXPIRED: u64 = 0;

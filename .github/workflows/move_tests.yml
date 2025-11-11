@@ -15,4 +15,4 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Runs move tests.
-        run: nix develop --command bash -c 'cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123'
+        run: nix develop --command bash -c 'cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123'

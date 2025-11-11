@@ -15,7 +15,7 @@ Aptos Move contracts for intents and escrows.
 
 ```bash
 # From project root
-nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123"
+nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123"
 ```
 
 ### Development Environment

@@ -4,7 +4,7 @@
 /// Offerers still escrow a single fungible asset, but settlement succeeds only
 /// when the solver supplies a signed report from an authorized oracle whose
 /// reported value meets the threshold chosen by the creator.
-module aptos_intent::fa_intent_with_oracle {
+module mvmt_intent::fa_intent_with_oracle {
     use std::bcs;
     use std::error;
     use std::option::{Self as option, Option};
@@ -13,8 +13,8 @@ module aptos_intent::fa_intent_with_oracle {
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata, FungibleStore};
     use aptos_framework::object::{Self, DeleteRef, ExtendRef, Object};
     use aptos_framework::primary_fungible_store;
-    use aptos_intent::intent::{Self, TradeSession, TradeIntent};
-    use aptos_intent::intent_reservation::{Self, IntentReserved};
+    use mvmt_intent::intent::{Self, TradeSession, TradeIntent};
+    use mvmt_intent::intent_reservation::{Self, IntentReserved};
     use aptos_std::ed25519;
 
     // ============================================================================

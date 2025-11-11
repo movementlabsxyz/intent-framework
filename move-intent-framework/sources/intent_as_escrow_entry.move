@@ -1,11 +1,11 @@
-module aptos_intent::intent_as_escrow_entry {
+module mvmt_intent::intent_as_escrow_entry {
     use std::signer;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::Object;
     use aptos_framework::fungible_asset::{Self as fungible_asset, FungibleAsset};
-    use aptos_intent::intent_as_escrow::{Self, start_escrow_session, complete_escrow};
-    use aptos_intent::intent::TradeIntent;
-    use aptos_intent::fa_intent_with_oracle;
+    use mvmt_intent::intent_as_escrow::{Self, start_escrow_session, complete_escrow};
+    use mvmt_intent::intent::TradeIntent;
+    use mvmt_intent::fa_intent_with_oracle;
     use aptos_std::ed25519;
 
     // ============================================================================
@@ -32,7 +32,7 @@ module aptos_intent::intent_as_escrow_entry {
         intent_id: address,
         reserved_solver: address,
     ) {
-        use aptos_intent::intent_reservation;
+        use mvmt_intent::intent_reservation;
         
         // Withdraw tokens as a FungibleAsset from the caller's primary FA store
         let fa: FungibleAsset = primary_fungible_store::withdraw(user, source_metadata, amount);

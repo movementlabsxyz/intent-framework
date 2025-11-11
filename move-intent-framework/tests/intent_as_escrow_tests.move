@@ -1,13 +1,13 @@
 #[test_only]
-module aptos_intent::intent_as_escrow_tests {
+module mvmt_intent::intent_as_escrow_tests {
     use std::signer;
     use std::bcs;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
-    use aptos_intent::intent_as_escrow;
-    use aptos_intent::fa_intent_with_oracle;
-    use aptos_intent::fa_test_utils::register_and_mint_tokens;
-    use aptos_intent::intent_reservation;
+    use mvmt_intent::intent_as_escrow;
+    use mvmt_intent::fa_intent_with_oracle;
+    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::intent_reservation;
     use aptos_std::ed25519;
 
     // ============================================================================
@@ -144,7 +144,7 @@ module aptos_intent::intent_as_escrow_tests {
         solver = @0xdead,
         _verifier = @0xbeef
     )]
-    #[expected_failure(abort_code = 327684, location = aptos_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
+    #[expected_failure(abort_code = 327684, location = mvmt_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
     /// Test that escrow intents cannot be revoked (they are non-revocable by design)
     fun test_escrow_revocation(
         aptos_framework: &signer,
@@ -197,7 +197,7 @@ module aptos_intent::intent_as_escrow_tests {
         let verifier_public_key_bytes = ed25519::unvalidated_public_key_to_bytes(&verifier_public_key);
         
         // Test the wrapper function: create escrow from FA (must specify reserved solver)
-        aptos_intent::intent_as_escrow_entry::create_escrow_from_fa(
+        mvmt_intent::intent_as_escrow_entry::create_escrow_from_fa(
             user,
             fa_metadata,
             50,

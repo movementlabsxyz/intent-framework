@@ -2,7 +2,7 @@
 // These complement `fa_tests.move` by validating solver/offerer
 // transactions interact correctly through `PendingIntent` and shared state.
 #[test_only]
-module aptos_intent::fa_entryflow_tests {
+module mvmt_intent::fa_entryflow_tests {
     use std::signer;
     use std::option;
 
@@ -11,9 +11,9 @@ module aptos_intent::fa_entryflow_tests {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
 
-    use aptos_intent::fa_intent::{Self, FungibleAssetLimitOrder, FungibleStoreManager};
-    use aptos_intent::intent;
-    use aptos_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::fa_intent::{Self, FungibleAssetLimitOrder, FungibleStoreManager};
+    use mvmt_intent::intent;
+    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
 
     #[test_only]
     struct PendingIntent has key {

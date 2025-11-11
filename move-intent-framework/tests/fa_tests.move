@@ -1,13 +1,13 @@
 #[test_only]
-module aptos_intent::fa_tests {
+module mvmt_intent::fa_tests {
     use std::signer;
     use std::option;
     use aptos_framework::timestamp;
     use aptos_framework::fungible_asset;
     use aptos_framework::object;
     use aptos_framework::primary_fungible_store;
-    use aptos_intent::fa_intent;
-    use aptos_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::fa_intent;
+    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
 
     // ============================================================================
     // TESTS

@@ -1,17 +1,17 @@
-module aptos_intent::fa_intent_cross_chain {
+module mvmt_intent::fa_intent_cross_chain {
     use std::signer;
     use std::option;
     use std::error;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self as object, Object};
     use aptos_framework::fungible_asset::{FungibleAsset, Metadata};
-    use aptos_intent::fa_intent::{
+    use mvmt_intent::fa_intent::{
         Self,
         FungibleStoreManager,
         FungibleAssetLimitOrder,
     };
-    use aptos_intent::intent::{Self as intent, TradeIntent};
-    use aptos_intent::intent_reservation;
+    use mvmt_intent::intent::{Self as intent, TradeIntent};
+    use mvmt_intent::intent_reservation;
 
     /// The solver signature is invalid and cannot be verified.
     const EINVALID_SIGNATURE: u64 = 2;

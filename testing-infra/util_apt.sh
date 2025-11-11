@@ -382,16 +382,17 @@ generate_solver_signature() {
         exit 1
     fi
 
-    # Get project root
-    local project_root
-    project_root=$(cd "$(dirname "$0")/.." && pwd)
+    # Ensure PROJECT_ROOT is set
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
 
     # Run the Rust binary to generate signature
     local signature
     if [ -n "$log_file" ]; then
-        signature=$(cd "$project_root" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tee -a \"$log_file\" | tail -1")
+        signature=$(cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tee -a \"$log_file\" | tail -1")
     else
-        signature=$(cd "$project_root" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tail -1")
+        signature=$(cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tail -1")
     fi
 
     if [ -z "$signature" ] || [[ ! "$signature" =~ ^0x[0-9a-fA-F]+$ ]]; then

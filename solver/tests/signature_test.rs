@@ -1,0 +1,86 @@
+//! Simple test for solver signature generation
+//!
+//! This test verifies that the core Ed25519 signature generation works correctly
+//! without requiring Aptos CLI or config files.
+
+use ed25519_dalek::{SigningKey, Signer};
+use rand::Rng;
+
+/// Test that we can generate a valid Ed25519 signature
+/// This verifies the core signing logic used by sign_intent binary
+#[test]
+fn test_ed25519_signature_generation() {
+    // Generate a random private key (32 bytes)
+    let mut rng = rand::thread_rng();
+    let mut private_key_bytes = [0u8; 32];
+    rng.fill(&mut private_key_bytes);
+    
+    // Create signing key
+    let signing_key = SigningKey::from_bytes(&private_key_bytes);
+    let verifying_key = signing_key.verifying_key();
+    
+    // Create a test message hash (simulating BCS-encoded IntentToSign)
+    let message_hash = b"test message hash for intent signing";
+    
+    // Sign the message
+    let signature = signing_key.sign(message_hash);
+    let signature_bytes = signature.to_bytes();
+    
+    // Verify signature is 64 bytes (Ed25519 signature length)
+    assert_eq!(signature_bytes.len(), 64, "Ed25519 signature must be 64 bytes");
+    
+    // Verify the signature
+    verifying_key.verify_strict(message_hash, &signature)
+        .expect("Signature should be valid");
+    
+    // Test hex encoding (as used in the binary)
+    let signature_hex = format!("0x{}", hex::encode(signature_bytes));
+    assert!(signature_hex.starts_with("0x"), "Hex signature should start with 0x");
+    assert_eq!(signature_hex.len(), 130, "Hex signature should be 130 chars (0x + 128 hex chars)");
+}
+
+/// Test that signature verification fails with wrong message
+#[test]
+fn test_signature_verification_fails_wrong_message() {
+    let mut rng = rand::thread_rng();
+    let mut private_key_bytes = [0u8; 32];
+    rng.fill(&mut private_key_bytes);
+    
+    let signing_key = SigningKey::from_bytes(&private_key_bytes);
+    let verifying_key = signing_key.verifying_key();
+    
+    let message1 = b"original message";
+    let message2 = b"different message";
+    
+    let signature = signing_key.sign(message1);
+    
+    // Should verify with correct message
+    verifying_key.verify_strict(message1, &signature)
+        .expect("Signature should be valid for correct message");
+    
+    // Should fail with wrong message
+    let result = verifying_key.verify_strict(message2, &signature);
+    assert!(result.is_err(), "Signature should fail verification with wrong message");
+}
+
+/// Test base64 private key parsing (as used in get_private_key_from_profile)
+#[test]
+fn test_parse_private_key_base64() {
+    use base64::{Engine as _, engine::general_purpose};
+    
+    // Generate a test private key
+    let mut rng = rand::thread_rng();
+    let mut private_key_bytes = [0u8; 32];
+    rng.fill(&mut private_key_bytes);
+    
+    // Encode to base64
+    let private_key_b64 = general_purpose::STANDARD.encode(private_key_bytes);
+    
+    // Decode back
+    let decoded_bytes = general_purpose::STANDARD.decode(&private_key_b64)
+        .expect("Should decode base64");
+    
+    assert_eq!(decoded_bytes.len(), 32, "Decoded key should be 32 bytes");
+    assert_eq!(decoded_bytes, private_key_bytes, "Decoded key should match original");
+}
+

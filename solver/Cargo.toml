@@ -22,3 +22,9 @@ base64 = "0.21"
 # Error handling
 anyhow = "1.0"
 
+# Random number generation (for tests)
+rand = "0.8"
+
+[dev-dependencies]
+rand = "0.8"
+

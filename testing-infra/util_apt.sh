@@ -388,15 +388,50 @@ generate_solver_signature() {
     fi
 
     # Run the Rust binary to generate signature
-    local signature
+    # Use a temp file to capture output while also logging
+    local temp_output_file
+    temp_output_file=$(mktemp)
+    
+    local exit_code
     if [ -n "$log_file" ]; then
-        signature=$(cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tee -a \"$log_file\" | tail -1")
+        # Run command, log everything, and capture to temp file
+        (cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
+        exit_code=${PIPESTATUS[0]}
     else
-        signature=$(cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1 | tail -1")
+        # Run command and capture to temp file
+        (cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
+        exit_code=$?
     fi
-
-    if [ -z "$signature" ] || [[ ! "$signature" =~ ^0x[0-9a-fA-F]+$ ]]; then
-        log_and_echo "❌ ERROR: Failed to generate solver signature"
+    
+    # Read output from temp file
+    local temp_output
+    temp_output=$(cat "$temp_output_file")
+    rm -f "$temp_output_file"
+    
+    # Check if command succeeded
+    if [ $exit_code -ne 0 ]; then
+        log_and_echo "❌ ERROR: Failed to generate solver signature (exit code: $exit_code)"
+        # Print error output to stderr so it's visible in CI
+        echo "Error output:" >&2
+        echo "$temp_output" >&2
+        if [ -n "$log_file" ]; then
+            log "   Error output: $temp_output"
+        fi
+        exit 1
+    fi
+    
+    # Extract signature from output (line that matches hex pattern: 0x + 128 hex chars = 130 total)
+    local signature
+    signature=$(echo "$temp_output" | grep -E '^0x[0-9a-fA-F]{128}$' | tail -1)
+    
+    if [ -z "$signature" ] || [[ ! "$signature" =~ ^0x[0-9a-fA-F]{128}$ ]]; then
+        log_and_echo "❌ ERROR: Failed to extract valid signature from output"
+        # Print output to stderr so it's visible in CI
+        echo "Command output:" >&2
+        echo "$temp_output" >&2
+        if [ -n "$log_file" ]; then
+            log "   Output was: $temp_output"
+        fi
         exit 1
     fi
 

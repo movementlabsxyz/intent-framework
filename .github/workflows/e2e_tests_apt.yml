@@ -1,4 +1,4 @@
-name: "E2E Integration Tests (Connected Aptos Chain)"
+name: "E2E Tests (Connected Aptos Chain)"
 on:
   pull_request:
   push:

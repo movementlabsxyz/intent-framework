@@ -1,12 +1,13 @@
-name: "Move Tests"
+name: "Solver Tests"
 on:
   pull_request:
   push:
     branches:
       - main
+      - real-main
 
 jobs:
-  move-tests:
+  solver-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -14,5 +15,6 @@ jobs:
         uses: cachix/install-nix-action@v17
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
-      - name: Runs move tests.
-        run: nix develop --command bash -c 'cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123'
+      - name: Run solver tests
+        run: nix develop --command bash -c 'cd solver && cargo test'
+

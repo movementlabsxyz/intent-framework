@@ -292,6 +292,8 @@ else
                 log_and_echo "   ❌ ERROR: Escrow object address $ESCROW_ID not found in verifier events after $MAX_RETRIES attempts"
                 log_and_echo "   ❌ This indicates the verifier may not have polled the escrow event yet, or escrow was not created"
                 log_and_echo "   ❌ Cannot continue without verified escrow object address"
+                log_and_echo "   Verifier log:"
+                cat "$VERIFIER_LOG"
                 exit 1
             fi
             
@@ -405,8 +407,9 @@ else
                     RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
                 else
                     log "   ❌ Failed to release escrow"
-                    log "      See log file for details: $LOG_FILE or set LOG function to echo as well"
                     log_and_echo "   ❌ ERROR: Escrow release failed and Bob did not receive funds"
+                    log_and_echo "   Log file contents:"
+                    cat "$LOG_FILE"
                     log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
                     log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas"
                     exit 1

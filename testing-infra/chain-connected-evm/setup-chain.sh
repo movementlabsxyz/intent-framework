@@ -29,7 +29,8 @@ if [ ! -d "node_modules" ]; then
     nix develop -c bash -c "npm install" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
         log_and_echo "   ❌ ERROR: npm install failed"
-        log_and_echo "   Check log file for details: $LOG_FILE"
+        log_and_echo "   Log file contents:"
+        cat "$LOG_FILE"
         exit 1
     fi
     log "   ✅ Dependencies installed"

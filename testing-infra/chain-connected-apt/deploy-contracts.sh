@@ -39,7 +39,8 @@ if [ $? -eq 0 ]; then
     log_and_echo "✅ Connected chain contracts deployed"
 else
     log_and_echo "   ❌ Chain 2 deployment failed!"
-    log_and_echo "   See log file for details: $LOG_FILE or set LOG function to echo as well"
+    log_and_echo "   Log file contents:"
+    cat "$LOG_FILE"
     exit 1
 fi
 

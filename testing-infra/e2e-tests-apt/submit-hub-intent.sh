@@ -136,8 +136,8 @@ if [ $? -eq 0 ]; then
     fi
 else
     log_and_echo "     ❌ Intent creation failed on Chain 1!"
-    
-    log_and_echo "   See log file for details: $LOG_FILE or set LOG function to echo as well"
+    log_and_echo "   Log file contents:"
+    cat "$LOG_FILE"
     exit 1
 fi
 

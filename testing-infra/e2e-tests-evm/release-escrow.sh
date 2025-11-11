@@ -64,10 +64,10 @@ check_and_release_escrows() {
     
     # Process each approval
     for i in $(seq 0 $((APPROVALS_COUNT - 1))); do
-        ESCROW_ID=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].escrow_id" 2>/dev/null)
-        INTENT_ID=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].intent_id" 2>/dev/null)
-        APPROVAL_VALUE=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].approval_value" 2>/dev/null)
-        SIGNATURE_BASE64=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].signature" 2>/dev/null)
+        ESCROW_ID=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].escrow_id" 2>/dev/null | tr -d '\n\r\t ')
+        INTENT_ID=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].intent_id" 2>/dev/null | tr -d '\n\r\t ')
+        APPROVAL_VALUE=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].approval_value" 2>/dev/null | tr -d '\n\r\t ')
+        SIGNATURE_BASE64=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].signature" 2>/dev/null | tr -d '\n\r\t ')
         
         if [ -z "$ESCROW_ID" ] || [ "$ESCROW_ID" = "null" ] || [ "$APPROVAL_VALUE" != "1" ]; then
             continue
@@ -127,7 +127,8 @@ check_and_release_escrows() {
         if [ $TX_EXIT_CODE -ne 0 ]; then
             log_and_echo "   ❌ ERROR: Failed to release escrow on EVM chain"
             log_and_echo "   Claim output: $CLAIM_OUTPUT"
-            log_and_echo "   See log file for details: $LOG_FILE or set LOG function to echo as well"
+            log_and_echo "   Log file contents:"
+            cat "$LOG_FILE"
             exit 1
         fi
         
@@ -205,7 +206,8 @@ log ""
 if [ -z "$RELEASED_ESCROWS" ]; then
     log_and_echo "❌ ERROR: No escrows were released!"
     log_and_echo "   The verifier may not have approved the escrow, or the claim failed"
-    log_and_echo "   Check verifier logs and approvals API"
+    log_and_echo "   Verifier log:"
+    cat "$VERIFIER_LOG"
     exit 1
 fi
 

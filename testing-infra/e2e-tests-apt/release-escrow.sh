@@ -255,25 +255,44 @@ else
                 continue
             fi
             
-            # If escrow_id looks like intent_id (might be wrong due to EVM config), look up actual escrow object address
+            # Verify escrow_id is a valid object address format (66 chars: 0x + 64 hex)
             # Object addresses are 66 chars (0x + 64 hex), intent_ids are variable length
-            # Also check if we can find it in escrow events
+            if [ ${#ESCROW_ID} -lt 66 ] || ! echo "$ESCROW_ID" | grep -qE '^0x[0-9a-fA-F]{64}$'; then
+                log_and_echo "   ❌ ERROR: escrow_id from approval is invalid: $ESCROW_ID"
+                log_and_echo "   ❌ Expected format: 0x followed by 64 hex characters (66 chars total)"
+                log_and_echo "   ❌ This indicates a configuration error in the verifier"
+                exit 1
+            fi
+            
+            # Verify escrow exists in events (handles race condition where verifier hasn't polled yet)
             EVENTS_RESPONSE=""
-            if [ ${#ESCROW_ID} -lt 64 ] || ! echo "$ESCROW_ID" | grep -qE '^0x[0-9a-fA-F]{64}$'; then
-                log "   ⚠️  escrow_id from approval looks incorrect ($ESCROW_ID), looking up from escrow events..."
-                # Get escrow events and find matching escrow by intent_id
+            MAX_RETRIES=5
+            RETRY_DELAY=3
+            ESCROW_FOUND=false
+            
+            for retry in $(seq 1 $MAX_RETRIES); do
+                # Get escrow events and verify the escrow_id exists
                 EVENTS_RESPONSE=$(curl -s "http://127.0.0.1:3333/events")
-                ACTUAL_ESCROW_ID=$(echo "$EVENTS_RESPONSE" | jq -r ".data.escrow_events[] | select(.intent_id == \"$INTENT_ID\") | .escrow_id" 2>/dev/null | head -1)
-                if [ -n "$ACTUAL_ESCROW_ID" ] && [ "$ACTUAL_ESCROW_ID" != "null" ] && [ "$ACTUAL_ESCROW_ID" != "$ESCROW_ID" ]; then
-                    log "   ✅ Found correct escrow object address: $ACTUAL_ESCROW_ID (was: $ESCROW_ID)"
-                    ESCROW_ID="$ACTUAL_ESCROW_ID"
+                ESCROW_EXISTS=$(echo "$EVENTS_RESPONSE" | jq -r ".data.escrow_events[] | select(.escrow_id == \"$ESCROW_ID\") | .escrow_id" 2>/dev/null | head -1)
+                
+                if [ -n "$ESCROW_EXISTS" ] && [ "$ESCROW_EXISTS" != "null" ]; then
+                    log "   ✅ Verified escrow object address exists in events: $ESCROW_ID (attempt $retry/$MAX_RETRIES)"
+                    ESCROW_FOUND=true
+                    break
                 else
-                    log_and_echo "   ❌ ERROR: Could not find escrow object address for intent_id: $INTENT_ID"
-                    log_and_echo "   ❌ This indicates no escrow event was found on the connected chain (Chain 2)"
-                    log_and_echo "   ❌ Expected escrow event with intent_id: $INTENT_ID"
-                    log_and_echo "   ❌ Cannot continue without valid escrow object address"
-                    exit 1
+                    # Escrow not found in events yet, wait and retry
+                    if [ $retry -lt $MAX_RETRIES ]; then
+                        log "   ⏳ Escrow $ESCROW_ID not found in events yet, waiting ${RETRY_DELAY}s before retry ($retry/$MAX_RETRIES)..."
+                        sleep $RETRY_DELAY
+                    fi
                 fi
+            done
+            
+            if [ "$ESCROW_FOUND" != "true" ]; then
+                log_and_echo "   ❌ ERROR: Escrow object address $ESCROW_ID not found in verifier events after $MAX_RETRIES attempts"
+                log_and_echo "   ❌ This indicates the verifier may not have polled the escrow event yet, or escrow was not created"
+                log_and_echo "   ❌ Cannot continue without verified escrow object address"
+                exit 1
             fi
             
             # Skip if already released

@@ -78,6 +78,38 @@ public fun create_fa_to_fa_intent_entry(
 
 **Returns:** A fungible asset trade intent object
 
+### Creating a Cross-Chain Request Intent
+
+```move
+public entry fun create_cross_chain_request_intent_entry(
+    account: &signer,
+    source_metadata: Object<Metadata>,
+    desired_metadata: Object<Metadata>,
+    desired_amount: u64,
+    expiry_time: u64,
+    intent_id: address,
+    solver: address,
+    solver_signature: vector<u8>,
+    solver_public_key: vector<u8>,
+)
+```
+
+**Parameters:**
+- `account`: Signer creating the intent
+- `source_metadata`: Metadata of the token type being offered (locked on another chain)
+- `desired_metadata`: Metadata of the desired token type
+- `desired_amount`: Amount of desired tokens
+- `expiry_time`: Unix timestamp when intent expires
+- `intent_id`: Intent ID for cross-chain linking
+- `solver`: Address of the solver authorized to fulfill this intent
+- `solver_signature`: Ed25519 signature from the solver authorizing this intent
+- `solver_public_key`: Ed25519 public key of the solver (32 bytes) - required for new authentication key format
+
+**Note**: This intent has 0 tokens locked because tokens are in escrow elsewhere. Cross-chain request intents MUST be reserved to ensure solver commitment across chains. The `solver_public_key` parameter is required for accounts created with `aptos init` (new authentication key format, 32 bytes), as the Ed25519 public key cannot be extracted from the authentication key directly.
+
+**Aborts:**
+- `EINVALID_SIGNATURE`: Signature verification failed
+
 ### Starting a Fungible Asset Session
 
 ```move
@@ -152,16 +184,43 @@ public fun add_solver_to_draft_intent(
 public fun verify_and_create_reservation(
     intent_to_sign: IntentToSign,
     solver_signature: vector<u8>,
-    solver_address: address,
 ): Option<IntentReserved>
 ```
 
 **Parameters:**
 - `intent_to_sign`: The intent data that was signed
 - `solver_signature`: The solver's signature
-- `solver_address`: Address of the solver
 
 **Returns:** An optional reservation if verification succeeds
+
+**Note**: This function extracts the public key from the solver's authentication key on-chain. It only works for accounts with the old authentication key format (33 bytes with 0x00 prefix). For accounts created with `aptos init` (new format, 32 bytes), use `verify_and_create_reservation_with_public_key` instead.
+
+**Aborts:**
+- `EINVALID_AUTH_KEY_FORMAT`: Authentication key format is invalid
+- `EPUBLIC_KEY_VALIDATION_FAILED`: Public key validation failed
+- `EINVALID_SIGNATURE`: Signature verification failed
+
+### Verifying and Creating Reservation with Public Key
+
+```move
+public fun verify_and_create_reservation_with_public_key(
+    intent_to_sign: IntentToSign,
+    solver_signature: vector<u8>,
+    solver_public_key: &ed25519::UnvalidatedPublicKey,
+): Option<IntentReserved>
+```
+
+**Parameters:**
+- `intent_to_sign`: The intent data that was signed
+- `solver_signature`: The solver's signature
+- `solver_public_key`: The solver's Ed25519 public key (32 bytes)
+
+**Returns:** An optional reservation if verification succeeds
+
+**Note**: This function accepts the public key explicitly, making it compatible with both old and new authentication key formats. Use this for accounts created with `aptos init` (new format) where the public key cannot be extracted from the authentication key.
+
+**Aborts:**
+- `EINVALID_SIGNATURE`: Signature verification failed
 
 ## Oracle Intent API
 
@@ -284,6 +343,8 @@ struct OracleLimitOrderEvent has store, drop {
 ## Error Codes
 
 - `EINVALID_SIGNATURE`: Signature verification failed
+- `EINVALID_AUTH_KEY_FORMAT`: Authentication key format is invalid (not a single-key Ed25519 account with old format)
+- `EPUBLIC_KEY_VALIDATION_FAILED`: Public key extracted from authentication key failed validation
 - `EINTENT_EXPIRED`: Intent has passed its expiry time
 - `EUNAUTHORIZED_SOLVER`: Attempted execution by unauthorized solver
 - `EINVALID_AMOUNT`: Invalid asset amount specified

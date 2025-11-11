@@ -6,6 +6,7 @@ module aptos_intent::intent_reservation {
     use aptos_framework::object::Object;
     use aptos_framework::fungible_asset::Metadata;
     use aptos_framework::account;
+    use aptos_framework::event;
 
     /// The public key used for verification is invalid.
     const EINVALID_PUBLIC_KEY: u64 = 1;
@@ -13,6 +14,15 @@ module aptos_intent::intent_reservation {
     const EINVALID_SIGNATURE: u64 = 2;
     /// The signer is not the authorized solver for this intent.
     const EUNAUTHORIZED_SOLVER: u64 = 3;
+    /// The authentication key format is invalid (not a single-key Ed25519 account).
+    const EINVALID_AUTH_KEY_FORMAT: u64 = 4;
+    /// The public key validation failed.
+    const EPUBLIC_KEY_VALIDATION_FAILED: u64 = 5;
+
+    #[event]
+    struct IntentHashVerificationEvent has store, drop {
+        hash: vector<u8>,
+    }
 
     /// Struct to hold reservation details for an intent.
     /// This is stored inside the `TradeIntent` if the intent is reserved for a specific solver.
@@ -120,32 +130,57 @@ module aptos_intent::intent_reservation {
     }
 
     /// Verifies a solver's signature against the intent data and creates a reservation.
+    /// 
+    /// # Aborts
+    /// - `EINVALID_AUTH_KEY_FORMAT`: Authentication key is not a single-key Ed25519 account (length != 33 or first byte != 0x00)
+    /// - `EPUBLIC_KEY_VALIDATION_FAILED`: Public key extracted from authentication key failed validation
+    /// - `EINVALID_SIGNATURE`: Signature verification failed
     public fun verify_and_create_reservation(
         intent_to_sign: IntentToSign,
         solver_signature: vector<u8>,
     ): Option<IntentReserved> {
         let solver = intent_to_sign.solver;
         let auth_key = account::get_authentication_key(solver);
+        
         // We only support single-key Ed25519 accounts for now.
-        if (std::vector::length(&auth_key) != 33 || auth_key[0] != 0x00) {
-            return option::none()
+        // Authentication key format: 33 bytes [0x00, 32-byte Ed25519 public key]
+        let auth_key_len = std::vector::length(&auth_key);
+        let first_byte = if (auth_key_len > 0) { *std::vector::borrow(&auth_key, 0) } else { 0 };
+        
+        // Check for old format (33 bytes with 0x00 prefix)
+        let public_key_bytes = if (auth_key_len == 33 && first_byte == 0x00) {
+            // Old format: extract public key from bytes 1-33
+            std::vector::slice(&auth_key, 1, 33)
+        } else if (auth_key_len == 32) {
+            // New format: authentication key is the account address (32 bytes)
+            // For new format accounts, we cannot extract the Ed25519 public key from the address
+            // This means accounts created with aptos init (new format) are not supported
+            abort std::error::invalid_argument(EINVALID_AUTH_KEY_FORMAT)
+        } else {
+            // Invalid format
+            abort std::error::invalid_argument(EINVALID_AUTH_KEY_FORMAT)
         };
-        let public_key_bytes = std::vector::slice(&auth_key, 1, 33);
 
         let unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(public_key_bytes);
         let validated_public_key_opt = ed25519::public_key_validate(&unvalidated_public_key);
+        
         if (option::is_none(&validated_public_key_opt)) {
-            return option::none()
+            abort std::error::invalid_argument(EPUBLIC_KEY_VALIDATION_FAILED)
         };
 
         let signature = ed25519::new_signature_from_bytes(solver_signature);
 
         let message = hash_intent(intent_to_sign);
+        
+        // Emit event with hash being verified (useful for debugging signature mismatches)
+        event::emit(IntentHashVerificationEvent {
+            hash: message,
+        });
 
         if (ed25519::signature_verify_strict(&signature, &unvalidated_public_key, message)) {
             option::some(IntentReserved { solver })
         } else {
-            option::none()
+            abort std::error::invalid_argument(EINVALID_SIGNATURE)
         }
     }
 

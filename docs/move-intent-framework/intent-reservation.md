@@ -47,14 +47,22 @@ graph TD
    - Solver creates an `IntentToSign` by calling `add_solver_to_draft_intent` to add the solver address to the draft.
 4. Solver signature:
    - Solver signs the `IntentToSign` data and returns the signature to the offerer.
-5. `fa_intent.move`
-   - **Offerer** submits transaction calling `create_fa_to_fa_intent_entry` with the solver address and **solver's signature**
-   - **Contract** calls `verify_and_create_reservation` which:
-     - Gets the solver's authentication key from the blockchain
-     - Extracts the Ed25519 public key from the auth key
-     - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
-     - If verification succeeds, creates an `IntentReserved` struct
-     - If verification fails, the transaction aborts with `EINVALID_SIGNATURE`
+5. `fa_intent.move` or `fa_intent_cross_chain.move`
+   - **Offerer** submits transaction calling `create_fa_to_fa_intent_entry` (or `create_cross_chain_request_intent_entry` for cross-chain) with the solver address and **solver's signature**
+   - **Contract** verifies the signature:
+     - For `create_fa_to_fa_intent_entry`: Calls `verify_and_create_reservation` which:
+       - Gets the solver's authentication key from the blockchain
+       - Extracts the Ed25519 public key from the auth key (only works for old format, 33 bytes)
+       - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
+       - If verification succeeds, creates an `IntentReserved` struct
+       - If verification fails, the transaction aborts with `EINVALID_SIGNATURE` or `EINVALID_AUTH_KEY_FORMAT`
+     - For `create_cross_chain_request_intent_entry`: Uses `verify_and_create_reservation_with_public_key` which:
+       - Accepts the public key explicitly as a parameter (required for new authentication key format)
+       - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
+       - If verification succeeds, creates an `IntentReserved` struct
+       - If verification fails, the transaction aborts with `EINVALID_SIGNATURE`
+
+   **Note**: Accounts created with `aptos init` use the new authentication key format (32 bytes), which cannot be used to extract the Ed25519 public key. For these accounts, the public key must be passed explicitly to the contract (as in `create_cross_chain_request_intent_entry`).
 
 ### Stage 3 - Common Path
 

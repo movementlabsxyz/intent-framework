@@ -84,3 +84,39 @@ fn test_parse_private_key_base64() {
     assert_eq!(decoded_bytes, private_key_bytes, "Decoded key should match original");
 }
 
+/// Test address normalization (strip 0x prefix) as used in get_intent_hash
+/// This verifies that solver addresses are correctly normalized for REST API queries
+#[test]
+fn test_solver_address_normalization() {
+    // Test case 1: Address with 0x prefix should have it removed
+    let solver_with_prefix = "0x1234567890abcdef";
+    let normalized = solver_with_prefix.strip_prefix("0x").unwrap_or(solver_with_prefix);
+    assert_eq!(normalized, "1234567890abcdef", "Should remove 0x prefix");
+    
+    // Test case 2: Address without 0x prefix should remain unchanged
+    let solver_without_prefix = "1234567890abcdef";
+    let normalized2 = solver_without_prefix.strip_prefix("0x").unwrap_or(solver_without_prefix);
+    assert_eq!(normalized2, "1234567890abcdef", "Should remain unchanged when no prefix");
+    
+    // Test case 3: Empty string edge case
+    let solver_empty = "";
+    let normalized3 = solver_empty.strip_prefix("0x").unwrap_or(solver_empty);
+    assert_eq!(normalized3, "", "Empty string should remain empty");
+    
+    // Test case 4: Address with only 0x (edge case)
+    let solver_only_prefix = "0x";
+    let normalized4 = solver_only_prefix.strip_prefix("0x").unwrap_or(solver_only_prefix);
+    assert_eq!(normalized4, "", "Should remove prefix leaving empty string");
+    
+    // Test case 5: Real Aptos address format (64 hex chars)
+    let real_address = "0x7a4086988c99f3961fc8505fc4de995706fc5d3a6f5a3c55f95e49cae4b5bf45";
+    let normalized5 = real_address.strip_prefix("0x").unwrap_or(real_address);
+    assert_eq!(normalized5, "7a4086988c99f3961fc8505fc4de995706fc5d3a6f5a3c55f95e49cae4b5bf45", 
+               "Real address should be normalized correctly");
+    
+    // Test case 6: Address without prefix (64 hex chars)
+    let real_address_no_prefix = "7a4086988c99f3961fc8505fc4de995706fc5d3a6f5a3c55f95e49cae4b5bf45";
+    let normalized6 = real_address_no_prefix.strip_prefix("0x").unwrap_or(real_address_no_prefix);
+    assert_eq!(normalized6, real_address_no_prefix, "Address without prefix should remain unchanged");
+}
+

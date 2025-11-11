@@ -101,9 +101,22 @@ if [ -z "$SOLVER_SIGNATURE" ]; then
 fi
 
 log "     ✅ Solver signature generated: ${SOLVER_SIGNATURE:0:20}..."
+
+# Extract public key from log file (sign_intent outputs it to stderr with "PUBLIC_KEY:" prefix)
+SOLVER_PUBLIC_KEY=$(grep "PUBLIC_KEY:" "$LOG_FILE" | tail -1 | sed 's/.*PUBLIC_KEY://')
+if [ -z "$SOLVER_PUBLIC_KEY" ]; then
+    log_and_echo "     ❌ Failed to extract solver public key from sign_intent output"
+    exit 1
+fi
+log "     ✅ Solver public key extracted: ${SOLVER_PUBLIC_KEY:0:20}..."
+
+
+# Remove 0x prefix from signature and public key for hex format
+SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
+SOLVER_PUBLIC_KEY_HEX="${SOLVER_PUBLIC_KEY#0x}"
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
-    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "vector<u8>:${SOLVER_SIGNATURE}" >> "$LOG_FILE" 2>&1
+    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" "hex:${SOLVER_PUBLIC_KEY_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"
@@ -123,7 +136,8 @@ if [ $? -eq 0 ]; then
     fi
 else
     log_and_echo "     ❌ Intent creation failed on Chain 1!"
-    log_and_echo "   See log file for details: $LOG_FILE"
+    
+    log_and_echo "   See log file for details: $LOG_FILE or set LOG function to echo as well"
     exit 1
 fi
 

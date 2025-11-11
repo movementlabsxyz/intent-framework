@@ -30,6 +30,7 @@ Run from project root:
 nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses aptos_intent=0x123"
 nix develop -c bash -c "cd trusted-verifier && cargo test"
 nix develop -c bash -c "cd evm-intent-framework && npm test"
+nix develop -c bash -c "cd solver && cargo test"
 ```
 
 #### E2E Integration Tests (requires Docker)

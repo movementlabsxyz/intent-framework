@@ -86,5 +86,35 @@ module aptos_intent::e2e_utils {
             hash: intent_hash,
         });
     }
+
+    /// Helper function to get the hash that would be verified in create_cross_chain_request_intent_entry
+    /// This allows comparing the hash used for signing vs the hash used for verification
+    public entry fun get_intent_verification_hash(
+        account: &signer,
+        source_metadata: object::Object<Metadata>,
+        desired_metadata: object::Object<Metadata>,
+        desired_amount: u64,
+        expiry_time: u64,
+        solver: address,
+    ) {
+        // Create the same IntentToSign structure that create_cross_chain_request_intent_entry creates
+        let intent_to_sign = intent_reservation::new_intent_to_sign(
+            source_metadata,
+            0, // source_amount is 0 for cross-chain request intents
+            desired_metadata,
+            desired_amount,
+            expiry_time,
+            signer::address_of(account), // issuer is the signer's address
+            solver,
+        );
+        
+        // Hash the intent (BCS encoding) - same as what verify_and_create_reservation uses
+        let intent_hash = intent_reservation::hash_intent(intent_to_sign);
+        
+        // Emit hash via event for comparison
+        event::emit(IntentHashEvent {
+            hash: intent_hash,
+        });
+    }
 }
 

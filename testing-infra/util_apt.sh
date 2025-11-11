@@ -395,11 +395,13 @@ generate_solver_signature() {
     local exit_code
     if [ -n "$log_file" ]; then
         # Run command, log everything, and capture to temp file
-        (cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
+        # Pass HOME environment variable to ensure Aptos config can be found
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
         exit_code=${PIPESTATUS[0]}
     else
         # Run command and capture to temp file
-        (cd "$PROJECT_ROOT" && nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
+        # Pass HOME environment variable to ensure Aptos config can be found
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
         exit_code=$?
     fi
     

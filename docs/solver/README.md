@@ -63,8 +63,11 @@ This ensures that only the authorized solver can fulfill the intent, providing c
 The signature generation process:
 1. Calls `e2e_utils::get_intent_to_sign_hash()` Move function to construct and hash the `IntentToSign` structure
 2. Extracts the hash from the transaction event
-3. Reads the solver's private key from Aptos config (`~/.aptos/config.yaml`)
+3. Reads the solver's private key from Aptos config (`.aptos/config.yaml` in project root)
 4. Signs the hash with Ed25519
-5. Outputs the signature as a hex string (with `0x` prefix)
+5. Outputs the signature as a hex string (with `0x` prefix) to stdout
+6. Outputs the public key as a hex string (with `0x` prefix) to stderr with `PUBLIC_KEY:` prefix
+
+**Note**: For accounts created with `aptos init` (new authentication key format), the public key must be passed explicitly to the Move contract since it cannot be extracted from the authentication key. The script extracts the public key from stderr output.
 
 For more details on the reserved intent flow, see [Protocol Documentation](../protocol.md).

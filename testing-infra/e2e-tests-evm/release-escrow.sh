@@ -127,7 +127,7 @@ check_and_release_escrows() {
         if [ $TX_EXIT_CODE -ne 0 ]; then
             log_and_echo "   ❌ ERROR: Failed to release escrow on EVM chain"
             log_and_echo "   Claim output: $CLAIM_OUTPUT"
-            log_and_echo "   See log file for details: $LOG_FILE"
+            log_and_echo "   See log file for details: $LOG_FILE or set LOG function to echo as well"
             exit 1
         fi
         

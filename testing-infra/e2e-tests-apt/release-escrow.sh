@@ -386,7 +386,7 @@ else
                     RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
                 else
                     log "   ❌ Failed to release escrow"
-                    log "      See log file for details: $LOG_FILE"
+                    log "      See log file for details: $LOG_FILE or set LOG function to echo as well"
                     log_and_echo "   ❌ ERROR: Escrow release failed and Bob did not receive funds"
                     log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
                     log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas"

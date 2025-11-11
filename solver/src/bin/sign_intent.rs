@@ -184,12 +184,25 @@ fn get_intent_hash(
         .output()
         .context("Failed to get profile address")?;
 
+    if !solver_address_output.status.success() {
+        let stderr = str::from_utf8(&solver_address_output.stderr).unwrap_or("");
+        anyhow::bail!("aptos config show-profiles failed: {}", stderr);
+    }
+
     let profiles_json: Value = serde_json::from_slice(&solver_address_output.stdout)
         .context("Failed to parse profiles JSON")?;
     
+    // Try different possible JSON structures
     let solver_address = profiles_json["Result"][profile]["account"]
         .as_str()
-        .context("Failed to get solver address from profile")?;
+        .or_else(|| profiles_json[profile]["account"].as_str())
+        .or_else(|| profiles_json["Result"][profile]["account_address"].as_str())
+        .or_else(|| profiles_json[profile]["account_address"].as_str())
+        .context(format!(
+            "Failed to get solver address from profile '{}'. Available keys: {}",
+            profile,
+            serde_json::to_string_pretty(&profiles_json).unwrap_or_else(|_| "N/A".to_string())
+        ))?;
 
     // Query REST API for the latest transaction event
     let url = format!("http://127.0.0.1:{}/v1/accounts/{}/transactions?limit=1", rest_port, solver_address);

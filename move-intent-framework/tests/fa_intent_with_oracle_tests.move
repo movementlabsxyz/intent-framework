@@ -39,8 +39,10 @@ module mvmt_intent::fa_intent_with_oracle_tests {
             solver,
         );
 
-        // Oracle signs an arbitrary reported value (20 >= minimum threshold 15).
-        let signature = ed25519::sign_arbitrary_bytes(&oracle_secret_key, bcs::to_bytes(&ORACLE_VALUE));
+        // Oracle signs the intent_id (the signature itself is the approval)
+        // Use the same intent_id that was used when creating the intent (@0x1)
+        let intent_id = @0x1;
+        let signature = ed25519::sign_arbitrary_bytes(&oracle_secret_key, bcs::to_bytes(&intent_id));
         let witness = fa_intent_with_oracle::new_oracle_signature_witness(ORACLE_VALUE, signature);
 
         // Solver supplies the witness along with the desired tokens to settle the trade.
@@ -98,7 +100,8 @@ module mvmt_intent::fa_intent_with_oracle_tests {
 
         // Forge a signature using a different key pair so verification fails.
         let (forged_secret_key, _) = ed25519::generate_keys();
-        let forged_signature = ed25519::sign_arbitrary_bytes(&forged_secret_key, bcs::to_bytes(&ORACLE_VALUE));
+        let intent_id = @0x1; // Same intent_id used when creating the intent
+        let forged_signature = ed25519::sign_arbitrary_bytes(&forged_secret_key, bcs::to_bytes(&intent_id));
         let forged_witness = fa_intent_with_oracle::new_oracle_signature_witness(ORACLE_VALUE, forged_signature);
 
         // Solver provides the forged witness, triggering signature verification failure.

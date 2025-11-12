@@ -22,16 +22,6 @@ module mvmt_intent::intent_as_escrow {
     use aptos_std::ed25519;
 
     // ============================================================================
-    // CONSTANTS
-    // ============================================================================
-
-    /// Oracle approval value: approve escrow release
-    const ORACLE_APPROVE: u64 = 1;
-    
-    /// Oracle approval value: reject escrow release  
-    const ORACLE_REJECT: u64 = 0;
-
-    // ============================================================================
     // DATA TYPES
     // ============================================================================
 
@@ -70,9 +60,10 @@ module mvmt_intent::intent_as_escrow {
         intent_id: address,
         reservation: IntentReserved,
     ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
-        // Create verifier requirement: verifier must provide approval value >= 1 (approve)
+        // Create verifier requirement: signature itself is the approval, min_reported_value is 0
+        // (the signature verification is what matters, not the reported_value)
         let requirement = fa_intent_with_oracle::new_oracle_signature_requirement(
-            ORACLE_APPROVE,  // Verifier must provide 1 (approve) to release escrow
+            0, // min_reported_value: signature verification is what matters, this check always passes
             verifier_public_key,
         );
 
@@ -117,34 +108,33 @@ module mvmt_intent::intent_as_escrow {
 
     /// Completes an escrow with verifier approval
     /// 
+    /// The verifier signs the intent_id - the signature itself is the approval.
+    /// If the signature verifies correctly against the escrow's intent_id, the escrow is approved.
+    /// 
     /// # Arguments
     /// - `solver`: Signer of the solver completing the escrow
     /// - `session`: Active escrow session
     /// - `solver_payment`: Asset provided by solver to fulfill escrow
-    /// - `verifier_approval`: Verifier's approval decision (1 = approve, 0 = reject)
-    /// - `verifier_signature`: Verifier's Ed25519 signature
+    /// - `verifier_signature`: Verifier's Ed25519 signature (signs the intent_id)
     /// 
     /// # Aborts
-    /// - If verifier approval is 0 (reject)
-    /// - If verifier signature verification fails
+    /// - If verifier signature verification fails (wrong intent_id or invalid signature)
     /// - If solver payment doesn't match escrow requirements
     /// - If the escrow is reserved and the solver is not the authorized solver
     public fun complete_escrow(
         solver: &signer,
         session: TradeSession<fa_intent_with_oracle::OracleGuardedLimitOrder>,
         solver_payment: FungibleAsset,
-        verifier_approval: u64,
         verifier_signature: ed25519::Signature,
     ) {
         // Verify solver is authorized if escrow is reserved
         let reservation = intent::get_reservation(&session);
         intent_reservation::ensure_solver_authorized(solver, reservation);
-        // Verify verifier approved the escrow
-        assert!(verifier_approval == ORACLE_APPROVE, error::invalid_argument(ORACLE_REJECT));
 
-        // Create verifier witness with approval
+        // Create verifier witness - signature itself is the approval, reported_value is just metadata
+        // We use 0 as reported_value since min_reported_value is 0 (signature verification is what matters)
         let witness = fa_intent_with_oracle::new_oracle_signature_witness(
-            verifier_approval,
+            0, // reported_value: signature verification is what matters, this is just metadata
             verifier_signature,
         );
 

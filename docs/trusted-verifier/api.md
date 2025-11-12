@@ -74,11 +74,12 @@ Approval item
 {
   "escrow_id": "0x...",
   "intent_id": "0x...",
-  "approval_value": 1,
   "signature": "<base64>",
   "timestamp": 1761761504
 }
 ```
+
+Note: The signature itself is the approval - verifier signs the `intent_id` to approve the escrow.
 
 Example
 ```
@@ -87,12 +88,12 @@ curl -s http://127.0.0.1:3333/approvals | jq
 
 ## POST /approval
 
-Manually create an approval signature for a given `approval_value`.
+Manually create an approval signature for a given `intent_id`.
 
 Request
 ```
 {
-  "approval_value": 1
+  "intent_id": "0x..."
 }
 ```
 
@@ -101,26 +102,27 @@ Response
 {
   "success": true,
   "data": {
-    "approval_value": 1,
     "signature": "<base64>",
     "timestamp": 1761761504
   }
 }
 ```
 
+Note: The signature itself is the approval - verifier signs the `intent_id`.
+
 ## Usage in Escrow Release
 
 1) Poll `/approvals` until an approval with your `escrow_id` appears
-2) Submit connected‑chain entry: `complete_escrow_from_fa(escrow_id, approval_value, signature)`
+2) Submit connected‑chain entry: `complete_escrow_from_fa(escrow_id, payment_amount, signature)`
 
 In the integration script this is automated (bob‑chain2 profile):
 ```
 aptos move run --profile bob-chain2 --assume-yes \
   --function-id "0x<connected_module_address>::intent_as_escrow_entry::complete_escrow_from_fa" \
-  --args "address:<escrow_id>" "u64:<approval_value>" "hex:<signature_hex>"
+  --args "address:<escrow_id>" "u64:<payment_amount>" "hex:<signature_hex>"
 ```
 
 Notes
-- The signature is over BCS(u64 approval_value)
+- The signature is over BCS-encoded `intent_id` (address) - the signature itself is the approval
 - Signature and keys are base64 in the API; convert as needed for on‑chain hex formats
 

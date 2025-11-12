@@ -58,6 +58,7 @@ module mvmt_intent::fa_intent_with_oracle {
         desired_amount: u64,
         issuer: address,
         requirement: OracleSignatureRequirement,
+        intent_id: address, // Intent ID from hub chain (for escrows) - used for signature verification
     }
 
     /// Witness type proving receipt completion after oracle validation.
@@ -159,7 +160,7 @@ module mvmt_intent::fa_intent_with_oracle {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, OracleGuardedLimitOrder, OracleGuardedWitness>(
             FungibleStoreManager { extend_ref, delete_ref },
-            OracleGuardedLimitOrder { desired_metadata, desired_amount, issuer, requirement },
+            OracleGuardedLimitOrder { desired_metadata, desired_amount, issuer, requirement, intent_id },
             expiry_time,
             issuer,
             OracleGuardedWitness {},
@@ -270,7 +271,7 @@ module mvmt_intent::fa_intent_with_oracle {
     ) {
         if (option::is_some(oracle_witness)) {
             let witness = option::borrow(oracle_witness);
-            verify_oracle_witness(&argument.requirement, witness);
+            verify_oracle_witness(&argument.requirement, witness, argument.intent_id);
         } else {
             abort error::invalid_argument(ESIGNATURE_REQUIRED)
         }
@@ -278,9 +279,13 @@ module mvmt_intent::fa_intent_with_oracle {
 
     /// Applies signature and threshold checks against the supplied witness.
     ///
+    /// The verifier signs the intent_id to approve it. The signature itself is the approval.
+    /// We verify that the signature is valid for the intent_id.
+    ///
     /// # Arguments
     /// - `requirement`: Oracle metadata embedded in the intent arguments
     /// - `witness`: Signed report supplied by the solver
+    /// - `intent_id`: Intent ID from hub chain (for escrows) - this is what was signed
     ///
     /// # Aborts
     /// - `EINVALID_SIGNATURE`: Signature verification failed
@@ -288,8 +293,10 @@ module mvmt_intent::fa_intent_with_oracle {
     fun verify_oracle_witness(
         requirement: &OracleSignatureRequirement,
         witness: &OracleSignatureWitness,
+        intent_id: address,
     ) {
-        let message = bcs::to_bytes(&witness.reported_value);
+        // Verifier signs the intent_id (BCS-encoded address) - the signature itself is the approval
+        let message = bcs::to_bytes(&intent_id);
         assert!(
             ed25519::signature_verify_strict(&witness.signature, &requirement.public_key, message),
             error::invalid_argument(EINVALID_SIGNATURE)

@@ -31,47 +31,58 @@ fn test_signature_creation_and_verification() {
     let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
-    // Create an approval signature
-    let signature_data = service.create_approval_signature(true).unwrap();
+    // Create an approval signature (signs intent_id)
+    let intent_id = "0x01";
+    let signature_data = service.create_aptos_approval_signature(intent_id).unwrap();
     
-    // Verify the signature
-    let message = signature_data.approval_value.to_le_bytes();
+    // Verify the signature - reconstruct message from intent_id
+    let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
+    let intent_id_bytes = hex::decode(intent_id_hex).unwrap();
+    let mut intent_id_padded = [0u8; 32];
+    intent_id_padded[32 - intent_id_bytes.len()..].copy_from_slice(&intent_id_bytes);
+    let message = bcs::to_bytes(&intent_id_padded).unwrap();
     let is_valid = service.verify_signature(&message, &signature_data.signature).unwrap();
     
     assert!(is_valid, "Signature should be valid");
 }
 
 /// Test that incorrect signatures fail verification
-/// Why: Prevent signature replay attacks - signatures must be tied to specific messages
+/// Why: Prevent signature replay attacks - signatures must be tied to specific intent_ids
 #[test]
 fn test_signature_verification_fails_for_wrong_message() {
     let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
-    // Create signature for approval (value: 1)
-    let signature_data = service.create_approval_signature(true).unwrap();
+    // Create signature for intent_id
+    let intent_id = "0x01";
+    let signature_data = service.create_aptos_approval_signature(intent_id).unwrap();
     
-    // Try to verify with wrong message (rejection: value: 0)
-    let wrong_message = 0u64.to_le_bytes();
+    // Try to verify with wrong intent_id
+    let wrong_intent_id = "0x02";
+    let wrong_intent_id_hex = wrong_intent_id.strip_prefix("0x").unwrap_or(wrong_intent_id);
+    let wrong_intent_id_bytes = hex::decode(wrong_intent_id_hex).unwrap();
+    let mut wrong_intent_id_padded = [0u8; 32];
+    wrong_intent_id_padded[32 - wrong_intent_id_bytes.len()..].copy_from_slice(&wrong_intent_id_bytes);
+    let wrong_message = bcs::to_bytes(&wrong_intent_id_padded).unwrap();
     let is_valid = service.verify_signature(&wrong_message, &signature_data.signature).unwrap();
     
-    assert!(!is_valid, "Signature should fail for wrong message");
+    assert!(!is_valid, "Signature should fail for wrong intent_id");
 }
 
-/// Test that approval and rejection signatures are different
-/// Why: Approval and rejection must be cryptographically distinct to prevent confusion
+/// Test that signatures for different intent_ids are different
+/// Why: Each intent_id must have a unique signature to prevent replay attacks
 #[test]
-fn test_approval_and_rejection_signatures_differ() {
+fn test_signatures_differ_for_different_intent_ids() {
     let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
-    let approval_sig = service.create_approval_signature(true).unwrap();
-    let rejection_sig = service.create_approval_signature(false).unwrap();
+    let intent_id1 = "0x01";
+    let intent_id2 = "0x02";
+    let sig1 = service.create_aptos_approval_signature(intent_id1).unwrap();
+    let sig2 = service.create_aptos_approval_signature(intent_id2).unwrap();
     
-    // Signatures should be different
-    assert_ne!(approval_sig.signature, rejection_sig.signature);
-    // But approval values should be different
-    assert_ne!(approval_sig.approval_value, rejection_sig.approval_value);
+    // Signatures should be different (they sign different intent_ids)
+    assert_ne!(sig1.signature, sig2.signature);
 }
 
 /// Test that escrow approval signature works
@@ -81,11 +92,16 @@ fn test_escrow_approval_signature() {
     let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
-    // Create escrow approval signature
-    let signature_data = service.create_escrow_approval_signature(true).unwrap();
+    // Create escrow approval signature (signs intent_id)
+    let intent_id = "0x01";
+    let signature_data = service.create_aptos_approval_signature(intent_id).unwrap();
     
-    // Verify the signature
-    let message = signature_data.approval_value.to_le_bytes();
+    // Verify the signature - reconstruct message from intent_id
+    let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
+    let intent_id_bytes = hex::decode(intent_id_hex).unwrap();
+    let mut intent_id_padded = [0u8; 32];
+    intent_id_padded[32 - intent_id_bytes.len()..].copy_from_slice(&intent_id_bytes);
+    let message = bcs::to_bytes(&intent_id_padded).unwrap();
     let is_valid = service.verify_signature(&message, &signature_data.signature).unwrap();
     
     assert!(is_valid, "Escrow signature should be valid");
@@ -112,7 +128,8 @@ fn test_signature_contains_timestamp() {
     let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
-    let signature_data = service.create_approval_signature(true).unwrap();
+    let intent_id = "0x01";
+    let signature_data = service.create_aptos_approval_signature(intent_id).unwrap();
     
     // Timestamp should be non-zero and reasonable (within last hour)
     assert!(signature_data.timestamp > 0, "Timestamp should be non-zero");
@@ -122,25 +139,4 @@ fn test_signature_contains_timestamp() {
     assert!(signature_data.timestamp >= now - 3600, "Timestamp should be recent");
 }
 
-/// Test that approval_value is correct for approval signatures
-/// Why: Approval value (1) must be correct for downstream systems to authorize transactions
-#[test]
-fn test_approval_value_true() {
-    let config = build_test_config();
-    let service = CryptoService::new(&config).unwrap();
-    
-    let sig = service.create_approval_signature(true).unwrap();
-    assert_eq!(sig.approval_value, 1);
-}
-
-/// Test that approval_value is correct for rejection signatures
-/// Why: Rejection value (0) must be correct to properly deny invalid transactions
-#[test]
-fn test_approval_value_false() {
-    let config = build_test_config();
-    let service = CryptoService::new(&config).unwrap();
-    
-    let sig = service.create_approval_signature(false).unwrap();
-    assert_eq!(sig.approval_value, 0);
-}
 

@@ -16,9 +16,8 @@ fn test_create_evm_approval_signature_success() {
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let approval_value = 1u8;
     
-    let signature = service.create_evm_approval_signature(intent_id, approval_value).unwrap();
+    let signature = service.create_evm_approval_signature(intent_id).unwrap();
     
     // Signature should be created successfully
     assert!(!signature.is_empty(), "Signature should not be empty");
@@ -32,9 +31,8 @@ fn test_create_evm_approval_signature_format_65_bytes() {
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let approval_value = 1u8;
     
-    let signature = service.create_evm_approval_signature(intent_id, approval_value).unwrap();
+    let signature = service.create_evm_approval_signature(intent_id).unwrap();
     
     // Signature must be exactly 65 bytes: 32 (r) + 32 (s) + 1 (v)
     assert_eq!(signature.len(), 65, "Signature must be exactly 65 bytes");
@@ -52,10 +50,9 @@ fn test_create_evm_approval_signature_verification() {
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let approval_value = 1u8;
     
     // Create signature
-    let signature = service.create_evm_approval_signature(intent_id, approval_value).unwrap();
+    let signature = service.create_evm_approval_signature(intent_id).unwrap();
     
     // Verify signature format
     assert_eq!(signature.len(), 65);
@@ -99,11 +96,10 @@ fn test_evm_signature_recovery_id_calculation() {
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let approval_value = 1u8;
     
     // Create multiple signatures and verify v is always 27 or 28
     for _ in 0..10 {
-        let signature = service.create_evm_approval_signature(intent_id, approval_value).unwrap();
+        let signature = service.create_evm_approval_signature(intent_id).unwrap();
         let v = signature[64];
         assert!(v == 27 || v == 28, "Recovery ID v must be 27 or 28, got {}", v);
     }
@@ -117,13 +113,12 @@ fn test_evm_signature_keccak256_hashing() {
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let approval_value = 1u8;
     
     // Create signature
-    let signature1 = service.create_evm_approval_signature(intent_id, approval_value).unwrap();
+    let signature1 = service.create_evm_approval_signature(intent_id).unwrap();
     
     // Same input should produce same signature (deterministic)
-    let signature2 = service.create_evm_approval_signature(intent_id, approval_value).unwrap();
+    let signature2 = service.create_evm_approval_signature(intent_id).unwrap();
     
     // Signatures should be identical (deterministic keccak256 hashing)
     assert_eq!(signature1, signature2, "Signatures should be deterministic");
@@ -137,10 +132,9 @@ fn test_evm_signature_ethereum_message_prefix() {
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let approval_value = 1u8;
     
     // Create signature
-    let signature = service.create_evm_approval_signature(intent_id, approval_value).unwrap();
+    let signature = service.create_evm_approval_signature(intent_id).unwrap();
     
     // Signature should be valid format (65 bytes with valid v)
     assert_eq!(signature.len(), 65);
@@ -160,19 +154,18 @@ fn test_evm_intent_id_padding() {
     
     // Test with short intent ID (should be left-padded with zeros)
     let short_intent_id = "0x1234";
-    let approval_value = 1u8;
     
-    let signature1 = service.create_evm_approval_signature(short_intent_id, approval_value).unwrap();
+    let signature1 = service.create_evm_approval_signature(short_intent_id).unwrap();
     assert_eq!(signature1.len(), 65, "Signature should be 65 bytes even with short intent ID");
     
     // Test with full 32-byte intent ID
     let full_intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234";
-    let signature2 = service.create_evm_approval_signature(full_intent_id, approval_value).unwrap();
+    let signature2 = service.create_evm_approval_signature(full_intent_id).unwrap();
     assert_eq!(signature2.len(), 65, "Signature should be 65 bytes with full intent ID");
     
     // Test with intent ID without 0x prefix
     let intent_id_no_prefix = "1234567890123456789012345678901234567890123456789012345678901234";
-    let signature3 = service.create_evm_approval_signature(intent_id_no_prefix, approval_value).unwrap();
+    let signature3 = service.create_evm_approval_signature(intent_id_no_prefix).unwrap();
     assert_eq!(signature3.len(), 65, "Signature should work without 0x prefix");
 }
 
@@ -183,16 +176,14 @@ fn test_evm_signature_invalid_intent_id() {
     let config = build_test_config();
     let service = CryptoService::new(&config).unwrap();
     
-    let approval_value = 1u8;
-    
     // Test with intent ID that's too long (> 32 bytes)
     let too_long_intent_id = "0x1234567890123456789012345678901234567890123456789012345678901234567890";
-    let result = service.create_evm_approval_signature(too_long_intent_id, approval_value);
+    let result = service.create_evm_approval_signature(too_long_intent_id);
     assert!(result.is_err(), "Should reject intent ID longer than 32 bytes");
     
     // Test with invalid hex string
     let invalid_hex = "0xinvalid_hex_string_that_is_not_valid_hex";
-    let result = service.create_evm_approval_signature(invalid_hex, approval_value);
+    let result = service.create_evm_approval_signature(invalid_hex);
     assert!(result.is_err(), "Should reject invalid hex string");
 }
 

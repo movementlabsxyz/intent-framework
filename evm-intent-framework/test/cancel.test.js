@@ -63,14 +63,14 @@ describe("IntentEscrow - Cancel", function () {
   /// Test: Cancellation After Claim Prevention
   /// Verifies that attempting to cancel an already-claimed escrow reverts.
   it("Should revert if already claimed", async function () {
-    const approvalValue = 1;
+    // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
     
-    await escrow.connect(solver).claim(intentId, approvalValue, signature);
+    await escrow.connect(solver).claim(intentId, signature);
 
     await expect(
       escrow.connect(maker).cancel(intentId)

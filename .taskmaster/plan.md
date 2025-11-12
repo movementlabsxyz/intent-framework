@@ -1,4 +1,4 @@
-## Cross-chain Oracle Intents: Implementation Plan
+# Implementation Plan
 
 ## Overview
 
@@ -14,6 +14,7 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
 ## Future Work
 
 ### Testing
+
 1. **Balance Discrepancy Investigation**
    - Bob's balance decrease doesn't match expected amount when fulfilling intent with 100M tokens
    - Event confirms `provided_amount: 100,000,000` was transferred
@@ -24,22 +25,23 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
 
 2. **Test Improvements**
    - Add timeout scenario tests
-   - Test with multiple concurrent intents
+   - Test with multiple concurrent intents (unit tests added in `trusted-verifier/tests/monitor_tests.rs`)
    - Add negative test cases (rejected intents, failed fulfillments)
-   - Convert shell scripts into Rust binaries where practical
-   - Integration test in e2e apt has many warnings
-   - e2e evm test should not start chain2 (apt)
+   - can we avoid using `--named-addresses mvmt_intent=0x123` in `aptos move test --dev --named-addresses mvmt_intent=0x123`, see root readme.
 
 ### Documentation
+
 1. Finalize node bootstrapping instructions (ports, genesis, module publish) for both chains
 2. Add more comprehensive API documentation
 3. Add troubleshooting guide for common issues
 
 ### Move-intent-framework
+
 - Add more intent types and use cases
 - Optimize gas costs
 
 ### Trusted Verifier
+
 1. **Performance Testing**
    - Load testing the API
    - Stress testing event monitoring

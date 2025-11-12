@@ -109,11 +109,10 @@ describe("IntentEscrow - Error Conditions", function () {
     await token.connect(maker).approve(escrow.target, amount);
     await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
 
-    const approvalValue = 1;
     const invalidSignature = "0x1234"; // Too short (not 65 bytes)
 
     await expect(
-      escrow.connect(solver).claim(intentId, approvalValue, invalidSignature)
+      escrow.connect(solver).claim(intentId, invalidSignature)
     ).to.be.revertedWith("Invalid signature length");
   });
 

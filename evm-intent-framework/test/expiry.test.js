@@ -86,15 +86,15 @@ describe("IntentEscrow - Expiry Handling", function () {
     await advanceTime(Number(expiryDuration) + 1);
 
     // Claims blocked after expiry
-    const approvalValue = 1;
+    // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
     await expect(
-      escrow.connect(solver).claim(intentId, approvalValue, signature)
+      escrow.connect(solver).claim(intentId, signature)
     ).to.be.revertedWithCustomError(escrow, "EscrowExpired");
 
     expect(await token.balanceOf(escrow.target)).to.equal(amount);

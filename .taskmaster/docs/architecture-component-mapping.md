@@ -285,8 +285,8 @@ graph TB
 - **`trusted-verifier/src/crypto/mod.rs`**
   - **Purpose**: Cryptographic operations for approval signatures
   - **Key Structures**: `ApprovalSignature`, `CryptoService`
-  - **Key Functions**: `sign_approval()`, `verify_signature()`, `get_public_key()`
-  - **Responsibilities**: Ed25519 (Aptos) and ECDSA (EVM) signature generation/verification
+  - **Key Functions**: `create_aptos_approval_signature(intent_id)`, `create_evm_approval_signature(intent_id)`, `verify_signature()`, `get_public_key()`
+  - **Responsibilities**: Ed25519 (Aptos) and ECDSA (EVM) signature generation/verification - verifier signs the `intent_id`, signature itself is the approval
 
 #### REST API Server
 
@@ -375,8 +375,8 @@ This section documents comprehensive communication patterns between domains, inc
 **Verification → Settlement** (Approval Provision):
 
 - Approval signatures provided via REST API (`/approvals/:escrow_id`) or direct function calls
-- Contains: Cryptographic signature (Ed25519 for Move, ECDSA for EVM), approval value
-- Purpose: Settlement uses signatures to authorize escrow release
+- Contains: Cryptographic signature (Ed25519 for Move, ECDSA for EVM) - signature itself is the approval
+- Purpose: Settlement uses signatures to authorize escrow release (verifier signs the `intent_id`)
 
 ### Functional Dependencies
 
@@ -411,7 +411,7 @@ This section documents comprehensive communication patterns between domains, inc
 - **Safety Validation**: Verifier calls `validate_intent_fulfillment()` to ensure `revocable = false` (CRITICAL) and validates solver addresses match
 - **Solver Validation**: For Aptos escrows, compares Aptos addresses directly; for EVM escrows, queries solver registry for EVM address and compares
 - **Chain ID Validation**: Verifier validates that escrow `chain_id` matches intent `connected_chain_id`
-- **Approval Generation**: Verifier calls `create_approval_signature()` (Ed25519) or `create_evm_approval_signature()` (ECDSA) to generate cryptographic signatures for escrow release
+- **Approval Generation**: Verifier calls `create_aptos_approval_signature(intent_id)` (Ed25519) or `create_evm_approval_signature(intent_id)` (ECDSA) to generate cryptographic signatures for escrow release. The signature itself is the approval - verifier signs the `intent_id`.
 
 ### Data Flow Patterns
 

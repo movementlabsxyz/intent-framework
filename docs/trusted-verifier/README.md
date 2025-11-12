@@ -9,8 +9,7 @@ The trusted verifier is an external service that:
 1. Monitors intent events on the hub chain for new intents
 2. Monitors escrow events from escrow systems on connected chains (both Aptos and EVM)
 3. Validates fulfillment of intent (deposit conditions) on the connected chain
-4. Provides approval/rejection confirmation for intent fulfillment
-5. Provides approval/rejection for escrow completion
+4. Generates approval signatures for escrow completion (signature itself is the approval)
 
 The verifier supports monitoring multiple connected chains simultaneously:
 
@@ -39,7 +38,7 @@ Both chain types are monitored symmetrically - escrows are cached and validated 
 - **Event Monitor**: Listens for escrow deposit events on both Aptos and EVM connected chains
 - **Cross-chain Validator**: Validates conditions on connected chains (supports both Aptos and EVM)
 - **Action Trigger**: Triggers actions based on validation results (both on hub and connected chain)
-- **Approval Service**: Provides approval/rejection signatures (Ed25519 for Aptos, ECDSA for EVM)
+- **Approval Service**: Provides approval signatures by signing the `intent_id` (Ed25519 for Aptos, ECDSA for EVM). The signature itself is the approval.
 
 ### Project Structure
 

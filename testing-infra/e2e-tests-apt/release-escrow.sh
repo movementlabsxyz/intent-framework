@@ -248,10 +248,9 @@ else
         for i in $(seq 0 $((APPROVALS_COUNT - 1))); do
             ESCROW_ID=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].escrow_id" 2>/dev/null | tr -d '\n\r\t ')
             INTENT_ID=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].intent_id" 2>/dev/null | tr -d '\n\r\t ')
-            APPROVAL_VALUE=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].approval_value" 2>/dev/null | tr -d '\n\r\t ')
             SIGNATURE_BASE64=$(echo "$APPROVALS_RESPONSE" | jq -r ".data[$i].signature" 2>/dev/null | tr -d '\n\r\t ')
             
-            if [ -z "$ESCROW_ID" ] || [ "$ESCROW_ID" = "null" ] || [ "$APPROVAL_VALUE" != "1" ]; then
+            if [ -z "$ESCROW_ID" ] || [ "$ESCROW_ID" = "null" ]; then
                 continue
             fi
             
@@ -342,10 +341,11 @@ else
             
             # Submit escrow release transaction
             # Using bob-chain2 as solver (needs to have APT for payment)
+            # Note: Signature itself is the approval - no approval_value parameter needed
             
             aptos move run --profile bob-chain2 --assume-yes \
                 --function-id "0x${CHAIN2_DEPLOY_ADDRESS}::intent_as_escrow_entry::complete_escrow_from_fa" \
-                --args "address:${ESCROW_ID}" "u64:${PAYMENT_AMOUNT}" "u64:${APPROVAL_VALUE}" "hex:${SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+                --args "address:${ESCROW_ID}" "u64:${PAYMENT_AMOUNT}" "hex:${SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
             
             TX_EXIT_CODE=$?
             

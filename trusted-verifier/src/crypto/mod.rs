@@ -27,16 +27,13 @@ use crate::config::Config;
 // CRYPTOGRAPHIC DATA STRUCTURES
 // ============================================================================
 
-/// Cryptographic signature for approval/rejection decisions.
+/// Cryptographic signature for approval.
 /// 
-/// This structure contains a digital signature along with the approval decision
-/// and timestamp. It's used to cryptographically authorize escrow releases
-/// and other critical operations.
+/// The signature itself is the approval - verifier signs the intent_id to approve it.
+/// This structure contains the signature and timestamp for escrow releases.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApprovalSignature {
-    /// Approval value: 1 = approve, 0 = reject
-    pub approval_value: u64,
-    /// Base64-encoded Ed25519 signature
+    /// Base64-encoded signature (Ed25519 for Aptos, ECDSA for EVM)
     pub signature: String,
     /// Timestamp when signature was created
     pub timestamp: u64,
@@ -132,10 +129,14 @@ impl CryptoService {
     /// 
     /// * `Ok(ApprovalSignature)` - Cryptographic approval signature
     /// * `Err(anyhow::Error)` - Failed to create signature
+    /// Creates an approval signature (legacy - signs approval value).
+    /// 
+    /// NOTE: This is deprecated. Use create_aptos_approval_signature() instead.
+    /// Kept for backward compatibility with API endpoints.
     pub fn create_approval_signature(&self, approve: bool) -> Result<ApprovalSignature> {
         let approval_value: u64 = if approve { 1 } else { 0 };
         
-        // Create signature over the approval value using BCS encoding (to match Move contract)
+        // Create signature over the approval value using BCS encoding (legacy approach)
         let message = bcs::to_bytes(&approval_value)?;
         let signature = self.signing_key.sign(&message);
         
@@ -143,7 +144,49 @@ impl CryptoService {
               if approve { "approval" } else { "rejection" }, approval_value);
         
         Ok(ApprovalSignature {
-            approval_value,
+            signature: general_purpose::STANDARD.encode(signature.to_bytes()),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        })
+    }
+
+    /// Creates an Aptos approval signature by signing the intent_id.
+    /// 
+    /// The verifier signs the intent_id to approve it. The signature itself is the approval.
+    /// Each signature is unique per intent_id.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `intent_id` - The intent ID (hex string, e.g., "0xabc123")
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(ApprovalSignature)` - Cryptographic approval signature unique to this intent
+    /// * `Err(anyhow::Error)` - Failed to create signature
+    pub fn create_aptos_approval_signature(&self, intent_id: &str) -> Result<ApprovalSignature> {
+        // Remove 0x prefix if present
+        let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
+        
+        // Convert hex string to bytes
+        let intent_id_bytes = hex::decode(intent_id_hex)
+            .map_err(|e| anyhow::anyhow!("Invalid intent_id hex: {}", e))?;
+        
+        // Pad to 32 bytes (Aptos address format) - left-pad with zeros
+        let mut intent_id_padded = [0u8; 32];
+        if intent_id_bytes.len() <= 32 {
+            intent_id_padded[32 - intent_id_bytes.len()..].copy_from_slice(&intent_id_bytes);
+        } else {
+            return Err(anyhow::anyhow!("Intent ID too long: {} bytes", intent_id_bytes.len()));
+        }
+        
+        // Sign the intent_id address bytes directly (BCS-encoded address)
+        // In Move: bcs::to_bytes(&intent_id) where intent_id: address gives us the 32-byte address
+        // We sign those same bytes - the signature itself is the approval
+        let message = bcs::to_bytes(&intent_id_padded)?;
+        let signature = self.signing_key.sign(&message);
+        
+        info!("Created approval signature for intent_id: {}", intent_id);
+        
+        Ok(ApprovalSignature {
             signature: general_purpose::STANDARD.encode(signature.to_bytes()),
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
@@ -167,7 +210,7 @@ impl CryptoService {
     pub fn create_escrow_approval_signature(&self, approve: bool) -> Result<ApprovalSignature> {
         let approval_value: u64 = if approve { 1 } else { 0 };
         
-        // Create signature over the approval value using BCS encoding (to match Move contract)
+        // Create signature over the approval value using BCS encoding (legacy approach)
         let message = bcs::to_bytes(&approval_value)?;
         let signature = self.signing_key.sign(&message);
         
@@ -175,7 +218,6 @@ impl CryptoService {
               if approve { "approval" } else { "rejection" });
         
         Ok(ApprovalSignature {
-            approval_value,
             signature: general_purpose::STANDARD.encode(signature.to_bytes()),
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
@@ -224,23 +266,22 @@ impl CryptoService {
     
     /// Creates an ECDSA signature for EVM escrow release.
     /// 
-    /// This function creates an ECDSA signature compatible with Ethereum/EVM
-    /// for releasing escrow funds. The message format is:
-    /// keccak256(abi.encodePacked(intentId, approvalValue))
+    /// The verifier signs the intent_id to approve it. The signature itself is the approval.
+    /// Each signature is unique per intent_id.
     /// 
+    /// Message format: keccak256(intentId) - only the intent_id is signed
     /// Then applies Ethereum signed message format:
     /// keccak256("\x19Ethereum Signed Message:\n32" || messageHash)
     /// 
     /// # Arguments
     /// 
     /// * `intent_id` - The intent ID as a hex string (without 0x prefix)
-    /// * `approval_value` - Approval value: 1 = approve, 0 = reject
     /// 
     /// # Returns
     /// 
     /// * `Ok(Vec<u8>)` - ECDSA signature bytes (65 bytes: r || s || v)
     /// * `Err(anyhow::Error)` - Failed to create signature
-    pub fn create_evm_approval_signature(&self, intent_id: &str, approval_value: u8) -> Result<Vec<u8>> {
+    pub fn create_evm_approval_signature(&self, intent_id: &str) -> Result<Vec<u8>> {
         // Remove 0x prefix if present
         let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
         
@@ -256,14 +297,10 @@ impl CryptoService {
             return Err(anyhow::anyhow!("Intent ID too long: {} bytes", intent_id_bytes.len()));
         }
         
-        // Create message: abi.encodePacked(intentId, approvalValue)
-        let mut message = Vec::with_capacity(33);
-        message.extend_from_slice(&intent_id_padded);
-        message.push(approval_value);
-        
+        // Sign only the intent_id (symmetric with Aptos - signature itself is the approval)
         // Hash with keccak256
         let mut hasher = Keccak256::new();
-        hasher.update(&message);
+        hasher.update(&intent_id_padded);
         let message_hash = hasher.finalize();
         
         // Apply Ethereum signed message prefix
@@ -322,8 +359,7 @@ impl CryptoService {
         final_sig.extend_from_slice(s);
         final_sig.push(v);
         
-        info!("Created ECDSA signature for EVM escrow release (intent_id: {}, approval_value: {})", 
-              intent_id, approval_value);
+        info!("Created approval signature for intent_id: {}", intent_id);
         
         Ok(final_sig)
     }

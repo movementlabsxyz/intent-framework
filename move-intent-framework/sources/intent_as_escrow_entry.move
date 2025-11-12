@@ -56,19 +56,17 @@ module mvmt_intent::intent_as_escrow_entry {
     /// 2. Deposits locked assets to solver
     /// 3. Infers payment metadata from the escrowed asset
     /// 4. Withdraws payment from solver
-    /// 5. Completes escrow with verifier approval signature
+    /// 5. Completes escrow with verifier signature (signature itself is the approval)
     /// 
     /// # Arguments
     /// - `solver`: Signer of the solver completing the escrow
     /// - `escrow_intent`: Object address of the escrow intent
     /// - `payment_amount`: Amount of tokens to provide as payment (should match escrow desired_amount, typically 1)
-    /// - `verifier_approval`: Verifier's approval value (1 = approve, 0 = reject)
-    /// - `verifier_signature_bytes`: Verifier's Ed25519 signature as bytes (base64 decoded)
+    /// - `verifier_signature_bytes`: Verifier's Ed25519 signature as bytes (base64 decoded, signs the intent_id)
     public entry fun complete_escrow_from_fa(
         solver: &signer,
         escrow_intent: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>,
         payment_amount: u64,
-        verifier_approval: u64,
         verifier_signature_bytes: vector<u8>,
     ) {
         // Start escrow session to get the escrowed assets and create a session
@@ -87,8 +85,8 @@ module mvmt_intent::intent_as_escrow_entry {
         // Convert signature bytes to ed25519::Signature
         let verifier_signature = ed25519::new_signature_from_bytes(verifier_signature_bytes);
         
-        // Complete the escrow with verifier approval
-        complete_escrow(solver, session, solver_payment, verifier_approval, verifier_signature);
+        // Complete the escrow with verifier signature (signature itself is the approval)
+        complete_escrow(solver, session, solver_payment, verifier_signature);
     }
 }
 

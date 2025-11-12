@@ -42,16 +42,16 @@ describe("IntentEscrow - Integration Tests", function () {
     expect(await token.balanceOf(escrow.target)).to.equal(amount);
     
     // Step 4: Generate verifier signature for claim
-    const approvalValue = 1;
+    // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
     
     // Step 5: Claim escrow and verify EscrowClaimed event
     expect(await token.balanceOf(solver.address)).to.equal(0);
-    await expect(escrow.connect(solver).claim(intentId, approvalValue, signature))
+    await expect(escrow.connect(solver).claim(intentId, signature))
       .to.emit(escrow, "EscrowClaimed")
       .withArgs(intentId, solver.address, amount);
     
@@ -127,14 +127,14 @@ describe("IntentEscrow - Integration Tests", function () {
       .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
     
     // Test EscrowClaimed event
-    const approvalValue = 1;
+    // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
     
-    await expect(escrow.connect(solver).claim(intentId, approvalValue, signature))
+    await expect(escrow.connect(solver).claim(intentId, signature))
       .to.emit(escrow, "EscrowClaimed")
       .withArgs(intentId, solver.address, amount);
   });

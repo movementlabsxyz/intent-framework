@@ -12,12 +12,11 @@ async function main() {
   const signers = await hre.ethers.getSigners();
   const escrow = await hre.ethers.getContractAt("IntentEscrow", escrowAddress);
   const intentId = BigInt(intentIdHex);
-  const approvalValue = 1;
   const signature = `0x${signatureHex}`;
   
   try {
     // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
-    const tx = await escrow.connect(signers[2]).claim(intentId, approvalValue, signature);
+    const tx = await escrow.connect(signers[2]).claim(intentId, signature);
     const receipt = await tx.wait();
     console.log("Claim transaction hash:", receipt.hash);
     console.log("Escrow released successfully!");

@@ -77,7 +77,6 @@ async fn test_evm_escrow_ecdsa_signature_creation() {
             // Verify signature is ECDSA format (65 bytes)
             let sig_bytes = base64::engine::general_purpose::STANDARD.decode(&approval.signature).unwrap();
             assert_eq!(sig_bytes.len(), 65, "EVM escrow should use ECDSA signature (65 bytes)");
-            assert_eq!(approval.approval_value, 1, "Approval value should be 1");
         }
     }
 }
@@ -182,7 +181,6 @@ async fn test_evm_escrow_approval_flow() {
         
         let approval = approval.unwrap();
         assert_eq!(approval.intent_id, intent_id, "Approval should have correct intent_id");
-        assert_eq!(approval.approval_value, 1, "Approval value should be 1 (approved)");
         assert!(!approval.signature.is_empty(), "Signature should not be empty");
         
         // Verify signature format is ECDSA (65 bytes)

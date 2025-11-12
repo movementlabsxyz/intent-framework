@@ -61,13 +61,13 @@ sequenceDiagram
     Verifier->>Verifier: Generate approval signature
 
     Note over User,Solver: Phase 5: Escrow Release on Connected Chain
-    Verifier->>Solver: Delivers approval signature<br/>(Ed25519 for Move, ECDSA for EVM)
+    Verifier->>Solver: Delivers approval signature<br/>(Ed25519 for Move, ECDSA for EVM)<br/>Signature itself is the approval
     alt Move Chain
         Note over Solver: Anyone can call<br/>(funds go to reserved_solver)
-        Solver->>Connected: complete_escrow_from_fa(<br/>escrow_intent, payment_amount,<br/>verifier_approval, verifier_signature_bytes)
+        Solver->>Connected: complete_escrow_from_fa(<br/>escrow_intent, payment_amount,<br/>verifier_signature_bytes)
     else EVM Chain
         Note over Solver: Anyone can call<br/>(funds go to reservedSolver)
-        Solver->>Connected: claim(intentId, approvalValue,<br/>signature)
+        Solver->>Connected: claim(intentId, signature)
     end
     Connected->>Connected: Verify signature
     Connected->>Connected: Transfer to reserved_solver
@@ -84,8 +84,8 @@ sequenceDiagram
 3. **Connected Chain**: User creates escrow using `create_escrow_from_fa()` (Move) or `createEscrow()` (EVM) with `intent_id`, verifier public key, and **reserved solver address** (emits `OracleLimitOrderEvent`/`EscrowInitialized`, `revocable=false`).
 4. **Solver**: Observes the request intent on Hub chain (from step 2) and the escrow on Connected Chain (from step 3).
 5. **Hub**: Solver fulfills the intent using `fulfill_cross_chain_request_intent()` (emits `LimitOrderFulfillmentEvent`)
-6. **Verifier**: observes fulfillment + escrow, generates approval signature (BCS(u64=1))
-7. **Anyone**: submits `complete_escrow_from_fa()` (Move) or `claim()` (EVM) on connected chain with approval signature from verifier (Ed25519 for Move, ECDSA for EVM). The transaction can be sent by anyone, but funds always transfer to the reserved solver address specified at escrow creation.
+6. **Verifier**: observes fulfillment + escrow, signs the `intent_id` to generate approval signature (signature itself is the approval)
+7. **Anyone**: submits `complete_escrow_from_fa()` (Move) or `claim()` (EVM) on connected chain with verifier signature (Ed25519 for Move, ECDSA for EVM). The transaction can be sent by anyone, but funds always transfer to the reserved solver address specified at escrow creation.
 
 **Note**: All escrows must specify a reserved solver address at creation. Funds are always transferred to the reserved solver when the escrow is claimed, regardless of who sends the transaction.
 
@@ -198,11 +198,11 @@ All escrows MUST specify a reserved solver address at creation:
 **Aptos/Move Chains**:
 
 - Ed25519 signatures for verifier approvals
-- Signature over BCS-encoded `approval_value` (u64 = 1)
+- Signature over BCS-encoded `intent_id` (address) - the signature itself is the approval
 - Public key embedded in escrow creation
 
 **EVM Chains**:
 
 - ECDSA signatures for verifier approvals
-- Message: `keccak256(abi.encodePacked(intentId, approvalValue))`
+- Message: `keccak256(intentId)` - signature itself is the approval
 - Ethereum signed message format

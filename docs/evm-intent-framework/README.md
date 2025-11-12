@@ -23,18 +23,17 @@ ECDSA signature verification similar to the Aptos escrow system.
 
 ## Signature Verification
 
-The verifier signs a message with the following format:
+The verifier signs the `intent_id` - the signature itself is the approval. The message format is:
 
 ```
-messageHash = keccak256(abi.encodePacked(intentId, approvalValue))
+messageHash = keccak256(intentId)
 ethSignedMessage = keccak256("\x19Ethereum Signed Message:\n32" || messageHash)
 ```
 
 Where:
 - `intentId`: The unique intent identifier (uint256)
-- `approvalValue`: Must be `1` to approve (uint8)
 
-The contract uses `ecrecover()` to verify the signature matches the authorized verifier address.
+The contract uses `ecrecover()` to verify the signature matches the authorized verifier address. If the signature verifies correctly, the escrow is approved.
 
 ## Contract Interface
 
@@ -47,7 +46,8 @@ function createEscrow(uint256 intentId, address token, uint256 amount, address r
 
 // Claim funds with verifier signature
 // Funds always go to reservedSolver address (anyone can send transaction, but recipient is fixed)
-function claim(uint256 intentId, uint8 approvalValue, bytes memory signature) external
+// Signature itself is the approval - verifier signs the intent_id
+function claim(uint256 intentId, bytes memory signature) external
 
 // Cancel escrow and reclaim funds (maker only, after expiry)
 function cancel(uint256 intentId) external
@@ -81,21 +81,21 @@ const escrow = await IntentEscrow.deploy(verifierAddress);
 await token.connect(maker).approve(escrow.address, amount);
 await escrow.connect(maker).createEscrow(intentId, tokenAddress, amount, solverAddress);
 
-// Verifier signs approval (off-chain)
+// Verifier signs the intent_id (off-chain) - signature itself is the approval
 const messageHash = ethers.solidityPackedKeccak256(
-  ["uint256", "uint8"],
-  [intentId, 1]
+  ["uint256"],
+  [intentId]
 );
 const signature = await verifier.signMessage(ethers.getBytes(messageHash));
 
 // Solver claims with signature (anyone can call, but funds go to reserved solver)
-await escrow.connect(solver).claim(intentId, 1, signature);
+await escrow.connect(solver).claim(intentId, signature);
 ```
 
 ## Security Considerations
 
 - **Signature Verification**: Only signatures from the authorized verifier address are accepted
-- **Approval Value**: Must be exactly `1` to approve (prevents replay with rejection signatures)
+- **Intent ID Binding**: Verifier signs the specific `intent_id`, preventing signature replay across different escrows
 - **Reentrancy**: Uses OpenZeppelin's SafeERC20 to prevent reentrancy attacks
 - **Access Control**: Only maker can cancel escrow (after expiry)
 - **Immutable Verifier**: Verifier address is set in constructor and cannot be changed

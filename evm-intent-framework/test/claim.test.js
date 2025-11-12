@@ -10,7 +10,6 @@ describe("IntentEscrow - Claim", function () {
   let solver;
   let intentId;
   let amount;
-  let approvalValue;
 
   beforeEach(async function () {
     const fixtures = await setupIntentEscrowTests();
@@ -26,22 +25,21 @@ describe("IntentEscrow - Claim", function () {
     await token.connect(maker).approve(escrow.target, amount);
     await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
     
-    approvalValue = 1; // Approval value must be 1
   });
 
   /// Test: Valid Claim with Verifier Signature
   /// Verifies that solvers can claim escrow funds when provided with a valid verifier signature.
   it("Should allow solver to claim with valid verifier signature", async function () {
-    // Create message hash: keccak256(abi.encodePacked(intentId, approvalValue))
+    // Create message hash: keccak256(intentId) - signature itself is the approval
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     
     // Sign message (signMessage automatically adds Ethereum signed message prefix)
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
-    await expect(escrow.connect(solver).claim(intentId, approvalValue, signature))
+    await expect(escrow.connect(solver).claim(intentId, signature))
       .to.emit(escrow, "EscrowClaimed")
       .withArgs(intentId, solver.address, amount);
 
@@ -58,44 +56,32 @@ describe("IntentEscrow - Claim", function () {
   it("Should revert with invalid signature", async function () {
     const wrongIntentId = intentId + 1n;
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [wrongIntentId, approvalValue]
+      ["uint256"],
+      [wrongIntentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
     await expect(
-      escrow.connect(solver).claim(intentId, approvalValue, signature)
+      escrow.connect(solver).claim(intentId, signature)
     ).to.be.revertedWithCustomError(escrow, "UnauthorizedVerifier");
   });
 
-  /// Test: Invalid Approval Value Rejection
-  /// Verifies that claims with approval values other than 1 are rejected.
-  it("Should revert with approval value != 1", async function () {
-    const invalidApproval = 0;
-    const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, invalidApproval]
-    );
-    const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
-    await expect(
-      escrow.connect(solver).claim(intentId, invalidApproval, signature)
-    ).to.be.revertedWithCustomError(escrow, "InvalidApprovalValue");
-  });
 
   /// Test: Duplicate Claim Prevention
   /// Verifies that attempting to claim an already-claimed escrow reverts.
   it("Should revert if escrow already claimed", async function () {
+    // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
-    await escrow.connect(solver).claim(intentId, approvalValue, signature);
+    await escrow.connect(solver).claim(intentId, signature);
 
     await expect(
-      escrow.connect(solver).claim(intentId, approvalValue, signature)
+      escrow.connect(solver).claim(intentId, signature)
     ).to.be.revertedWithCustomError(escrow, "EscrowAlreadyClaimed");
   });
 
@@ -105,13 +91,13 @@ describe("IntentEscrow - Claim", function () {
     const newIntentId = intentId + 1n;
 
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [newIntentId, approvalValue]
+      ["uint256"],
+      [newIntentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
 
     await expect(
-      escrow.connect(solver).claim(newIntentId, approvalValue, signature)
+      escrow.connect(solver).claim(newIntentId, signature)
     ).to.be.revertedWithCustomError(escrow, "EscrowDoesNotExist");
   });
 });

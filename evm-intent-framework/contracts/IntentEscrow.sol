@@ -43,7 +43,6 @@ contract IntentEscrow {
     error NoDeposit();
     error UnauthorizedMaker();
     error InvalidSignature();
-    error InvalidApprovalValue();
     error UnauthorizedVerifier();
     error EscrowExpired(); // Escrow has expired (for claim operations)
     error EscrowNotExpiredYet(); // Escrow has not expired yet (for cancel operations)
@@ -108,12 +107,10 @@ contract IntentEscrow {
     /**
      * @notice Claim escrow funds (solver only, requires verifier signature)
      * @param intentId Intent identifier
-     * @param approvalValue Approval value (must be 1 to approve)
-     * @param signature Verifier's ECDSA signature over keccak256(abi.encodePacked(intentId, approvalValue))
+     * @param signature Verifier's ECDSA signature over keccak256(intentId) - signature itself is the approval
      */
     function claim(
         uint256 intentId,
-        uint8 approvalValue,
         bytes memory signature
     ) external {
         Escrow storage escrow = escrows[intentId];
@@ -124,11 +121,10 @@ contract IntentEscrow {
         
         // Enforce expiry: claims are not allowed after expiry
         if (block.timestamp > escrow.expiry) revert EscrowExpired();
-        
-        if (approvalValue != 1) revert InvalidApprovalValue();
 
         // Verify signature
-        bytes32 messageHash = keccak256(abi.encodePacked(intentId, approvalValue));
+        // Verifier signs only the intent_id (symmetric with Aptos - signature itself is the approval)
+        bytes32 messageHash = keccak256(abi.encodePacked(intentId));
         bytes32 ethSignedMessageHash = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
         );

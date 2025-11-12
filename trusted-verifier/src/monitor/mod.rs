@@ -136,9 +136,7 @@ pub struct EscrowApproval {
     pub escrow_id: String,
     /// Intent ID that links hub and connected chain
     pub intent_id: String,
-    /// Approval signature (base64 encoded)
-    pub approval_value: u64,
-    /// Signature bytes (base64 encoded)
+    /// Signature bytes (base64 encoded) - signature itself is the approval
     pub signature: String,
     /// Timestamp when approval was generated
     pub timestamp: u64,
@@ -858,7 +856,7 @@ impl EventMonitor {
         info!("Generating approval after fulfillment observed: intent_id {} (escrow_id: {})", 
               fulfillment.intent_id, escrow_id);
         
-        let (approval_value, signature_bytes, timestamp) = if is_evm_escrow {
+        let (signature_bytes, timestamp) = if is_evm_escrow {
             // EVM escrow: Create ECDSA signature
             info!("Creating ECDSA signature for EVM escrow (intent_id: {})", fulfillment.intent_id);
             
@@ -868,18 +866,18 @@ impl EventMonitor {
             // Remove 0x prefix from intent_id if present
             let intent_id_hex = fulfillment.intent_id.strip_prefix("0x").unwrap_or(&fulfillment.intent_id);
             
-            // Create ECDSA signature for EVM
-            let ecdsa_sig_bytes = self.crypto.create_evm_approval_signature(intent_id_hex, 1)?;
+            // Create ECDSA signature for EVM (sign only intent_id, symmetric with Aptos)
+            let ecdsa_sig_bytes = self.crypto.create_evm_approval_signature(intent_id_hex)?;
             
             // Convert bytes to base64 for storage (EscrowApproval expects String)
             let signature_base64 = general_purpose::STANDARD.encode(&ecdsa_sig_bytes);
             
-            (1u64, signature_base64, chrono::Utc::now().timestamp() as u64)
+            (signature_base64, chrono::Utc::now().timestamp() as u64)
         } else {
-            // Aptos escrow: Create Ed25519 signature (existing flow)
-            info!("Creating Ed25519 signature for Aptos escrow (escrow_id: {})", escrow_id);
-            let approval_sig = self.crypto.create_approval_signature(true)?;
-            (approval_sig.approval_value, approval_sig.signature, approval_sig.timestamp)
+            // Aptos escrow: Create Ed25519 signature with intent_id for uniqueness
+            info!("Creating Ed25519 signature for Aptos escrow (escrow_id: {}, intent_id: {})", escrow_id, fulfillment.intent_id);
+            let approval_sig = self.crypto.create_aptos_approval_signature(&fulfillment.intent_id)?;
+            (approval_sig.signature, approval_sig.timestamp)
         };
         
         // Store approval signature
@@ -890,7 +888,6 @@ impl EventMonitor {
                 approval_cache.push(EscrowApproval {
                     escrow_id: escrow_id.clone(),
                     intent_id: fulfillment.intent_id.clone(),
-                    approval_value,
                     signature: signature_bytes,
                     timestamp,
                 });

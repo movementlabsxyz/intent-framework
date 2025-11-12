@@ -66,9 +66,9 @@ Verifier signature validation failures and escrow claim rejections.
    - EVM: `claim()` verifies ECDSA signature (`IntentEscrow.sol:92-102`)
    - Transaction aborts if signature verification fails
 
-2. **Approval Value Mismatch**:
-   - Verifier must provide approval value >= 1 (`intent_as_escrow.move:93`)
-   - Lower values result in escrow rejection
+2. **Wrong Intent ID**:
+   - Verifier signs the `intent_id` - signature itself is the approval
+   - If signature was created for a different `intent_id`, verification fails
 
 3. **Escrow Already Claimed**:
    - EVM: `isClaimed` flag prevents double-claiming (`IntentEscrow.sol:26`)
@@ -176,9 +176,9 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
    - Verifier validates escrow is non-revocable (critical security check)
    - Verifier validates solver addresses match (Aptos addresses directly, EVM addresses via solver registry)
    - Verifier validates `chain_id` matches between intent `connected_chain_id` and escrow `chain_id`
-   - Verifier generates approval signature after hub fulfillment is confirmed (Ed25519 for Aptos, ECDSA for EVM)
+   - Verifier signs the `intent_id` to generate approval signature after hub fulfillment is confirmed (Ed25519 for Aptos, ECDSA for EVM) - signature itself is the approval
 
 5. **Connected Chain - Escrow Release** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
-   - Anyone can call `complete_escrow_from_fa()` with verifier approval signature
+   - Anyone can call `complete_escrow_from_fa()` with verifier signature (signature itself is the approval)
    - Funds are transferred to the reserved solver address specified at escrow creation
    - Solver receives locked tokens on connected chain

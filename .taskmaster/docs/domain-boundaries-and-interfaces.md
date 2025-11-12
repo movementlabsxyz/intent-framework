@@ -77,7 +77,7 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 - Asset custody and fund locking on individual chains
 - Escrow creation with verifier public key
-- Escrow completion with verifier approval
+- Escrow completion with verifier signature (signature itself is the approval)
 - Reserved solver address enforcement
 - Non-revocable requirement enforcement
 
@@ -92,19 +92,19 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 **Public Entry Functions** (Move):
 
 - `create_escrow_from_fa()` - Create escrow from fungible asset
-- `complete_escrow_from_fa()` - Complete escrow with verifier approval
+- `complete_escrow_from_fa()` - Complete escrow with verifier signature (signature itself is the approval)
 
 **Public Functions** (Move):
 
 - `create_escrow()` - Create escrow with verifier requirement
 - `start_escrow_session()` - Start escrow session (solver takes escrowed assets)
-- `complete_escrow()` - Complete escrow with verifier approval
+- `complete_escrow()` - Complete escrow with verifier signature (signature itself is the approval)
 
 **Public Functions** (Solidity):
 
 - `createEscrow(uint256 intentId, address token, uint256 amount, address reservedSolver)` - Create and deposit escrow
 - `deposit(uint256 intentId, address token, uint256 amount)` - Additional deposit to escrow
-- `claim(uint256 intentId, uint8 approvalValue, bytes signature)` - Claim escrow with verifier signature
+- `claim(uint256 intentId, bytes signature)` - Claim escrow with verifier signature (signature itself is the approval)
 - `cancel(uint256 intentId)` - Cancel escrow after expiry
 
 **Events Emitted**:
@@ -163,16 +163,16 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 **Public Entry Functions** (Move):
 
 - `fulfill_cross_chain_request_intent()` - Fulfill cross-chain intent (in fa_intent.move)
-- `complete_escrow_from_fa()` - Complete escrow with approval (in intent_as_escrow_entry.move)
+- `complete_escrow_from_fa()` - Complete escrow with verifier signature (in intent_as_escrow_entry.move) - signature itself is the approval
 
 **Public Functions** (Move):
 
 - `finish_fa_intent_session()` - Complete FA intent session (in fa_intent.move)
-- `complete_escrow()` - Complete escrow with verifier approval (in intent_as_escrow.move)
+- `complete_escrow()` - Complete escrow with verifier signature (in intent_as_escrow.move) - signature itself is the approval
 
 **Public Functions** (Solidity):
 
-- `claim(uint256 intentId, uint8 approvalValue, bytes signature)` - Claim escrow (in IntentEscrow.sol)
+- `claim(uint256 intentId, bytes signature)` - Claim escrow (in IntentEscrow.sol) - signature itself is the approval
 - `cancel(uint256 intentId)` - Cancel escrow after expiry (in IntentEscrow.sol)
 
 ### Settlement: Internal Components
@@ -237,8 +237,8 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 - `CrossChainValidator::validate_fulfillment()` - Validate fulfillment
 - `CrossChainValidator::validate_intent_fulfillment()` - Validate escrow fulfills intent
 - `CrossChainValidator::validate_evm_escrow_solver()` - Validate EVM escrow solver matches registry
-- `CryptoService::create_approval_signature()` - Generate Ed25519 approval signature (Aptos)
-- `CryptoService::create_evm_approval_signature()` - Generate ECDSA approval signature (EVM)
+- `CryptoService::create_aptos_approval_signature(intent_id)` - Generate Ed25519 approval signature (Aptos) - signs the `intent_id`
+- `CryptoService::create_evm_approval_signature(intent_id)` - Generate ECDSA approval signature (EVM) - signs the `intent_id`
 
 **Data Structures Exported**:
 

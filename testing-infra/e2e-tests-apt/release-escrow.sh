@@ -255,11 +255,12 @@ else
                 continue
             fi
             
-            # Verify escrow_id is a valid object address format (66 chars: 0x + 64 hex)
-            # Object addresses are 66 chars (0x + 64 hex), intent_ids are variable length
-            if [ ${#ESCROW_ID} -lt 66 ] || ! echo "$ESCROW_ID" | grep -qE '^0x[0-9a-fA-F]{64}$'; then
+            # Verify escrow_id is a valid Aptos object address format
+            # Aptos addresses: 0x followed by 1-64 hex characters (3-66 chars total)
+            # Object addresses can be shorter than 64 hex chars (leading zeros may be omitted)
+            if [ ${#ESCROW_ID} -lt 3 ] || [ ${#ESCROW_ID} -gt 66 ] || ! echo "$ESCROW_ID" | grep -qE '^0x[0-9a-fA-F]{1,64}$'; then
                 log_and_echo "   ❌ ERROR: escrow_id from approval is invalid: $ESCROW_ID"
-                log_and_echo "   ❌ Expected format: 0x followed by 64 hex characters (66 chars total)"
+                log_and_echo "   ❌ Expected format: 0x followed by 1-64 hex characters (3-66 chars total)"
                 log_and_echo "   ❌ This indicates a configuration error in the verifier"
                 exit 1
             fi

@@ -647,11 +647,13 @@ impl EventMonitor {
             .ok_or_else(|| anyhow::anyhow!("No connected EVM chain configured"))?;
         
         // Create EVM client for connected chain
-        let client = EvmClient::new(&connected_chain_evm.rpc_url, &connected_chain_evm.escrow_contract_address)?;
+        let client = EvmClient::new(&connected_chain_evm.rpc_url, &connected_chain_evm.escrow_contract_address)
+            .context(format!("Failed to create EVM client for RPC URL: {}", connected_chain_evm.rpc_url))?;
         
         // Get current block number to use as "to_block"
         // For "from_block", we could track the last processed block, but for now use a recent block
-        let current_block = client.get_block_number().await?;
+        let current_block = client.get_block_number().await
+            .context(format!("Failed to get block number from EVM chain at {}", connected_chain_evm.rpc_url))?;
         let from_block = if current_block > 1000 {
             Some(current_block - 1000) // Look back 1000 blocks
         } else {
@@ -665,7 +667,8 @@ impl EventMonitor {
         
         // Query EVM chain for EscrowInitialized events
         let evm_events = client.get_escrow_initialized_events(from_block, None).await
-            .context("Failed to fetch EVM escrow events")?;
+            .context(format!("Failed to fetch EVM escrow events from chain {} (RPC: {}, contract: {})", 
+                connected_chain_evm.chain_id, connected_chain_evm.rpc_url, connected_chain_evm.escrow_contract_address))?;
         
         for event in evm_events {
             // Convert EVM event to EscrowEvent format

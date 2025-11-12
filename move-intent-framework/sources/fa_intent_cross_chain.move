@@ -20,23 +20,28 @@ module mvmt_intent::fa_intent_cross_chain {
     // GENERIC CROSS-CHAIN INTENT FUNCTIONS
     // ============================================================================
 
-    /// Creates a draft intent for cross-chain request (source_amount = 0).
+    /// Creates a draft intent for cross-chain request.
     /// This is step 1 of the reserved intent flow:
     /// 1. User creates draft using this function (off-chain)
     /// 2. Solver signs the draft and returns signature (off-chain)
     /// 3. User calls create_cross_chain_request_intent_entry with the signature (on-chain)
     public fun create_cross_chain_draft_intent(
-        source_metadata: Object<Metadata>,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain: u64,
         expiry_time: u64,
         issuer: address,
     ): intent_reservation::IntentDraft {
         intent_reservation::create_draft_intent(
-            source_metadata,
-            0, // source_amount is 0 for cross-chain request intents
+            offered_metadata,
+            offered_amount,
+            offered_chain,
             desired_metadata,
             desired_amount,
+            desired_chain,
             expiry_time,
             issuer,
         )
@@ -47,21 +52,22 @@ module mvmt_intent::fa_intent_cross_chain {
     ///
     /// # Arguments
     /// - `account`: Signer creating the intent
-    /// - `source_metadata`: Metadata of the token type being offered (locked on another chain)
+    /// - `offered_metadata`: Metadata of the token type being offered (locked on another chain)
+    /// - `offered_amount`: Amount of tokens offered (locked in escrow on connected chain)
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Amount of desired tokens
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `intent_id`: Intent ID for cross-chain linking
     /// - `connected_chain_id`: Chain ID where the escrow will be created (must match verifier config)
+    /// - `hub_chain_id`: Chain ID of the hub chain (where this intent is created)
     /// - `solver`: Address of the solver authorized to fulfill this intent (must be registered)
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
-    /// 
+    ///
     /// # Aborts
     /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
     /// - `EINVALID_SIGNATURE`: Signature verification failed
-    /// 
+    ///
     /// # Note
-    /// This intent is special: it has 0 tokens locked because tokens are in escrow elsewhere.
     /// This function accepts any fungible asset metadata, enabling cross-chain swaps with any FA pair.
     /// Cross-chain request intents MUST be reserved to ensure solver commitment across chains.
     /// The solver must be registered in the solver registry before calling this function.
@@ -69,25 +75,28 @@ module mvmt_intent::fa_intent_cross_chain {
     /// to validate that escrows are created on the correct chain.
     public entry fun create_cross_chain_request_intent_entry(
         account: &signer,
-        source_metadata: Object<Metadata>,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         expiry_time: u64,
         intent_id: address,
         connected_chain_id: u64,
+        hub_chain_id: u64,
         solver: address,
         solver_signature: vector<u8>,
     ) {
-        // Withdraw 0 tokens of source type (no tokens locked, just requesting for cross-chain swap)
-        let fa: FungibleAsset = primary_fungible_store::withdraw(account, source_metadata, 0);
-        
+        // Withdraw 0 tokens of offered type (no tokens locked on hub chain, just requesting for cross-chain swap)
+        let fa: FungibleAsset = primary_fungible_store::withdraw(account, offered_metadata, 0);
+
         // Verify solver signature and create reservation using the solver registry
-        // For cross-chain intents, source_amount is 0 (tokens are on another chain)
         let intent_to_sign = intent_reservation::new_intent_to_sign(
-            source_metadata,
-            0, // source_amount is 0 for cross-chain request intents
+            offered_metadata,
+            offered_amount,
+            connected_chain_id,
             desired_metadata,
             desired_amount,
+            hub_chain_id,
             expiry_time,
             signer::address_of(account),
             solver,

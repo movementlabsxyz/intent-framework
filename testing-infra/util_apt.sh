@@ -362,22 +362,25 @@ extract_apt_metadata() {
 }
 
 # Generate solver signature for IntentToSign
-# Usage: generate_solver_signature <profile> <chain_address> <source_metadata> <desired_metadata> <desired_amount> <expiry_time> <issuer> <solver> <chain_num> [log_file]
-# Example: generate_solver_signature "bob-chain1" "$CHAIN1_ADDRESS" "$SOURCE_FA_METADATA_CHAIN1" "$DESIRED_FA_METADATA_CHAIN1" "100000000" "$EXPIRY_TIME" "$ALICE_CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "1"
+# Usage: generate_solver_signature <profile> <chain_address> <offered_metadata> <offered_amount> <offered_chain> <desired_metadata> <desired_amount> <desired_chain> <expiry_time> <issuer> <solver> <chain_num> [log_file]
+# Example: generate_solver_signature "bob-chain1" "$CHAIN1_ADDRESS" "$OFFERED_FA_METADATA" "100000000" "1" "$DESIRED_FA_METADATA" "100000000" "2" "$EXPIRY_TIME" "$ALICE_CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "1"
 # Returns the signature as hex string (with 0x prefix)
 generate_solver_signature() {
     local profile="$1"
     local chain_address="$2"
-    local source_metadata="$3"
-    local desired_metadata="$4"
-    local desired_amount="$5"
-    local expiry_time="$6"
-    local issuer="$7"
-    local solver="$8"
-    local chain_num="$9"
-    local log_file="${10:-$LOG_FILE}"
+    local offered_metadata="$3"
+    local offered_amount="$4"
+    local offered_chain="$5"
+    local desired_metadata="$6"
+    local desired_amount="$7"
+    local desired_chain="$8"
+    local expiry_time="$9"
+    local issuer="${10}"
+    local solver="${11}"
+    local chain_num="${12}"
+    local log_file="${13:-$LOG_FILE}"
 
-    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$source_metadata" ] || [ -z "$desired_metadata" ] || [ -z "$desired_amount" ] || [ -z "$expiry_time" ] || [ -z "$issuer" ] || [ -z "$solver" ] || [ -z "$chain_num" ]; then
+    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$offered_metadata" ] || [ -z "$offered_amount" ] || [ -z "$offered_chain" ] || [ -z "$desired_metadata" ] || [ -z "$desired_amount" ] || [ -z "$desired_chain" ] || [ -z "$expiry_time" ] || [ -z "$issuer" ] || [ -z "$solver" ] || [ -z "$chain_num" ]; then
         log_and_echo "❌ ERROR: generate_solver_signature() requires all parameters"
         exit 1
     fi
@@ -396,12 +399,12 @@ generate_solver_signature() {
     if [ -n "$log_file" ]; then
         # Run command, log everything, and capture to temp file
         # Pass HOME environment variable to ensure Aptos config can be found
-        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --offered-metadata \"$offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain \"$offered_chain\" --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain \"$desired_chain\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
         exit_code=${PIPESTATUS[0]}
     else
         # Run command and capture to temp file
         # Pass HOME environment variable to ensure Aptos config can be found
-        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --source-metadata \"$source_metadata\" --source-amount 0 --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --offered-metadata \"$offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain \"$offered_chain\" --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain \"$desired_chain\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
         exit_code=$?
     fi
     

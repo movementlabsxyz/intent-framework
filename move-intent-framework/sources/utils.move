@@ -39,14 +39,16 @@ module mvmt_intent::utils {
     /// 
     /// # Arguments
     /// - `solver`: Signer of the solver account (must match solver_address)
-    /// - `source_metadata`: Metadata of the source token type
-    /// - `source_amount`: Amount of source tokens (0 for cross-chain request intents)
+    /// - `offered_metadata`: Metadata of the offered token type
+    /// - `offered_amount`: Amount of offered tokens
+    /// - `offered_chain`: Chain ID where offered tokens are located
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Amount of desired tokens
+    /// - `desired_chain`: Chain ID where desired tokens are located
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `issuer`: Address of the intent issuer
     /// - `solver_address`: Address of the solver (must match signer)
-    /// 
+    ///
     /// # Note
     /// Move cannot extract private keys from `&signer`, so actual signing must be done
     /// off-chain. This function provides the hash that needs to be signed. For e2e tests,
@@ -56,23 +58,27 @@ module mvmt_intent::utils {
     /// 3. Use the signature in create_cross_chain_request_intent_entry (solver must be registered in the registry)
     public entry fun get_intent_to_sign_hash(
         solver: &signer,
-        source_metadata: object::Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: object::Object<Metadata>,
+        offered_amount: u64,
+        offered_chain: u64,
         desired_metadata: object::Object<Metadata>,
         desired_amount: u64,
+        desired_chain: u64,
         expiry_time: u64,
         issuer: address,
         solver_address: address,
     ) {
         // Verify solver signer matches solver_address
         assert!(signer::address_of(solver) == solver_address, 1);
-        
+
         // Create IntentToSign structure
         let intent_to_sign = intent_reservation::new_intent_to_sign(
-            source_metadata,
-            source_amount,
+            offered_metadata,
+            offered_amount,
+            offered_chain,
             desired_metadata,
             desired_amount,
+            desired_chain,
             expiry_time,
             issuer,
             solver_address,

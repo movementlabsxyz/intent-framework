@@ -160,14 +160,16 @@ module mvmt_intent::fa_intent {
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Minimum amount of desired tokens required
     /// - `expiry_time`: Unix timestamp when the intent expires
+    /// - `chain_id`: Chain ID where this intent is created (same for both offered and desired)
     /// - `_issuer`: Address of the intent creator (must match signer)
     public entry fun create_fa_to_fa_intent_entry(
         account: &signer,
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         expiry_time: u64,
+        chain_id: u64,
         solver: address,
         solver_signature: vector<u8>,
     ) {
@@ -176,10 +178,12 @@ module mvmt_intent::fa_intent {
             option::none()  // Explicitly unreserved intent
         } else {
             let intent_to_sign = intent_reservation::new_intent_to_sign(
-                source_metadata,
-                source_amount,
+                offered_metadata,
+                offered_amount,
+                chain_id,
                 desired_metadata,
                 desired_amount,
+                chain_id,
                 expiry_time,
                 issuer,
                 solver,
@@ -193,7 +197,7 @@ module mvmt_intent::fa_intent {
             result
         };
 
-        let fa = primary_fungible_store::withdraw(account, source_metadata, source_amount);
+        let fa = primary_fungible_store::withdraw(account, offered_metadata, offered_amount);
         create_fa_to_fa_intent(
             fa,
             desired_metadata,

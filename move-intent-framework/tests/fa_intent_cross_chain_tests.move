@@ -60,8 +60,11 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_cross_chain::create_cross_chain_draft_intent(
             source_metadata,
+            100, // offered_amount
+            2, // offered_chain (chain where escrow is - connected chain)
             desired_metadata,
-            100,
+            100, // desired_amount
+            1, // desired_chain (hub chain)
             expiry_time,
             signer::address_of(requestor),
         );

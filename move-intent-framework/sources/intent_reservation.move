@@ -36,20 +36,24 @@ module mvmt_intent::intent_reservation {
 
     /// The draft intent data created by the offerer (without solver address).
     struct IntentDraft has copy, drop {
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain: u64,
         expiry_time: u64,
         issuer: address,
     }
 
     /// The data structure that is signed by the solver off-chain.
     public struct IntentToSign has copy, drop {
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain: u64,
         expiry_time: u64,
         issuer: address,
         solver: address,
@@ -57,19 +61,23 @@ module mvmt_intent::intent_reservation {
 
     /// Creates an IntentToSign struct from the provided parameters.
     public fun new_intent_to_sign(
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain: u64,
         expiry_time: u64,
         issuer: address,
         solver: address,
     ): IntentToSign {
         IntentToSign {
-            source_metadata,
-            source_amount,
+            offered_metadata,
+            offered_amount,
+            offered_chain,
             desired_metadata,
             desired_amount,
+            desired_chain,
             expiry_time,
             issuer,
             solver,
@@ -83,18 +91,22 @@ module mvmt_intent::intent_reservation {
 
     /// Creates a draft intent without a solver address.
     public fun create_draft_intent(
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain: u64,
         expiry_time: u64,
         issuer: address,
     ): IntentDraft {
         IntentDraft {
-            source_metadata,
-            source_amount,
+            offered_metadata,
+            offered_amount,
+            offered_chain,
             desired_metadata,
             desired_amount,
+            desired_chain,
             expiry_time,
             issuer,
         }
@@ -106,13 +118,15 @@ module mvmt_intent::intent_reservation {
         solver: address,
     ): IntentToSign {
         IntentToSign {
-            source_metadata: draft.source_metadata,
-            source_amount: draft.source_amount,
+            offered_metadata: draft.offered_metadata,
+            offered_amount: draft.offered_amount,
+            offered_chain: draft.offered_chain,
             desired_metadata: draft.desired_metadata,
             desired_amount: draft.desired_amount,
+            desired_chain: draft.desired_chain,
             expiry_time: draft.expiry_time,
             issuer: draft.issuer,
-            solver: solver,
+            solver,
         }
     }
 

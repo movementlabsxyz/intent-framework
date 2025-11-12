@@ -1,0 +1,101 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Hub request intent should specify offered amount on connected-chain",
+        "description": "The hub request intent should specify how much is offered on the connected-chain. This should also be already part of the draft intent.",
+        "status": "in-progress",
+        "priority": "high",
+        "dependencies": [],
+        "details": "Currently, hub request intents don't explicitly specify the amount that will be offered/locked on the connected chain. This information should be added to the intent structure and should be part of the draft intent creation flow.",
+        "testStrategy": "Verify that hub request intents include the offered amount field, and that draft intents also capture this information.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add offered_amount field to IntentDraft struct",
+            "description": "Modify the IntentDraft struct in intent_reservation.move to include an offered_amount field that specifies the amount offered on the connected chain",
+            "dependencies": [],
+            "details": "Update the IntentDraft struct to include `offered_amount: u64` field. This field represents the amount that will be locked on the connected chain (different from source_amount which is 0 for hub request intents). Also update the create_draft_intent function to accept and set this new field.",
+            "status": "done",
+            "testStrategy": "Verify the IntentDraft struct compilation and that create_draft_intent function accepts the new offered_amount parameter",
+            "updatedAt": "2025-11-12T19:09:22.504Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Add offered_amount field to IntentToSign struct",
+            "description": "Modify the IntentToSign struct in intent_reservation.move to include the offered_amount field for signature verification",
+            "dependencies": [
+              1
+            ],
+            "details": "Update the IntentToSign struct to include `offered_amount: u64` field. Update new_intent_to_sign function to accept the offered_amount parameter and set it in the struct. Update add_solver_to_draft_intent function to propagate the offered_amount from draft to IntentToSign.",
+            "status": "pending",
+            "testStrategy": "Verify that IntentToSign struct includes offered_amount and that signature verification includes this field in the hash",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Update cross-chain draft intent creation function",
+            "description": "Modify create_cross_chain_draft_intent in fa_intent_cross_chain.move to accept and pass offered_amount parameter",
+            "dependencies": [
+              1
+            ],
+            "details": "Update create_cross_chain_draft_intent function to accept `offered_amount: u64` parameter and pass it to intent_reservation::create_draft_intent. This allows clients to specify how much will be offered on the connected chain when creating draft intents.",
+            "status": "pending",
+            "testStrategy": "Verify that create_cross_chain_draft_intent function accepts offered_amount and creates draft with correct offered_amount value",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Update cross-chain request intent entry function signature",
+            "description": "Modify create_cross_chain_request_intent_entry to accept offered_amount parameter and use it in intent creation",
+            "dependencies": [
+              2
+            ],
+            "details": "Update create_cross_chain_request_intent_entry function in fa_intent_cross_chain.move to accept `offered_amount: u64` parameter. Update the new_intent_to_sign call to include the offered_amount. This ensures the complete intent flow captures the offered amount information.",
+            "status": "pending",
+            "testStrategy": "Verify that create_cross_chain_request_intent_entry accepts offered_amount parameter and includes it in signature verification",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Update related test files and documentation",
+            "description": "Update test files and any documentation to reflect the new offered_amount field in hub request intents",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Update fa_intent_cross_chain_tests.move and other relevant test files to use the new offered_amount parameter in function calls. Update any documentation or comments that reference the intent structure to include the offered_amount field.",
+            "status": "pending",
+            "testStrategy": "Verify all tests pass with the updated function signatures and that documentation accurately reflects the new offered_amount field",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2025-11-12T19:09:22.504Z"
+      },
+      {
+        "id": "2",
+        "title": "Verifier should validate escrow amount matches hub request intent offered amount",
+        "description": "The verifier should check that the Escrow intent amount matches the offered amount in the hub request intent.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "details": "After task 1 is complete and hub request intents include the offered amount, the verifier needs to validate that when an escrow is created on the connected chain, the escrow amount matches the offered amount specified in the corresponding hub request intent.",
+        "testStrategy": "Test that verifier rejects escrows where the amount doesn't match the hub intent's offered amount, and accepts escrows where amounts match.",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2025-11-12T19:09:22.508Z",
+      "taskCount": 2,
+      "completedCount": 0,
+      "tags": [
+        "master"
+      ]
+    }
+  }
+}

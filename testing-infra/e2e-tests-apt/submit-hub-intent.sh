@@ -83,12 +83,19 @@ log "     Solver (Bob) address: $BOB_CHAIN1_ADDRESS"
 log "     Generating solver signature..."
 
 # Generate solver signature using helper function
+# For cross-chain intents: offered tokens are on connected chain (chain 2), desired tokens are on hub chain (chain 1)
+OFFERED_AMOUNT="100000000"
+OFFERED_CHAIN=2  # Connected chain where escrow will be created
+DESIRED_CHAIN=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
     "$CHAIN1_ADDRESS" \
     "$SOURCE_FA_METADATA_CHAIN1" \
+    "$OFFERED_AMOUNT" \
+    "$OFFERED_CHAIN" \
     "$DESIRED_FA_METADATA_CHAIN1" \
     "100000000" \
+    "$DESIRED_CHAIN" \
     "$EXPIRY_TIME" \
     "$ALICE_CHAIN1_ADDRESS" \
     "$BOB_CHAIN1_ADDRESS" \
@@ -120,9 +127,10 @@ register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRES
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
 # Chain 2 (connected Aptos chain) uses chain_id 2
 CONNECTED_CHAIN_ID=2
+HUB_CHAIN_ID=1
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
-    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "u64:${CONNECTED_CHAIN_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "u64:${CONNECTED_CHAIN_ID}" "u64:${HUB_CHAIN_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"

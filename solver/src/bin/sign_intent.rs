@@ -4,14 +4,17 @@
 //! It calls the Move function to get the hash, then signs it with the solver's private key.
 //! 
 //! ## Usage
-//! 
+//!
 //! ```bash
 //! cargo run --bin sign_intent -- \
 //!   --profile bob-chain1 \
 //!   --chain-address 0x123 \
-//!   --source-metadata 0xabc \
+//!   --offered-metadata 0xabc \
+//!   --offered-amount 100000000 \
+//!   --offered-chain 1 \
 //!   --desired-metadata 0xdef \
 //!   --desired-amount 100000000 \
+//!   --desired-chain 2 \
 //!   --expiry-time 1234567890 \
 //!   --issuer 0xalice \
 //!   --solver 0xbob \
@@ -29,19 +32,21 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     
     if args.len() < 2 || args[1] == "--help" || args[1] == "-h" {
-        eprintln!("Usage: sign_intent --profile <profile> --chain-address <address> --source-metadata <address> --desired-metadata <address> --desired-amount <u64> --expiry-time <u64> --issuer <address> --solver <address> --chain-num <1|2>");
+        eprintln!("Usage: sign_intent --profile <profile> --chain-address <address> --offered-metadata <address> --offered-amount <u64> --offered-chain <u64> --desired-metadata <address> --desired-amount <u64> --desired-chain <u64> --expiry-time <u64> --issuer <address> --solver <address> --chain-num <1|2>");
         eprintln!("\nExample:");
-        eprintln!("  sign_intent --profile bob-chain1 --chain-address 0x123 --source-metadata 0xabc --desired-metadata 0xdef --desired-amount 100000000 --expiry-time 1234567890 --issuer 0xalice --solver 0xbob --chain-num 1");
+        eprintln!("  sign_intent --profile bob-chain1 --chain-address 0x123 --offered-metadata 0xabc --offered-amount 100000000 --offered-chain 1 --desired-metadata 0xdef --desired-amount 100000000 --desired-chain 2 --expiry-time 1234567890 --issuer 0xalice --solver 0xbob --chain-num 1");
         std::process::exit(1);
     }
 
     // Parse arguments
     let mut profile = None;
     let mut chain_address = None;
-    let mut source_metadata = None;
-    let mut source_amount = 0u64;
+    let mut offered_metadata = None;
+    let mut offered_amount = None;
+    let mut offered_chain = None;
     let mut desired_metadata = None;
     let mut desired_amount = None;
+    let mut desired_chain = None;
     let mut expiry_time = None;
     let mut issuer = None;
     let mut solver = None;
@@ -58,12 +63,16 @@ fn main() -> Result<()> {
                 chain_address = Some(args[i + 1].clone());
                 i += 2;
             }
-            "--source-metadata" => {
-                source_metadata = Some(args[i + 1].clone());
+            "--offered-metadata" => {
+                offered_metadata = Some(args[i + 1].clone());
                 i += 2;
             }
-            "--source-amount" => {
-                source_amount = args[i + 1].parse().context("Invalid source-amount")?;
+            "--offered-amount" => {
+                offered_amount = Some(args[i + 1].parse().context("Invalid offered-amount")?);
+                i += 2;
+            }
+            "--offered-chain" => {
+                offered_chain = Some(args[i + 1].parse().context("Invalid offered-chain")?);
                 i += 2;
             }
             "--desired-metadata" => {
@@ -72,6 +81,10 @@ fn main() -> Result<()> {
             }
             "--desired-amount" => {
                 desired_amount = Some(args[i + 1].parse().context("Invalid desired-amount")?);
+                i += 2;
+            }
+            "--desired-chain" => {
+                desired_chain = Some(args[i + 1].parse().context("Invalid desired-chain")?);
                 i += 2;
             }
             "--expiry-time" => {
@@ -99,9 +112,12 @@ fn main() -> Result<()> {
 
     let profile = profile.context("--profile is required")?;
     let chain_address = chain_address.context("--chain-address is required")?;
-    let source_metadata = source_metadata.context("--source-metadata is required")?;
+    let offered_metadata = offered_metadata.context("--offered-metadata is required")?;
+    let offered_amount = offered_amount.context("--offered-amount is required")?;
+    let offered_chain = offered_chain.context("--offered-chain is required")?;
     let desired_metadata = desired_metadata.context("--desired-metadata is required")?;
     let desired_amount = desired_amount.context("--desired-amount is required")?;
+    let desired_chain = desired_chain.context("--desired-chain is required")?;
     let expiry_time = expiry_time.context("--expiry-time is required")?;
     let issuer = issuer.context("--issuer is required")?;
     let solver = solver.context("--solver is required")?;
@@ -111,10 +127,12 @@ fn main() -> Result<()> {
     let hash = get_intent_hash(
         &profile,
         &chain_address,
-        &source_metadata,
-        source_amount,
+        &offered_metadata,
+        offered_amount,
+        offered_chain,
         &desired_metadata,
         desired_amount,
+        desired_chain,
         expiry_time,
         &issuer,
         &solver,
@@ -146,10 +164,12 @@ fn main() -> Result<()> {
 fn get_intent_hash(
     profile: &str,
     chain_address: &str,
-    source_metadata: &str,
-    source_amount: u64,
+    offered_metadata: &str,
+    offered_amount: u64,
+    offered_chain: u64,
     desired_metadata: &str,
     desired_amount: u64,
+    desired_chain: u64,
     expiry_time: u64,
     issuer: &str,
     solver: &str,
@@ -166,10 +186,12 @@ fn get_intent_hash(
             "--assume-yes",
             "--function-id", &format!("0x{}::utils::get_intent_to_sign_hash", chain_address),
             "--args",
-            &format!("address:{}", source_metadata),
-            &format!("u64:{}", source_amount),
+            &format!("address:{}", offered_metadata),
+            &format!("u64:{}", offered_amount),
+            &format!("u64:{}", offered_chain),
             &format!("address:{}", desired_metadata),
             &format!("u64:{}", desired_amount),
+            &format!("u64:{}", desired_chain),
             &format!("u64:{}", expiry_time),
             &format!("address:{}", issuer),
             &format!("address:{}", solver),

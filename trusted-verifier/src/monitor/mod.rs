@@ -831,8 +831,6 @@ impl EventMonitor {
     /// Note: Public for testing purposes
     #[doc(hidden)]
     pub async fn validate_and_approve_fulfillment(&self, fulfillment: &FulfillmentEvent) -> Result<()> {
-        info!("Generating approval after fulfillment observed: intent_id {}", fulfillment.intent_id);
-        
         // Check escrow cache for matching escrow (both Aptos and EVM escrows are now cached)
         let escrow_cache = self.escrow_cache.read().await;
         let matching_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
@@ -855,6 +853,10 @@ impl EventMonitor {
                 return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
             }
         };
+        
+        // Only log when we're actually generating an approval (matching escrow found)
+        info!("Generating approval after fulfillment observed: intent_id {} (escrow_id: {})", 
+              fulfillment.intent_id, escrow_id);
         
         let (approval_value, signature_bytes, timestamp) = if is_evm_escrow {
             // EVM escrow: Create ECDSA signature

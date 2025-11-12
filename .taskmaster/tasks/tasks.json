@@ -5,7 +5,7 @@
         "id": "1",
         "title": "Hub request intent should specify offered amount on connected-chain",
         "description": "The hub request intent should specify how much is offered on the connected-chain. This should also be already part of the draft intent.",
-        "status": "in-progress",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "Currently, hub request intents don't explicitly specify the amount that will be offered/locked on the connected chain. This information should be added to the intent structure and should be part of the draft intent creation flow.",
@@ -30,10 +30,10 @@
               1
             ],
             "details": "Update the IntentToSign struct to include `offered_amount: u64` field. Update new_intent_to_sign function to accept the offered_amount parameter and set it in the struct. Update add_solver_to_draft_intent function to propagate the offered_amount from draft to IntentToSign.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Verify that IntentToSign struct includes offered_amount and that signature verification includes this field in the hash",
             "parentId": "undefined",
-            "updatedAt": "2025-11-12T19:22:19.137Z"
+            "updatedAt": "2025-11-12T20:52:54.463Z"
           },
           {
             "id": 3,
@@ -43,9 +43,10 @@
               1
             ],
             "details": "Update create_cross_chain_draft_intent function to accept `offered_amount: u64` parameter and pass it to intent_reservation::create_draft_intent. This allows clients to specify how much will be offered on the connected chain when creating draft intents.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify that create_cross_chain_draft_intent function accepts offered_amount and creates draft with correct offered_amount value",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-12T20:53:08.925Z"
           },
           {
             "id": 4,
@@ -55,9 +56,10 @@
               2
             ],
             "details": "Update create_cross_chain_request_intent_entry function in fa_intent_cross_chain.move to accept `offered_amount: u64` parameter. Update the new_intent_to_sign call to include the offered_amount. This ensures the complete intent flow captures the offered amount information.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify that create_cross_chain_request_intent_entry accepts offered_amount parameter and includes it in signature verification",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-12T20:53:21.546Z"
           },
           {
             "id": 5,
@@ -68,32 +70,34 @@
               4
             ],
             "details": "Update fa_intent_cross_chain_tests.move and other relevant test files to use the new offered_amount parameter in function calls. Update any documentation or comments that reference the intent structure to include the offered_amount field.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify all tests pass with the updated function signatures and that documentation accurately reflects the new offered_amount field",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-12T20:54:09.294Z"
           }
         ],
-        "updatedAt": "2025-11-12T19:22:19.137Z"
+        "updatedAt": "2025-11-12T20:54:09.294Z"
       },
       {
         "id": "2",
         "title": "Verifier should validate escrow amount matches hub request intent offered amount",
         "description": "The verifier should check that the Escrow intent amount matches the offered amount in the hub request intent.",
-        "status": "pending",
+        "status": "in-progress",
         "priority": "high",
         "dependencies": [
           "1"
         ],
         "details": "After task 1 is complete and hub request intents include the offered amount, the verifier needs to validate that when an escrow is created on the connected chain, the escrow amount matches the offered amount specified in the corresponding hub request intent.",
         "testStrategy": "Test that verifier rejects escrows where the amount doesn't match the hub intent's offered amount, and accepts escrows where amounts match.",
-        "subtasks": []
+        "subtasks": [],
+        "updatedAt": "2025-11-12T20:12:49.088Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-12T19:22:19.139Z",
+      "lastModified": "2025-11-12T20:54:09.297Z",
       "taskCount": 2,
-      "completedCount": 0,
+      "completedCount": 1,
       "tags": [
         "master"
       ]

@@ -130,7 +130,7 @@ CONNECTED_CHAIN_ID=2
 HUB_CHAIN_ID=1
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
-    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "u64:${CONNECTED_CHAIN_ID}" "u64:${HUB_CHAIN_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${SOURCE_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"

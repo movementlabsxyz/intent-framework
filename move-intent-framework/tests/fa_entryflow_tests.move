@@ -41,15 +41,15 @@ module mvmt_intent::fa_entryflow_tests {
         // Preserve the created intent so the solver can access it later.
         let intent = fa_intent::create_fa_to_fa_intent(
             source_fa,
+            1, // offered_chain_id
             desired_fa,
             desired_amount,
+            1, // desired_chain_id
             expiry_time,
             offerer_addr,
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
-            1, // offered_chain_id
-            1, // desired_chain_id
         );
 
         move_to(offerer, PendingIntent { intent });

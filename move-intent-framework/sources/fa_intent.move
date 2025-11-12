@@ -81,7 +81,7 @@ module mvmt_intent::fa_intent {
     /// that can only be completed by providing the desired fungible asset.
     /// 
     /// # Arguments
-    /// - `source_fungible_asset`: The fungible asset being offered
+    /// - `offered_fungible_asset`: The fungible asset being offered
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Minimum amount of the desired token required
     /// - `expiry_time`: Unix timestamp when the intent expires
@@ -90,20 +90,20 @@ module mvmt_intent::fa_intent {
     /// # Returns
     /// - `Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>`: Intent object
     public fun create_fa_to_fa_intent(
-        source_fungible_asset: FungibleAsset,
+        offered_fungible_asset: FungibleAsset,
+        offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain_id: u64,
         expiry_time: u64,
         issuer: address,
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
-        offered_chain_id: u64,
-        desired_chain_id: u64,
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Capture metadata and amount before depositing
-        let offered_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
-        let offered_amount = fungible_asset::amount(&source_fungible_asset);
+        let offered_metadata = fungible_asset::asset_metadata(&offered_fungible_asset);
+        let offered_amount = fungible_asset::amount(&offered_fungible_asset);
         
         let coin_store_ref = object::create_object(issuer);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
@@ -112,10 +112,10 @@ module mvmt_intent::fa_intent {
         let linear_ref = object::generate_linear_transfer_ref(&transfer_ref);
         object::transfer_with_ref(linear_ref, object::address_from_constructor_ref(&coin_store_ref));
 
-        fungible_asset::create_store(&coin_store_ref, fungible_asset::metadata_from_asset(&source_fungible_asset));
+        fungible_asset::create_store(&coin_store_ref, fungible_asset::metadata_from_asset(&offered_fungible_asset));
         fungible_asset::deposit(
             object::object_from_constructor_ref<FungibleStore>(&coin_store_ref),
-            source_fungible_asset
+            offered_fungible_asset
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
             FungibleStoreManager { extend_ref, delete_ref},
@@ -204,15 +204,15 @@ module mvmt_intent::fa_intent {
         let fa = primary_fungible_store::withdraw(account, offered_metadata, offered_amount);
         create_fa_to_fa_intent(
             fa,
+            chain_id, // offered_chain_id (same chain for regular intents)
             desired_metadata,
             desired_amount,
+            chain_id, // desired_chain_id (same chain for regular intents)
             expiry_time,
             signer::address_of(account),
             reservation,
             true, // revocable by default for regular intents
             option::none(), // No cross-chain intent_id for regular intents
-            chain_id, // offered_chain_id (same chain for regular intents)
-            chain_id, // desired_chain_id (same chain for regular intents)
         );
     }
 

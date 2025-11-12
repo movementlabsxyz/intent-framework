@@ -83,9 +83,12 @@ public fun create_fa_to_fa_intent_entry(
 ```move
 public entry fun create_cross_chain_request_intent_entry(
     account: &signer,
-    source_metadata: Object<Metadata>,
+    offered_metadata: Object<Metadata>,
+    offered_amount: u64,
+    offered_chain_id: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
+    desired_chain_id: u64,
     expiry_time: u64,
     intent_id: address,
     solver: address,
@@ -95,15 +98,18 @@ public entry fun create_cross_chain_request_intent_entry(
 
 **Parameters:**
 - `account`: Signer creating the intent
-- `source_metadata`: Metadata of the token type being offered (locked on another chain)
+- `offered_metadata`: Metadata of the token type being offered (locked on another chain)
+- `offered_amount`: Amount of tokens that will be locked in escrow on the connected chain
+- `offered_chain_id`: Chain ID where the escrow will be created (where tokens are offered)
 - `desired_metadata`: Metadata of the desired token type
 - `desired_amount`: Amount of desired tokens
+- `desired_chain_id`: Chain ID where this intent is created (where tokens are desired)
 - `expiry_time`: Unix timestamp when intent expires
 - `intent_id`: Intent ID for cross-chain linking
 - `solver`: Address of the solver authorized to fulfill this intent (must be registered in solver registry)
 - `solver_signature`: Ed25519 signature from the solver authorizing this intent
 
-**Note**: This intent has 0 tokens locked because tokens are in escrow elsewhere. Cross-chain request intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
+**Note**: This intent has 0 tokens locked on the hub chain because tokens are in escrow elsewhere. The `offered_amount` specifies how much will be locked in escrow on the connected chain. Cross-chain request intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
 
 **Aborts:**
 - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry

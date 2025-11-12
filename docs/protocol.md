@@ -39,8 +39,8 @@ sequenceDiagram
     User->>Solver: Send draft
     Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
     Solver->>User: Returns signature
-    User->>Hub: create_cross_chain_request_intent_entry(<br/>source_metadata, desired_metadata,<br/>desired_amount, expiry_time, intent_id,<br/>solver, solver_signature)
-    Hub->>Verifier: LimitOrderEvent(intent_id, source_amount=0,<br/>desired_amount, expiry, revocable=false)
+    User->>Hub: create_cross_chain_request_intent_entry(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, solver, solver_signature)
+    Hub->>Verifier: LimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
 
     Note over User,Solver: Phase 2: Escrow Creation on Connected Chain
     alt Move Chain
@@ -76,9 +76,9 @@ sequenceDiagram
 ### Flow Steps
 
 1. **Off-chain (before Hub)**: User and solver negotiate using the reserved intent flow:
-   - **Step 1**: User creates draft using `create_cross_chain_draft_intent()` (or `create_draft_intent()` with `source_amount=0`)
+   - **Step 1**: User creates draft using `create_cross_chain_draft_intent()` with `offered_amount` (amount that will be locked in escrow on connected chain), `offered_chain_id`, and `desired_chain_id`
    - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
-2. **Hub**: User calls `create_cross_chain_request_intent_entry()` with `intent_id`, `solver` address, and `solver_signature`. The function looks up the solver's public key from the on-chain solver registry, verifies the signature, and creates a reserved intent (emits `LimitOrderEvent` with `source_amount=0`, `revocable=false`). The intent is **reserved** for the specified solver, ensuring solver commitment across chains.
+2. **Hub**: User calls `create_cross_chain_request_intent_entry()` with `offered_amount` (amount that will be locked in escrow on connected chain), `intent_id`, `offered_chain_id`, `desired_chain_id`, `solver` address, and `solver_signature`. The function looks up the solver's public key from the on-chain solver registry, verifies the signature, and creates a reserved intent (emits `LimitOrderEvent` with `offered_amount`, `offered_chain_id`, `desired_chain_id`, `revocable=false`). The intent is **reserved** for the specified solver, ensuring solver commitment across chains.
 
    **Note**: The solver must be registered in the solver registry before calling this function. The public key is stored on-chain in the registry, eliminating the need to pass it explicitly.
 3. **Connected Chain**: User creates escrow using `create_escrow_from_fa()` (Move) or `createEscrow()` (EVM) with `intent_id`, verifier public key, and **reserved solver address** (emits `OracleLimitOrderEvent`/`EscrowInitialized`, `revocable=false`).

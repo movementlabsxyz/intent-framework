@@ -410,7 +410,7 @@ This section documents comprehensive communication patterns between domains, inc
 - **Symmetrical Monitoring**: Both Aptos and EVM escrows are monitored, cached, and validated when created (not retroactively)
 - **Safety Validation**: Verifier calls `validate_intent_fulfillment()` to ensure `revocable = false` (CRITICAL) and validates solver addresses match
 - **Solver Validation**: For Aptos escrows, compares Aptos addresses directly; for EVM escrows, queries solver registry for EVM address and compares
-- **Chain ID Validation**: Verifier validates that escrow `chain_id` matches intent `connected_chain_id`
+- **Chain ID Validation**: Verifier validates that escrow `chain_id` matches intent `offered_chain_id`
 - **Approval Generation**: Verifier calls `create_aptos_approval_signature(intent_id)` (Ed25519) or `create_evm_approval_signature(intent_id)` (ECDSA) to generate cryptographic signatures for escrow release. The signature itself is the approval - verifier signs the `intent_id`.
 
 ### Data Flow Patterns

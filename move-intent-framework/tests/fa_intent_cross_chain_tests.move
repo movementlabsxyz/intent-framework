@@ -88,15 +88,15 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, source_metadata, 0);
         let intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
+            1, // offered_chain_id
             desired_metadata,
             100,
+            1, // desired_chain_id
             expiry_time,
             signer::address_of(requestor),
             reservation_result, // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            1, // offered_chain_id
-            1, // desired_chain_id
         );
         let intent_address = object::object_address(&intent_obj);
         
@@ -161,15 +161,15 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, source_metadata, 0);
         let intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
+            1, // offered_chain_id
             desired_metadata,
             1000,
+            1, // desired_chain_id
             expiry_time,
             signer::address_of(requestor),
             option::some(reservation), // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            1, // offered_chain_id
-            1, // desired_chain_id
         );
         let intent_address = object::object_address(&intent_obj);
         

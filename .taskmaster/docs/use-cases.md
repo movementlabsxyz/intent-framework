@@ -175,7 +175,7 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
    - Verifier actively polls connected chains and caches escrows when created (symmetrical for both Aptos and EVM)
    - Verifier validates escrow is non-revocable (critical security check)
    - Verifier validates solver addresses match (Aptos addresses directly, EVM addresses via solver registry)
-   - Verifier validates `chain_id` matches between intent `connected_chain_id` and escrow `chain_id`
+   - Verifier validates `chain_id` matches between intent `offered_chain_id` and escrow `chain_id`
    - Verifier signs the `intent_id` to generate approval signature after hub fulfillment is confirmed (Ed25519 for Aptos, ECDSA for EVM) - signature itself is the approval
 
 5. **Connected Chain - Escrow Release** (`testing-infra/e2e-tests-apt/release-escrow.sh`):

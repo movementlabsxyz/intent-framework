@@ -71,18 +71,18 @@ module mvmt_intent::fa_intent_cross_chain {
     /// This function accepts any fungible asset metadata, enabling cross-chain swaps with any FA pair.
     /// Cross-chain request intents MUST be reserved to ensure solver commitment across chains.
     /// The solver must be registered in the solver registry before calling this function.
-    /// The connected_chain_id specifies which chain the escrow will be created on, allowing the verifier
+    /// The offered_chain_id specifies which chain the escrow will be created on, allowing the verifier
     /// to validate that escrows are created on the correct chain.
     public entry fun create_cross_chain_request_intent_entry(
         account: &signer,
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
+        offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain_id: u64,
         expiry_time: u64,
         intent_id: address,
-        connected_chain_id: u64,
-        hub_chain_id: u64,
         solver: address,
         solver_signature: vector<u8>,
     ) {
@@ -93,10 +93,10 @@ module mvmt_intent::fa_intent_cross_chain {
         let intent_to_sign = intent_reservation::new_intent_to_sign(
             offered_metadata,
             offered_amount,
-            connected_chain_id,
+            offered_chain_id,
             desired_metadata,
             desired_amount,
-            hub_chain_id,
+            desired_chain_id,
             expiry_time,
             signer::address_of(account),
             solver,
@@ -112,16 +112,16 @@ module mvmt_intent::fa_intent_cross_chain {
         
         let _intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
+            offered_chain_id, // where escrow is created
             desired_metadata,
             desired_amount,
+            desired_chain_id, // hub chain where this intent is created
             expiry_time,
             signer::address_of(account),
             reservation_result, // Reserved for specific solver
             false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
                    // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
-            connected_chain_id, // offered_chain_id (where escrow is created)
-            hub_chain_id, // desired_chain_id (hub chain)
         );
         
         // Event is already emitted by create_fa_to_fa_intent with the correct intent_id

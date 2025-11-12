@@ -48,7 +48,7 @@ fn test_connected_chain_apt_with_values() {
     config.connected_chain_apt = Some(ChainConfig {
         name: "Connected Chain Apt".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
-        chain_id: 4,
+        chain_id: 2,
         intent_module_address: "0x123".to_string(),
         escrow_module_address: Some("0x123".to_string()),
         known_accounts: Some(vec!["0xalice2".to_string(), "0xbob2".to_string()]),

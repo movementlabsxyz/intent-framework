@@ -105,7 +105,7 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
             expiry_time: 9999999999,
             revocable: false,
             reserved_solver: None,
-            chain_id: 4,
+            chain_id: 2,
             timestamp: 1,
         });
     }

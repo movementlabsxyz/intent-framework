@@ -274,6 +274,7 @@ impl EvmClient {
     }
 
     /// Returns the base URL of this client
+    #[allow(dead_code)]
     pub fn base_url(&self) -> &str {
         &self.base_url
     }

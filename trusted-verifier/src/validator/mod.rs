@@ -49,6 +49,7 @@ pub struct CrossChainValidator {
     /// Service configuration
     config: std::sync::Arc<Config>,
     /// HTTP client for blockchain communication
+    #[allow(dead_code)]
     client: reqwest::Client,
 }
 
@@ -92,6 +93,7 @@ impl CrossChainValidator {
     /// 
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
+    #[allow(dead_code)]
     pub async fn validate_intent_safety(&self, intent: &IntentEvent) -> Result<ValidationResult> {
         info!("Validating intent safety: {}", intent.intent_id);
         
@@ -175,7 +177,7 @@ impl CrossChainValidator {
         if let (Some(escrow_solver), Some(intent_solver)) = (&escrow_event.reserved_solver, &intent.solver) {
             // Determine if this is an EVM escrow by checking chain_id
             // EVM chains typically have chain_id >= 1 (e.g., 1 for mainnet, 31337 for Hardhat)
-            // Aptos chains typically use chain_id = 4 (testnet) or other values
+            // Aptos chains can use various chain_ids (e.g., 1 for hub, 2 for connected Aptos chain)
             // We'll use a heuristic: if chain_id is >= 10000, assume it's EVM (this is a simplification)
             // Better approach: check if escrow came from EVM monitoring vs Aptos monitoring
             // For now, we'll check if the escrow_solver looks like an EVM address (starts with 0x and is 42 chars)
@@ -347,6 +349,7 @@ impl CrossChainValidator {
     /// 
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
+    #[allow(dead_code)]
     pub async fn validate_fulfillment(
         &self,
         intent: &IntentEvent,
@@ -425,6 +428,7 @@ impl CrossChainValidator {
     /// 
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
+    #[allow(dead_code)]
     pub async fn validate_cross_chain_conditions(
         &self,
         _hub_condition: &str,

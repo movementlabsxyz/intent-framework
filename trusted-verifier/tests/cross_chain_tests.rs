@@ -45,7 +45,7 @@ fn test_cross_chain_intent_matching() {
         expiry_time: 1000000,
         revocable: false,
         solver: None,
-        connected_chain_id: Some(4),
+        connected_chain_id: Some(2),
         timestamp: 0,
     };
     
@@ -63,7 +63,7 @@ fn test_cross_chain_intent_matching() {
         expiry_time: 1000000,
         revocable: false, // Escrows must be non-revocable for security
         reserved_solver: None,
-        chain_id: 4,
+        chain_id: 2,
         timestamp: 0,
     };
     

@@ -9,6 +9,7 @@ use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config, E
 
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
 /// Keys are encoded using standard Base64 to satisfy CryptoService requirements.
+#[allow(dead_code)]
 pub fn build_test_config() -> Config {
     let mut rng = rand::thread_rng();
     let mut sk_bytes = [0u8; 32];
@@ -53,6 +54,7 @@ pub fn build_test_config() -> Config {
 
 /// Build a test configuration with EVM chain configuration.
 /// Extends build_test_config() to include a populated connected_chain_evm field.
+#[allow(dead_code)]
 pub fn build_test_config_with_evm() -> Config {
     let mut config = build_test_config();
     config.connected_chain_evm = Some(EvmChainConfig {

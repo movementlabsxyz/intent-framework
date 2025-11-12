@@ -48,6 +48,7 @@ module mvmt_intent::fa_entryflow_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
+            option::none(), // No connected_chain_id for regular intents
         );
 
         move_to(offerer, PendingIntent { intent });

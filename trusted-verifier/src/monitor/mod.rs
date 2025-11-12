@@ -149,8 +149,10 @@ pub struct EventMonitor {
     /// Service configuration
     config: Arc<Config>,
     /// HTTP client for hub chain communication
+    #[allow(dead_code)]
     hub_client: reqwest::Client,
     /// HTTP client for connected chain communication
+    #[allow(dead_code)]
     connected_client: reqwest::Client,
     /// Cross-chain validator for validation logic
     validator: Arc<CrossChainValidator>,

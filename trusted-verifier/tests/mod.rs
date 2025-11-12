@@ -4,5 +4,5 @@
 
 mod helpers;
 
+#[allow(unused_imports)]
 pub use helpers::{build_test_config, build_test_config_with_evm};
-

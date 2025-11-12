@@ -23,13 +23,16 @@ use std::time::Duration;
 /// Aptos REST API response wrapper
 #[derive(Debug, Deserialize)]
 pub struct AptosResponse<T> {
+    #[allow(dead_code)]
     pub inner: T,
 }
 
 /// Account information from Aptos
 #[derive(Debug, Deserialize)]
 pub struct AccountInfo {
+    #[allow(dead_code)]
     pub sequence_number: String,
+    #[allow(dead_code)]
     pub authentication_key: String,
 }
 
@@ -44,24 +47,30 @@ pub struct ResourceData {
 /// Event handle wrapper
 #[derive(Debug, Deserialize, Clone)]
 pub struct EventHandle {
+    #[allow(dead_code)]
     pub counter: String,
+    #[allow(dead_code)]
     pub guid: EventHandleGuid,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct EventHandleGuid {
+    #[allow(dead_code)]
     pub id: EventHandleGuidId,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct EventHandleGuidId {
+    #[allow(dead_code)]
     pub creation_num: String,
 }
 
 /// Module information
 #[derive(Debug, Deserialize)]
 pub struct ModuleInfo {
+    #[allow(dead_code)]
     pub bytecode: String,
+    #[allow(dead_code)]
     pub abi: serde_json::Value,
 }
 
@@ -69,6 +78,7 @@ pub struct ModuleInfo {
 #[derive(Debug, Deserialize)]
 pub struct Resources {
     #[serde(rename = "Result")]
+    #[allow(dead_code)]
     pub result: Vec<ResourceData>,
 }
 
@@ -76,8 +86,10 @@ pub struct Resources {
 #[derive(Debug, Deserialize, Clone)]
 pub struct EventGuid {
     #[serde(rename = "creation_number")]
+    #[allow(dead_code)]
     pub creation_number: String,
     #[serde(rename = "account_address")]
+    #[allow(dead_code)]
     pub account_address: String,
 }
 
@@ -86,9 +98,12 @@ pub struct EventGuid {
 #[derive(Debug, Deserialize, Clone)]
 pub struct AptosEvent {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[allow(dead_code)]
     pub guid: Option<EventGuid>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[allow(dead_code)]
     pub key: Option<String>,
+    #[allow(dead_code)]
     pub sequence_number: String,
     pub r#type: String,
     pub data: serde_json::Value,
@@ -97,9 +112,13 @@ pub struct AptosEvent {
 /// Transaction details from Aptos
 #[derive(Debug, Deserialize)]
 pub struct TransactionInfo {
+    #[allow(dead_code)]
     pub version: String,
+    #[allow(dead_code)]
     pub hash: String,
+    #[allow(dead_code)]
     pub success: bool,
+    #[allow(dead_code)]
     pub events: Vec<AptosEvent>,
 }
 
@@ -148,6 +167,7 @@ impl AptosClient {
     ///
     /// * `Ok(AccountInfo)` - Account information
     /// * `Err(anyhow::Error)` - Failed to query account
+    #[allow(dead_code)]
     pub async fn get_account(&self, address: &str) -> Result<AccountInfo> {
         let url = format!("{}/v1/accounts/{}", self.base_url, address);
         
@@ -369,6 +389,7 @@ impl AptosClient {
     ///
     /// * `Ok(Vec<String>)` - List of creation numbers for matching event handles
     /// * `Err(anyhow::Error)` - Failed to find event handles
+    #[allow(dead_code)]
     pub async fn find_event_handles(&self, address: &str, event_type_pattern: &str) -> Result<Vec<String>> {
         let resources = self.get_resources(address).await?;
         let mut creation_numbers = Vec::new();
@@ -408,6 +429,7 @@ impl AptosClient {
     ///
     /// * `Ok(TransactionInfo)` - Transaction information
     /// * `Err(anyhow::Error)` - Failed to query transaction
+    #[allow(dead_code)]
     pub async fn get_transaction(&self, hash: &str) -> Result<TransactionInfo> {
         let url = format!("{}/v1/transactions/by_hash/{}", self.base_url, hash);
         
@@ -431,6 +453,7 @@ impl AptosClient {
     ///
     /// * `Ok(())` - Node is healthy
     /// * `Err(anyhow::Error)` - Node is not responding
+    #[allow(dead_code)]
     pub async fn health_check(&self) -> Result<()> {
         let url = format!("{}/v1", self.base_url);
         
@@ -450,6 +473,7 @@ impl AptosClient {
     }
 
     /// Returns the base URL of this client
+    #[allow(dead_code)]
     pub fn base_url(&self) -> &str {
         &self.base_url
     }

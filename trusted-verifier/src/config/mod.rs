@@ -140,12 +140,13 @@ impl Config {
     /// This configuration is suitable for local development and testing.
     /// For production use, all placeholder values must be replaced with
     /// actual chain URLs, module addresses, and cryptographic keys.
+    #[allow(dead_code)]
     pub fn default() -> Self {
         Self {
             hub_chain: ChainConfig {
                 name: "Hub Chain".to_string(),
                 rpc_url: "http://127.0.0.1:8080".to_string(),
-                chain_id: 4,
+                chain_id: 1,
                 intent_module_address: "0x123".to_string(),
                 escrow_module_address: None,
                 known_accounts: None, // Should be set in config/verifier.toml

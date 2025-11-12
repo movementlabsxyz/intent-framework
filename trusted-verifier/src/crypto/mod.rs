@@ -15,7 +15,6 @@ use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
 use k256::{
     ecdsa::{SigningKey as EcdsaSigningKey, Signature as EcdsaSignature, VerifyingKey as EcdsaVerifyingKey},
 };
-use elliptic_curve::sec1::ToEncodedPoint;
 use sha3::{Keccak256, Digest};
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -164,6 +163,7 @@ impl CryptoService {
     /// 
     /// * `Ok(ApprovalSignature)` - Cryptographic approval signature
     /// * `Err(anyhow::Error)` - Failed to create signature
+    #[allow(dead_code)]
     pub fn create_escrow_approval_signature(&self, approve: bool) -> Result<ApprovalSignature> {
         let approval_value: u64 = if approve { 1 } else { 0 };
         
@@ -195,6 +195,7 @@ impl CryptoService {
     /// 
     /// * `Ok(bool)` - True if signature is valid, false otherwise
     /// * `Err(anyhow::Error)` - Failed to verify signature
+    #[allow(dead_code)]
     pub fn verify_signature(&self, message: &[u8], signature: &str) -> Result<bool> {
         // Decode the base64 signature
         let signature_bytes = general_purpose::STANDARD.decode(signature)?;
@@ -336,6 +337,7 @@ impl CryptoService {
     /// 
     /// * `Ok(String)` - Ethereum address as hex string (with 0x prefix)
     /// * `Err(anyhow::Error)` - Failed to derive address
+    #[allow(dead_code)]
     pub fn get_ethereum_address(&self) -> Result<String> {
         let verifying_key = self.ecdsa_signing_key.verifying_key();
         let public_key_point = verifying_key.to_encoded_point(false); // Uncompressed format

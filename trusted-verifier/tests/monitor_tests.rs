@@ -72,7 +72,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
             source_metadata: "{}".to_string(),
             source_amount: 1000,
             reserved_solver: None,
-            chain_id: 4,
+            chain_id: 2,
             desired_metadata: "{}".to_string(),
             desired_amount: 1,
             expiry_time: 9999999999,

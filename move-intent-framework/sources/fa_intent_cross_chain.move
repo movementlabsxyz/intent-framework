@@ -28,20 +28,20 @@ module mvmt_intent::fa_intent_cross_chain {
     public fun create_cross_chain_draft_intent(
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
-        offered_chain: u64,
+        offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
-        desired_chain: u64,
+        desired_chain_id: u64,
         expiry_time: u64,
         issuer: address,
     ): intent_reservation::IntentDraft {
         intent_reservation::create_draft_intent(
             offered_metadata,
             offered_amount,
-            offered_chain,
+            offered_chain_id,
             desired_metadata,
             desired_amount,
-            desired_chain,
+            desired_chain_id,
             expiry_time,
             issuer,
         )
@@ -120,8 +120,8 @@ module mvmt_intent::fa_intent_cross_chain {
             false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
                    // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
-            connected_chain_id, // offered_chain (where escrow is created)
-            hub_chain_id, // desired_chain (hub chain)
+            connected_chain_id, // offered_chain_id (where escrow is created)
+            hub_chain_id, // desired_chain_id (hub chain)
         );
         
         // Event is already emitted by create_fa_to_fa_intent with the correct intent_id

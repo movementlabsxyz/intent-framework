@@ -41,10 +41,10 @@ module mvmt_intent::utils {
     /// - `solver`: Signer of the solver account (must match solver_address)
     /// - `offered_metadata`: Metadata of the offered token type
     /// - `offered_amount`: Amount of offered tokens
-    /// - `offered_chain`: Chain ID where offered tokens are located
+    /// - `offered_chain_id`: Chain ID where offered tokens are located
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Amount of desired tokens
-    /// - `desired_chain`: Chain ID where desired tokens are located
+    /// - `desired_chain_id`: Chain ID where desired tokens are located
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `issuer`: Address of the intent issuer
     /// - `solver_address`: Address of the solver (must match signer)
@@ -60,10 +60,10 @@ module mvmt_intent::utils {
         solver: &signer,
         offered_metadata: object::Object<Metadata>,
         offered_amount: u64,
-        offered_chain: u64,
+        offered_chain_id: u64,
         desired_metadata: object::Object<Metadata>,
         desired_amount: u64,
-        desired_chain: u64,
+        desired_chain_id: u64,
         expiry_time: u64,
         issuer: address,
         solver_address: address,
@@ -75,10 +75,10 @@ module mvmt_intent::utils {
         let intent_to_sign = intent_reservation::new_intent_to_sign(
             offered_metadata,
             offered_amount,
-            offered_chain,
+            offered_chain_id,
             desired_metadata,
             desired_amount,
-            desired_chain,
+            desired_chain_id,
             expiry_time,
             issuer,
             solver_address,

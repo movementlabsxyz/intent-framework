@@ -11,10 +11,10 @@
 //!   --chain-address 0x123 \
 //!   --offered-metadata 0xabc \
 //!   --offered-amount 100000000 \
-//!   --offered-chain 1 \
+//!   --offered-chain-id 1 \
 //!   --desired-metadata 0xdef \
 //!   --desired-amount 100000000 \
-//!   --desired-chain 2 \
+//!   --desired-chain-id 2 \
 //!   --expiry-time 1234567890 \
 //!   --issuer 0xalice \
 //!   --solver 0xbob \
@@ -32,9 +32,9 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     
     if args.len() < 2 || args[1] == "--help" || args[1] == "-h" {
-        eprintln!("Usage: sign_intent --profile <profile> --chain-address <address> --offered-metadata <address> --offered-amount <u64> --offered-chain <u64> --desired-metadata <address> --desired-amount <u64> --desired-chain <u64> --expiry-time <u64> --issuer <address> --solver <address> --chain-num <1|2>");
+        eprintln!("Usage: sign_intent --profile <profile> --chain-address <address> --offered-metadata <address> --offered-amount <u64> --offered-chain-id <u64> --desired-metadata <address> --desired-amount <u64> --desired-chain-id <u64> --expiry-time <u64> --issuer <address> --solver <address> --chain-num <1|2>");
         eprintln!("\nExample:");
-        eprintln!("  sign_intent --profile bob-chain1 --chain-address 0x123 --offered-metadata 0xabc --offered-amount 100000000 --offered-chain 1 --desired-metadata 0xdef --desired-amount 100000000 --desired-chain 2 --expiry-time 1234567890 --issuer 0xalice --solver 0xbob --chain-num 1");
+        eprintln!("  sign_intent --profile bob-chain1 --chain-address 0x123 --offered-metadata 0xabc --offered-amount 100000000 --offered-chain-id 1 --desired-metadata 0xdef --desired-amount 100000000 --desired-chain-id 2 --expiry-time 1234567890 --issuer 0xalice --solver 0xbob --chain-num 1");
         std::process::exit(1);
     }
 
@@ -43,10 +43,10 @@ fn main() -> Result<()> {
     let mut chain_address = None;
     let mut offered_metadata = None;
     let mut offered_amount = None;
-    let mut offered_chain = None;
+    let mut offered_chain_id = None;
     let mut desired_metadata = None;
     let mut desired_amount = None;
-    let mut desired_chain = None;
+    let mut desired_chain_id = None;
     let mut expiry_time = None;
     let mut issuer = None;
     let mut solver = None;
@@ -71,8 +71,8 @@ fn main() -> Result<()> {
                 offered_amount = Some(args[i + 1].parse().context("Invalid offered-amount")?);
                 i += 2;
             }
-            "--offered-chain" => {
-                offered_chain = Some(args[i + 1].parse().context("Invalid offered-chain")?);
+            "--offered-chain-id" => {
+                offered_chain_id = Some(args[i + 1].parse().context("Invalid offered-chain-id")?);
                 i += 2;
             }
             "--desired-metadata" => {
@@ -83,8 +83,8 @@ fn main() -> Result<()> {
                 desired_amount = Some(args[i + 1].parse().context("Invalid desired-amount")?);
                 i += 2;
             }
-            "--desired-chain" => {
-                desired_chain = Some(args[i + 1].parse().context("Invalid desired-chain")?);
+            "--desired-chain-id" => {
+                desired_chain_id = Some(args[i + 1].parse().context("Invalid desired-chain-id")?);
                 i += 2;
             }
             "--expiry-time" => {
@@ -114,10 +114,10 @@ fn main() -> Result<()> {
     let chain_address = chain_address.context("--chain-address is required")?;
     let offered_metadata = offered_metadata.context("--offered-metadata is required")?;
     let offered_amount = offered_amount.context("--offered-amount is required")?;
-    let offered_chain = offered_chain.context("--offered-chain is required")?;
+    let offered_chain_id = offered_chain_id.context("--offered-chain-id is required")?;
     let desired_metadata = desired_metadata.context("--desired-metadata is required")?;
     let desired_amount = desired_amount.context("--desired-amount is required")?;
-    let desired_chain = desired_chain.context("--desired-chain is required")?;
+    let desired_chain_id = desired_chain_id.context("--desired-chain-id is required")?;
     let expiry_time = expiry_time.context("--expiry-time is required")?;
     let issuer = issuer.context("--issuer is required")?;
     let solver = solver.context("--solver is required")?;
@@ -129,10 +129,10 @@ fn main() -> Result<()> {
         &chain_address,
         &offered_metadata,
         offered_amount,
-        offered_chain,
+        offered_chain_id,
         &desired_metadata,
         desired_amount,
-        desired_chain,
+        desired_chain_id,
         expiry_time,
         &issuer,
         &solver,
@@ -166,10 +166,10 @@ fn get_intent_hash(
     chain_address: &str,
     offered_metadata: &str,
     offered_amount: u64,
-    offered_chain: u64,
+    offered_chain_id: u64,
     desired_metadata: &str,
     desired_amount: u64,
-    desired_chain: u64,
+    desired_chain_id: u64,
     expiry_time: u64,
     issuer: &str,
     solver: &str,
@@ -188,10 +188,10 @@ fn get_intent_hash(
             "--args",
             &format!("address:{}", offered_metadata),
             &format!("u64:{}", offered_amount),
-            &format!("u64:{}", offered_chain),
+            &format!("u64:{}", offered_chain_id),
             &format!("address:{}", desired_metadata),
             &format!("u64:{}", desired_amount),
-            &format!("u64:{}", desired_chain),
+            &format!("u64:{}", desired_chain_id),
             &format!("u64:{}", expiry_time),
             &format!("address:{}", issuer),
             &format!("address:{}", solver),

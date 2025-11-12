@@ -85,17 +85,17 @@ log "     Generating solver signature..."
 # Generate solver signature using helper function
 # For cross-chain intents: offered tokens are on connected chain (chain 2), desired tokens are on hub chain (chain 1)
 OFFERED_AMOUNT="100000000"
-OFFERED_CHAIN=2  # Connected chain where escrow will be created
-DESIRED_CHAIN=1  # Hub chain where intent is created
+OFFERED_CHAIN_ID=2  # Connected chain where escrow will be created
+DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
     "$CHAIN1_ADDRESS" \
     "$SOURCE_FA_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
-    "$OFFERED_CHAIN" \
+    "$OFFERED_CHAIN_ID" \
     "$DESIRED_FA_METADATA_CHAIN1" \
     "100000000" \
-    "$DESIRED_CHAIN" \
+    "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
     "$ALICE_CHAIN1_ADDRESS" \
     "$BOB_CHAIN1_ADDRESS" \

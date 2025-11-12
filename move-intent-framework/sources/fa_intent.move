@@ -33,8 +33,8 @@ module mvmt_intent::fa_intent {
         desired_amount: u64,
         issuer: address,
         intent_id: Option<address>, // Optional cross-chain intent_id for linking (None for regular intents)
-        offered_chain: u64,
-        desired_chain: u64,
+        offered_chain_id: u64,
+        desired_chain_id: u64,
     }
 
     /// Getter for desired_metadata to allow access from other modules
@@ -54,10 +54,10 @@ module mvmt_intent::fa_intent {
         intent_id: address,  // For cross-chain linking: same as intent_address for regular intents, or shared ID for linked cross-chain intents
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
-        offered_chain: u64,
+        offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
-        desired_chain: u64,
+        desired_chain_id: u64,
         issuer: address,
         expiry_time: u64,
         revocable: bool,
@@ -98,8 +98,8 @@ module mvmt_intent::fa_intent {
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
-        offered_chain: u64,
-        desired_chain: u64,
+        offered_chain_id: u64,
+        desired_chain_id: u64,
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Capture metadata and amount before depositing
         let offered_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
@@ -119,7 +119,7 @@ module mvmt_intent::fa_intent {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
             FungibleStoreManager { extend_ref, delete_ref},
-            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id, offered_chain, desired_chain },
+            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id, offered_chain_id, desired_chain_id },
             expiry_time,
             issuer,
             FungibleAssetRecipientWitness {},
@@ -140,10 +140,10 @@ module mvmt_intent::fa_intent {
             intent_id: event_intent_id,
             offered_metadata,
             offered_amount,
-            offered_chain,
+            offered_chain_id,
             desired_metadata,
             desired_amount,
-            desired_chain,
+            desired_chain_id,
             expiry_time,
             issuer,
             revocable,
@@ -211,8 +211,8 @@ module mvmt_intent::fa_intent {
             reservation,
             true, // revocable by default for regular intents
             option::none(), // No cross-chain intent_id for regular intents
-            chain_id, // offered_chain (same chain for regular intents)
-            chain_id, // desired_chain (same chain for regular intents)
+            chain_id, // offered_chain_id (same chain for regular intents)
+            chain_id, // desired_chain_id (same chain for regular intents)
         );
     }
 

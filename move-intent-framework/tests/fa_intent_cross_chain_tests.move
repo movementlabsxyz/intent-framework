@@ -61,10 +61,10 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         let draft_intent = fa_intent_cross_chain::create_cross_chain_draft_intent(
             source_metadata,
             100, // offered_amount
-            2, // offered_chain (chain where escrow is - connected chain)
+            2, // offered_chain_id (chain where escrow is - connected chain)
             desired_metadata,
             100, // desired_amount
-            1, // desired_chain (hub chain)
+            1, // desired_chain_id (hub chain)
             expiry_time,
             signer::address_of(requestor),
         );
@@ -95,8 +95,8 @@ module mvmt_intent::fa_intent_cross_chain_tests {
             reservation_result, // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            1, // offered_chain
-            1, // desired_chain
+            1, // offered_chain_id
+            1, // desired_chain_id
         );
         let intent_address = object::object_address(&intent_obj);
         
@@ -168,8 +168,8 @@ module mvmt_intent::fa_intent_cross_chain_tests {
             option::some(reservation), // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            1, // offered_chain
-            1, // desired_chain
+            1, // offered_chain_id
+            1, // desired_chain_id
         );
         let intent_address = object::object_address(&intent_obj);
         

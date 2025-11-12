@@ -39,8 +39,8 @@ module mvmt_intent::fa_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
-            1, // offered_chain
-            1, // desired_chain
+            1, // offered_chain_id
+            1, // desired_chain_id
         );
         // Verify intent was created
         assert!(object::object_address(&intent) != @0x0);
@@ -89,8 +89,8 @@ module mvmt_intent::fa_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
-            1, // offered_chain
-            1, // desired_chain
+            1, // offered_chain_id
+            1, // desired_chain_id
         );
 
         // Offerer2 deposits 15 of FA2 requesting 30 of FA1.
@@ -103,8 +103,8 @@ module mvmt_intent::fa_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
-            1, // offered_chain
-            1, // desired_chain
+            1, // offered_chain_id
+            1, // desired_chain_id
         );
 
         // Solver unlocks both intents to gather the offered assets.
@@ -156,8 +156,8 @@ module mvmt_intent::fa_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
-            1, // offered_chain
-            1, // desired_chain
+            1, // offered_chain_id
+            1, // desired_chain_id
         );
         // Check balance before revocation
         assert!(primary_fungible_store::balance(signer::address_of(offerer), offered_fa_type) == 50);
@@ -195,8 +195,8 @@ module mvmt_intent::fa_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
-            1, // offered_chain
-            1, // desired_chain
+            1, // offered_chain_id
+            1, // desired_chain_id
         );
         
         // Solver starts the session and unlocks the 50 offered tokens

@@ -30,9 +30,10 @@
               1
             ],
             "details": "Update the IntentToSign struct to include `offered_amount: u64` field. Update new_intent_to_sign function to accept the offered_amount parameter and set it in the struct. Update add_solver_to_draft_intent function to propagate the offered_amount from draft to IntentToSign.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Verify that IntentToSign struct includes offered_amount and that signature verification includes this field in the hash",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-12T19:22:19.137Z"
           },
           {
             "id": 3,
@@ -72,7 +73,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2025-11-12T19:09:22.504Z"
+        "updatedAt": "2025-11-12T19:22:19.137Z"
       },
       {
         "id": "2",
@@ -90,7 +91,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-12T19:09:22.508Z",
+      "lastModified": "2025-11-12T19:22:19.139Z",
       "taskCount": 2,
       "completedCount": 0,
       "tags": [

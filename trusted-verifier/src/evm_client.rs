@@ -48,11 +48,14 @@ pub struct EvmLog {
     pub topics: Vec<String>,
     /// Event data (non-indexed parameters)
     pub data: String,
-    /// Block number
+    /// Block number (JSON-RPC uses camelCase: blockNumber)
+    #[serde(rename = "blockNumber")]
     pub block_number: String,
-    /// Transaction hash
+    /// Transaction hash (JSON-RPC uses camelCase: transactionHash)
+    #[serde(rename = "transactionHash")]
     pub transaction_hash: String,
-    /// Log index
+    /// Log index (JSON-RPC uses camelCase: logIndex)
+    #[serde(rename = "logIndex")]
     pub log_index: String,
 }
 

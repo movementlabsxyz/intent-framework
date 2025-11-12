@@ -36,9 +36,6 @@ log_and_echo "======================================================"
 ./testing-infra/chain-hub/setup-chain.sh
 ./testing-infra/chain-hub/setup-alice-bob.sh
 ./testing-infra/chain-hub/deploy-contracts.sh
-./testing-infra/chain-connected-apt/setup-chain.sh
-./testing-infra/chain-connected-apt/setup-alice-bob.sh
-./testing-infra/chain-connected-apt/deploy-contracts.sh
 
 log_and_echo ""
 log_and_echo "🚀 Step 3: Submitting cross-chain intents, configuring verifier..."

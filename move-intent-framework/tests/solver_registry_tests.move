@@ -67,6 +67,7 @@ module mvmt_intent::solver_registry_tests {
         mvmt_intent: &signer,
         solver: &signer,
     ) {
+        let _ = aptos_framework; // Suppress unused parameter warning
         solver_registry::init_for_test(mvmt_intent);
         
         // Create invalid public key (wrong length)
@@ -92,6 +93,7 @@ module mvmt_intent::solver_registry_tests {
         mvmt_intent: &signer,
         solver: &signer,
     ) {
+        let _ = aptos_framework; // Suppress unused parameter warning
         solver_registry::init_for_test(mvmt_intent);
         
         // Generate Ed25519 keys
@@ -243,7 +245,7 @@ module mvmt_intent::solver_registry_tests {
         solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
         
         // Get unvalidated public key
-        let public_key_opt = solver_registry::get_public_key_unvalidated(signer::address_of(solver));
+        let _public_key_opt = solver_registry::get_public_key_unvalidated(signer::address_of(solver));
         // Note: We can't easily test the Option type here without more complex setup
         // The function is tested indirectly through intent_reservation tests
     }

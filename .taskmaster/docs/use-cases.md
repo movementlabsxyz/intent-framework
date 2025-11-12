@@ -156,7 +156,8 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
    - User creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
    - Intent specifies desired USD token metadata and amount (e.g., 100M tokens)
    - Intent uses `source_amount=0` since tokens are locked on connected chain
-   - ⚠️ **Current Implementation Issue**: Intent is unreserved (`option::none()` in `fa_intent_cross_chain.move:49`), meaning any solver can fulfill it. However, the escrow on the connected chain specifies a reserved solver. This creates a mismatch where a solver could fulfill the hub intent but not be able to claim the escrow. See [protocol.md TODO](../../docs/protocol.md#flow-steps) for the planned fix.
+   - Intent is **reserved** for a specific solver: solver must be registered in the solver registry, signs the intent off-chain, and the signature is verified on-chain using the solver's public key from the registry
+   - The solver's public key is looked up from the on-chain solver registry (no need to pass it explicitly)
 
 2. **Connected Chain - Escrow Creation** (`testing-infra/e2e-tests-apt/submit-escrow.sh`):
    - User locks USD tokens in escrow on connected chain using `create_escrow_from_fa()`

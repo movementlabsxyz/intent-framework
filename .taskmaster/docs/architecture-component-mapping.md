@@ -173,15 +173,23 @@ graph TB
 - **`move-intent-framework/sources/fa_intent_cross_chain.move`**
   - **Purpose**: Cross-chain request intent creation (tokens locked on different chain)
   - **Key Functions**: `create_cross_chain_request_intent()`, `create_cross_chain_request_intent_entry()`
-  - **Responsibilities**: Creates unreserved intents with `intent_id` for cross-chain linking, zero-amount source (tokens on other chain)
+  - **Responsibilities**: Creates reserved intents with `intent_id` for cross-chain linking, zero-amount source (tokens on other chain). Uses solver registry to verify solver signatures.
 
 #### Intent Reservation System
 
 - **`move-intent-framework/sources/intent_reservation.move`**
   - **Purpose**: Reserved intent system for specific solver addresses
   - **Key Structures**: `IntentReserved`, `IntentToSign`, `IntentDraft`
-  - **Key Functions**: `create_reserved_intent()`, `verify_solver_signature()`
-  - **Responsibilities**: Solver reservation, signature verification for reserved intents
+  - **Key Functions**: `verify_and_create_reservation()`, `verify_and_create_reservation_from_registry()`
+  - **Responsibilities**: Solver reservation, signature verification for reserved intents. Supports both authentication key extraction (old format) and registry-based lookup (new format, cross-chain).
+
+#### Solver Registry
+
+- **`move-intent-framework/sources/solver_registry.move`**
+  - **Purpose**: On-chain registry for solver public keys and EVM addresses
+  - **Key Structures**: `SolverRegistry`, `SolverInfo`
+  - **Key Functions**: `register_solver()`, `update_solver()`, `deregister_solver()`, `get_public_key()`, `get_evm_address()`
+  - **Responsibilities**: Stores solver Ed25519 public keys for signature verification and EVM addresses for cross-chain escrow creation. Required for cross-chain intents and accounts with new authentication key format.
 
 #### Test Utilities
 

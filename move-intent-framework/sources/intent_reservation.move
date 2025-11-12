@@ -116,10 +116,9 @@ module mvmt_intent::intent_reservation {
         }
     }
 
-    /// Verifies a solver's signature against the intent data and creates a reservation.
-    /// This version accepts the public key directly for testing purposes.
-    /// For production code, use verify_and_create_reservation_from_registry instead.
     #[test_only]
+    // Test-only helper function for unit testing signature verification logic.
+    // For production code, use verify_and_create_reservation_from_registry instead.
     public fun verify_and_create_reservation_with_public_key(
         intent_to_sign: IntentToSign,
         solver_signature: vector<u8>,

@@ -3,7 +3,6 @@
 module mvmt_intent::intent_reservation_tests {
     use std::signer;
     use std::option;
-    use std::vector;
     use aptos_std::ed25519;
     use aptos_framework::timestamp;
     use mvmt_intent::fa_intent;

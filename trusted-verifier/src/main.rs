@@ -27,6 +27,7 @@ mod crypto;
 mod config;
 mod api;
 mod aptos_client;
+mod evm_client;
 
 use config::Config;
 

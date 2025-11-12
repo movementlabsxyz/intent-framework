@@ -33,6 +33,7 @@ module mvmt_intent::fa_intent {
         desired_amount: u64,
         issuer: address,
         intent_id: Option<address>, // Optional cross-chain intent_id for linking (None for regular intents)
+        connected_chain_id: Option<u64>, // Optional chain ID where escrow will be created (None for regular intents)
     }
 
     /// Getter for desired_metadata to allow access from other modules
@@ -57,6 +58,7 @@ module mvmt_intent::fa_intent {
         issuer: address,
         expiry_time: u64,
         revocable: bool,
+        connected_chain_id: Option<u64>, // Optional chain ID where escrow will be created (None for regular intents)
     }
 
     #[event]
@@ -94,6 +96,7 @@ module mvmt_intent::fa_intent {
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
+        connected_chain_id: Option<u64>, // Optional chain ID where escrow will be created (None for regular intents)
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Capture metadata and amount before depositing
         let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
@@ -113,7 +116,7 @@ module mvmt_intent::fa_intent {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
             FungibleStoreManager { extend_ref, delete_ref},
-            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id },
+            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id, connected_chain_id },
             expiry_time,
             issuer,
             FungibleAssetRecipientWitness {},
@@ -139,6 +142,7 @@ module mvmt_intent::fa_intent {
             expiry_time,
             issuer,
             revocable,
+            connected_chain_id,
         });
 
         intent_obj
@@ -199,6 +203,7 @@ module mvmt_intent::fa_intent {
             reservation,
             true, // revocable by default for regular intents
             option::none(), // No cross-chain intent_id for regular intents
+            option::none(), // No connected_chain_id for regular intents
         );
     }
 

@@ -10,7 +10,7 @@
 //! ⚠️ **CRITICAL**: All validations must verify that escrow intents are **non-revocable** 
 //! (`revocable = false`) before issuing any approval signatures.
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -169,6 +169,76 @@ impl CrossChainValidator {
             });
         }
         
+        // Validate solver addresses match between escrow and intent
+        // For Aptos escrows: Check if escrow's reserved_solver (Aptos address) matches hub intent's solver (Aptos address)
+        // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
+        if let (Some(escrow_solver), Some(intent_solver)) = (&escrow_event.reserved_solver, &intent.solver) {
+            // Determine if this is an EVM escrow by checking chain_id
+            // EVM chains typically have chain_id >= 1 (e.g., 1 for mainnet, 31337 for Hardhat)
+            // Aptos chains typically use chain_id = 4 (testnet) or other values
+            // We'll use a heuristic: if chain_id is >= 10000, assume it's EVM (this is a simplification)
+            // Better approach: check if escrow came from EVM monitoring vs Aptos monitoring
+            // For now, we'll check if the escrow_solver looks like an EVM address (starts with 0x and is 42 chars)
+            let is_evm_escrow = escrow_solver.starts_with("0x") && escrow_solver.len() == 42;
+            
+            if is_evm_escrow {
+                // EVM escrow: Compare EVM addresses
+                // The escrow_solver is an EVM address, intent_solver is an Aptos address
+                // We need to query the solver registry to get the EVM address for intent_solver
+                let hub_rpc_url = &self.config.hub_chain.rpc_url;
+                let registry_address = &self.config.hub_chain.intent_module_address; // Registry is at module address
+                
+                let validation_result = self.validate_evm_escrow_solver(
+                    intent,
+                    escrow_solver,
+                    hub_rpc_url,
+                    registry_address,
+                ).await?;
+                
+                if !validation_result.valid {
+                    return Ok(validation_result);
+                }
+            } else {
+                // Aptos escrow: Compare Aptos addresses directly
+                if escrow_solver != intent_solver {
+                    return Ok(ValidationResult {
+                        valid: false,
+                        message: format!(
+                            "Escrow reserved solver '{}' does not match hub intent solver '{}'",
+                            escrow_solver, intent_solver
+                        ),
+                        timestamp: chrono::Utc::now().timestamp() as u64,
+                    });
+                }
+            }
+        } else if escrow_event.reserved_solver.is_some() || intent.solver.is_some() {
+            // One is reserved but the other is not - mismatch
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Escrow and intent reservation mismatch: escrow reserved_solver={:?}, intent solver={:?}",
+                    escrow_event.reserved_solver, intent.solver
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
+        // Validate chain_id matches between escrow and intent
+        // For cross-chain intents, verify escrow is created on the correct chain
+        if let Some(intent_chain_id) = intent.connected_chain_id {
+            if escrow_event.chain_id != intent_chain_id {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: format!(
+                        "Escrow chain_id {} does not match intent connected_chain_id {}",
+                        escrow_event.chain_id, intent_chain_id
+                    ),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        }
+        // Note: EVM escrow validation is handled separately in validate_evm_escrow_solver
+        
         // Additional validation logic can be added here:
         // - Check solver reputation and authorization
         // - Verify additional conditions specified in the intent
@@ -179,6 +249,84 @@ impl CrossChainValidator {
         Ok(ValidationResult {
             valid: true,
             message: "Intent fulfillment validation successful".to_string(),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        })
+    }
+    
+    /// Validates that an EVM escrow's reserved solver matches the registered solver's EVM address.
+    /// 
+    /// This function checks that the EVM escrow's reservedSolver address matches
+    /// the EVM address registered in the solver registry for the hub intent's solver.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `intent` - The intent event from the hub chain (must have a solver)
+    /// * `escrow_reserved_solver` - The reserved solver EVM address from the escrow
+    /// * `hub_chain_rpc_url` - RPC URL of the hub chain (to query solver registry)
+    /// * `registry_address` - Address where the solver registry is deployed
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(ValidationResult)` - Validation result with detailed information
+    /// * `Err(anyhow::Error)` - Validation failed due to error
+    pub async fn validate_evm_escrow_solver(
+        &self,
+        intent: &IntentEvent,
+        escrow_reserved_solver: &str,
+        hub_chain_rpc_url: &str,
+        registry_address: &str,
+    ) -> Result<ValidationResult> {
+        // Check if intent has a solver
+        let intent_solver = match &intent.solver {
+            Some(solver) => solver,
+            None => {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: "Hub intent does not have a reserved solver".to_string(),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        };
+        
+        // Query solver registry for EVM address
+        let aptos_client = crate::aptos_client::AptosClient::new(hub_chain_rpc_url)?;
+        let registered_evm_address = aptos_client.get_solver_evm_address(intent_solver, registry_address)
+            .await
+            .context("Failed to query solver EVM address from registry")?;
+        
+        let registered_evm_address = match registered_evm_address {
+            Some(addr) => addr,
+            None => {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: format!("Solver '{}' is not registered in the solver registry", intent_solver),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        };
+        
+        // Normalize addresses for comparison (lowercase, ensure 0x prefix)
+        let escrow_solver_normalized = escrow_reserved_solver.strip_prefix("0x")
+            .unwrap_or(escrow_reserved_solver)
+            .to_lowercase();
+        let registered_solver_normalized = registered_evm_address.strip_prefix("0x")
+            .unwrap_or(&registered_evm_address)
+            .to_lowercase();
+        
+        if escrow_solver_normalized != registered_solver_normalized {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "EVM escrow reserved solver '{}' does not match registered solver EVM address '{}'",
+                    escrow_reserved_solver, registered_evm_address
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
+        Ok(ValidationResult {
+            valid: true,
+            message: "EVM escrow solver validation successful".to_string(),
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
     }

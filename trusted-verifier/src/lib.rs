@@ -9,6 +9,7 @@ pub mod crypto;
 pub mod config;
 pub mod api;
 pub mod aptos_client;
+pub mod evm_client;
 
 // Re-export commonly used types
 pub use crypto::{CryptoService, ApprovalSignature};

@@ -26,6 +26,8 @@ fn test_revocable_intent_rejection() {
         desired_amount: 2000,
         expiry_time: 0,
         revocable: true, // NOT safe for escrow
+        solver: None,
+        connected_chain_id: None,
         timestamp: 0,
     };
     
@@ -43,6 +45,8 @@ fn test_revocable_intent_rejection() {
         desired_amount: 2000,
         expiry_time: 0,
         revocable: false, // Safe for escrow
+        solver: None,
+        connected_chain_id: None,
         timestamp: 0,
     };
     
@@ -67,6 +71,8 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
             issuer: "0xissuer".to_string(),
             source_metadata: "{}".to_string(),
             source_amount: 1000,
+            reserved_solver: None,
+            chain_id: 4,
             desired_metadata: "{}".to_string(),
             desired_amount: 1,
             expiry_time: 9999999999,

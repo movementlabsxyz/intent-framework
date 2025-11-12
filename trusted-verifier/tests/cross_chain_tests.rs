@@ -44,6 +44,8 @@ fn test_cross_chain_intent_matching() {
         desired_amount: 1000, // User wants solver to provide 1000 tokens on hub chain
         expiry_time: 1000000,
         revocable: false,
+        solver: None,
+        connected_chain_id: Some(4),
         timestamp: 0,
     };
     
@@ -60,6 +62,8 @@ fn test_cross_chain_intent_matching() {
         desired_amount: 1000,                     // Amount solver needs to provide
         expiry_time: 1000000,
         revocable: false, // Escrows must be non-revocable for security
+        reserved_solver: None,
+        chain_id: 4,
         timestamp: 0,
     };
     

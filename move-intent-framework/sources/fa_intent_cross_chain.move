@@ -52,6 +52,7 @@ module mvmt_intent::fa_intent_cross_chain {
     /// - `desired_amount`: Amount of desired tokens
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `intent_id`: Intent ID for cross-chain linking
+    /// - `connected_chain_id`: Chain ID where the escrow will be created (must match verifier config)
     /// - `solver`: Address of the solver authorized to fulfill this intent (must be registered)
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
     /// 
@@ -64,6 +65,8 @@ module mvmt_intent::fa_intent_cross_chain {
     /// This function accepts any fungible asset metadata, enabling cross-chain swaps with any FA pair.
     /// Cross-chain request intents MUST be reserved to ensure solver commitment across chains.
     /// The solver must be registered in the solver registry before calling this function.
+    /// The connected_chain_id specifies which chain the escrow will be created on, allowing the verifier
+    /// to validate that escrows are created on the correct chain.
     public entry fun create_cross_chain_request_intent_entry(
         account: &signer,
         source_metadata: Object<Metadata>,
@@ -71,6 +74,7 @@ module mvmt_intent::fa_intent_cross_chain {
         desired_amount: u64,
         expiry_time: u64,
         intent_id: address,
+        connected_chain_id: u64,
         solver: address,
         solver_signature: vector<u8>,
     ) {
@@ -107,6 +111,7 @@ module mvmt_intent::fa_intent_cross_chain {
             false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
                    // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
+            option::some(connected_chain_id), // Store the connected chain ID for escrow validation
         );
         
         // Event is already emitted by create_fa_to_fa_intent with the correct intent_id

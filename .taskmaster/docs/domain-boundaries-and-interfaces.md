@@ -200,9 +200,10 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 **In Scope**:
 
-- Event monitoring from hub and connected chains
+- Event monitoring from hub and connected chains (Aptos and EVM)
+- Symmetrical monitoring of Aptos and EVM escrows (both cached and validated when created)
 - Cross-chain state validation
-- Approval signature generation
+- Approval signature generation (Ed25519 for Aptos, ECDSA for EVM)
 - Event correlation and matching
 - REST API for external integration
 
@@ -225,11 +226,19 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 **Public Functions** (Rust):
 
-- `EventMonitor::poll_events()` - Poll blockchain for events
+- `EventMonitor::poll_hub_events()` - Poll hub chain for intent events
+- `EventMonitor::poll_connected_events()` - Poll Aptos connected chain for escrow events
+- `EventMonitor::poll_evm_events()` - Poll EVM connected chain for escrow events
+- `EventMonitor::monitor_hub_chain()` - Monitor hub chain continuously
+- `EventMonitor::monitor_connected_chain()` - Monitor Aptos connected chain continuously
+- `EventMonitor::monitor_evm_chain()` - Monitor EVM connected chain continuously
 - `EventMonitor::get_cached_events()` - Get cached events
 - `CrossChainValidator::validate_intent_safety()` - Validate intent safety
 - `CrossChainValidator::validate_fulfillment()` - Validate fulfillment
-- `CryptoService::sign_approval()` - Generate approval signature
+- `CrossChainValidator::validate_intent_fulfillment()` - Validate escrow fulfills intent
+- `CrossChainValidator::validate_evm_escrow_solver()` - Validate EVM escrow solver matches registry
+- `CryptoService::create_approval_signature()` - Generate Ed25519 approval signature (Aptos)
+- `CryptoService::create_evm_approval_signature()` - Generate ECDSA approval signature (EVM)
 
 **Data Structures Exported**:
 
@@ -241,11 +250,13 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 ### Verification: Internal Components
 
-- Event polling and caching mechanisms
+- Event polling and caching mechanisms (symmetrical for Aptos and EVM)
 - Cross-chain event correlation logic (`intent_id` matching)
+- Chain ID validation (ensures escrow created on correct connected chain)
+- Solver address validation (Aptos addresses directly, EVM addresses via solver registry)
 - Cryptographic operations (Ed25519 for Aptos, ECDSA for EVM)
 - Configuration management
-- Blockchain RPC clients
+- Blockchain RPC clients (AptosClient for Aptos chains, EvmClient for EVM chains)
 
 ### Verification: Data Ownership
 

@@ -20,6 +20,7 @@ use crate::config::Config;
 use crate::validator::CrossChainValidator;
 use crate::crypto::CryptoService;
 use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, OracleLimitOrderEvent as AptosOracleLimitOrderEvent, LimitOrderFulfillmentEvent as AptosLimitOrderFulfillmentEvent};
+use crate::evm_client::EvmClient;
 
 // ============================================================================
 // EVENT DATA STRUCTURES
@@ -50,6 +51,10 @@ pub struct IntentEvent {
     pub expiry_time: u64,
     /// Whether the intent can be revoked by the creator
     pub revocable: bool,
+    /// Solver address if the intent is reserved (None for unreserved intents)
+    pub solver: Option<String>,
+    /// Connected chain ID where escrow will be created (None for regular intents)
+    pub connected_chain_id: Option<u64>,
     /// Timestamp when the event was received
     pub timestamp: u64,
 }
@@ -81,6 +86,12 @@ pub struct EscrowEvent {
     pub expiry_time: u64,
     /// Whether the escrow intent can be revoked (should always be false for security)
     pub revocable: bool,
+    /// Reserved solver address if the escrow is reserved (None for unreserved escrows)
+    /// For Aptos escrows: Aptos address
+    /// For EVM escrows: EVM address (0x-prefixed hex string)
+    pub reserved_solver: Option<String>,
+    /// Chain ID where this escrow is located
+    pub chain_id: u64,
     /// Timestamp when the event was received
     pub timestamp: u64,
 }
@@ -204,7 +215,8 @@ impl EventMonitor {
     /// 
     /// This function runs monitoring loops:
     /// 1. Hub chain monitoring for intent events (always)
-    /// 2. Connected chain monitoring for escrow events (if configured)
+    /// 2. Connected Aptos chain monitoring for escrow events (if configured)
+    /// 3. Connected EVM chain monitoring for escrow events (if configured)
     /// 
     /// The function blocks until all monitors complete (which should be never
     /// in normal operation, as they run infinite loops).
@@ -219,13 +231,30 @@ impl EventMonitor {
         // Start hub chain monitoring (always required)
         let hub_monitor = self.monitor_hub_chain();
         
-        // Conditionally start connected chain monitoring if configured
+        // Conditionally start connected Aptos chain monitoring if configured
         if let Some(_) = &self.config.connected_chain_apt {
             info!("Connected Aptos chain configured, starting connected chain monitoring");
-            let connected_monitor = self.monitor_connected_chain();
-            tokio::try_join!(hub_monitor, connected_monitor)?;
+            let aptos_monitor = self.monitor_connected_chain();
+            let evm_monitor = if let Some(_) = &self.config.connected_chain_evm {
+                info!("Connected EVM chain configured, starting EVM chain monitoring");
+                Some(self.monitor_evm_chain())
+            } else {
+                info!("No connected EVM chain configured");
+                None
+            };
+            
+            // Run all monitors concurrently
+            if let Some(evm) = evm_monitor {
+                tokio::try_join!(hub_monitor, aptos_monitor, evm)?;
+            } else {
+                tokio::try_join!(hub_monitor, aptos_monitor)?;
+            }
+        } else if let Some(_) = &self.config.connected_chain_evm {
+            info!("Connected EVM chain configured, starting EVM chain monitoring");
+            let evm_monitor = self.monitor_evm_chain();
+            tokio::try_join!(hub_monitor, evm_monitor)?;
         } else {
-            info!("No connected Aptos chain configured, monitoring hub chain only");
+            info!("No connected chains configured, monitoring hub chain only");
             hub_monitor.await?;
         }
         
@@ -327,6 +356,57 @@ impl EventMonitor {
         }
     }
     
+    /// Monitors the connected EVM chain for escrow initialization events.
+    /// 
+    /// This function runs in an infinite loop, polling the EVM chain
+    /// for EscrowInitialized events. When events are found, it validates that
+    /// the escrows fulfill the conditions of existing intents.
+    /// 
+    /// Returns early if no connected EVM chain is configured.
+    async fn monitor_evm_chain(&self) -> Result<()> {
+        let connected_chain_evm = match &self.config.connected_chain_evm {
+            Some(chain) => chain,
+            None => {
+                info!("No connected EVM chain configured, skipping EVM chain monitoring");
+                return Ok(());
+            }
+        };
+        
+        info!("Starting connected EVM chain monitoring for escrow events on chain_id {}", connected_chain_evm.chain_id);
+        
+        loop {
+            match self.poll_evm_events().await {
+                Ok(events) => {
+                    for event in events {
+                        info!("Received EVM escrow event: {:?}", event);
+                        
+                        // Cache the escrow event
+                        {
+                            let mut escrow_cache = self.escrow_cache.write().await;
+                            // Check if this chain+escrow_id combination already exists in the cache
+                            if !escrow_cache.iter().any(|cached| cached.escrow_id == event.escrow_id && cached.chain == event.chain) {
+                                escrow_cache.push(event.clone());
+                            }
+                        }
+                        
+                        // Validate that this escrow fulfills an existing intent
+                        if let Err(e) = self.validate_intent_fulfillment(&event).await {
+                            error!("Intent fulfillment validation failed for EVM escrow: {}", e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Error polling EVM events: {}", e);
+                }
+            }
+            
+            // Wait before next poll
+            tokio::time::sleep(std::time::Duration::from_millis(
+                self.config.verifier.polling_interval_ms
+            )).await;
+        }
+    }
+    
     /// Polls the hub chain for new intent events.
     /// 
     /// This function queries the hub chain's event logs for new intent
@@ -407,6 +487,15 @@ impl EventMonitor {
                     match data_result {
                         Ok(data) => {
                             // Successfully parsed as OracleLimitOrderEvent
+                            // Note: OracleLimitOrderEvent is for escrows on connected chains, not hub intents
+                            // This shouldn't happen in hub chain monitoring, but handle gracefully
+                            // Query solver address from intent object (if reserved)
+                            let solver = client.get_intent_solver(&data.intent_address, &self.config.hub_chain.intent_module_address)
+                                .await
+                                .ok()
+                                .flatten();
+                            
+                            // OracleLimitOrderEvent doesn't have connected_chain_id (it's for escrows, not request intents)
                             intent_events.push(IntentEvent {
                                 chain: "hub".to_string(),
                                 intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
@@ -420,6 +509,8 @@ impl EventMonitor {
                                 expiry_time: data.expiry_time.parse::<u64>()
                                     .context("Failed to parse expiry_time")?,
                                 revocable: data.revocable,
+                                solver,
+                                connected_chain_id: None, // OracleLimitOrderEvent is for escrows, not request intents
                                 timestamp,
                             });
                         }
@@ -427,6 +518,16 @@ impl EventMonitor {
                             // Try to parse as regular LimitOrderEvent
                             let data: AptosLimitOrderEvent = serde_json::from_value(event.data.clone())
                                 .context("Failed to parse LimitOrderEvent")?;
+                            
+                            // Query solver address from intent object (if reserved)
+                            let solver = client.get_intent_solver(&data.intent_address, &self.config.hub_chain.intent_module_address)
+                                .await
+                                .ok()
+                                .flatten();
+                            
+                            // Parse connected_chain_id from event (if present)
+                            let connected_chain_id = data.connected_chain_id.as_ref()
+                                .and_then(|s| s.parse::<u64>().ok());
                             
                             intent_events.push(IntentEvent {
                                 chain: "hub".to_string(),
@@ -441,6 +542,8 @@ impl EventMonitor {
                                 expiry_time: data.expiry_time.parse::<u64>()
                                     .context("Failed to parse expiry_time")?,
                                 revocable: data.revocable,
+                                solver,
+                                connected_chain_id,
                                 timestamp,
                             });
                         }
@@ -496,6 +599,12 @@ impl EventMonitor {
                     let data: AptosOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
                         .context("Failed to parse OracleLimitOrderEvent as escrow")?;
                     
+                    // Query reserved solver address from escrow object (if reserved)
+                    let reserved_solver = client.get_intent_solver(&data.intent_address, &connected_chain_apt.escrow_module_address.as_ref().unwrap_or(&connected_chain_apt.intent_module_address))
+                        .await
+                        .ok()
+                        .flatten();
+                    
                     escrow_events.push(EscrowEvent {
                         chain: "connected".to_string(),
                         escrow_id: data.intent_address.clone(),
@@ -510,10 +619,79 @@ impl EventMonitor {
                         expiry_time: data.expiry_time.parse::<u64>()
                             .context("Failed to parse expiry time")?,
                         revocable: data.revocable,
+                        reserved_solver,
+                        chain_id: connected_chain_apt.chain_id, // Chain ID from config
                         timestamp,
                     });
                 }
             }
+        }
+        
+        Ok(escrow_events)
+    }
+    
+    /// Polls the EVM connected chain for new escrow initialization events.
+    /// 
+    /// This function queries the EVM chain's event logs for EscrowInitialized events
+    /// emitted by the IntentEscrow contract. It converts them to EscrowEvent format
+    /// for consistent processing.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
+    /// * `Err(anyhow::Error)` - Failed to poll events
+    pub async fn poll_evm_events(&self) -> Result<Vec<EscrowEvent>> {
+        let connected_chain_evm = self.config.connected_chain_evm.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No connected EVM chain configured"))?;
+        
+        // Create EVM client for connected chain
+        let client = EvmClient::new(&connected_chain_evm.rpc_url, &connected_chain_evm.escrow_contract_address)?;
+        
+        // Get current block number to use as "to_block"
+        // For "from_block", we could track the last processed block, but for now use a recent block
+        let current_block = client.get_block_number().await?;
+        let from_block = if current_block > 1000 {
+            Some(current_block - 1000) // Look back 1000 blocks
+        } else {
+            Some(0)
+        };
+        
+        let mut escrow_events = Vec::new();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        
+        // Query EVM chain for EscrowInitialized events
+        let evm_events = client.get_escrow_initialized_events(from_block, None).await
+            .context("Failed to fetch EVM escrow events")?;
+        
+        for event in evm_events {
+            // Convert EVM event to EscrowEvent format
+            // Note: EVM escrows don't have all the same fields as Aptos escrows
+            // We'll use placeholder values for fields that don't exist in EVM
+            
+            // Convert intent_id from hex string to address format
+            // EVM intent_id is uint256, we'll use it as-is (it's already hex)
+            let intent_id = event.intent_id.clone();
+            
+            // For EVM, escrow_id is the intent_id (escrow is keyed by intent_id)
+            let escrow_id = intent_id.clone();
+            
+            escrow_events.push(EscrowEvent {
+                chain: "connected".to_string(),
+                escrow_id,
+                intent_id,
+                issuer: event.maker.clone(), // maker is the escrow creator
+                source_metadata: format!("{{\"token\":\"{}\"}}", event.token), // Store token address in metadata
+                source_amount: 0, // We don't have amount from EscrowInitialized event, would need to query contract
+                desired_metadata: "{}".to_string(), // Not available in EscrowInitialized event
+                desired_amount: 0, // Not available in EscrowInitialized event
+                expiry_time: 0, // Not available in EscrowInitialized event (would need to query contract)
+                revocable: false, // EVM escrows are always non-revocable
+                reserved_solver: Some(event.reserved_solver.clone()),
+                chain_id: connected_chain_evm.chain_id,
+                timestamp,
+            });
         }
         
         Ok(escrow_events)
@@ -561,6 +739,12 @@ impl EventMonitor {
                         escrow_event.desired_metadata,
                         intent.desired_metadata
                     ));
+                }
+                
+                // 4. Validate solver addresses match (using validator)
+                let validation_result = self.validator.validate_intent_fulfillment(intent, escrow_event).await?;
+                if !validation_result.valid {
+                    return Err(anyhow::anyhow!("Solver validation failed: {}", validation_result.message));
                 }
                 
                 // 4. Verify timing constraints (not expired)
@@ -644,41 +828,35 @@ impl EventMonitor {
     pub async fn validate_and_approve_fulfillment(&self, fulfillment: &FulfillmentEvent) -> Result<()> {
         info!("Generating approval after fulfillment observed: intent_id {}", fulfillment.intent_id);
         
-        // Check if this is an Aptos escrow by looking in the escrow cache
-        // Aptos escrows are monitored and cached, EVM escrows are not
+        // Check escrow cache for matching escrow (both Aptos and EVM escrows are now cached)
         let escrow_cache = self.escrow_cache.read().await;
-        let matching_aptos_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
+        let matching_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
         
-        // Determine if this is an EVM escrow or Aptos escrow
-        // If we found it in Aptos escrow cache, it's Aptos; otherwise, if EVM is configured, it's EVM
-        let is_evm_escrow = matching_aptos_escrow.is_none() && self.config.connected_chain_evm.is_some();
-        
-        // For EVM escrows, escrow_id is the intent_id (escrow is keyed by intent_id)
-        // For Aptos escrows, we use the escrow object address from the cache
-        let escrow_id = if is_evm_escrow {
-            // EVM: Use intent_id as escrow_id (escrow key)
-            drop(escrow_cache);
-            fulfillment.intent_id.clone()
-        } else {
-            // Aptos: Use escrow object address from cache
-            match matching_aptos_escrow {
-                Some(escrow) => {
-                    let escrow_id = escrow.escrow_id.clone();
-                    drop(escrow_cache);
-                    escrow_id
-                },
-                None => {
-                    drop(escrow_cache);
-                    error!("No matching escrow found for fulfillment: {} (intent_id: {})", 
-                           fulfillment.intent_address, fulfillment.intent_id);
-                    return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
-                }
+        let (escrow_id, is_evm_escrow) = match matching_escrow {
+            Some(escrow) => {
+                // Determine if this is an EVM escrow by checking if reserved_solver looks like an EVM address
+                let is_evm = escrow.reserved_solver.as_ref()
+                    .map(|s| s.starts_with("0x") && s.len() == 42)
+                    .unwrap_or(false);
+                
+                let escrow_id = escrow.escrow_id.clone();
+                drop(escrow_cache);
+                (escrow_id, is_evm)
+            },
+            None => {
+                drop(escrow_cache);
+                error!("No matching escrow found for fulfillment: {} (intent_id: {})", 
+                       fulfillment.intent_address, fulfillment.intent_id);
+                return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
             }
         };
         
         let (approval_value, signature_bytes, timestamp) = if is_evm_escrow {
             // EVM escrow: Create ECDSA signature
             info!("Creating ECDSA signature for EVM escrow (intent_id: {})", fulfillment.intent_id);
+            
+            // EVM escrow validation is already done when the escrow was cached (in validate_intent_fulfillment)
+            // So we can proceed with signature generation
             
             // Remove 0x prefix from intent_id if present
             let intent_id_hex = fulfillment.intent_id.strip_prefix("0x").unwrap_or(&fulfillment.intent_id);

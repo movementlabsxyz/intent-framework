@@ -453,6 +453,142 @@ impl AptosClient {
     pub fn base_url(&self) -> &str {
         &self.base_url
     }
+
+    /// Queries an intent object's reservation to get the solver address.
+    ///
+    /// # Arguments
+    ///
+    /// * `intent_address` - Address of the intent object
+    /// * `module_address` - Address of the intent module
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<String>)` - Solver address if reserved, None if not reserved
+    /// * `Err(anyhow::Error)` - Failed to query intent
+    pub async fn get_intent_solver(&self, intent_address: &str, _module_address: &str) -> Result<Option<String>> {
+        // Query the intent object's resources
+        let resources = self.get_resources(intent_address).await?;
+        
+        // Look for the TradeIntent resource which contains the reservation
+        // The resource type should be something like: "0x{module_address}::fa_intent::TradeIntent<...>"
+        for resource in resources {
+            if resource.resource_type.contains("TradeIntent") {
+                // Try to extract reservation from the resource data
+                // The reservation is stored as an Option<IntentReserved> in the TradeIntent
+                if let Some(data) = resource.data.as_object() {
+                    // Look for reservation field
+                    if let Some(reservation) = data.get("reservation") {
+                        // Check if reservation is Some (not null)
+                        if reservation.is_object() {
+                            // Extract solver address from IntentReserved
+                            if let Some(solver) = reservation.get("solver") {
+                                if let Some(solver_str) = solver.as_str() {
+                                    return Ok(Some(solver_str.to_string()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(None)
+    }
+
+    /// Queries the solver registry to get a solver's EVM address.
+    ///
+    /// # Arguments
+    ///
+    /// * `solver_address` - Aptos address of the solver
+    /// * `registry_address` - Address where the solver registry is deployed (usually @mvmt_intent)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<String>)` - EVM address if solver is registered, None otherwise
+    /// * `Err(anyhow::Error)` - Failed to query registry
+    pub async fn get_solver_evm_address(&self, solver_address: &str, registry_address: &str) -> Result<Option<String>> {
+        // Use view function to call solver_registry::get_evm_address
+        let result = self.call_view_function(
+            registry_address,
+            "solver_registry",
+            "get_evm_address",
+            vec![],
+            vec![serde_json::json!(solver_address)],
+        ).await;
+        
+        match result {
+            Ok(value) => {
+                // The view function returns a vector<u8> (empty if not registered)
+                if let Some(evm_bytes) = value.as_array() {
+                    if evm_bytes.is_empty() {
+                        Ok(None)
+                    } else {
+                        // Convert vector<u8> to hex string with 0x prefix
+                        let mut hex_string = String::from("0x");
+                        for byte_val in evm_bytes {
+                            if let Some(byte) = byte_val.as_u64() {
+                                hex_string.push_str(&format!("{:02x}", byte as u8));
+                            }
+                        }
+                        Ok(Some(hex_string))
+                    }
+                } else {
+                    Ok(None)
+                }
+            }
+            Err(e) => {
+                // If view function fails, solver might not be registered
+                // Log and return None
+                tracing::debug!("Failed to query solver EVM address: {}", e);
+                Ok(None)
+            }
+        }
+    }
+
+    /// Calls a view function on the Aptos blockchain.
+    ///
+    /// # Arguments
+    ///
+    /// * `module_address` - Address of the module
+    /// * `module_name` - Name of the module
+    /// * `function_name` - Name of the function
+    /// * `type_args` - Type arguments (if any)
+    /// * `args` - Function arguments
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(serde_json::Value)` - Function return value
+    /// * `Err(anyhow::Error)` - Failed to call view function
+    pub async fn call_view_function(
+        &self,
+        module_address: &str,
+        module_name: &str,
+        function_name: &str,
+        type_args: Vec<String>,
+        args: Vec<serde_json::Value>,
+    ) -> Result<serde_json::Value> {
+        let url = format!("{}/v1/view", self.base_url);
+        
+        let request_body = serde_json::json!({
+            "function": format!("{}::{}::{}", module_address, module_name, function_name),
+            "type_arguments": type_args,
+            "arguments": args,
+        });
+        
+        let response = self.client
+            .post(&url)
+            .json(&request_body)
+            .send()
+            .await
+            .context("Failed to send view function request")?
+            .error_for_status()
+            .context("View function request failed")?;
+
+        let result: serde_json::Value = response.json().await
+            .context("Failed to parse view function response")?;
+
+        Ok(result)
+    }
 }
 
 // ============================================================================
@@ -471,6 +607,8 @@ pub struct LimitOrderEvent {
     pub issuer: String,
     pub expiry_time: String,
     pub revocable: bool,
+    #[serde(default)]
+    pub connected_chain_id: Option<String>, // Optional chain ID where escrow will be created (None for regular intents)
 }
 
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module

@@ -22,6 +22,8 @@ fn test_evm_escrow_cross_chain_matching() {
         desired_amount: 1000,
         expiry_time: 1000000,
         revocable: false,
+        solver: None,
+        connected_chain_id: Some(31337),
         timestamp: 0,
     };
 
@@ -39,6 +41,8 @@ fn test_evm_escrow_cross_chain_matching() {
         desired_amount: 1000,
         expiry_time: 1000000,
         revocable: false,
+        reserved_solver: None,
+        chain_id: 31337,
         timestamp: 1,
     };
 
@@ -118,6 +122,8 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
         desired_amount: 2000,
         expiry_time: 2000000,
         revocable: false,
+        solver: None,
+        connected_chain_id: Some(31337),
         timestamp: 0,
     };
 
@@ -133,6 +139,8 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
         desired_amount: 2000,
         expiry_time: 2000000, // Matches hub intent expiry
         revocable: false,
+        reserved_solver: None,
+        chain_id: 31337,
         timestamp: 1,
     };
 

@@ -13,7 +13,6 @@
 module mvmt_intent::intent_as_escrow {
     use std::option::{Self as option};
     use std::signer;
-    use std::error;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
     use aptos_framework::object::Object;
     use mvmt_intent::fa_intent_with_oracle;

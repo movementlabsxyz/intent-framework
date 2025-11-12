@@ -135,6 +135,75 @@ module mvmt_intent::intent_as_escrow_tests {
         solver = @0xdead,
         _verifier = @0xbeef
     )]
+    #[expected_failure(abort_code = 65539, location = fa_intent_with_oracle)] // error::invalid_argument(EINVALID_SIGNATURE)
+    /// Test that a signature for one intent_id cannot be reused on a different escrow with a different intent_id
+    /// This explicitly tests signature replay prevention - signatures are bound to specific intent_ids
+    fun test_signature_replay_prevention(
+        aptos_framework: &signer,
+        user: &signer,
+        solver: &signer,
+        _verifier: &signer,
+    ) {
+        // Need enough tokens: 30 for escrow A + 30 for escrow B + 30 for solver payment = 90
+        // Using smaller amounts to stay within test token supply limits (other tests use 100 max)
+        let (source_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, user, 90);
+
+        // Give solver some of the source token type for payment
+        let solver_payment_tokens = primary_fungible_store::withdraw(user, source_token_type, 30);
+        primary_fungible_store::deposit(signer::address_of(solver), solver_payment_tokens);
+
+        let (verifier_secret_key, validated_pk) = ed25519::generate_keys();
+        let verifier_public_key = ed25519::public_key_to_unvalidated(&validated_pk);
+        
+        // Create escrow A with intent_id = @0x1
+        let source_asset_a = primary_fungible_store::withdraw(user, source_token_type, 30);
+        let reservation_a = intent_reservation::new_reservation(signer::address_of(solver));
+        let _escrow_intent_a = intent_as_escrow::create_escrow(
+            user,
+            source_asset_a,
+            verifier_public_key,
+            timestamp::now_seconds() + 3600,
+            @0x1, // Escrow A with intent_id = @0x1
+            reservation_a,
+        );
+        
+        // Create escrow B with intent_id = @0x2
+        let source_asset_b = primary_fungible_store::withdraw(user, source_token_type, 30);
+        let reservation_b = intent_reservation::new_reservation(signer::address_of(solver));
+        let escrow_intent_b = intent_as_escrow::create_escrow(
+            user,
+            source_asset_b,
+            verifier_public_key,
+            timestamp::now_seconds() + 3600,
+            @0x2, // Escrow B with intent_id = @0x2
+            reservation_b,
+        );
+        
+        // Start escrow session for escrow B
+        let (escrowed_asset_b, session_b) = intent_as_escrow::start_escrow_session(solver, escrow_intent_b);
+        primary_fungible_store::deposit(signer::address_of(solver), escrowed_asset_b);
+        
+        // Verifier creates a VALID signature for intent_id @0x1 (escrow A)
+        let intent_id_a = @0x1;
+        let valid_signature_for_a = ed25519::sign_arbitrary_bytes(&verifier_secret_key, bcs::to_bytes(&intent_id_a));
+
+        // Try to use the signature for intent_id @0x1 on escrow B (which has intent_id @0x2)
+        // This should fail because the signature is bound to @0x1, not @0x2
+        let solver_payment = primary_fungible_store::withdraw(solver, source_token_type, 30);
+        intent_as_escrow::complete_escrow(
+            solver,
+            session_b,
+            solver_payment,
+            valid_signature_for_a, // Signature for @0x1 used on escrow with @0x2
+        );
+    }
+
+    #[test(
+        aptos_framework = @0x1,
+        user = @0xcafe,
+        solver = @0xdead,
+        _verifier = @0xbeef
+    )]
     #[expected_failure(abort_code = 327684, location = mvmt_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
     /// Test that escrow intents cannot be revoked (they are non-revocable by design)
     fun test_escrow_revocation(

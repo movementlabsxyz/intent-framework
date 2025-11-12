@@ -66,6 +66,31 @@ describe("IntentEscrow - Claim", function () {
     ).to.be.revertedWithCustomError(escrow, "UnauthorizedVerifier");
   });
 
+  /// Test: Signature Replay Prevention
+  /// Verifies that a signature for one intent_id cannot be reused on a different escrow with a different intent_id.
+  /// This explicitly tests signature replay prevention - signatures are bound to specific intent_ids.
+  it("Should prevent signature replay across different intent_ids", async function () {
+    // Create a second escrow with a different intent_id
+    const intentIdB = intentId + 1n;
+    const amountB = ethers.parseEther("50");
+    await token.mint(maker.address, amountB);
+    await token.connect(maker).approve(escrow.target, amountB);
+    await escrow.connect(maker).createEscrow(intentIdB, token.target, amountB, solver.address);
+
+    // Create a VALID signature for intent_id A (the first escrow)
+    const messageHashA = ethers.solidityPackedKeccak256(
+      ["uint256"],
+      [intentId]
+    );
+    const signatureForA = await verifierWallet.signMessage(ethers.getBytes(messageHashA));
+
+    // Try to use the signature for intent_id A on escrow B (which has intent_id B)
+    // This should fail because the signature is bound to intent_id A, not intent_id B
+    await expect(
+      escrow.connect(solver).claim(intentIdB, signatureForA)
+    ).to.be.revertedWithCustomError(escrow, "UnauthorizedVerifier");
+  });
+
 
 
   /// Test: Duplicate Claim Prevention

@@ -70,8 +70,8 @@ SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 # 3. Pass solver address and signature to create_cross_chain_request_intent_entry
 #
 # In production, the solver would sign off-chain using their private key.
-# For e2e tests, we can use the e2e_utils::get_intent_to_sign_hash function to get the hash:
-# 1. Call e2e_utils::get_intent_to_sign_hash() to get the BCS-encoded hash via event
+# For e2e tests, we can use the utils::get_intent_to_sign_hash function to get the hash:
+# 1. Call utils::get_intent_to_sign_hash() to get the BCS-encoded hash via event
 # 2. Sign the hash with Ed25519 using Bob's private key (requires helper script)
 # 3. Convert signature to hex format
 # 4. Use the signature in create_cross_chain_request_intent_entry

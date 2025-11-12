@@ -6,7 +6,7 @@ module mvmt_intent::intent_as_escrow_tests {
     use aptos_framework::timestamp;
     use mvmt_intent::intent_as_escrow;
     use mvmt_intent::fa_intent_with_oracle;
-    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::test_utils;
     use mvmt_intent::intent_reservation;
     use aptos_std::ed25519;
 
@@ -37,8 +37,8 @@ module mvmt_intent::intent_as_escrow_tests {
         _verifier: &signer,
     ) {
         // Register and mint tokens for user and solver (same token type for escrow)
-        let (source_token_type, _) = register_and_mint_tokens(aptos_framework, user, 100);
-        let (_desired_token_type, _) = register_and_mint_tokens(aptos_framework, solver, 100);
+        let (source_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, user, 100);
+        let (_desired_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Give solver some of the source token type for payment
         let solver_payment_tokens = primary_fungible_store::withdraw(user, source_token_type, 50);
@@ -99,8 +99,8 @@ module mvmt_intent::intent_as_escrow_tests {
         solver: &signer,
         _verifier: &signer,
     ) {
-        let (source_token_type, _) = register_and_mint_tokens(aptos_framework, user, 100);
-        let (_desired_token_type, _) = register_and_mint_tokens(aptos_framework, solver, 100);
+        let (source_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, user, 100);
+        let (_desired_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
 
         // Give solver some of the source token type for payment
         let solver_payment_tokens = primary_fungible_store::withdraw(user, source_token_type, 50);
@@ -152,8 +152,8 @@ module mvmt_intent::intent_as_escrow_tests {
         solver: &signer,
         _verifier: &signer,
     ) {
-        let (source_token_type, _) = register_and_mint_tokens(aptos_framework, user, 100);
-        let (_desired_token_type, _) = register_and_mint_tokens(aptos_framework, solver, 100);
+        let (source_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, user, 100);
+        let (_desired_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
 
         let (_verifier_secret_key, validated_pk) = ed25519::generate_keys();
         let verifier_public_key = ed25519::public_key_to_unvalidated(&validated_pk);
@@ -187,7 +187,7 @@ module mvmt_intent::intent_as_escrow_tests {
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
         // Create test fungible asset metadata for testing
-        let (fa_metadata, _) = register_and_mint_tokens(aptos_framework, user, 100);
+        let (fa_metadata, _) = test_utils::register_and_mint_tokens(aptos_framework, user, 100);
         
         // Generate verifier key pair
         let (_, validated_pk) = ed25519::generate_keys();

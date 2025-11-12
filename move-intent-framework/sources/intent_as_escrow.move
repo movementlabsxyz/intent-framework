@@ -10,24 +10,6 @@
 /// The verifier acts as a trusted entity that approves or rejects escrow conditions.
 /// Verifier provides approval_value: 1 = approve, 0 = reject
 /// 
-/// ============================================================================
-/// 🔒 CRITICAL SECURITY REQUIREMENT 🔒
-/// ============================================================================
-/// 
-/// ⚠️  ESCROW INTENTS MUST ALWAYS BE CREATED AS NON-REVOCABLE ⚠️
-/// 
-/// This is a FUNDAMENTAL security requirement for any escrow system:
-/// 
-/// 1. Escrow funds MUST be locked and cannot be withdrawn by the user
-/// 2. Funds can ONLY be released by verifier approval or rejection
-/// 3. The `revocable` parameter MUST ALWAYS be set to `false` when creating escrow intents
-/// 4. Any verifier implementation MUST verify that escrow intents are non-revocable
-/// 5. This ensures verifiers can safely trigger actions elsewhere based on deposit events
-/// 
-/// FAILURE TO ENSURE NON-REVOCABLE ESCROW INTENTS COMPLETELY DEFEATS THE PURPOSE
-/// OF AN ESCROW SYSTEM AND CREATES A CRITICAL SECURITY VULNERABILITY./// 
-/// 
-/// ============================================================================
 module mvmt_intent::intent_as_escrow {
     use std::option::{Self as option};
     use std::signer;

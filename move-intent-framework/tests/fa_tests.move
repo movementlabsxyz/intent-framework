@@ -7,7 +7,7 @@ module mvmt_intent::fa_tests {
     use aptos_framework::object;
     use aptos_framework::primary_fungible_store;
     use mvmt_intent::fa_intent;
-    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::test_utils;
 
     // ============================================================================
     // TESTS
@@ -26,8 +26,8 @@ module mvmt_intent::fa_tests {
         offerer: &signer,
         solver: &signer,
     ) {
-        let (offered_fa_type, _mint_ref_2) = register_and_mint_tokens(aptos_framework, offerer, 100);
-        let (desired_fa_type, _desired_mint_ref) = register_and_mint_tokens(aptos_framework, solver, 25);
+        let (offered_fa_type, _mint_ref_2) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
+        let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, solver, 25);
         
         // Creator creates intent to trade 50 offered tokens for 25 desired tokens
         let intent = fa_intent::create_fa_to_fa_intent(
@@ -74,8 +74,8 @@ module mvmt_intent::fa_tests {
         offerer2: &signer,
         solver: &signer,
     ) {
-        let (fa1_metadata, _) = register_and_mint_tokens(aptos_framework, offerer1, 100);
-        let (fa2_metadata, _) = register_and_mint_tokens(aptos_framework, offerer2, 100);
+        let (fa1_metadata, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer1, 100);
+        let (fa2_metadata, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer2, 100);
 
         // Offerer1 deposits 30 of FA1 requesting 15 of FA2.
         let intent1 = fa_intent::create_fa_to_fa_intent(
@@ -137,8 +137,8 @@ module mvmt_intent::fa_tests {
         offerer: &signer,
         solver: &signer,
     ) {
-        let (offered_fa_type, _) = register_and_mint_tokens(aptos_framework, offerer, 100);
-        let (desired_fa_type, _) = register_and_mint_tokens(aptos_framework, solver, 0);
+        let (offered_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
+        let (desired_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 0);
         
         // Creator creates intent to trade 50 offered tokens for 25 desired tokens
         let intent = fa_intent::create_fa_to_fa_intent(
@@ -174,8 +174,8 @@ module mvmt_intent::fa_tests {
         offerer: &signer,
         solver: &signer,
     ) {
-        let (offered_fa_type, _) = register_and_mint_tokens(aptos_framework, offerer, 100);
-        let (desired_fa_type, _) = register_and_mint_tokens(aptos_framework, solver, 5); // Only 5 tokens available
+        let (offered_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
+        let (desired_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 5); // Only 5 tokens available
         
         // Creator creates intent to trade 50 offered tokens for 25 desired tokens
         let intent = fa_intent::create_fa_to_fa_intent(

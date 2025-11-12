@@ -61,7 +61,7 @@ Reserved intents require off-chain negotiation between the intent creator and th
 This ensures that only the authorized solver can fulfill the intent, providing commitment guarantees for cross-chain scenarios.
 
 The signature generation process:
-1. Calls `e2e_utils::get_intent_to_sign_hash()` Move function to construct and hash the `IntentToSign` structure
+1. Calls `utils::get_intent_to_sign_hash()` Move function to construct and hash the `IntentToSign` structure
 2. Extracts the hash from the transaction event
 3. Reads the solver's private key from Aptos config (`.aptos/config.yaml` in project root)
 4. Signs the hash with Ed25519

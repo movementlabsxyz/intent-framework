@@ -10,7 +10,7 @@ module mvmt_intent::fa_intent_cross_chain_tests {
     use mvmt_intent::fa_intent_cross_chain;
     use mvmt_intent::fa_intent;
     use mvmt_intent::intent_reservation;
-    use mvmt_intent::utils;
+    use mvmt_intent::test_utils;
 
     // ============================================================================
     // TESTS
@@ -34,8 +34,8 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         
         // Create test fungible assets for cross-chain swap
         // Source FA (locked on connected chain) and desired FA (requested on hub chain)
-        let (source_metadata, _) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
-        let (desired_metadata, _desired_mint_ref) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
+        let (source_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
@@ -44,7 +44,7 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         let expiry_time = timestamp::now_seconds() + 3600;
         
         // Generate key pair for solver (simulating off-chain key generation)
-        let (solver_secret_key, solver_public_key) = utils::generate_key_pair();
+        let (solver_secret_key, solver_public_key) = test_utils::generate_key_pair();
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_cross_chain::create_cross_chain_draft_intent(
@@ -129,8 +129,8 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         timestamp::set_time_has_started_for_testing(aptos_framework);
         
         // Create test fungible assets for cross-chain swap
-        let (source_metadata, _) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
-        let (desired_metadata, _desired_mint_ref) = mvmt_intent::fa_test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
+        let (source_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent wanting 1000 tokens
         let dummy_intent_id = @0x123;

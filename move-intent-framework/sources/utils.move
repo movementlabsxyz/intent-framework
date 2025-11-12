@@ -1,4 +1,4 @@
-module mvmt_intent::e2e_utils {
+module mvmt_intent::utils {
     use std::option;
     use std::signer;
     use aptos_framework::coin;

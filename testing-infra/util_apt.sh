@@ -330,7 +330,7 @@ extract_apt_metadata() {
     fi
     
     # Run aptos move command to get APT metadata
-    local aptos_cmd="aptos move run --profile $profile --assume-yes --function-id \"0x${chain_address}::e2e_utils::get_apt_metadata_address\""
+    local aptos_cmd="aptos move run --profile $profile --assume-yes --function-id \"0x${chain_address}::utils::get_apt_metadata_address\""
     
     if [ -n "$log_file" ]; then
         if ! eval "$aptos_cmd >> \"$log_file\" 2>&1"; then

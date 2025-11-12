@@ -5,34 +5,7 @@ module mvmt_intent::solver_registry_tests {
     use aptos_std::ed25519;
     use aptos_framework::timestamp;
     use mvmt_intent::solver_registry;
-
-    // ============================================================================
-    // HELPER FUNCTIONS
-    // ============================================================================
-
-    /// Creates a test EVM address (20 bytes) with sequential values starting from `start`
-    /// Example: create_test_evm_address(0) creates [0, 1, 2, ..., 19]
-    fun create_test_evm_address(start: u8): vector<u8> {
-        let evm_address = vector::empty<u8>();
-        let i = 0;
-        while (i < 20) {
-            vector::push_back(&mut evm_address, start + i);
-            i = i + 1;
-        };
-        evm_address
-    }
-
-    /// Creates a test EVM address (20 bytes) with reverse sequential values starting from `start`
-    /// Example: create_test_evm_address_reverse(20) creates [20, 19, 18, ..., 1]
-    fun create_test_evm_address_reverse(start: u8): vector<u8> {
-        let evm_address = vector::empty<u8>();
-        let i = 0;
-        while (i < 20) {
-            vector::push_back(&mut evm_address, start - i);
-            i = i + 1;
-        };
-        evm_address
-    }
+    use mvmt_intent::test_utils;
 
     // ============================================================================
     // TESTS
@@ -67,7 +40,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         
         // Create a mock EVM address (20 bytes)
-        let evm_address = create_test_evm_address(0);
+        let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
         solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
@@ -105,7 +78,7 @@ module mvmt_intent::solver_registry_tests {
         };
         
         // Create a mock EVM address
-        let evm_address = create_test_evm_address(0);
+        let evm_address = test_utils::create_test_evm_address(0);
         
         // Should abort with E_PUBLIC_KEY_LENGTH_INVALID
         solver_registry::register_solver(solver, invalid_public_key, evm_address);
@@ -153,7 +126,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         
         // Create EVM address
-        let evm_address = create_test_evm_address(0);
+        let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver first time
         solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
@@ -178,7 +151,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes1 = ed25519::validated_public_key_to_bytes(&solver_public_key1);
         
         // Create first EVM address
-        let evm_address1 = create_test_evm_address(0);
+        let evm_address1 = test_utils::create_test_evm_address(0);
         
         // Register solver
         solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1);
@@ -188,7 +161,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes2 = ed25519::validated_public_key_to_bytes(&solver_public_key2);
         
         // Create new EVM address (different from first)
-        let evm_address2 = create_test_evm_address_reverse(20);
+        let evm_address2 = test_utils::create_test_evm_address_reverse(20);
         
         // Update solver (solver updates their own info)
         solver_registry::update_solver(solver, solver_public_key_bytes2, evm_address2);
@@ -216,7 +189,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         
         // Create EVM address
-        let evm_address = create_test_evm_address(0);
+        let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
         solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
@@ -264,7 +237,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         
         // Create EVM address
-        let evm_address = create_test_evm_address(0);
+        let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
         solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
@@ -290,7 +263,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         
         // Create EVM address
-        let evm_address = create_test_evm_address(0);
+        let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
         solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
@@ -340,7 +313,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes1 = ed25519::validated_public_key_to_bytes(&solver_public_key1);
         
         // Create first EVM address
-        let evm_address1 = create_test_evm_address(0);
+        let evm_address1 = test_utils::create_test_evm_address(0);
         
         // Register solver
         solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1);
@@ -355,7 +328,7 @@ module mvmt_intent::solver_registry_tests {
         let solver_public_key_bytes2 = ed25519::validated_public_key_to_bytes(&solver_public_key2);
         
         // Create new EVM address
-        let evm_address2 = create_test_evm_address_reverse(20);
+        let evm_address2 = test_utils::create_test_evm_address_reverse(20);
         
         // Re-register solver with new credentials
         solver_registry::register_solver(solver, solver_public_key_bytes2, evm_address2);

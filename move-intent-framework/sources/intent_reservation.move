@@ -236,4 +236,9 @@ module mvmt_intent::intent_reservation {
     public fun new_reservation(solver: address): IntentReserved {
         IntentReserved { solver }
     }
+    
+    /// Get the solver address from an IntentReserved struct.
+    public fun solver(reservation: &IntentReserved): address {
+        reservation.solver
+    }
 }

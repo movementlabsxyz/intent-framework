@@ -164,7 +164,7 @@ fn get_intent_hash(
             "move", "run",
             "--profile", profile,
             "--assume-yes",
-            "--function-id", &format!("0x{}::e2e_utils::get_intent_to_sign_hash", chain_address),
+            "--function-id", &format!("0x{}::utils::get_intent_to_sign_hash", chain_address),
             "--args",
             &format!("address:{}", source_metadata),
             &format!("u64:{}", source_amount),
@@ -197,7 +197,7 @@ fn get_intent_hash(
         .context("Failed to parse REST API response")?;
 
     // Extract hash from IntentHashEvent
-    // The event structure: { "type": "...::e2e_utils::IntentHashEvent", "data": { "hash": "0x..." } }
+    // The event structure: { "type": "...::utils::IntentHashEvent", "data": { "hash": "0x..." } }
     let events = response[0]["events"].as_array().context("No events found")?;
     for event in events {
         if let Some(event_type) = event["type"].as_str() {

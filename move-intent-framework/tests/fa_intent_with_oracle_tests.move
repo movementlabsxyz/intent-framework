@@ -9,7 +9,7 @@ module mvmt_intent::fa_intent_with_oracle_tests {
     use aptos_framework::primary_fungible_store;
     use mvmt_intent::intent::TradeSession;
     use mvmt_intent::fa_intent_with_oracle;
-    use mvmt_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::test_utils;
     use aptos_std::ed25519;
 
 
@@ -124,8 +124,8 @@ module mvmt_intent::fa_intent_with_oracle_tests {
         Object<Metadata>,
         Object<Metadata>,
     ) {
-        let (offered_fa_type, _) = register_and_mint_tokens(aptos_framework, offerer, 100);
-        let (desired_fa_type, _) = register_and_mint_tokens(aptos_framework, solver, 100);
+        let (offered_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
+        let (desired_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
 
         let (oracle_secret_key, validated_pk) = ed25519::generate_keys();
         let oracle_public_key = ed25519::public_key_to_unvalidated(&validated_pk);

@@ -30,7 +30,7 @@ module mvmt_intent::intent_reservation {
 
     /// Struct to hold reservation details for an intent.
     /// This is stored inside the `TradeIntent` if the intent is reserved for a specific solver.
-    struct IntentReserved has store, drop {
+    public struct IntentReserved has store, drop {
         solver: address,
     }
 
@@ -118,6 +118,8 @@ module mvmt_intent::intent_reservation {
 
     /// Verifies a solver's signature against the intent data and creates a reservation.
     /// This version accepts the public key directly for testing purposes.
+    /// For production code, use verify_and_create_reservation_from_registry instead.
+    #[test_only]
     public fun verify_and_create_reservation_with_public_key(
         intent_to_sign: IntentToSign,
         solver_signature: vector<u8>,

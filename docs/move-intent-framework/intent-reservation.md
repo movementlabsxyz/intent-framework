@@ -56,13 +56,13 @@ graph TD
        - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
        - If verification succeeds, creates an `IntentReserved` struct
        - If verification fails, the transaction aborts with `EINVALID_SIGNATURE` or `EINVALID_AUTH_KEY_FORMAT`
-     - For `create_cross_chain_request_intent_entry`: Uses `verify_and_create_reservation_with_public_key` which:
-       - Accepts the public key explicitly as a parameter (required for new authentication key format)
+     - For `create_cross_chain_request_intent_entry`: Uses `verify_and_create_reservation_from_registry` which:
+       - Looks up the solver's public key from the on-chain solver registry
        - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
        - If verification succeeds, creates an `IntentReserved` struct
-       - If verification fails, the transaction aborts with `EINVALID_SIGNATURE`
+       - If verification fails, the transaction aborts with `EINVALID_SIGNATURE` or `ESOLVER_NOT_REGISTERED`
 
-   **Note**: Accounts created with `aptos init` use the new authentication key format (32 bytes), which cannot be used to extract the Ed25519 public key. For these accounts, the public key must be passed explicitly to the contract (as in `create_cross_chain_request_intent_entry`).
+   **Note**: For cross-chain intents, the solver must be registered in the solver registry before creating the intent. The registry stores the solver's Ed25519 public key on-chain, eliminating the need to pass it explicitly.
 
 ### Stage 3 - Common Path
 

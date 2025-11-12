@@ -46,6 +46,11 @@ fi
 
 cd ..
 
+# Initialize solver registry (idempotent - will fail silently if already initialized)
+log ""
+log "🔧 Initializing solver registry..."
+initialize_solver_registry "intent-account-chain1" "$CHAIN1_ADDRESS" "$LOG_FILE"
+
 log ""
 log "🎉 HUB CHAIN DEPLOYMENT COMPLETE!"
 log "=================================="

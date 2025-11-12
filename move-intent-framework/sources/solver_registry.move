@@ -73,9 +73,13 @@ module mvmt_intent::solver_registry {
     // ==================== Public Functions ====================
     
     /// Initialize the solver registry (called once)
+    /// The registry is stored at @mvmt_intent (the module's address)
+    /// This must be called by the account that deployed the module (which has address = @mvmt_intent)
     public entry fun initialize(account: &signer) {
         let account_addr = signer::address_of(account);
-        assert!(!exists<SolverRegistry>(account_addr), E_ALREADY_INITIALIZED);
+        // Ensure the account deploying is the same as the module address
+        assert!(account_addr == @mvmt_intent, E_NOT_INITIALIZED);
+        assert!(!exists<SolverRegistry>(@mvmt_intent), E_ALREADY_INITIALIZED);
         
         move_to(account, SolverRegistry {
             solvers: simple_map::create(),

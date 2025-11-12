@@ -440,3 +440,79 @@ generate_solver_signature() {
     echo "$signature"
 }
 
+# Initialize solver registry (must be called once before registering solvers)
+# Usage: initialize_solver_registry <profile> <chain_address> [log_file]
+# Example: initialize_solver_registry "intent-account-chain1" "$CHAIN1_ADDRESS"
+# Exits on error (except if already initialized, which is handled gracefully)
+initialize_solver_registry() {
+    local profile="$1"
+    local chain_address="$2"
+    local log_file="${3:-$LOG_FILE}"
+
+    if [ -z "$profile" ] || [ -z "$chain_address" ]; then
+        log_and_echo "❌ ERROR: initialize_solver_registry() requires profile and chain_address"
+        exit 1
+    fi
+
+    log "     Initializing solver registry..."
+    local init_output
+    local init_status
+    if [ -n "$log_file" ]; then
+        init_output=$(aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::initialize" 2>&1 | tee -a "$log_file")
+        init_status=${PIPESTATUS[0]}
+    else
+        init_output=$(aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::initialize" 2>&1)
+        init_status=$?
+    fi
+
+    if [ $init_status -eq 0 ]; then
+        log "     ✅ Solver registry initialized successfully"
+    elif echo "$init_output" | grep -q "E_ALREADY_INITIALIZED\|E2\|already initialized"; then
+        log "     ℹ️  Solver registry already initialized (skipping)"
+    else
+        log_and_echo "     ❌ Failed to initialize solver registry"
+        exit 1
+    fi
+}
+
+# Register solver in the solver registry
+# Usage: register_solver <profile> <chain_address> <public_key_hex> <evm_address_hex> [log_file]
+# Example: register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY_HEX" "0x0000000000000000000000000000000000000001"
+# Exits on error
+register_solver() {
+    local profile="$1"
+    local chain_address="$2"
+    local public_key_hex="$3"
+    local evm_address_hex="$4"
+    local log_file="${5:-$LOG_FILE}"
+
+    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$public_key_hex" ] || [ -z "$evm_address_hex" ]; then
+        log_and_echo "❌ ERROR: register_solver() requires all parameters"
+        exit 1
+    fi
+
+    # Remove 0x prefix if present
+    public_key_hex="${public_key_hex#0x}"
+    evm_address_hex="${evm_address_hex#0x}"
+
+    log "     Registering solver in registry..."
+    if [ -n "$log_file" ]; then
+        aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::register_solver" \
+            --args "hex:${public_key_hex}" "hex:${evm_address_hex}" >> "$log_file" 2>&1
+    else
+        aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::register_solver" \
+            --args "hex:${public_key_hex}" "hex:${evm_address_hex}"
+    fi
+
+    if [ $? -eq 0 ]; then
+        log "     ✅ Solver registered successfully"
+    else
+        log_and_echo "     ❌ Failed to register solver"
+        exit 1
+    fi
+}
+

@@ -42,8 +42,8 @@ module mvmt_intent::fa_intent_cross_chain {
         )
     }
 
-    /// Entry function to create a cross-chain request intent that requests tokens without locking any tokens.
-    /// The tokens are locked in an escrow on a different chain.
+    /// Entry function to create a cross-chain request intent using the solver registry.
+    /// The solver's public key is looked up from the on-chain registry.
     ///
     /// # Arguments
     /// - `account`: Signer creating the intent
@@ -52,14 +52,18 @@ module mvmt_intent::fa_intent_cross_chain {
     /// - `desired_amount`: Amount of desired tokens
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `intent_id`: Intent ID for cross-chain linking
-    /// - `solver`: Address of the solver authorized to fulfill this intent
+    /// - `solver`: Address of the solver authorized to fulfill this intent (must be registered)
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
-    /// - `solver_public_key`: Ed25519 public key of the solver (32 bytes) - required for new authentication key format
+    /// 
+    /// # Aborts
+    /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
+    /// - `EINVALID_SIGNATURE`: Signature verification failed
     /// 
     /// # Note
     /// This intent is special: it has 0 tokens locked because tokens are in escrow elsewhere.
     /// This function accepts any fungible asset metadata, enabling cross-chain swaps with any FA pair.
     /// Cross-chain request intents MUST be reserved to ensure solver commitment across chains.
+    /// The solver must be registered in the solver registry before calling this function.
     public entry fun create_cross_chain_request_intent_entry(
         account: &signer,
         source_metadata: Object<Metadata>,
@@ -69,12 +73,11 @@ module mvmt_intent::fa_intent_cross_chain {
         intent_id: address,
         solver: address,
         solver_signature: vector<u8>,
-        solver_public_key: vector<u8>,
     ) {
         // Withdraw 0 tokens of source type (no tokens locked, just requesting for cross-chain swap)
         let fa: FungibleAsset = primary_fungible_store::withdraw(account, source_metadata, 0);
         
-        // Verify solver signature and create reservation
+        // Verify solver signature and create reservation using the solver registry
         // For cross-chain intents, source_amount is 0 (tokens are on another chain)
         let intent_to_sign = intent_reservation::new_intent_to_sign(
             source_metadata,
@@ -86,28 +89,10 @@ module mvmt_intent::fa_intent_cross_chain {
             solver,
         );
         
-        // Create unvalidated public key from bytes provided by the caller.
-        // An "unvalidated" public key is one that hasn't been checked to ensure it represents
-        // a valid point on the Ed25519 elliptic curve. In Aptos Move, public keys can be used
-        // in two forms:
-        // - UnvalidatedPublicKey: Created from raw bytes, not yet verified to be a valid curve point
-        // - ValidatedPublicKey: An UnvalidatedPublicKey that has passed validation
-        // 
-        // We use UnvalidatedPublicKey here because:
-        // 1. signature_verify_strict accepts UnvalidatedPublicKey directly
-        // 2. Signature verification will fail if the key is invalid anyway
-        // 3. It's more efficient than validating first (validation is optional)
-        // 
-        // Note: If we wanted extra security, we could validate first using public_key_validate(),
-        // but it's not strictly necessary since signature verification provides the security guarantee.
-        let unvalidated_public_key = aptos_std::ed25519::new_unvalidated_public_key_from_bytes(solver_public_key);
-        
-        // Use verify_and_create_reservation_with_public_key since we have the public key explicitly
-        // This works with both old and new authentication key formats
-        let reservation_result = intent_reservation::verify_and_create_reservation_with_public_key(
+        // Use verify_and_create_reservation_from_registry to look up public key from registry
+        let reservation_result = intent_reservation::verify_and_create_reservation_from_registry(
             intent_to_sign,
             solver_signature,
-            &unvalidated_public_key,
         );
         // Fail if signature verification failed - cross-chain intents must be reserved
         assert!(option::is_some(&reservation_result), error::invalid_argument(EINVALID_SIGNATURE));

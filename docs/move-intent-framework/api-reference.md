@@ -90,7 +90,6 @@ public entry fun create_cross_chain_request_intent_entry(
     intent_id: address,
     solver: address,
     solver_signature: vector<u8>,
-    solver_public_key: vector<u8>,
 )
 ```
 
@@ -101,13 +100,13 @@ public entry fun create_cross_chain_request_intent_entry(
 - `desired_amount`: Amount of desired tokens
 - `expiry_time`: Unix timestamp when intent expires
 - `intent_id`: Intent ID for cross-chain linking
-- `solver`: Address of the solver authorized to fulfill this intent
+- `solver`: Address of the solver authorized to fulfill this intent (must be registered in solver registry)
 - `solver_signature`: Ed25519 signature from the solver authorizing this intent
-- `solver_public_key`: Ed25519 public key of the solver (32 bytes) - required for new authentication key format
 
-**Note**: This intent has 0 tokens locked because tokens are in escrow elsewhere. Cross-chain request intents MUST be reserved to ensure solver commitment across chains. The `solver_public_key` parameter is required for accounts created with `aptos init` (new authentication key format, 32 bytes), as the Ed25519 public key cannot be extracted from the authentication key directly.
+**Note**: This intent has 0 tokens locked because tokens are in escrow elsewhere. Cross-chain request intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
 
 **Aborts:**
+- `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
 
 ### Starting a Fungible Asset Session
@@ -193,33 +192,32 @@ public fun verify_and_create_reservation(
 
 **Returns:** An optional reservation if verification succeeds
 
-**Note**: This function extracts the public key from the solver's authentication key on-chain. It only works for accounts with the old authentication key format (33 bytes with 0x00 prefix). For accounts created with `aptos init` (new format, 32 bytes), use `verify_and_create_reservation_with_public_key` instead.
+**Note**: This function extracts the public key from the solver's authentication key on-chain. It only works for accounts with the old authentication key format (33 bytes with 0x00 prefix). For cross-chain intents or accounts created with `aptos init` (new format, 32 bytes), solvers must be registered in the solver registry and use `verify_and_create_reservation_from_registry` instead.
 
 **Aborts:**
 - `EINVALID_AUTH_KEY_FORMAT`: Authentication key format is invalid
 - `EPUBLIC_KEY_VALIDATION_FAILED`: Public key validation failed
 - `EINVALID_SIGNATURE`: Signature verification failed
 
-### Verifying and Creating Reservation with Public Key
+### Verifying and Creating Reservation from Registry
 
 ```move
-public fun verify_and_create_reservation_with_public_key(
+public fun verify_and_create_reservation_from_registry(
     intent_to_sign: IntentToSign,
     solver_signature: vector<u8>,
-    solver_public_key: &ed25519::UnvalidatedPublicKey,
 ): Option<IntentReserved>
 ```
 
 **Parameters:**
 - `intent_to_sign`: The intent data that was signed
 - `solver_signature`: The solver's signature
-- `solver_public_key`: The solver's Ed25519 public key (32 bytes)
 
 **Returns:** An optional reservation if verification succeeds
 
-**Note**: This function accepts the public key explicitly, making it compatible with both old and new authentication key formats. Use this for accounts created with `aptos init` (new format) where the public key cannot be extracted from the authentication key.
+**Note**: This function looks up the solver's public key from the on-chain solver registry. The solver must be registered in the registry before calling this function. This is the recommended approach for cross-chain intents and accounts created with `aptos init` (new format, 32 bytes) where the public key cannot be extracted from the authentication key.
 
 **Aborts:**
+- `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
 
 ## Oracle Intent API

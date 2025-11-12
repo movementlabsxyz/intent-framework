@@ -33,7 +33,8 @@ module mvmt_intent::fa_intent {
         desired_amount: u64,
         issuer: address,
         intent_id: Option<address>, // Optional cross-chain intent_id for linking (None for regular intents)
-        connected_chain_id: Option<u64>, // Optional chain ID where escrow will be created (None for regular intents)
+        offered_chain: u64,
+        desired_chain: u64,
     }
 
     /// Getter for desired_metadata to allow access from other modules
@@ -51,14 +52,15 @@ module mvmt_intent::fa_intent {
     struct LimitOrderEvent has store, drop {
         intent_address: address,
         intent_id: address,  // For cross-chain linking: same as intent_address for regular intents, or shared ID for linked cross-chain intents
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain: u64,
         issuer: address,
         expiry_time: u64,
         revocable: bool,
-        connected_chain_id: Option<u64>, // Optional chain ID where escrow will be created (None for regular intents)
     }
 
     #[event]
@@ -96,11 +98,12 @@ module mvmt_intent::fa_intent {
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
-        connected_chain_id: Option<u64>, // Optional chain ID where escrow will be created (None for regular intents)
+        offered_chain: u64,
+        desired_chain: u64,
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Capture metadata and amount before depositing
-        let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
-        let source_amount = fungible_asset::amount(&source_fungible_asset);
+        let offered_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
+        let offered_amount = fungible_asset::amount(&source_fungible_asset);
         
         let coin_store_ref = object::create_object(issuer);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
@@ -116,7 +119,7 @@ module mvmt_intent::fa_intent {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
             FungibleStoreManager { extend_ref, delete_ref},
-            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id, connected_chain_id },
+            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id, offered_chain, desired_chain },
             expiry_time,
             issuer,
             FungibleAssetRecipientWitness {},
@@ -135,14 +138,15 @@ module mvmt_intent::fa_intent {
         event::emit(LimitOrderEvent {
             intent_address: intent_addr,
             intent_id: event_intent_id,
-            source_metadata,
-            source_amount,
+            offered_metadata,
+            offered_amount,
+            offered_chain,
             desired_metadata,
             desired_amount,
+            desired_chain,
             expiry_time,
             issuer,
             revocable,
-            connected_chain_id,
         });
 
         intent_obj
@@ -207,7 +211,8 @@ module mvmt_intent::fa_intent {
             reservation,
             true, // revocable by default for regular intents
             option::none(), // No cross-chain intent_id for regular intents
-            option::none(), // No connected_chain_id for regular intents
+            chain_id, // offered_chain (same chain for regular intents)
+            chain_id, // desired_chain (same chain for regular intents)
         );
     }
 

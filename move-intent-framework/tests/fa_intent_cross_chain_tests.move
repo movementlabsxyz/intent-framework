@@ -95,7 +95,8 @@ module mvmt_intent::fa_intent_cross_chain_tests {
             reservation_result, // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            option::none(), // No connected_chain_id for this test
+            1, // offered_chain
+            1, // desired_chain
         );
         let intent_address = object::object_address(&intent_obj);
         
@@ -167,7 +168,8 @@ module mvmt_intent::fa_intent_cross_chain_tests {
             option::some(reservation), // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            option::none(), // No connected_chain_id for this test
+            1, // offered_chain
+            1, // desired_chain
         );
         let intent_address = object::object_address(&intent_obj);
         

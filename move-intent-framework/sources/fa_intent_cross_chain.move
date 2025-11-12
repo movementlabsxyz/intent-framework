@@ -120,7 +120,8 @@ module mvmt_intent::fa_intent_cross_chain {
             false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
                    // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
-            option::some(connected_chain_id), // Store the connected chain ID for escrow validation
+            connected_chain_id, // offered_chain (where escrow is created)
+            hub_chain_id, // desired_chain (hub chain)
         );
         
         // Event is already emitted by create_fa_to_fa_intent with the correct intent_id

@@ -285,9 +285,11 @@ impl EventMonitor {
                         
                         // Cache the event for API access (only non-revocable events)
                         {
+                            let intent_id = event.intent_id.clone();
+                            let chain = event.chain.clone();
                             let mut cache = self.event_cache.write().await;
                             // Check if this chain+intent_id combination already exists in the cache
-                            if !cache.iter().any(|cached| cached.intent_id == event.intent_id && cached.chain == event.chain) {
+                            if !cache.iter().any(|cached| cached.intent_id == intent_id && cached.chain == chain) {
                                 cache.push(event);
                             }
                         }
@@ -331,9 +333,11 @@ impl EventMonitor {
                         
                         // Cache the escrow event
                         {
+                            let escrow_id = event.escrow_id.clone();
+                            let chain = event.chain.clone();
                             let mut escrow_cache = self.escrow_cache.write().await;
                             // Check if this chain+escrow_id combination already exists in the cache
-                            if !escrow_cache.iter().any(|cached| cached.escrow_id == event.escrow_id && cached.chain == event.chain) {
+                            if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow_id && cached.chain == chain) {
                                 escrow_cache.push(event.clone());
                             }
                         }
@@ -382,9 +386,11 @@ impl EventMonitor {
                         
                         // Cache the escrow event
                         {
+                            let escrow_id = event.escrow_id.clone();
+                            let chain = event.chain.clone();
                             let mut escrow_cache = self.escrow_cache.write().await;
                             // Check if this chain+escrow_id combination already exists in the cache
-                            if !escrow_cache.iter().any(|cached| cached.escrow_id == event.escrow_id && cached.chain == event.chain) {
+                            if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow_id && cached.chain == chain) {
                                 escrow_cache.push(event.clone());
                             }
                         }
@@ -464,9 +470,10 @@ impl EventMonitor {
                         
                         // Cache the fulfillment event
                         {
+                            let intent_id = fulfillment_event.intent_id.clone();
                             let mut fulfillment_cache = self.fulfillment_cache.write().await;
                             // Check if this chain+intent_id combination already exists in the cache
-                            if !fulfillment_cache.iter().any(|cached| cached.intent_id == fulfillment_event.intent_id && cached.chain == "hub") {
+                            if !fulfillment_cache.iter().any(|cached| cached.intent_id == intent_id && cached.chain == "hub") {
                                 fulfillment_cache.push(fulfillment_event.clone());
                                 info!("Received fulfillment event for intent {} by solver {}", data.intent_id, data.solver);
                             } else {
@@ -525,17 +532,18 @@ impl EventMonitor {
                                 .ok()
                                 .flatten();
                             
-                            // Parse connected_chain_id from event (if present)
-                            let connected_chain_id = data.connected_chain_id.as_ref()
-                                .and_then(|s| s.parse::<u64>().ok());
+                            // Parse chain IDs from event
+                            // For cross-chain intents: offered_chain_id is where escrow is (connected chain), desired_chain_id is hub
+                            // Use offered_chain_id as connected_chain_id for IntentEvent
+                            let connected_chain_id = data.offered_chain_id.parse::<u64>().ok();
                             
                             intent_events.push(IntentEvent {
                                 chain: "hub".to_string(),
                                 intent_id: data.intent_id,  // Use intent_id for cross-chain linking
                                 issuer: data.issuer.clone(),
-                                source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
-                                source_amount: data.source_amount.parse::<u64>()
-                                    .context("Failed to parse source_amount")?,
+                                source_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
+                                source_amount: data.offered_amount.parse::<u64>()
+                                    .context("Failed to parse offered_amount")?,
                                 desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
                                 desired_amount: data.desired_amount.parse::<u64>()
                                     .context("Failed to parse desired_amount")?,

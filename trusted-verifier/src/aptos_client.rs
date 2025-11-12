@@ -624,15 +624,15 @@ impl AptosClient {
 pub struct LimitOrderEvent {
     pub intent_address: String,
     pub intent_id: String,  // For cross-chain linking
-    pub source_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
-    pub source_amount: String,
+    pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
+    pub offered_amount: String,
+    pub offered_chain_id: String,
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub desired_amount: String,
+    pub desired_chain_id: String,
     pub issuer: String,
     pub expiry_time: String,
     pub revocable: bool,
-    #[serde(default, deserialize_with = "deserialize_optional_chain_id")]
-    pub connected_chain_id: Option<String>, // Optional chain ID where escrow will be created (None for regular intents)
 }
 
 /// Custom deserializer for connected_chain_id that handles Move Option<u64> format

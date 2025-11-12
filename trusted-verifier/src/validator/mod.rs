@@ -171,6 +171,18 @@ impl CrossChainValidator {
             });
         }
         
+        // Validate that cross-chain intents (with solver reservation) must have a connected_chain_id
+        if intent.solver.is_some() && intent.connected_chain_id.is_none() {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Cross-chain intent {} has a reserved solver but no connected_chain_id. Cross-chain intents must specify the chain ID where the escrow will be created.",
+                    intent.intent_id
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
         // Validate solver addresses match between escrow and intent
         // For Aptos escrows: Check if escrow's reserved_solver (Aptos address) matches hub intent's solver (Aptos address)
         // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address

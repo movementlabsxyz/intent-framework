@@ -4,6 +4,8 @@
 //! across different chains using intent_id.
 
 use trusted_verifier::monitor::{IntentEvent, EscrowEvent};
+#[path = "mod.rs"]
+mod test_helpers;
 
 /// Test that escrow events can be matched to intent events by intent_id
 /// Why: Verify cross-chain matching logic correctly links escrow to hub intent for validation
@@ -88,5 +90,109 @@ fn test_cross_chain_intent_matching() {
     // Verify the locked tokens in escrow match what the intent wants
     assert_eq!(escrow_creation.source_amount, hub_intent.desired_amount,
                "Escrow locked tokens should match what intent wants");
+}
+
+/// Test that cross-chain intents without connected_chain_id are rejected
+/// Why: Verify that cross-chain intents (with solver reservation) must specify the chain ID
+#[tokio::test]
+async fn test_cross_chain_intent_must_have_chain_id() {
+    use trusted_verifier::validator::CrossChainValidator;
+    use test_helpers::build_test_config;
+    
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a cross-chain intent with solver but NO connected_chain_id (invalid)
+    let invalid_intent = IntentEvent {
+        chain: "hub".to_string(),
+        intent_id: "0xinvalid_intent".to_string(),
+        issuer: "0xalice".to_string(),
+        source_metadata: "{}".to_string(),
+        source_amount: 0,
+        desired_metadata: "{}".to_string(),
+        desired_amount: 1000,
+        expiry_time: 1000000,
+        revocable: false,
+        solver: Some("0xsolver".to_string()), // Has solver (cross-chain intent)
+        connected_chain_id: None, // Missing chain ID - should be rejected
+        timestamp: 0,
+    };
+    
+    // Create a matching escrow event
+    let escrow = EscrowEvent {
+        chain: "connected".to_string(),
+        escrow_id: "0xescrow".to_string(),
+        intent_id: "0xinvalid_intent".to_string(),
+        issuer: "0xalice".to_string(),
+        source_metadata: "{}".to_string(),
+        source_amount: 1000,
+        desired_metadata: "{}".to_string(),
+        desired_amount: 1000,
+        expiry_time: 1000000,
+        revocable: false,
+        reserved_solver: Some("0xsolver".to_string()),
+        chain_id: 2,
+        timestamp: 0,
+    };
+    
+    // validate_intent_fulfillment returns Result<ValidationResult, Error>
+    // - Ok(ValidationResult) means the function executed successfully (no network/parsing errors)
+    // - ValidationResult.valid indicates whether the intent/escrow pair is valid
+    // - Err means the function itself failed (network error, etc.)
+    // For invalid intents, we expect Ok(ValidationResult { valid: false, ... }), not Err
+    let result = validator.validate_intent_fulfillment(&invalid_intent, &escrow).await;
+    assert!(result.is_ok(), "Function should execute successfully and return Ok(ValidationResult), not Err");
+    
+    let validation_result = result.unwrap();
+    assert!(!validation_result.valid, "ValidationResult.valid should be false - cross-chain intent without connected_chain_id should be rejected");
+    assert!(validation_result.message.contains("connected_chain_id"), 
+            "Error message should mention connected_chain_id");
+    
+    // Verify that valid cross-chain intent (with chain_id) passes this check
+    let valid_intent = IntentEvent {
+        chain: "hub".to_string(),
+        intent_id: "0xvalid_intent".to_string(),
+        issuer: "0xalice".to_string(),
+        source_metadata: "{}".to_string(),
+        source_amount: 0,
+        desired_metadata: "{}".to_string(),
+        desired_amount: 1000,
+        expiry_time: 1000000,
+        revocable: false,
+        solver: Some("0xsolver".to_string()),
+        connected_chain_id: Some(2), // Has chain ID - should pass this check
+        timestamp: 0,
+    };
+    
+    let valid_escrow = EscrowEvent {
+        chain: "connected".to_string(),
+        escrow_id: "0xescrow_valid".to_string(),
+        intent_id: "0xvalid_intent".to_string(),
+        issuer: "0xalice".to_string(),
+        source_metadata: "{}".to_string(),
+        source_amount: 1000,
+        desired_metadata: "{}".to_string(),
+        desired_amount: 1000,
+        expiry_time: 1000000,
+        revocable: false,
+        reserved_solver: Some("0xsolver".to_string()),
+        chain_id: 2,
+        timestamp: 0,
+    };
+    
+    // This should pass the connected_chain_id check (may fail other validations, but not this one)
+    let result = validator.validate_intent_fulfillment(&valid_intent, &valid_escrow).await;
+    assert!(result.is_ok(), "Validation should complete");
+    
+    let validation_result = result.unwrap();
+    // Assert 1: If validation fails, it should NOT be because of missing connected_chain_id
+    if !validation_result.valid {
+        assert!(!validation_result.message.contains("connected_chain_id"), 
+                "Should not fail due to missing connected_chain_id when chain_id is provided");
+    }
+    // Assert 2: Validation should pass (valid should be true)
+    // Note: This might fail other validations (like solver address mismatch if not properly mocked),
+    // but for a complete test, we'd need to ensure all conditions are met
+    assert!(validation_result.valid, "Validation should pass when intent has both solver and connected_chain_id");
 }
 

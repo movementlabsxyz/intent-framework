@@ -631,8 +631,42 @@ pub struct LimitOrderEvent {
     pub issuer: String,
     pub expiry_time: String,
     pub revocable: bool,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_optional_chain_id")]
     pub connected_chain_id: Option<String>, // Optional chain ID where escrow will be created (None for regular intents)
+}
+
+/// Custom deserializer for connected_chain_id that handles Move Option<u64> format
+/// Move Option<T> is serialized as {"vec": [value]} for Some(value) or {"vec": []} for None
+fn deserialize_optional_chain_id<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let value: serde_json::Value = serde_json::Value::deserialize(deserializer)?;
+    
+    // Handle Move Option format: {"vec": [value]} or {"vec": []}
+    if let serde_json::Value::Object(map) = &value {
+        if let Some(serde_json::Value::Array(vec)) = map.get("vec") {
+            if vec.is_empty() {
+                return Ok(None);
+            }
+            if let Some(first) = vec.first() {
+                match first {
+                    serde_json::Value::Number(n) => return Ok(Some(n.to_string())),
+                    serde_json::Value::String(s) => return Ok(Some(s.clone())),
+                    _ => {}
+                }
+            }
+        }
+    }
+    
+    // Fallback: handle direct Option format (null, number, or string)
+    match value {
+        serde_json::Value::Null => Ok(None),
+        serde_json::Value::Number(n) => Ok(Some(n.to_string())),
+        serde_json::Value::String(s) => Ok(Some(s)),
+        _ => Ok(None), // Ignore other types
+    }
 }
 
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module

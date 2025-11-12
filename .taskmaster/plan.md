@@ -27,6 +27,8 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
    - Test with multiple concurrent intents
    - Add negative test cases (rejected intents, failed fulfillments)
    - Convert shell scripts into Rust binaries where practical
+   - Integration test in e2e apt has many warnings
+   - e2e evm test should not start chain2 (apt)
 
 ### Documentation
 1. Finalize node bootstrapping instructions (ports, genesis, module publish) for both chains

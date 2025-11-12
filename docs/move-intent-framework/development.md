@@ -22,7 +22,7 @@ This document covers development setup, testing, configuration, and dependencies
 
    ```bash
    # From project root
-   nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123"
+   nix develop -c bash -c "cd move-intent-framework && aptos move test --dev"
    ```
 
 ## Testing
@@ -31,7 +31,7 @@ This document covers development setup, testing, configuration, and dependencies
 
 Run all tests with:
 ```bash
-aptos move test --dev --named-addresses mvmt_intent=0x123
+aptos move test --dev
 ```
 
 ### Test Structure
@@ -58,13 +58,13 @@ The test suite includes:
 
 ```bash
 # Run only intent tests
-aptos move test --dev --named-addresses mvmt_intent=0x123 --filter intent_tests
+aptos move test --dev --filter intent_tests
 
 # Run only fungible asset tests
-aptos move test --dev --named-addresses mvmt_intent=0x123 --filter fa_tests
+aptos move test --dev --filter fa_tests
 
 # Run only reservation tests
-aptos move test --dev --named-addresses mvmt_intent=0x123 --filter intent_reservation_tests
+aptos move test --dev --filter intent_reservation_tests
 ```
 
 ## Configuration
@@ -80,9 +80,6 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-mvmt_intent = "_"
-
-[dev-addresses]
 mvmt_intent = "0x123"
 
 [dependencies.AptosFramework]
@@ -93,8 +90,7 @@ subdir = "aptos-framework"
 
 **Key Configuration:**
 - **Package Name**: `aptos-intent`
-- **Address**: Uses `_` for deployment flexibility
-- **Dev Address**: `0x123` for testing
+- **Address**: `0x123` (default for tests; override with `--named-addresses` for deployment)
 - **Dependencies**: Aptos Framework pinned to a specific commit (see `Move.toml` for the exact commit hash)
 
 ### Development Environment
@@ -152,7 +148,7 @@ INTENT=$(aptos config show-profiles | jq -r '.Result.default.account')
 aptos move publish --named-addresses mvmt_intent=0x$INTENT --skip-fetch-latest-git-deps
 
 # 5. Verify deployment
-aptos move test --dev --named-addresses mvmt_intent=0x123
+aptos move test --dev
 ```
 
 **Note**: The deploy command publishes to whatever network your Aptos CLI is configured for. For local development, you must first configure Aptos CLI to point to your local Docker chain (port 8080) using `aptos init --profile local --network local`.

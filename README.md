@@ -27,7 +27,7 @@ nix develop
 Run from project root:
 
 ```bash
-nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123"
+nix develop -c bash -c "cd move-intent-framework && aptos move test --dev"
 nix develop -c bash -c "cd trusted-verifier && cargo test"
 nix develop -c bash -c "cd evm-intent-framework && npm test"
 nix develop -c bash -c "cd solver && cargo test"

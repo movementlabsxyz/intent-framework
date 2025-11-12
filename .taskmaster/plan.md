@@ -27,7 +27,6 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
    - Add timeout scenario tests
    - Test with multiple concurrent intents (unit tests added in `trusted-verifier/tests/monitor_tests.rs`)
    - Add negative test cases (rejected intents, failed fulfillments)
-   - can we avoid using `--named-addresses mvmt_intent=0x123` in `aptos move test --dev --named-addresses mvmt_intent=0x123`, see root readme.
 
 ### Documentation
 

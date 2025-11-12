@@ -34,7 +34,7 @@ module mvmt_intent::solver_registry {
     // ==================== Structs ====================
     
     /// Solver registration information
-    struct SolverInfo has store {
+    struct SolverInfo has store, drop {
         solver_addr: address,
         public_key: vector<u8>,  // Ed25519 public key (32 bytes)
         evm_address: vector<u8>, // EVM address (20 bytes)
@@ -61,6 +61,12 @@ module mvmt_intent::solver_registry {
         solver: address,
         public_key: vector<u8>,
         evm_address: vector<u8>,
+        timestamp: u64,
+    }
+    
+    #[event]
+    struct SolverDeregistered has drop, store {
+        solver: address,
         timestamp: u64,
     }
     
@@ -166,6 +172,31 @@ module mvmt_intent::solver_registry {
             solver: solver_addr,
             public_key: solver_info.public_key,
             evm_address: solver_info.evm_address,
+            timestamp: timestamp::now_seconds(),
+        });
+    }
+    
+    /// Deregister solver from the registry
+    /// Only the solver themselves can deregister
+    public entry fun deregister_solver(
+        solver: &signer,
+    ) acquires SolverRegistry {
+        let solver_addr = signer::address_of(solver);
+        let registry_addr = @mvmt_intent;
+        
+        assert!(exists<SolverRegistry>(registry_addr), E_NOT_INITIALIZED);
+        
+        let registry = borrow_global_mut<SolverRegistry>(registry_addr);
+        
+        // Check if solver exists
+        assert!(simple_map::contains_key(&registry.solvers, &solver_addr), E_SOLVER_NOT_FOUND);
+        
+        // Remove solver from registry
+        simple_map::remove(&mut registry.solvers, &solver_addr);
+        
+        // Emit event
+        event::emit(SolverDeregistered {
+            solver: solver_addr,
             timestamp: timestamp::now_seconds(),
         });
     }

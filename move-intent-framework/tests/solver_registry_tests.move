@@ -274,5 +274,99 @@ module mvmt_intent::solver_registry_tests {
         // Note: We can't easily test the Option type here without more complex setup
         // The function is tested indirectly through intent_reservation tests
     }
+
+    #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
+    /// Test: Deregister solver successfully
+    fun test_deregister_solver(
+        aptos_framework: &signer,
+        mvmt_intent: &signer,
+        solver: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        solver_registry::init_for_test(mvmt_intent);
+        
+        // Generate Ed25519 keys
+        let (_solver_secret_key, solver_public_key) = ed25519::generate_keys();
+        let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
+        
+        // Create EVM address
+        let evm_address = create_test_evm_address(0);
+        
+        // Register solver
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
+        
+        // Deregister solver
+        solver_registry::deregister_solver(solver);
+        
+        // Verify solver is no longer registered
+        assert!(!solver_registry::is_registered(signer::address_of(solver)), 2);
+        
+        // Verify public key and EVM address return empty
+        let public_key = solver_registry::get_public_key(signer::address_of(solver));
+        assert!(vector::is_empty(&public_key), 3);
+        
+        let evm_addr = solver_registry::get_evm_address(signer::address_of(solver));
+        assert!(vector::is_empty(&evm_addr), 4);
+    }
+
+    #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
+    #[expected_failure(abort_code = solver_registry::E_SOLVER_NOT_FOUND)]
+    /// Test: Deregister unregistered solver should fail
+    fun test_deregister_unregistered_solver(
+        aptos_framework: &signer,
+        mvmt_intent: &signer,
+        solver: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        solver_registry::init_for_test(mvmt_intent);
+        
+        // Try to deregister without registering first - should abort
+        solver_registry::deregister_solver(solver);
+    }
+
+    #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
+    /// Test: Re-register after deregistering
+    fun test_reregister_after_deregister(
+        aptos_framework: &signer,
+        mvmt_intent: &signer,
+        solver: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        solver_registry::init_for_test(mvmt_intent);
+        
+        // Generate first set of Ed25519 keys
+        let (_solver_secret_key1, solver_public_key1) = ed25519::generate_keys();
+        let solver_public_key_bytes1 = ed25519::validated_public_key_to_bytes(&solver_public_key1);
+        
+        // Create first EVM address
+        let evm_address1 = create_test_evm_address(0);
+        
+        // Register solver
+        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1);
+        assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
+        
+        // Deregister solver
+        solver_registry::deregister_solver(solver);
+        assert!(!solver_registry::is_registered(signer::address_of(solver)), 2);
+        
+        // Generate new Ed25519 keys
+        let (_solver_secret_key2, solver_public_key2) = ed25519::generate_keys();
+        let solver_public_key_bytes2 = ed25519::validated_public_key_to_bytes(&solver_public_key2);
+        
+        // Create new EVM address
+        let evm_address2 = create_test_evm_address_reverse(20);
+        
+        // Re-register solver with new credentials
+        solver_registry::register_solver(solver, solver_public_key_bytes2, evm_address2);
+        assert!(solver_registry::is_registered(signer::address_of(solver)), 3);
+        
+        // Verify new credentials are stored
+        let stored_public_key = solver_registry::get_public_key(signer::address_of(solver));
+        assert!(stored_public_key == solver_public_key_bytes2, 4);
+        
+        let stored_evm_address = solver_registry::get_evm_address(signer::address_of(solver));
+        assert!(stored_evm_address == evm_address2, 5);
+    }
 }
 

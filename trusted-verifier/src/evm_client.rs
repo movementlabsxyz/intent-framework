@@ -172,14 +172,15 @@ impl EvmClient {
             .json(&request)
             .send()
             .await
-            .context("Failed to send eth_getLogs request")?
+            .with_context(|| format!("Failed to send eth_getLogs request to {}", self.base_url))?
             .json()
             .await
-            .context("Failed to parse eth_getLogs response")?;
+            .with_context(|| format!("Failed to parse eth_getLogs response from {}", self.base_url))?;
 
         if let Some(error) = response.error {
             return Err(anyhow::anyhow!(
-                "JSON-RPC error: {} (code: {})",
+                "JSON-RPC error from {}: {} (code: {})",
+                self.base_url,
                 error.message,
                 error.code
             ));
@@ -247,14 +248,15 @@ impl EvmClient {
             .json(&request)
             .send()
             .await
-            .context("Failed to send eth_blockNumber request")?
+            .with_context(|| format!("Failed to send eth_blockNumber request to {}", self.base_url))?
             .json()
             .await
-            .context("Failed to parse eth_blockNumber response")?;
+            .with_context(|| format!("Failed to parse eth_blockNumber response from {}", self.base_url))?;
 
         if let Some(error) = response.error {
             return Err(anyhow::anyhow!(
-                "JSON-RPC error: {} (code: {})",
+                "JSON-RPC error from {}: {} (code: {})",
+                self.base_url,
                 error.message,
                 error.code
             ));

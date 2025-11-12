@@ -398,7 +398,7 @@ impl EventMonitor {
                     }
                 }
                 Err(e) => {
-                    error!("Error polling EVM events: {}", e);
+                    error!("Error polling EVM events: {:#}", e);
                 }
             }
             
@@ -667,8 +667,8 @@ impl EventMonitor {
         
         // Query EVM chain for EscrowInitialized events
         let evm_events = client.get_escrow_initialized_events(from_block, None).await
-            .context(format!("Failed to fetch EVM escrow events from chain {} (RPC: {}, contract: {})", 
-                connected_chain_evm.chain_id, connected_chain_evm.rpc_url, connected_chain_evm.escrow_contract_address))?;
+            .with_context(|| format!("Failed to fetch EVM escrow events from chain {} (RPC: {}, contract: {}, from_block: {:?})", 
+                connected_chain_evm.chain_id, connected_chain_evm.rpc_url, connected_chain_evm.escrow_contract_address, from_block))?;
         
         for event in evm_events {
             // Convert EVM event to EscrowEvent format

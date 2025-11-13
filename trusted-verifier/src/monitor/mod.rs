@@ -87,7 +87,7 @@ pub struct EscrowEvent {
     pub issuer: String,
     /// Metadata of the asset being offered (what's locked in escrow)
     pub offered_metadata: String,
-    /// Amount of the source asset locked in escrow (offered_amount)
+    /// Amount of the asset being offered (what's locked in escrow)
     pub offered_amount: u64,
     /// Metadata of the desired asset (what solver needs to provide)
     pub desired_metadata: String,
@@ -529,9 +529,9 @@ impl EventMonitor {
                                 chain: "hub".to_string(),
                                 intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
                                 issuer: data.issuer.clone(),
-                                offered_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
-                                offered_amount: data.source_amount.parse::<u64>()
-                                    .context("Failed to parse source_amount")?,
+                                offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
+                                offered_amount: data.offered_amount.parse::<u64>()
+                                    .context("Failed to parse offered amount")?,
                                 desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
                                 desired_amount: data.desired_amount.parse::<u64>()
                                     .context("Failed to parse desired_amount")?,
@@ -640,9 +640,9 @@ impl EventMonitor {
                         escrow_id: data.intent_address.clone(),
                         intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain request intent
                         issuer: data.issuer.clone(), // issuer is the escrow creator who locked the funds
-                        offered_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
-                        offered_amount: data.source_amount.parse::<u64>()
-                            .context("Failed to parse source amount")?,
+                        offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
+                        offered_amount: data.offered_amount.parse::<u64>()
+                            .context("Failed to parse offered amount")?,
                         desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
                         desired_amount: data.desired_amount.parse::<u64>()
                             .context("Failed to parse desired amount")?,

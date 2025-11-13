@@ -159,8 +159,8 @@ module mvmt_intent::fa_intent {
     /// 
     /// # Arguments
     /// - `account`: Signer of the account creating the intent
-    /// - `source_metadata`: Metadata of the token being offered
-    /// - `source_amount`: Amount of source tokens to offer
+    /// - `offered_metadata`: Metadata of the token being offered
+    /// - `offered_amount`: Amount of tokens being offered
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Minimum amount of desired tokens required
     /// - `expiry_time`: Unix timestamp when the intent expires

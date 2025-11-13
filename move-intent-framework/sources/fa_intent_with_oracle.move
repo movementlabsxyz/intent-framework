@@ -77,8 +77,8 @@ module mvmt_intent::fa_intent_with_oracle {
     struct OracleLimitOrderEvent has store, drop {
         intent_address: address, // The escrow intent address (on connected chain)
         intent_id: address,      // The original intent ID (from hub chain) - links escrow to hub intent
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         issuer: address,
@@ -143,8 +143,8 @@ module mvmt_intent::fa_intent_with_oracle {
         reservation: Option<IntentReserved>,
     ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         // Capture metadata and amount before depositing
-        let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
-        let source_amount = fungible_asset::amount(&source_fungible_asset);
+        let offered_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
+        let offered_amount = fungible_asset::amount(&source_fungible_asset);
         
         let coin_store_ref = object::create_object(issuer);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
@@ -172,8 +172,8 @@ module mvmt_intent::fa_intent_with_oracle {
         event::emit(OracleLimitOrderEvent {
             intent_address: object::object_address(&intent_obj),
             intent_id,  // Pass the intent ID from user (hub chain intent ID for escrows)
-            source_metadata,
-            source_amount,
+            offered_metadata,
+            offered_amount,
             desired_metadata,
             desired_amount,
             issuer,

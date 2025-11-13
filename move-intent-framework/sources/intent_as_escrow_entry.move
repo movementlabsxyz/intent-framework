@@ -17,16 +17,16 @@ module mvmt_intent::intent_as_escrow_entry {
     /// 
     /// # Arguments
     /// - `user`: Signer creating the escrow
-    /// - `source_metadata`: Metadata of the token type to lock in escrow
-    /// - `amount`: Amount of tokens to lock in escrow
+    /// - `offered_metadata`: Metadata of the token type to lock in escrow
+    /// - `offered_amount`: Amount of tokens to lock in escrow
     /// - `verifier_public_key`: Public key of authorized verifier (32 bytes as hex)
     /// - `expiry_time`: Unix timestamp when escrow expires
     /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
     /// - `reserved_solver`: Address of the solver who will receive funds when escrow is claimed
     public entry fun create_escrow_from_fa(
         user: &signer,
-        source_metadata: Object<fungible_asset::Metadata>,
-        amount: u64,
+        offered_metadata: Object<fungible_asset::Metadata>,
+        offered_amount: u64,
         verifier_public_key: vector<u8>, // 32 bytes
         expiry_time: u64,
         intent_id: address,
@@ -35,7 +35,7 @@ module mvmt_intent::intent_as_escrow_entry {
         use mvmt_intent::intent_reservation;
         
         // Withdraw tokens as a FungibleAsset from the caller's primary FA store
-        let fa: FungibleAsset = primary_fungible_store::withdraw(user, source_metadata, amount);
+        let fa: FungibleAsset = primary_fungible_store::withdraw(user, offered_metadata, offered_amount);
 
         // Build ed25519::UnvalidatedPublicKey correctly
         let oracle_pk = ed25519::new_unvalidated_public_key_from_bytes(verifier_public_key);

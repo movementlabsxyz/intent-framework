@@ -674,8 +674,8 @@ where
 pub struct OracleLimitOrderEvent {
     pub intent_address: String,      // The escrow intent address (on connected chain)
     pub intent_id: String,            // The original intent ID (from hub chain)
-    pub source_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
-    pub source_amount: String,
+    pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
+    pub offered_amount: String,
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub desired_amount: String,
     pub issuer: String,

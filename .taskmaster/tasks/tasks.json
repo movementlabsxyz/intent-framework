@@ -143,7 +143,7 @@
         "id": "3",
         "title": "Add unit tests for offered metadata matching validation",
         "description": "Add unit tests to verify that escrow offered_metadata must exactly match hub intent offered_metadata",
-        "status": "pending",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "The verifier validates that escrow offered_metadata matches hub intent offered_metadata. We need tests for: exact metadata match (success), metadata mismatch (rejection), empty metadata strings, and complex JSON metadata structures.",
@@ -157,10 +157,11 @@
             "description": "Test that validation passes when escrow offered_metadata exactly matches hub intent offered_metadata",
             "dependencies": [],
             "details": "Create hub intent and escrow with identical offered_metadata. Call validate_intent_fulfillment and verify validation_result.valid is true.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and escrow with matching metadata, call validate_intent_fulfillment, assert valid=true",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T10:45:09.975Z"
           },
           {
             "id": 2,
@@ -168,10 +169,11 @@
             "description": "Test that validation fails when escrow offered_metadata differs from hub intent offered_metadata",
             "dependencies": [],
             "details": "Create hub intent and escrow with different offered_metadata. Call validate_intent_fulfillment and verify validation_result.valid is false with appropriate error message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and escrow with different metadata, call validate_intent_fulfillment, assert valid=false with metadata mismatch message",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T10:45:11.124Z"
           },
           {
             "id": 3,
@@ -179,10 +181,11 @@
             "description": "Test validation with empty metadata strings",
             "dependencies": [],
             "details": "Test that empty metadata strings match correctly (both empty should pass, one empty one not should fail).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test with both empty, one empty, verify correct behavior",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T10:45:12.257Z"
           },
           {
             "id": 4,
@@ -190,13 +193,14 @@
             "description": "Test validation with complex nested JSON metadata",
             "dependencies": [],
             "details": "Create metadata with nested JSON structures, escaped characters, etc. Verify exact string matching (not semantic matching).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create complex JSON metadata, test matching and mismatching, verify exact string comparison",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T10:45:13.456Z"
           }
         ],
-        "updatedAt": "2025-01-27T00:00:00.000Z"
+        "updatedAt": "2025-11-13T10:45:13.456Z"
       },
       {
         "id": "4",
@@ -511,9 +515,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-13T09:49:20.448Z",
+      "lastModified": "2025-11-13T10:45:13.458Z",
       "taskCount": 9,
-      "completedCount": 2,
+      "completedCount": 3,
       "tags": [
         "master"
       ]

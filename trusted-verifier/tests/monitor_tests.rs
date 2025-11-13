@@ -506,3 +506,32 @@ async fn test_approval_fails_when_intent_id_mismatch() {
     let approval = monitor.get_approval_for_escrow("0xescrow123").await;
     assert!(approval.is_none(), "No approval should exist when intent_ids don't match");
 }
+
+/// Test that approval generation fails when no escrow exists in cache
+/// Why: Verify that fulfillments cannot be approved when there's no matching escrow in the cache
+#[tokio::test]
+async fn test_approval_fails_when_no_escrow_exists() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    
+    // Ensure escrow cache is empty (no escrow added)
+    let escrow_cache = monitor.escrow_cache.read().await;
+    assert_eq!(escrow_cache.len(), 0, "Escrow cache should be empty");
+    drop(escrow_cache);
+    
+    // Create fulfillment (but no matching escrow exists)
+    let fulfillment = create_base_fulfillment();
+    
+    // This should fail - no escrow in cache to match
+    let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
+    assert!(result.is_err(), "Approval should fail when no escrow exists in cache");
+    
+    let error_msg = result.unwrap_err().to_string();
+    assert!(error_msg.contains("No matching escrow") || error_msg.contains("matching escrow"),
+            "Error message should indicate no matching escrow found: {}", error_msg);
+    
+    // Verify no approval was generated
+    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    assert!(approval.is_none(), "No approval should exist when no escrow is in cache");
+}

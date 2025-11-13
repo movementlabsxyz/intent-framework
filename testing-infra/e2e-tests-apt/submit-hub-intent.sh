@@ -83,9 +83,10 @@ log "     Solver (Bob) address: $BOB_CHAIN1_ADDRESS"
 log "     Generating solver signature..."
 
 # Generate solver signature using helper function
-# For cross-chain intents: offered tokens are on connected chain (chain 2), desired tokens are on hub chain (chain 1)
+# For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
 OFFERED_AMOUNT="100000000"
-OFFERED_CHAIN_ID=2  # Connected chain where escrow will be created
+# Connected chain ID: default to 2 (Aptos Chain 2), but can be overridden (e.g., 31337 for EVM)
+OFFERED_CHAIN_ID=${CONNECTED_CHAIN_ID:-2}  # Connected chain where escrow will be created
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
@@ -125,8 +126,8 @@ register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRES
 
 # Remove 0x prefix from signature for hex format
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
-# Chain 2 (connected Aptos chain) uses chain_id 2
-CONNECTED_CHAIN_ID=2
+# Connected chain ID: default to 2 (Aptos Chain 2), but can be overridden (e.g., 31337 for EVM)
+CONNECTED_CHAIN_ID=${CONNECTED_CHAIN_ID:-2}
 HUB_CHAIN_ID=1
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \

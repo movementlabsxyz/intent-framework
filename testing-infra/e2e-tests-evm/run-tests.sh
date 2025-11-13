@@ -40,7 +40,7 @@ log_and_echo "======================================================"
 log_and_echo ""
 log_and_echo "🚀 Step 3: Submitting cross-chain intents, configuring verifier..."
 log_and_echo "==============================================================="
-./testing-infra/e2e-tests-apt/submit-hub-intent.sh
+CONNECTED_CHAIN_ID=31337 ./testing-infra/e2e-tests-apt/submit-hub-intent.sh
 ./testing-infra/e2e-tests-evm/submit-escrow.sh
 ./testing-infra/e2e-tests-apt/fulfill-hub-intent.sh
 ./testing-infra/chain-hub/configure-verifier.sh

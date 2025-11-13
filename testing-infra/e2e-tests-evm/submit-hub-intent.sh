@@ -7,33 +7,27 @@ source "$SCRIPT_DIR/../util_apt.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "submit-hub-intent"
+setup_logging "submit-hub-intent-evm"
 cd "$PROJECT_ROOT"
 
 # Generate a random intent_id that will be used for both hub and escrow
 INTENT_ID="0x$(openssl rand -hex 32)"
 
-# Aptos mode: CONNECTED_CHAIN_ID=2
-CONNECTED_CHAIN_ID=2
+# EVM mode: CONNECTED_CHAIN_ID=31337
+CONNECTED_CHAIN_ID=31337
 
 # Get addresses
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
-CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
 
 # Get Alice and Bob addresses
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
-BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
 
 log ""
 log "📋 Chain Information:"
 log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
-log "   Connected Chain (Chain 2): $CHAIN2_ADDRESS"
 log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
-log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
-log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
@@ -45,7 +39,7 @@ log "   Expiry time: $EXPIRY_TIME"
 # Check and display initial balances using common function
 log ""
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_evm
 log_and_echo ""
 
 log ""
@@ -53,8 +47,9 @@ log "   Creating intent on hub chain..."
 log "   - Alice creates intent on Chain 1 (hub chain)"
 log "   - Intent requests 100000000 tokens to be provided by solver"
 log "   - Using intent_id: $INTENT_ID"
+log "   - Connected chain: EVM (Chain ID: 31337)"
 
-# Get APT metadata addresses for both chains using helper function
+# Get APT metadata addresses for Chain 1
 log "   - Getting APT metadata addresses..."
 
 # Get APT metadata on Chain 1
@@ -64,11 +59,8 @@ log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
 OFFERED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
 DESIRED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
 
-# Get APT metadata on Chain 2
-log "     Getting APT metadata on Chain 2..."
-APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+# In EVM mode, use Chain 1 metadata for both (since escrow is on EVM, not Chain 2)
+OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN1"
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
 # NOTE: Cross-chain request intents must be reserved. This requires:
@@ -92,7 +84,7 @@ log "     Generating solver signature..."
 # Generate solver signature using helper function
 # For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
 OFFERED_AMOUNT="100000000"
-OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (2 for Aptos)
+OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (31337 for EVM)
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
@@ -178,7 +170,6 @@ save_intent_info "$INTENT_ID" "$HUB_INTENT_ADDRESS"
 
 # Check final balances using common function
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_evm
 log_and_echo ""
-
 

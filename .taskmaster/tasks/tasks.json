@@ -257,7 +257,7 @@
         "id": "5",
         "title": "Add unit tests for fulfillment validation",
         "description": "Add unit tests for validate_fulfillment function to verify fulfillment meets intent requirements",
-        "status": "pending",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "The validate_fulfillment function checks that fulfillment provided_amount matches intent desired_amount, provided_metadata matches desired_metadata, and fulfillment occurred before intent expiry. We need tests for: all validations passing, amount mismatch, metadata mismatch, fulfillment after expiry, and intent_id mismatch.",
@@ -271,10 +271,11 @@
             "description": "Test that validate_fulfillment succeeds when all conditions are met",
             "dependencies": [],
             "details": "Create intent and fulfillment with matching amounts, metadata, and valid timestamps. Call validate_fulfillment and verify validation_result.valid is true.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create matching intent and fulfillment, call validate_fulfillment, assert valid=true",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:05:10.924Z"
           },
           {
             "id": 2,
@@ -282,10 +283,11 @@
             "description": "Test that validate_fulfillment rejects when fulfillment provided_amount differs from intent desired_amount",
             "dependencies": [],
             "details": "Create intent with desired_amount and fulfillment with different provided_amount. Verify validation fails with appropriate error message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and fulfillment with mismatched amounts, call validate_fulfillment, assert valid=false",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:05:12.042Z"
           },
           {
             "id": 3,
@@ -293,10 +295,11 @@
             "description": "Test that validate_fulfillment rejects when fulfillment provided_metadata differs from intent desired_metadata",
             "dependencies": [],
             "details": "Create intent and fulfillment with mismatched metadata. Verify validation fails with appropriate error message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and fulfillment with mismatched metadata, call validate_fulfillment, assert valid=false",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:05:13.417Z"
           },
           {
             "id": 4,
@@ -304,10 +307,11 @@
             "description": "Test that validate_fulfillment rejects when fulfillment timestamp is after intent expiry_time",
             "dependencies": [],
             "details": "Create intent with expiry_time and fulfillment with timestamp after expiry. Verify validation fails with appropriate error message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent with expiry, fulfillment with later timestamp, call validate_fulfillment, assert valid=false",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:05:14.529Z"
           },
           {
             "id": 5,
@@ -315,19 +319,20 @@
             "description": "Test that validate_fulfillment rejects when fulfillment intent_id differs from intent intent_id",
             "dependencies": [],
             "details": "Create intent and fulfillment with different intent_ids. Verify validation fails with appropriate error message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and fulfillment with different intent_ids, call validate_fulfillment, assert valid=false",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:05:15.734Z"
           }
         ],
-        "updatedAt": "2025-01-27T00:00:00.000Z"
+        "updatedAt": "2025-11-13T14:05:15.734Z"
       },
       {
         "id": "6",
         "title": "Add unit tests for solver address matching (Aptos escrows)",
         "description": "Add unit tests to verify that Aptos escrow reserved_solver must match hub intent solver",
-        "status": "pending",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "For Aptos escrows, the verifier validates that escrow reserved_solver matches hub intent solver. We need tests for: successful matching, rejection when addresses don't match, and mismatch scenarios when one has solver and the other doesn't.",
@@ -341,10 +346,11 @@
             "description": "Test that validation passes when escrow reserved_solver matches hub intent solver for Aptos escrows",
             "dependencies": [],
             "details": "Create hub intent and Aptos escrow with matching solver addresses. Call validate_intent_fulfillment and verify validation_result.valid is true.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and Aptos escrow with matching solver addresses, call validate_intent_fulfillment, assert valid=true",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:16:37.307Z"
           },
           {
             "id": 2,
@@ -352,10 +358,11 @@
             "description": "Test that validation fails when escrow reserved_solver differs from hub intent solver",
             "dependencies": [],
             "details": "Create hub intent and Aptos escrow with different solver addresses. Call validate_intent_fulfillment and verify validation_result.valid is false with appropriate error message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and Aptos escrow with different solver addresses, call validate_intent_fulfillment, assert valid=false",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:16:38.442Z"
           },
           {
             "id": 3,
@@ -363,13 +370,14 @@
             "description": "Test validation when intent has solver but escrow doesn't, or vice versa",
             "dependencies": [],
             "details": "Test two scenarios: intent has solver but escrow reserved_solver is None, and escrow has reserved_solver but intent solver is None. Both should fail validation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test both mismatch scenarios, verify both are rejected",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:16:39.545Z"
           }
         ],
-        "updatedAt": "2025-01-27T00:00:00.000Z"
+        "updatedAt": "2025-11-13T14:16:39.545Z"
       },
       {
         "id": "7",
@@ -518,9 +526,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-13T11:52:54.638Z",
+      "lastModified": "2025-11-13T14:16:39.547Z",
       "taskCount": 9,
-      "completedCount": 4,
+      "completedCount": 6,
       "tags": [
         "master"
       ]

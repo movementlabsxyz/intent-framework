@@ -40,7 +40,7 @@ module mvmt_intent::intent_as_escrow {
     /// 
     /// # Arguments
     /// - `user`: Signer of the escrow creator
-    /// - `source_asset`: Asset to be escrowed
+    /// - `offered_asset`: Asset to be escrowed
     /// - `verifier_public_key`: Public key of authorized verifier
     /// - `expiry_time`: Unix timestamp when escrow expires
     /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
@@ -53,7 +53,7 @@ module mvmt_intent::intent_as_escrow {
     /// - If reservation is None (escrows must always be reserved for a specific solver)
     public fun create_escrow(
         user: &signer,
-        source_asset: FungibleAsset,
+        offered_asset: FungibleAsset,
         verifier_public_key: ed25519::UnvalidatedPublicKey,
         expiry_time: u64,
         intent_id: address,
@@ -68,11 +68,11 @@ module mvmt_intent::intent_as_escrow {
 
         // Create the verifier-guarded intent with placeholder values
         // Note: desired_metadata and desired_amount are placeholders since actual logic is off-chain
-        let placeholder_metadata = fungible_asset::asset_metadata(&source_asset); // Use same metadata as placeholder
+        let placeholder_metadata = fungible_asset::asset_metadata(&offered_asset); // Use same metadata as placeholder
         let placeholder_amount = 1; // Minimal placeholder amount
         
         fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
-            source_asset,
+            offered_asset,
             placeholder_metadata,
             placeholder_amount,
             expiry_time,

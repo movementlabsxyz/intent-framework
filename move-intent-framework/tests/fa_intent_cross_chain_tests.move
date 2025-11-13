@@ -37,7 +37,7 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         
         // Create test fungible assets for cross-chain swap
         // Source FA (locked on connected chain) and desired FA (requested on hub chain)
-        let (source_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (offered_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
         let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent (has 0 tokens locked)
@@ -59,7 +59,7 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_cross_chain::create_cross_chain_draft_intent(
-            source_metadata,
+            offered_metadata,
             100, // offered_amount
             2, // offered_chain_id (chain where escrow is - connected chain)
             desired_metadata,
@@ -85,7 +85,7 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         assert!(option::is_some(&reservation_result), 0);
         
         // Create the intent with the verified reservation
-        let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, source_metadata, 0);
+        let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, offered_metadata, 0);
         let intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
             1, // offered_chain_id
@@ -143,7 +143,7 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         timestamp::set_time_has_started_for_testing(aptos_framework);
         
         // Create test fungible assets for cross-chain swap
-        let (source_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
+        let (offered_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
         let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         // Requestor creates a cross-chain request intent wanting 1000 tokens
@@ -158,7 +158,7 @@ module mvmt_intent::fa_intent_cross_chain_tests {
         let reservation = intent_reservation::new_reservation(solver_address);
         
         // Create the intent directly (bypassing signature verification for testing)
-        let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, source_metadata, 0);
+        let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, offered_metadata, 0);
         let intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
             1, // offered_chain_id

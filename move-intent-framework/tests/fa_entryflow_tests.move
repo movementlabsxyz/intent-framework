@@ -29,7 +29,7 @@ module mvmt_intent::fa_entryflow_tests {
     public entry fun offerer_submit_limit_order(
         offerer: &signer,
         offered_fa: object::Object<Metadata>,
-        source_amount: u64,
+        offered_amount: u64,
         desired_fa: object::Object<Metadata>,
         desired_amount: u64,
         expiry_time: u64,
@@ -37,10 +37,10 @@ module mvmt_intent::fa_entryflow_tests {
         let offerer_addr = signer::address_of(offerer);
         assert!(!exists<PendingIntent>(offerer_addr));
 
-        let source_fa = primary_fungible_store::withdraw(offerer, offered_fa, source_amount);
+        let offered_fa = primary_fungible_store::withdraw(offerer, offered_fa, offered_amount);
         // Preserve the created intent so the solver can access it later.
         let intent = fa_intent::create_fa_to_fa_intent(
-            source_fa,
+            offered_fa,
             1, // offered_chain_id
             desired_fa,
             desired_amount,

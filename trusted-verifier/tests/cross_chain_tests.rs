@@ -102,7 +102,7 @@ fn test_cross_chain_intent_matching() {
     let hub_intent = create_test_request_intent(
         "0xhub_abc123",
         "0xalice",
-        "{\"inner\":\"0xsource_meta\"}",
+        "{\"inner\":\"0xoffered_meta\"}",
         1000, // amount that will be locked in escrow on connected chain
         "{\"inner\":\"0xdesired_meta\"}",
         None,
@@ -115,7 +115,7 @@ fn test_cross_chain_intent_matching() {
         "0xescrow_xyz789",
         "0xhub_abc123",
         "0xalice",
-        "{\"inner\":\"0xsource_meta\"}",
+        "{\"inner\":\"0xoffered_meta\"}",
         1000,
         "{\"inner\":\"0xdesired_meta\"}",
         None,
@@ -236,7 +236,7 @@ fn create_amount_validation_intent(intent_id: &str, offered_amount: u64) -> Requ
     create_test_request_intent(
         intent_id,
         "0xalice",
-        "{\"inner\":\"0xsource_meta\"}",
+        "{\"inner\":\"0xoffered_meta\"}",
         offered_amount,
         "{\"inner\":\"0xdesired_meta\"}",
         Some("0xsolver".to_string()),
@@ -249,7 +249,7 @@ fn create_amount_validation_escrow(escrow_id: &str, intent_id: &str, offered_amo
         escrow_id,
         intent_id,
         "0xalice",
-        "{\"inner\":\"0xsource_meta\"}",
+        "{\"inner\":\"0xoffered_meta\"}",
         offered_amount,
         "{\"inner\":\"0xdesired_meta\"}",
         Some("0xsolver".to_string()),
@@ -271,7 +271,7 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_suc
     let hub_intent = create_test_request_intent(
         "0xintent_metadata_123",
         "0xalice",
-        "{\"inner\":\"0xsource_meta\"}",
+        "{\"inner\":\"0xoffered_meta\"}",
         1000,
         "{\"inner\":\"0xdesired_meta\"}",
         Some("0xsolver".to_string()),
@@ -283,7 +283,7 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_suc
         "0xescrow_metadata_123",
         "0xintent_metadata_123",
         "0xalice",
-        "{\"inner\":\"0xsource_meta\"}",
+        "{\"inner\":\"0xoffered_meta\"}",
         1000,
         "{\"inner\":\"0xdesired_meta\"}",
         Some("0xsolver".to_string()),
@@ -312,7 +312,7 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_rej
     let hub_intent = create_test_request_intent(
         "0xintent_metadata_456",
         "0xalice",
-        "{\"inner\":\"0xsource_meta\"}",
+        "{\"inner\":\"0xoffered_meta\"}",
         1000,
         "{\"inner\":\"0xdesired_meta\"}",
         Some("0xsolver".to_string()),
@@ -361,7 +361,7 @@ async fn test_escrow_offered_metadata_empty_strings() {
     assert!(validation_result.valid, "Validation should pass when both metadata strings are empty");
     
     // Test case 2: Hub intent has metadata, escrow is empty - should fail
-    let hub_intent_with_meta = create_empty_metadata_intent(2, "{\"inner\":\"0xsource_meta\"}");
+    let hub_intent_with_meta = create_empty_metadata_intent(2, "{\"inner\":\"0xoffered_meta\"}");
     let escrow_empty_2 = create_empty_metadata_escrow(2, "");
     
     let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_with_meta, &escrow_empty_2).await
@@ -373,7 +373,7 @@ async fn test_escrow_offered_metadata_empty_strings() {
     
     // Test case 3: Hub intent is empty, escrow has metadata - should fail
     let hub_intent_empty_3 = create_empty_metadata_intent(3, "");
-    let escrow_with_meta = create_empty_metadata_escrow(3, "{\"inner\":\"0xsource_meta\"}");
+    let escrow_with_meta = create_empty_metadata_escrow(3, "{\"inner\":\"0xoffered_meta\"}");
     
     let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_empty_3, &escrow_with_meta).await
         .expect("Validation should complete without error");
@@ -494,5 +494,88 @@ fn create_complex_json_escrow(escrow_id: &str, intent_id: &str, offered_metadata
         Some("0xsolver".to_string()),
         2,
     )
+}
+
+/// Test that verifier accepts escrows where desired_amount is 0
+/// Why: Verify that escrow desired_amount validation works correctly for successful cases
+#[tokio::test]
+async fn test_escrow_desired_amount_must_be_zero_success() {
+    use trusted_verifier::validator::CrossChainValidator;
+    use test_helpers::build_test_config;
+    
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a hub intent
+    let hub_intent = create_test_request_intent(
+        "0xintent_desired_amount",
+        "0xalice",
+        "{\"inner\":\"0xoffered_meta\"}",
+        1000,
+        "{\"inner\":\"0xdesired_meta\"}",
+        Some("0xsolver".to_string()),
+        Some(2),
+    );
+    
+    // Validation passes when desired_amount is 0
+    let escrow_valid = create_test_escrow_event(
+        "0xescrow_valid_desired",
+        "0xintent_desired_amount",
+        "0xalice",
+        "{\"inner\":\"0xoffered_meta\"}",
+        1000,
+        "{\"inner\":\"0xdesired_meta\"}",
+        Some("0xsolver".to_string()),
+        2,
+    );
+    // Ensure desired_amount is 0 (it's already set to 0 in the helper)
+    assert_eq!(escrow_valid.desired_amount, 0, "Escrow should have desired_amount = 0");
+    
+    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_valid).await
+        .expect("Validation should complete without error");
+    
+    assert!(validation_result.valid, "Validation should pass when desired_amount is 0");
+}
+
+/// Test that verifier rejects escrows where desired_amount is non-zero
+/// Why: Verify that escrow desired_amount validation works correctly for rejection cases
+#[tokio::test]
+async fn test_escrow_desired_amount_must_be_zero_rejection() {
+    use trusted_verifier::validator::CrossChainValidator;
+    use test_helpers::build_test_config;
+    
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a hub intent
+    let hub_intent = create_test_request_intent(
+        "0xintent_desired_amount",
+        "0xalice",
+        "{\"inner\":\"0xoffered_meta\"}",
+        1000,
+        "{\"inner\":\"0xdesired_meta\"}",
+        Some("0xsolver".to_string()),
+        Some(2),
+    );
+    
+    // Validation fails when desired_amount is non-zero
+    let mut escrow_invalid = create_test_escrow_event(
+        "0xescrow_invalid_desired",
+        "0xintent_desired_amount",
+        "0xalice",
+        "{\"inner\":\"0xoffered_meta\"}",
+        1000,
+        "{\"inner\":\"0xdesired_meta\"}",
+        Some("0xsolver".to_string()),
+        2,
+    );
+    escrow_invalid.desired_amount = 1;
+    
+    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_invalid).await
+        .expect("Validation should complete without error");
+    
+    assert!(!validation_result.valid, "Validation should fail when desired_amount is non-zero");
+    assert!(validation_result.message.contains("desired amount"),
+            "Error message should mention desired amount must be 0");
 }
 

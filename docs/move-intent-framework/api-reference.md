@@ -57,8 +57,8 @@ public fun finish_intent_session<Witness: drop, Args: store + drop>(
 
 ```move
 public fun create_fa_to_fa_intent_entry(
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
+    offered_metadata: Object<Metadata>,
+    offered_amount: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
     expiry_time: u64,
@@ -68,8 +68,8 @@ public fun create_fa_to_fa_intent_entry(
 ```
 
 **Parameters:**
-- `source_metadata`: Metadata of the asset being offered
-- `source_amount`: Amount of the source asset
+- `offered_metadata`: Metadata of the asset being offered
+- `offered_amount`: Amount of the asset being offered
 - `desired_metadata`: Metadata of the desired asset
 - `desired_amount`: Amount of the desired asset
 - `expiry_time`: Unix timestamp when the intent expires
@@ -149,8 +149,8 @@ public fun finish_fa_receiving_session(
 
 ```move
 public fun create_draft_intent(
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
+    offered_metadata: Object<Metadata>,
+    offered_amount: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
     expiry_time: u64,
@@ -159,8 +159,8 @@ public fun create_draft_intent(
 ```
 
 **Parameters:**
-- `source_metadata`: Metadata of the asset being offered
-- `source_amount`: Amount of the source asset
+- `offered_metadata`: Metadata of the asset being offered
+- `offered_amount`: Amount of the asset being offered
 - `desired_metadata`: Metadata of the desired asset
 - `desired_amount`: Amount of the desired asset
 - `expiry_time`: Unix timestamp when the intent expires
@@ -232,8 +232,8 @@ public fun verify_and_create_reservation_from_registry(
 
 ```move
 public fun create_oracle_guarded_intent_entry(
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
+    offered_metadata: Object<Metadata>,
+    offered_amount: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
     expiry_time: u64,
@@ -242,8 +242,8 @@ public fun create_oracle_guarded_intent_entry(
 ```
 
 **Parameters:**
-- `source_metadata`: Metadata of the asset being offered
-- `source_amount`: Amount of the source asset
+- `offered_metadata`: Metadata of the asset being offered
+- `offered_amount`: Amount of the asset being offered
 - `desired_metadata`: Metadata of the desired asset
 - `desired_amount`: Amount of the desired asset
 - `expiry_time`: Unix timestamp when the intent expires
@@ -318,8 +318,8 @@ Emitted when a fungible asset intent is created:
 ```move
 struct LimitOrderEvent has drop, store {
     intent_id: Object<TradeIntent<FungibleAsset, FungibleAssetLimitOrder>>,
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
+    offered_metadata: Object<Metadata>,
+    offered_amount: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
     expiry_time: u64,
@@ -334,8 +334,8 @@ Emitted when an oracle-guarded intent is created:
 
 ```move
 struct OracleLimitOrderEvent has store, drop {
-    source_metadata: Object<Metadata>,
-    source_amount: u64,
+    offered_metadata: Object<Metadata>,
+    offered_amount: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
     issuer: address,

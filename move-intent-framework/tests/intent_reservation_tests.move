@@ -10,7 +10,7 @@ module mvmt_intent::intent_reservation_tests {
     use mvmt_intent::solver_registry;
     use mvmt_intent::test_utils;
 
-    const SOURCE_AMOUNT: u64 = 50;
+    const OFFERED_AMOUNT: u64 = 50;
     const DESIRED_AMOUNT: u64 = 25;
     const EXPIRY_TIME: u64 = 3600;
 
@@ -43,7 +43,7 @@ module mvmt_intent::intent_reservation_tests {
         
         // Step 1: Offerer creates draft intent (without solver)
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type, SOURCE_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
+            offered_fa_type, OFFERED_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 2: Solver adds their address to the draft intent
@@ -87,7 +87,7 @@ module mvmt_intent::intent_reservation_tests {
         
         // Step 1: Offerer creates draft intent (without solver)
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type, SOURCE_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
+            offered_fa_type, OFFERED_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 2: Solver adds their address to the draft intent
@@ -131,7 +131,7 @@ module mvmt_intent::intent_reservation_tests {
         
         // Step 1: Offerer creates draft intent (without solver)
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type, SOURCE_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
+            offered_fa_type, OFFERED_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 2: Solver adds their address to the draft intent
@@ -173,7 +173,7 @@ module mvmt_intent::intent_reservation_tests {
         // which cannot be used to extract the Ed25519 public key for signature verification
         let incorrect_signature = b"incorrect_signature_for_testing";
         fa_intent::create_fa_to_fa_intent_entry(
-            offerer, offered_fa_type, SOURCE_AMOUNT, desired_fa_type, DESIRED_AMOUNT,
+            offerer, offered_fa_type, OFFERED_AMOUNT, desired_fa_type, DESIRED_AMOUNT,
             EXPIRY_TIME, 1, signer::address_of(solver), incorrect_signature
         );
     }
@@ -205,7 +205,7 @@ module mvmt_intent::intent_reservation_tests {
         
         // Step 1: Offerer creates draft intent (without solver)
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type, SOURCE_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
+            offered_fa_type, OFFERED_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 2: Solver adds their address to the draft intent
@@ -264,7 +264,7 @@ module mvmt_intent::intent_reservation_tests {
         let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
         
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type, SOURCE_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
+            offered_fa_type, OFFERED_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         // Step 4: Solver adds their address to the draft intent and signs it
@@ -322,7 +322,7 @@ module mvmt_intent::intent_reservation_tests {
         let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
         
         let draft_intent = intent_reservation::create_draft_intent(
-            offered_fa_type, SOURCE_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
+            offered_fa_type, OFFERED_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
         );
         
         let solver_address = signer::address_of(solver);

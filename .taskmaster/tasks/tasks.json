@@ -206,7 +206,7 @@
         "id": "4",
         "title": "Add unit tests for desired amount validation (must be 0)",
         "description": "Add unit tests to verify that escrow desired_amount must be 0",
-        "status": "pending",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "The verifier validates that escrow desired_amount must be 0 (escrow only holds offered funds, requirement is in hub request intent). We need tests for: validation passes when desired_amount is 0, validation fails when desired_amount is non-zero, and various non-zero values.",
@@ -220,10 +220,11 @@
             "description": "Test that validation succeeds when escrow desired_amount is 0",
             "dependencies": [],
             "details": "Create hub intent and escrow with desired_amount = 0. Call validate_intent_fulfillment and verify validation_result.valid is true.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and escrow with desired_amount=0, call validate_intent_fulfillment, assert valid=true",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T11:52:52.295Z"
           },
           {
             "id": 2,
@@ -231,10 +232,11 @@
             "description": "Test that validation fails when escrow desired_amount is not 0",
             "dependencies": [],
             "details": "Create escrow with desired_amount > 0. Call validate_intent_fulfillment and verify validation_result.valid is false with appropriate error message about desired_amount must be 0.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create escrow with desired_amount > 0, call validate_intent_fulfillment, assert valid=false with error message",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T11:52:53.519Z"
           },
           {
             "id": 3,
@@ -242,13 +244,14 @@
             "description": "Test rejection with different non-zero desired_amount values",
             "dependencies": [],
             "details": "Test with small values (1), large values (u64::MAX), and typical values (1000, 1000000). Verify all are rejected.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test with multiple non-zero values, verify all are rejected",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T11:52:54.638Z"
           }
         ],
-        "updatedAt": "2025-01-27T00:00:00.000Z"
+        "updatedAt": "2025-11-13T11:52:54.638Z"
       },
       {
         "id": "5",
@@ -515,9 +518,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-13T10:45:13.458Z",
+      "lastModified": "2025-11-13T11:52:54.638Z",
       "taskCount": 9,
-      "completedCount": 3,
+      "completedCount": 4,
       "tags": [
         "master"
       ]

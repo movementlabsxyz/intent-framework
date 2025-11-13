@@ -17,7 +17,7 @@ The `intent_as_escrow.move` module provides a clean interface for escrow functio
 let reservation = intent_reservation::new_reservation(solver_address);
 let escrow_intent = intent_as_escrow::create_escrow(
     user,
-    source_asset,
+    offered_asset,
     verifier_public_key,
     expiry_time,
     intent_id, // Intent ID from hub chain (for cross-chain matching)

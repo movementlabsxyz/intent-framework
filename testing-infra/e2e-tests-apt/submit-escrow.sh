@@ -92,16 +92,16 @@ log "   - Using intent_id from hub chain: $INTENT_ID"
 log "   - Getting APT metadata on Chain 2..."
 APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
 log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-SOURCE_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 
 # Submit escrow intent using Alice's account on Chain 2 (connected chain)
 # Reserved solver: Bob on Chain 2 - funds will go to Bob when escrow is claimed
 log "   - Creating escrow intent on Chain 2..."
-log "     Source FA metadata: $SOURCE_FA_METADATA_CHAIN2"
+log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN2"
 log "     Reserved solver: $BOB_CHAIN2_ADDRESS (Bob on Chain 2)"
 aptos move run --profile alice-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
-    --args "address:${SOURCE_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Escrow intent created on Chain 2!"
@@ -116,7 +116,7 @@ if [ $? -eq 0 ]; then
     ESCROW_INTENT_ID=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_id' | head -n 1)
     LOCKED_AMOUNT=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
-        jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.source_amount' | head -n 1)
+        jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.offered_amount' | head -n 1)
     DESIRED_AMOUNT=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.desired_amount' | head -n 1)
     

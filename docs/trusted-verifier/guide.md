@@ -45,6 +45,7 @@ This script sets up chains, deploys contracts, submits intents, runs integration
 - **Linking**
   - Shared `intent_id` across chains links hub intents to escrows on connected chains
   - Verifier validates `chain_id` matches between intent `offered_chain_id` and escrow `chain_id`
+  - Each `EscrowEvent` includes a `chain_type` field (Move, Evm, Solana) set by the verifier based on which monitor discovered the event. This is trusted because it comes from the verifier's configuration, not from untrusted event data.
 
 ## Cross‑Chain Flow
 

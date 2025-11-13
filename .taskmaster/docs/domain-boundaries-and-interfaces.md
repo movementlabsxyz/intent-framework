@@ -243,7 +243,7 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 **Data Structures Exported**:
 
 - `RequestIntentEvent` - Normalized request intent event structure
-- `EscrowEvent` - Normalized escrow event structure
+- `EscrowEvent` - Normalized escrow event structure with `chain_type` field (Move, Evm, Solana) set by verifier based on monitor that discovered it
 - `FulfillmentEvent` - Normalized fulfillment event structure
 - `ApprovalSignature` - Approval signature structure
 - `ValidationResult` - Validation result structure

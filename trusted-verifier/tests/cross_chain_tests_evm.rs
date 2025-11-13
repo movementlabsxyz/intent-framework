@@ -43,6 +43,7 @@ fn test_evm_escrow_cross_chain_matching() {
         revocable: false,
         reserved_solver: None,
         chain_id: 31337,
+        chain_type: trusted_verifier::ChainType::Evm,
         timestamp: 1,
     };
 
@@ -141,6 +142,7 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
         revocable: false,
         reserved_solver: None,
         chain_id: 31337,
+        chain_type: trusted_verifier::ChainType::Evm,
         timestamp: 1,
     };
 

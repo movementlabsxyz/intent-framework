@@ -58,7 +58,24 @@ Response (abbreviated)
         "timestamp": 1761761513
       }
     ],
-    "escrow_events": [ { ... } ],
+    "escrow_events": [
+      {
+        "chain": "connected",
+        "escrow_id": "0x...",
+        "intent_id": "0x...",
+        "issuer": "0x...",
+        "offered_metadata": {"inner":"0xa"},
+        "offered_amount": 1000,
+        "desired_metadata": {"inner":"0xa"},
+        "desired_amount": 0,
+        "expiry_time": 1761765097,
+        "revocable": false,
+        "reserved_solver": "0x...",
+        "chain_id": 2,
+        "chain_type": "Move",
+        "timestamp": 1761761513
+      }
+    ],
     "fulfillment_events": [ { ... } ],
     "approvals": [ { ... } ]
   }

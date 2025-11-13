@@ -79,6 +79,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
             desired_amount: 1,
             expiry_time: 9999999999,
             revocable: false,
+            chain_type: trusted_verifier::ChainType::Move,
             timestamp: 1,
         });
     }
@@ -157,6 +158,7 @@ async fn test_multiple_concurrent_intents() {
             desired_amount: 1,
             expiry_time: 9999999999,
             revocable: false,
+            chain_type: trusted_verifier::ChainType::Move,
             timestamp: 1,
         },
         EscrowEvent {
@@ -172,6 +174,7 @@ async fn test_multiple_concurrent_intents() {
             desired_amount: 1,
             expiry_time: 9999999999,
             revocable: false,
+            chain_type: trusted_verifier::ChainType::Move,
             timestamp: 1,
         },
         EscrowEvent {
@@ -187,6 +190,7 @@ async fn test_multiple_concurrent_intents() {
             desired_amount: 1,
             expiry_time: 9999999999,
             revocable: false,
+            chain_type: trusted_verifier::ChainType::Move,
             timestamp: 1,
         },
     ];

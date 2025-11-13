@@ -105,6 +105,7 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
             revocable: false,
             reserved_solver: None,
             chain_id: 2,
+            chain_type: trusted_verifier::ChainType::Move,
             timestamp: 1,
         });
     }

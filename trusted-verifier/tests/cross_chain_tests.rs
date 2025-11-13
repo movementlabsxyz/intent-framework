@@ -66,6 +66,7 @@ fn test_cross_chain_intent_matching() {
         revocable: false, // Escrows must be non-revocable for security
         reserved_solver: None,
         chain_id: 2,
+        chain_type: trusted_verifier::ChainType::Move,
         timestamp: 0,
     };
     
@@ -131,6 +132,7 @@ async fn test_escrow_chain_id_validation() {
         revocable: false,
         reserved_solver: Some("0xsolver".to_string()),
         chain_id: 2,
+        chain_type: trusted_verifier::ChainType::Move,
         timestamp: 0,
     };
     
@@ -150,7 +152,7 @@ async fn test_escrow_chain_id_validation() {
     // We just verify it doesn't fail on connected_chain_id check
 }
 
-/// Test that verifier rejects escrows where source_amount doesn't match hub intent's offered amount
+/// Test that verifier rejects escrows where offered_amount doesn't match hub request intent's offered amount
 /// Why: Verify that escrow amount validation works correctly
 #[tokio::test]
 async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
@@ -190,6 +192,7 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
         revocable: false,
         reserved_solver: Some("0xsolver".to_string()),
         chain_id: 2,
+        chain_type: trusted_verifier::ChainType::Move,
         timestamp: 0,
     };
     
@@ -197,8 +200,8 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when escrow offered_amount doesn't match hub intent offered amount");
-    assert!(validation_result.message.contains("source amount") || validation_result.message.contains("offered amount"),
-            "Error message should mention source/offered amount mismatch");
+    assert!(validation_result.message.contains("offered amount"),
+            "Error message should mention offered amount mismatch");
     
     // Now test with matching amounts
     let escrow_match = EscrowEvent {
@@ -214,14 +217,18 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
         revocable: false,
         reserved_solver: Some("0xsolver".to_string()),
         chain_id: 2,
+        chain_type: trusted_verifier::ChainType::Move,
         timestamp: 0,
     };
     
-    let _validation_result = validator.validate_intent_fulfillment(&hub_intent, &escrow_match).await
+    let validation_result = validator.validate_intent_fulfillment(&hub_intent, &escrow_match).await
         .expect("Validation should complete without error");
     
-    // Note: This may still fail other validations (like solver address), but should pass amount check
-    // The amount validation happens first, so if it passes, we know the amount check worked
-    // For a complete pass, we'd need all validations to pass, but that's tested elsewhere
+    // Verify that validation doesn't fail due to amount mismatch (amount check passes)
+    assert!(!validation_result.message.contains("offered amount"), 
+            "Validation should not fail due to offered_amount mismatch when amounts match");
+    
+    // Verify that validation doesn't fail at all (all checks pass)
+    assert!(validation_result.valid, "Validation should pass when all checks pass");
 }
 

@@ -26,6 +26,17 @@ use crate::evm_client::EvmClient;
 // EVENT DATA STRUCTURES
 // ============================================================================
 
+/// Type of blockchain where an escrow or intent is located.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ChainType {
+    /// Move-based chain (e.g., Aptos)
+    Move,
+    /// EVM-compatible chain (e.g., Ethereum, Polygon, Arbitrum)
+    Evm,
+    /// Solana chain
+    Solana,
+}
+
 /// Request intent creation event from the hub chain.
 /// 
 /// This event is emitted when a new request intent is created on the hub chain.
@@ -91,7 +102,13 @@ pub struct EscrowEvent {
     /// For EVM escrows: EVM address (0x-prefixed hex string)
     pub reserved_solver: Option<String>,
     /// Chain ID where this escrow is located
+    /// Note: This is set by the verifier based on which monitor discovered the event (from config),
+    /// not from the event data itself, so it can be trusted for validation.
     pub chain_id: u64,
+    /// Type of blockchain where this escrow is located
+    /// Note: This is set by the verifier based on which monitor discovered the event,
+    /// not from the event data itself, so it can be trusted for validation.
+    pub chain_type: ChainType,
     /// Timestamp when the event was received
     pub timestamp: u64,
 }
@@ -629,6 +646,7 @@ impl EventMonitor {
                         revocable: data.revocable,
                         reserved_solver,
                         chain_id: connected_chain_apt.chain_id, // Chain ID from config
+                        chain_type: ChainType::Move, // This escrow came from Aptos (Move) monitoring
                         timestamp,
                     });
                 }
@@ -701,6 +719,7 @@ impl EventMonitor {
                 revocable: false, // EVM escrows are always non-revocable
                 reserved_solver: Some(event.reserved_solver.clone()),
                 chain_id: connected_chain_evm.chain_id,
+                chain_type: ChainType::Evm, // This escrow came from EVM monitoring
                 timestamp,
             });
         }

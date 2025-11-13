@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::config::Config;
-use crate::monitor::{RequestIntentEvent, EscrowEvent, FulfillmentEvent};
+use crate::monitor::{RequestIntentEvent, EscrowEvent, FulfillmentEvent, ChainType};
 
 // ============================================================================
 // VALIDATION DATA STRUCTURES
@@ -207,16 +207,11 @@ impl CrossChainValidator {
         // must fulfill on the hub chain before the verifier approves escrow release
         
         // Validate solver addresses match between escrow and intent
-        // For Aptos escrows: Check if escrow's reserved_solver (Aptos address) matches hub intent's solver (Aptos address)
+        // For Move/Aptos escrows: Check if escrow's reserved_solver (Aptos address) matches hub intent's solver (Aptos address)
         // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
         if let (Some(escrow_solver), Some(intent_solver)) = (&escrow_event.reserved_solver, &request_intent_event.solver) {
-            // Determine if this is an EVM escrow by checking chain_id
-            // EVM chains typically have chain_id >= 1 (e.g., 1 for mainnet, 31337 for Hardhat)
-            // Aptos chains can use various chain_ids (e.g., 1 for hub, 2 for connected Aptos chain)
-            // We'll use a heuristic: if chain_id is >= 10000, assume it's EVM (this is a simplification)
-            // Better approach: check if escrow came from EVM monitoring vs Aptos monitoring
-            // For now, we'll check if the escrow_solver looks like an EVM address (starts with 0x and is 42 chars)
-            let is_evm_escrow = escrow_solver.starts_with("0x") && escrow_solver.len() == 42;
+            // Determine chain type from the chain_type field set by the monitor
+            let is_evm_escrow = escrow_event.chain_type == ChainType::Evm;
             
             if is_evm_escrow {
                 // EVM escrow: Compare EVM addresses

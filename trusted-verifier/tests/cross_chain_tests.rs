@@ -137,7 +137,7 @@ async fn test_escrow_chain_id_validation() {
     };
     
     // This should pass the connected_chain_id check (may fail other validations, but not this one)
-    let result = validator.validate_intent_fulfillment(&valid_intent, &valid_escrow).await;
+    let result = validator.validate_request_intent_fulfillment(&valid_intent, &valid_escrow).await;
     assert!(result.is_ok(), "Validation should complete");
     
     let validation_result = result.unwrap();
@@ -196,7 +196,7 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
         timestamp: 0,
     };
     
-    let validation_result = validator.validate_intent_fulfillment(&hub_intent, &escrow_mismatch).await
+    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_mismatch).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when escrow offered_amount doesn't match hub intent offered amount");
@@ -221,7 +221,7 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
         timestamp: 0,
     };
     
-    let validation_result = validator.validate_intent_fulfillment(&hub_intent, &escrow_match).await
+    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_match).await
         .expect("Validation should complete without error");
     
     // Verify that validation doesn't fail due to amount mismatch (amount check passes)

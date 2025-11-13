@@ -83,8 +83,8 @@ async fn setup_mock_server_with_error(status_code: u16) -> (MockServer, Config, 
     (mock_server, config, validator)
 }
 
-/// Create a test intent with the given solver
-fn create_test_intent(solver: Option<String>) -> RequestIntentEvent {
+/// Create a test request intent with the given solver
+fn create_test_request_intent(solver: Option<String>) -> RequestIntentEvent {
     RequestIntentEvent {
         chain: "hub".to_string(),
         intent_id: "0xintent123".to_string(),
@@ -118,12 +118,12 @@ async fn test_successful_evm_solver_validation() {
         Some(registered_evm_address),
     ).await;
     
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let request_intent = create_test_request_intent(Some(solver_address.to_string()));
     
     // Test with matching address
     let escrow_reserved_solver = registered_evm_address;
     let result = validator.validate_evm_escrow_solver(
-        &intent,
+        &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
@@ -148,11 +148,11 @@ async fn test_rejection_when_solver_not_registered() {
         None, // No EVM address (solver not registered)
     ).await;
     
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let request_intent = create_test_request_intent(Some(solver_address.to_string()));
     
     let escrow_reserved_solver = "0x1234567890123456789012345678901234567890";
     let result = validator.validate_evm_escrow_solver(
-        &intent,
+        &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
@@ -179,12 +179,12 @@ async fn test_rejection_when_evm_addresses_dont_match() {
         Some(registered_evm_address),
     ).await;
     
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let request_intent = create_test_request_intent(Some(solver_address.to_string()));
     
     // Escrow has a different address
     let escrow_reserved_solver = "0x2222222222222222222222222222222222222222";
     let result = validator.validate_evm_escrow_solver(
-        &intent,
+        &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
@@ -220,10 +220,10 @@ async fn test_evm_address_normalization() {
             Some(registered_addr),
         ).await;
         
-        let intent = create_test_intent(Some(solver_address.to_string()));
+        let request_intent = create_test_request_intent(Some(solver_address.to_string()));
         
         let result = validator.validate_evm_escrow_solver(
-            &intent,
+            &request_intent,
             escrow_addr,
             &config.hub_chain.rpc_url,
             &config.hub_chain.intent_module_address,
@@ -248,11 +248,11 @@ async fn test_error_handling_for_registry_query_failures() {
     // Setup mock server that returns a 500 error (simulating network/server error)
     let (_mock_server, config, validator) = setup_mock_server_with_error(500).await;
     
-    let intent = create_test_intent(Some("0xsolver_aptos".to_string()));
+    let request_intent = create_test_request_intent(Some("0xsolver_aptos".to_string()));
     
     let escrow_reserved_solver = "0x1234567890123456789012345678901234567890";
     let result = validator.validate_evm_escrow_solver(
-        &intent,
+        &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,

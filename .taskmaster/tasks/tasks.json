@@ -80,7 +80,7 @@
         "id": "2",
         "title": "Add unit tests for expiry time validation",
         "description": "Add unit tests to verify that expired intents are properly rejected in all validation functions",
-        "status": "pending",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "The verifier should reject expired intents in multiple places: validate_intent_safety, validate_intent_fulfillment (in monitor), and when checking fulfillment timestamps. We need tests for: intent expiry check in validate_intent_safety, expiry check in monitor's validate_intent_fulfillment, edge case where intent expires exactly at current time, and fulfillment timestamp validation.",
@@ -94,10 +94,11 @@
             "description": "Test that validate_intent_safety rejects intents with expiry_time in the past",
             "dependencies": [],
             "details": "Create a RequestIntentEvent with expiry_time set to a past timestamp. Call validate_intent_safety and verify that validation_result.valid is false and message indicates intent expired.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent with past expiry_time, call validate_intent_safety, assert valid=false",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T09:49:16.995Z"
           },
           {
             "id": 2,
@@ -105,10 +106,11 @@
             "description": "Test that monitor's validate_intent_fulfillment rejects escrows when matching intent has expired",
             "dependencies": [],
             "details": "Create an expired intent in cache and an escrow event. Call validate_intent_fulfillment and verify it returns Err with expiry message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create expired intent in cache, create escrow event, call validate_intent_fulfillment, assert Err with expiry error",
             "testFile": "trusted-verifier/tests/monitor_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T09:49:18.168Z"
           },
           {
             "id": 3,
@@ -116,10 +118,11 @@
             "description": "Test behavior when expiry_time equals current timestamp",
             "dependencies": [],
             "details": "Create intent with expiry_time set to current time. Verify whether it's accepted or rejected (should be rejected as expired).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent with expiry_time = current_time, test validation, verify rejection",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T09:49:19.320Z"
           },
           {
             "id": 4,
@@ -127,13 +130,14 @@
             "description": "Test that validate_fulfillment rejects fulfillments that occur after intent expiry",
             "dependencies": [],
             "details": "Create an intent with expiry_time and a fulfillment event with timestamp after expiry. Call validate_fulfillment and verify rejection.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent with expiry, fulfillment with later timestamp, call validate_fulfillment, assert valid=false",
             "testFile": "trusted-verifier/tests/validator_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T09:49:20.447Z"
           }
         ],
-        "updatedAt": "2025-01-27T00:00:00.000Z"
+        "updatedAt": "2025-11-13T09:49:20.447Z"
       },
       {
         "id": "3",
@@ -507,9 +511,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-13T09:29:48.286Z",
+      "lastModified": "2025-11-13T09:49:20.448Z",
       "taskCount": 9,
-      "completedCount": 1,
+      "completedCount": 2,
       "tags": [
         "master"
       ]

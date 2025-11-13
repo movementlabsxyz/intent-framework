@@ -47,7 +47,7 @@ fn test_evm_escrow_cross_chain_matching() {
         timestamp: 1,
     };
 
-    // Step 3: Verify matching logic (simulating the matching in validate_intent_fulfillment)
+    // Step 3: Verify matching logic (simulating the matching in validate_request_intent_fulfillment)
     // The matching logic finds intent by intent_id: cache.iter().find(|intent| intent.intent_id == escrow_event.intent_id)
     let intent_cache = vec![hub_intent.clone()];
     let matching_intent = intent_cache.iter().find(|intent| intent.intent_id == evm_escrow.intent_id);
@@ -146,14 +146,14 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
         timestamp: 1,
     };
 
-    // Step 3: Verify cross-chain matching (simulating validate_intent_fulfillment logic)
+    // Step 3: Verify cross-chain matching (simulating validate_request_intent_fulfillment logic)
     let intent_cache = vec![hub_intent.clone()];
     let matching_intent = intent_cache.iter().find(|intent| intent.intent_id == evm_escrow.intent_id);
     
     assert!(matching_intent.is_some(), "Should find matching Aptos hub intent for EVM escrow");
     let matched = matching_intent.unwrap();
     
-    // Verify all matching criteria (as per validate_intent_fulfillment validation)
+    // Verify all matching criteria (as per validate_request_intent_fulfillment validation)
     assert_eq!(matched.intent_id, evm_escrow.intent_id, "Intent IDs must match");
     assert_eq!(matched.offered_amount, evm_escrow.offered_amount, "Escrow offered amount should match hub intent offered_amount");
     assert_eq!(matched.expiry_time, evm_escrow.expiry_time, "Expiry times should match");
@@ -162,7 +162,7 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
     // Verify EVM-specific behavior: escrow_id equals intent_id
     assert_eq!(evm_escrow.escrow_id, evm_escrow.intent_id, "For EVM, escrow_id should equal intent_id");
     
-    // Verify validation criteria that would be checked in validate_intent_fulfillment
+    // Verify validation criteria that would be checked in validate_request_intent_fulfillment
     // Escrow desired_amount is always 0 (escrow only holds offered funds)
     assert_eq!(evm_escrow.desired_amount, 0, "Escrow desired amount must be 0");
     assert_eq!(evm_escrow.desired_metadata, matched.desired_metadata, "Metadata should match");

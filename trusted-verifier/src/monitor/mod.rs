@@ -58,11 +58,11 @@ pub struct RequestIntentEvent {
     pub desired_metadata: String,
     /// Amount of the desired asset
     pub desired_amount: u64,
-    /// Unix timestamp when the intent expires
+    /// Unix timestamp when the request intent expires
     pub expiry_time: u64,
-    /// Whether the intent can be revoked by the creator
+    /// Whether the request intent can be revoked by the creator
     pub revocable: bool,
-    /// Solver address if the intent is reserved (None for unreserved intents)
+    /// Solver address if the request intent is reserved (None for unreserved request intents)
     pub solver: Option<String>,
     /// Connected chain ID where escrow will be created (None for regular intents)
     pub connected_chain_id: Option<u64>,
@@ -115,24 +115,24 @@ pub struct EscrowEvent {
 
 /// Fulfillment event from the hub chain.
 /// 
-/// This event is emitted when an intent is fulfilled by a solver.
-/// The verifier monitors these events to track when hub intents are completed,
+/// This event is emitted when a request intent is fulfilled by a solver.
+/// The verifier monitors these events to track when hub request intents are completed,
 /// which triggers the approval workflow for escrow release on the connected chain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FulfillmentEvent {
     /// Chain where the fulfillment occurred (hub)
     pub chain: String,
-    /// Unique identifier for the intent that was fulfilled
+    /// Unique identifier for the request intent that was fulfilled
     pub intent_id: String,
-    /// Address of the intent that was fulfilled
+    /// Address of the request intent that was fulfilled
     pub intent_address: String,
-    /// Address of the solver who fulfilled the intent
+    /// Address of the solver who fulfilled the request intent
     pub solver: String,
     /// Metadata of the asset provided by the solver
     pub provided_metadata: String,
     /// Amount of the asset provided by the solver
     pub provided_amount: u64,
-    /// Unix timestamp when the intent was fulfilled
+    /// Unix timestamp when the request intent was fulfilled
     pub timestamp: u64,
 }
 
@@ -173,11 +173,16 @@ pub struct EventMonitor {
     validator: Arc<CrossChainValidator>,
     /// Cryptographic operations for signature generation
     crypto: Arc<CryptoService>,
-    /// In-memory cache of recent intent events
-    event_cache: Arc<RwLock<Vec<RequestIntentEvent>>>,
+    /// In-memory cache of recent request intent events
+    /// 
+    /// ⚠️ **WARNING**: This field is public ONLY for unit testing purposes.
+    /// It should not be accessed directly in production code.
+    #[doc(hidden)]
+    pub event_cache: Arc<RwLock<Vec<RequestIntentEvent>>>,
     /// In-memory cache of recent escrow events
     /// 
-    /// Note: Public for testing purposes
+    /// ⚠️ **WARNING**: This field is public ONLY for unit testing purposes.
+    /// It should not be accessed directly in production code.
     #[doc(hidden)]
     pub escrow_cache: Arc<RwLock<Vec<EscrowEvent>>>,
     /// In-memory cache of fulfillment events
@@ -231,7 +236,7 @@ impl EventMonitor {
     /// Starts the event monitoring process for configured chains.
     /// 
     /// This function runs monitoring loops:
-    /// 1. Hub chain monitoring for intent events (always)
+        /// 1. Hub chain monitoring for request intent events (always)
     /// 2. Connected Aptos chain monitoring for escrow events (if configured)
     /// 3. Connected EVM chain monitoring for escrow events (if configured)
     /// 
@@ -281,24 +286,24 @@ impl EventMonitor {
     /// Monitors the hub chain for request intent creation events.
     /// 
     /// This function runs in an infinite loop, polling the hub chain for
-    /// new intent events. When events are found, it validates their safety
+    /// new request intent events. When events are found, it validates their safety
     /// for escrow operations and caches them for later processing.
     async fn monitor_hub_chain(&self) -> Result<()> {
-        info!("Starting hub chain monitoring for intent events");
+        info!("Starting hub chain monitoring for request intent events");
         
         loop {
             match self.poll_hub_events().await {
                 Ok(events) => {
                     for event in events {
-                        info!("Received intent event: {:?}", event);
+                        info!("Received request intent event: {:?}", event);
                         
-                        // 🔒 CRITICAL SECURITY CHECK: Reject revocable intents
+                        // 🔒 CRITICAL SECURITY CHECK: Reject revocable request intents
                         if event.revocable {
-                            error!("SECURITY: Rejecting revocable intent {} from {} - NOT safe for escrow", event.intent_id, event.issuer);
+                            error!("SECURITY: Rejecting revocable request intent {} from {} - NOT safe for escrow", event.intent_id, event.issuer);
                             continue; // Skip this event - do not cache or process
                         }
                         
-                        info!("Intent {} is non-revocable - safe for escrow", event.intent_id);
+                        info!("Request intent {} is non-revocable - safe for escrow", event.intent_id);
                         
                         // Cache the event for API access (only non-revocable events)
                         {
@@ -359,8 +364,8 @@ impl EventMonitor {
                             }
                         }
                         
-                        // Validate that this escrow fulfills an existing intent
-                        if let Err(e) = self.validate_intent_fulfillment(&event).await {
+                        // Validate that this escrow fulfills an existing request intent
+                        if let Err(e) = self.validate_request_intent_fulfillment(&event).await {
                             error!("Intent fulfillment validation failed: {}", e);
                         }
                     }
@@ -412,8 +417,8 @@ impl EventMonitor {
                             }
                         }
                         
-                        // Validate that this escrow fulfills an existing intent
-                        if let Err(e) = self.validate_intent_fulfillment(&event).await {
+                        // Validate that this escrow fulfills an existing request intent
+                        if let Err(e) = self.validate_request_intent_fulfillment(&event).await {
                             error!("Intent fulfillment validation failed for EVM escrow: {}", e);
                         }
                     }
@@ -430,9 +435,9 @@ impl EventMonitor {
         }
     }
     
-    /// Polls the hub chain for new intent events.
+    /// Polls the hub chain for new request intent events.
     /// 
-    /// This function queries the hub chain's event logs for new intent
+    /// This function queries the hub chain's event logs for new request intent
     /// creation events. Since module events are emitted in user transactions,
     /// we query known test accounts for their events.
     /// 
@@ -463,7 +468,7 @@ impl EventMonitor {
                 .context(format!("Failed to fetch events for account {}", account))?;
             
             for event in raw_events {
-                // Parse event type to check if it's an intent event
+                // Parse event type to check if it's a request intent event
                 let event_type = event.r#type.clone();
                 
                 // Handle LimitOrderEvent, OracleLimitOrderEvent, and LimitOrderFulfillmentEvent
@@ -492,7 +497,7 @@ impl EventMonitor {
                             // Check if this chain+intent_id combination already exists in the cache
                             if !fulfillment_cache.iter().any(|cached| cached.intent_id == intent_id && cached.chain == "hub") {
                                 fulfillment_cache.push(fulfillment_event.clone());
-                                info!("Received fulfillment event for intent {} by solver {}", data.intent_id, data.solver);
+                                info!("Received fulfillment event for request intent {} by solver {}", data.intent_id, data.solver);
                             } else {
                                 // Already cached, skip validation to avoid duplicate processing
                                 continue;
@@ -513,7 +518,7 @@ impl EventMonitor {
                             // Successfully parsed as OracleLimitOrderEvent
                             // Note: OracleLimitOrderEvent is for escrows on connected chains, not hub intents
                             // This shouldn't happen in hub chain monitoring, but handle gracefully
-                            // Query solver address from intent object (if reserved)
+                            // Query solver address from request intent object (if reserved)
                             let solver = client.get_intent_solver(&data.intent_address, &self.config.hub_chain.intent_module_address)
                                 .await
                                 .ok()
@@ -543,7 +548,7 @@ impl EventMonitor {
                             let data: AptosLimitOrderEvent = serde_json::from_value(event.data.clone())
                                 .context("Failed to parse LimitOrderEvent")?;
                             
-                            // Query solver address from intent object (if reserved)
+                            // Query solver address from request intent object (if reserved)
                             let solver = client.get_intent_solver(&data.intent_address, &self.config.hub_chain.intent_module_address)
                                 .await
                                 .ok()
@@ -633,7 +638,7 @@ impl EventMonitor {
                     escrow_events.push(EscrowEvent {
                         chain: "connected".to_string(),
                         escrow_id: data.intent_address.clone(),
-                        intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain intent
+                        intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain request intent
                         issuer: data.issuer.clone(), // issuer is the escrow creator who locked the funds
                         offered_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
                         offered_amount: data.source_amount.parse::<u64>()
@@ -727,10 +732,10 @@ impl EventMonitor {
         Ok(escrow_events)
     }
     
-    /// Validates that an escrow event fulfills the conditions of an existing intent.
+    /// Validates that an escrow event fulfills the conditions of an existing request intent.
     /// 
     /// This function checks whether the escrow deposit matches the requirements
-    /// specified in a previously created intent. It ensures that the solver
+    /// specified in a previously created request intent. It ensures that the solver
     /// has provided the correct asset type and amount.
     /// 
     /// # Arguments
@@ -741,38 +746,40 @@ impl EventMonitor {
     /// 
     /// * `Ok(())` - Validation successful
     /// * `Err(anyhow::Error)` - Validation failed
-    async fn validate_intent_fulfillment(&self, escrow_event: &EscrowEvent) -> Result<()> {
-        info!("Validating intent fulfillment for escrow: {} (intent_id: {})", 
+    /// Note: Public for testing purposes
+    #[doc(hidden)]
+    pub async fn validate_request_intent_fulfillment(&self, escrow_event: &EscrowEvent) -> Result<()> {
+        info!("Validating request intent fulfillment for escrow: {} (intent_id: {})", 
               escrow_event.escrow_id, escrow_event.intent_id);
         
-        // 1. Find the matching intent from the cache using intent_id
+        // 1. Find the matching request intent from the cache using intent_id
         let cache = self.event_cache.read().await;
-        let matching_intent = cache.iter().find(|intent| intent.intent_id == escrow_event.intent_id);
+        let matching_request_intent = cache.iter().find(|request_intent| request_intent.intent_id == escrow_event.intent_id);
         
-        match matching_intent {
-            Some(intent) => {
-                info!("Found matching intent: {} for escrow: {}", intent.intent_id, escrow_event.escrow_id);
+        match matching_request_intent {
+            Some(request_intent) => {
+                info!("Found matching request intent: {} for escrow: {}", request_intent.intent_id, escrow_event.escrow_id);
                 
                 // 2. Check that deposit amount matches desired amount
-                if escrow_event.offered_amount < intent.desired_amount {
+                if escrow_event.offered_amount < request_intent.desired_amount {
                     return Err(anyhow::anyhow!(
                         "Deposit amount {} is less than required amount {}",
                         escrow_event.offered_amount,
-                        intent.desired_amount
+                        request_intent.desired_amount
                     ));
                 }
                 
                 // 3. Check that deposit metadata matches desired metadata
-                if escrow_event.desired_metadata != intent.desired_metadata {
+                if escrow_event.desired_metadata != request_intent.desired_metadata {
                     return Err(anyhow::anyhow!(
                         "Deposit metadata {} does not match desired metadata {}",
                         escrow_event.desired_metadata,
-                        intent.desired_metadata
+                        request_intent.desired_metadata
                     ));
                 }
                 
                 // 4. Validate solver addresses match (using validator)
-                let validation_result = self.validator.validate_intent_fulfillment(intent, escrow_event).await?;
+                let validation_result = self.validator.validate_request_intent_fulfillment(request_intent, escrow_event).await?;
                 if !validation_result.valid {
                     return Err(anyhow::anyhow!("Solver validation failed: {}", validation_result.message));
                 }
@@ -782,11 +789,11 @@ impl EventMonitor {
                     .duration_since(std::time::UNIX_EPOCH)?
                     .as_secs();
                 
-                if current_time > intent.expiry_time {
+                if current_time > request_intent.expiry_time {
                     return Err(anyhow::anyhow!(
-                        "Intent {} has expired (expiry: {}, current: {})",
-                        intent.intent_id,
-                        intent.expiry_time,
+                        "Request intent {} has expired (expiry: {}, current: {})",
+                        request_intent.intent_id,
+                        request_intent.expiry_time,
                         current_time
                     ));
                 }
@@ -796,7 +803,7 @@ impl EventMonitor {
             }
             None => {
                 Err(anyhow::anyhow!(
-                    "No matching intent found for escrow: {} (intent_id: {})",
+                    "No matching request intent found for escrow: {} (intent_id: {})",
                     escrow_event.escrow_id,
                     escrow_event.intent_id
                 ))
@@ -804,14 +811,14 @@ impl EventMonitor {
         }
     }
     
-    /// Returns a copy of all cached intent events.
+    /// Returns a copy of all cached request intent events.
     /// 
     /// This function provides access to the event cache for API endpoints
     /// and external monitoring systems.
     /// 
     /// # Returns
     /// 
-    /// A vector containing all cached intent events
+    /// A vector containing all cached request intent events
     pub async fn get_cached_events(&self) -> Vec<RequestIntentEvent> {
         self.event_cache.read().await.clone()
     }
@@ -887,7 +894,7 @@ impl EventMonitor {
             // EVM escrow: Create ECDSA signature
             info!("Creating ECDSA signature for EVM escrow (intent_id: {})", fulfillment.intent_id);
             
-            // EVM escrow validation is already done when the escrow was cached (in validate_intent_fulfillment)
+            // EVM escrow validation is already done when the escrow was cached (in validate_request_intent_fulfillment)
             // So we can proceed with signature generation
             
             // Remove 0x prefix from intent_id if present

@@ -11,7 +11,7 @@ use wiremock::matchers::{method, path, body_json};
 use serde_json::json;
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config;
+use test_helpers::{build_test_config, create_base_request_intent};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -86,18 +86,12 @@ async fn setup_mock_server_with_error(status_code: u16) -> (MockServer, Config, 
 /// Create a test request intent with the given solver
 fn create_test_request_intent(solver: Option<String>) -> RequestIntentEvent {
     RequestIntentEvent {
-        chain: "hub".to_string(),
-        intent_id: "0xintent123".to_string(),
-        issuer: "0xalice".to_string(),
         offered_metadata: "{}".to_string(),
-        offered_amount: 1000,
         desired_metadata: "{}".to_string(),
-        desired_amount: 0,
         expiry_time: 1000000,
-        revocable: false,
-        solver,
+        reserved_solver: solver,
         connected_chain_id: Some(31337),
-        timestamp: 0,
+        ..create_base_request_intent()
     }
 }
 

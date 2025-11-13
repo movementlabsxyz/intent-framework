@@ -6,6 +6,7 @@ use ed25519_dalek::SigningKey;
 use rand::RngCore;
 use base64::{engine::general_purpose, Engine as _};
 use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config, EvmChainConfig};
+use trusted_verifier::monitor::{RequestIntentEvent, FulfillmentEvent, EscrowEvent, ChainType};
 
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
 /// Keys are encoded using standard Base64 to satisfy CryptoService requirements.
@@ -64,5 +65,88 @@ pub fn build_test_config_with_evm() -> Config {
         verifier_address: "0xVerifierAddress456".to_string(),
     });
     config
+}
+
+/// Create a base request intent event with default test values.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let request_intent = create_base_request_intent();
+/// let custom_request_intent = RequestIntentEvent {
+///     desired_amount: 500,
+///     expiry_time: 1000000,
+///     ..request_intent
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_request_intent() -> RequestIntentEvent {
+    RequestIntentEvent {
+        chain: "hub".to_string(),
+        intent_id: "0xintent123".to_string(),
+        issuer: "0xalice".to_string(),
+        offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
+        offered_amount: 1000,
+        desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(),
+        desired_amount: 0,
+        expiry_time: 0, // Should be set explicitly in tests
+        revocable: false,
+        reserved_solver: Some("0xsolver".to_string()),
+        connected_chain_id: Some(2),
+        timestamp: 0,
+    }
+}
+
+/// Create a base fulfillment event with default test values.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let fulfillment = create_base_fulfillment();
+/// let custom_fulfillment = FulfillmentEvent {
+///     timestamp: 1000000,
+///     provided_amount: 500,
+///     provided_metadata: "{\"token\":\"USDC\"}".to_string(),
+///     ..fulfillment
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_fulfillment() -> FulfillmentEvent {
+    FulfillmentEvent {
+        chain: "hub".to_string(),
+        intent_id: "0xintent123".to_string(),
+        intent_address: "0xaddr".to_string(),
+        solver: "0xsolver".to_string(),
+        provided_metadata: "{}".to_string(),
+        provided_amount: 0,
+        timestamp: 0, // Should be set explicitly in tests
+    }
+}
+
+/// Create a base escrow event with default test values.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let escrow = create_base_escrow_event();
+/// let custom_escrow = EscrowEvent {
+///     escrow_id: "0xescrow123".to_string(),
+///     intent_id: "0xintent456".to_string(),
+///     offered_amount: 1000,
+///     ..escrow
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_escrow_event() -> EscrowEvent {
+    EscrowEvent {
+        chain: "connected".to_string(),
+        escrow_id: "0xescrow123".to_string(),
+        intent_id: "0xintent123".to_string(),
+        issuer: "0xalice".to_string(),
+        offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
+        offered_amount: 1000,
+        desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(),
+        desired_amount: 0, // Escrow desired_amount must be 0 (validation requirement)
+        expiry_time: 0, // Should be set explicitly in tests
+        revocable: false,
+        reserved_solver: Some("0xsolver".to_string()),
+        chain_id: 2,
+        chain_type: ChainType::Move,
+        timestamp: 0, // Should be set explicitly in tests
+    }
 }
 

@@ -7,42 +7,12 @@ use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::monitor::{RequestIntentEvent, FulfillmentEvent};
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config;
+use test_helpers::{build_test_config, create_base_request_intent, create_base_fulfillment};
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Create a test request intent with the given expiry time
-fn create_test_request_intent_with_expiry(expiry_time: u64) -> RequestIntentEvent {
-    RequestIntentEvent {
-        chain: "hub".to_string(),
-        intent_id: "0xintent123".to_string(),
-        issuer: "0xalice".to_string(),
-        offered_metadata: "{}".to_string(),
-        offered_amount: 1000,
-        desired_metadata: "{}".to_string(),
-        desired_amount: 0,
-        expiry_time,
-        revocable: false,
-        solver: None,
-        connected_chain_id: Some(2),
-        timestamp: 0,
-    }
-}
-
-/// Create a test fulfillment event with the given timestamp and request intent details
-fn create_test_fulfillment(timestamp: u64, intent_id: &str, provided_amount: u64, provided_metadata: &str) -> FulfillmentEvent {
-    FulfillmentEvent {
-        chain: "hub".to_string(),
-        intent_id: intent_id.to_string(),
-        intent_address: "0xaddr".to_string(),
-        solver: "0xsolver".to_string(),
-        provided_metadata: provided_metadata.to_string(),
-        provided_amount,
-        timestamp,
-    }
-}
 
 // ============================================================================
 // TESTS
@@ -59,7 +29,10 @@ async fn test_expired_request_intent_rejection_in_validate_request_intent_safety
     // Create a request intent with expiry_time in the past
     let current_time = chrono::Utc::now().timestamp() as u64;
     let past_expiry = current_time - 1000; // Expired 1000 seconds ago
-    let request_intent = create_test_request_intent_with_expiry(past_expiry);
+    let request_intent = RequestIntentEvent {
+        expiry_time: past_expiry,
+        ..create_base_request_intent()
+    };
     
     let result = validator.validate_request_intent_safety(&request_intent).await;
     
@@ -82,7 +55,10 @@ async fn test_non_expired_request_intent_acceptance_in_validate_request_intent_s
     // Create a request intent with expiry_time in the future
     let current_time = chrono::Utc::now().timestamp() as u64;
     let future_expiry = current_time + 1000; // Expires in 1000 seconds
-    let request_intent = create_test_request_intent_with_expiry(future_expiry);
+    let request_intent = RequestIntentEvent {
+        expiry_time: future_expiry,
+        ..create_base_request_intent()
+    };
     
     let result = validator.validate_request_intent_safety(&request_intent).await;
     
@@ -104,7 +80,10 @@ async fn test_request_intent_expires_exactly_at_current_time() {
     
     // Create a request intent with expiry_time exactly at current time
     let current_time = chrono::Utc::now().timestamp() as u64;
-    let request_intent = create_test_request_intent_with_expiry(current_time);
+    let request_intent = RequestIntentEvent {
+        expiry_time: current_time,
+        ..create_base_request_intent()
+    };
     
     let result = validator.validate_request_intent_safety(&request_intent).await;
     
@@ -140,16 +119,20 @@ async fn test_fulfillment_timestamp_validation_after_expiry() {
     // Create a request intent with expiry_time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 100; // Expires in 100 seconds
-    let request_intent = create_test_request_intent_with_expiry(expiry_time);
+    let request_intent = RequestIntentEvent {
+        expiry_time,
+        ..create_base_request_intent()
+    };
     
     // Create a fulfillment with timestamp after expiry
     let fulfillment_timestamp = expiry_time + 100; // Fulfillment occurs 100 seconds after expiry
-    let fulfillment = create_test_fulfillment(
-        fulfillment_timestamp,
-        &request_intent.intent_id,
-        request_intent.desired_amount,
-        &request_intent.desired_metadata,
-    );
+    let fulfillment = FulfillmentEvent {
+        timestamp: fulfillment_timestamp,
+        intent_id: request_intent.intent_id.clone(),
+        provided_amount: request_intent.desired_amount,
+        provided_metadata: request_intent.desired_metadata.clone(),
+        ..create_base_fulfillment()
+    };
     
     let result = validator.validate_fulfillment(&request_intent, &fulfillment).await;
     
@@ -172,16 +155,20 @@ async fn test_fulfillment_timestamp_validation_before_expiry() {
     // Create a request intent with expiry_time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
-    let request_intent = create_test_request_intent_with_expiry(expiry_time);
+    let request_intent = RequestIntentEvent {
+        expiry_time,
+        ..create_base_request_intent()
+    };
     
     // Create a fulfillment with timestamp before expiry
     let fulfillment_timestamp = expiry_time - 100; // Fulfillment occurs 100 seconds before expiry
-    let fulfillment = create_test_fulfillment(
-        fulfillment_timestamp,
-        &request_intent.intent_id,
-        request_intent.desired_amount,
-        &request_intent.desired_metadata,
-    );
+    let fulfillment = FulfillmentEvent {
+        timestamp: fulfillment_timestamp,
+        intent_id: request_intent.intent_id.clone(),
+        provided_amount: request_intent.desired_amount,
+        provided_metadata: request_intent.desired_metadata.clone(),
+        ..create_base_fulfillment()
+    };
     
     let result = validator.validate_fulfillment(&request_intent, &fulfillment).await;
     
@@ -203,15 +190,19 @@ async fn test_fulfillment_timestamp_validation_at_expiry() {
     // Create a request intent with expiry_time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
-    let request_intent = create_test_request_intent_with_expiry(expiry_time);
+    let request_intent = RequestIntentEvent {
+        expiry_time,
+        ..create_base_request_intent()
+    };
     
     // Create a fulfillment with timestamp exactly at expiry
-    let fulfillment = create_test_fulfillment(
-        expiry_time,
-        &request_intent.intent_id,
-        request_intent.desired_amount,
-        &request_intent.desired_metadata,
-    );
+    let fulfillment = FulfillmentEvent {
+        timestamp: expiry_time,
+        intent_id: request_intent.intent_id.clone(),
+        provided_amount: request_intent.desired_amount,
+        provided_metadata: request_intent.desired_metadata.clone(),
+        ..create_base_fulfillment()
+    };
     
     let result = validator.validate_fulfillment(&request_intent, &fulfillment).await;
     
@@ -222,5 +213,154 @@ async fn test_fulfillment_timestamp_validation_at_expiry() {
     assert!(validation_result.valid, "Validation should pass when fulfillment timestamp equals expiry");
     assert!(validation_result.message.contains("successful"),
             "Message should indicate validation successful");
+}
+
+/// Test that validate_fulfillment succeeds when all conditions are met
+/// Why: Verify that valid fulfillments pass all validation checks
+#[tokio::test]
+async fn test_fulfillment_validation_success() {
+    // Initialize tracing subscriber to capture log output during tests (ignored if already initialized)
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a request intent with future expiry and custom desired fields
+    let current_time = chrono::Utc::now().timestamp() as u64;
+    let expiry_time = current_time + 1000; // Expires in 1000 seconds
+    let request_intent = RequestIntentEvent {
+        expiry_time,
+        desired_amount: 500,
+        desired_metadata: "{\"token\":\"USDC\"}".to_string(),
+        ..create_base_request_intent()
+    };
+    
+    // Create a fulfillment that matches all requirements
+    let fulfillment_timestamp = expiry_time - 100; // Before expiry
+    let fulfillment = FulfillmentEvent {
+        timestamp: fulfillment_timestamp,
+        intent_id: request_intent.intent_id.clone(),
+        provided_amount: request_intent.desired_amount,
+        provided_metadata: request_intent.desired_metadata.clone(),
+        ..create_base_fulfillment()
+    };
+    
+    let result = validator.validate_fulfillment(&request_intent, &fulfillment).await;
+    
+    assert!(result.is_ok(), "Validation should complete without error");
+    let validation_result = result.unwrap();
+    assert!(validation_result.valid, "Validation should pass when all conditions are met");
+    assert!(validation_result.message.contains("successful"),
+            "Message should indicate validation successful");
+}
+
+/// Test that validate_fulfillment rejects when provided_amount doesn't match desired_amount
+/// Why: Verify that amount mismatches are caught
+#[tokio::test]
+async fn test_fulfillment_amount_mismatch_rejection() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a request intent with desired_amount
+    let current_time = chrono::Utc::now().timestamp() as u64;
+    let expiry_time = current_time + 1000;
+    let request_intent = RequestIntentEvent {
+        expiry_time,
+        desired_amount: 500,
+        desired_metadata: "{\"token\":\"USDC\"}".to_string(),
+        ..create_base_request_intent()
+    };
+    
+    // Create a fulfillment with different provided_amount
+    let fulfillment_timestamp = expiry_time - 100;
+    let fulfillment = FulfillmentEvent {
+        timestamp: fulfillment_timestamp,
+        intent_id: request_intent.intent_id.clone(),
+        provided_amount: 300, // Different amount than desired_amount (500)
+        provided_metadata: request_intent.desired_metadata.clone(),
+        ..create_base_fulfillment()
+    };
+    
+    let result = validator.validate_fulfillment(&request_intent, &fulfillment).await;
+    
+    assert!(result.is_ok(), "Validation should complete without error");
+    let validation_result = result.unwrap();
+    assert!(!validation_result.valid, "Validation should fail when provided_amount doesn't match desired_amount");
+    assert!(validation_result.message.contains("amount") || validation_result.message.contains("Amount"),
+            "Error message should mention amount mismatch");
+}
+
+/// Test that validate_fulfillment rejects when provided_metadata doesn't match desired_metadata
+/// Why: Verify that metadata mismatches are caught
+#[tokio::test]
+async fn test_fulfillment_metadata_mismatch_rejection() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a request intent with desired_metadata
+    let current_time = chrono::Utc::now().timestamp() as u64;
+    let expiry_time = current_time + 1000;
+    let request_intent = RequestIntentEvent {
+        expiry_time,
+        desired_amount: 500,
+        desired_metadata: "{\"token\":\"USDC\"}".to_string(),
+        ..create_base_request_intent()
+    };
+    
+    // Create a fulfillment with different provided_metadata
+    let fulfillment_timestamp = expiry_time - 100;
+    let fulfillment = FulfillmentEvent {
+        timestamp: fulfillment_timestamp,
+        intent_id: request_intent.intent_id.clone(),
+        provided_amount: request_intent.desired_amount,
+        provided_metadata: "{\"token\":\"USDT\"}".to_string(), // Different metadata than desired_metadata
+        ..create_base_fulfillment()
+    };
+    
+    let result = validator.validate_fulfillment(&request_intent, &fulfillment).await;
+    
+    assert!(result.is_ok(), "Validation should complete without error");
+    let validation_result = result.unwrap();
+    assert!(!validation_result.valid, "Validation should fail when provided_metadata doesn't match desired_metadata");
+    assert!(validation_result.message.contains("metadata") || validation_result.message.contains("Metadata"),
+            "Error message should mention metadata mismatch");
+}
+
+/// Test that validate_fulfillment rejects when intent_id doesn't match
+/// Why: Verify that fulfillments for different intents are rejected
+#[tokio::test]
+async fn test_fulfillment_intent_id_mismatch_rejection() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a request intent
+    let current_time = chrono::Utc::now().timestamp() as u64;
+    let expiry_time = current_time + 1000;
+    let request_intent = RequestIntentEvent {
+        expiry_time,
+        desired_amount: 500,
+        desired_metadata: "{\"token\":\"USDC\"}".to_string(),
+        ..create_base_request_intent()
+    };
+    
+    // Create a fulfillment with different intent_id
+    let fulfillment_timestamp = expiry_time - 100;
+    let fulfillment = FulfillmentEvent {
+        timestamp: fulfillment_timestamp,
+        intent_id: "0xdifferent_intent_id".to_string(), // Different intent_id
+        provided_amount: request_intent.desired_amount,
+        provided_metadata: request_intent.desired_metadata.clone(),
+        ..create_base_fulfillment()
+    };
+    
+    let result = validator.validate_fulfillment(&request_intent, &fulfillment).await;
+    
+    assert!(result.is_ok(), "Validation should complete without error");
+    let validation_result = result.unwrap();
+    assert!(!validation_result.valid, "Validation should fail when intent_id doesn't match");
+    assert!(validation_result.message.contains("intent_id") || validation_result.message.contains("Intent"),
+            "Error message should mention intent_id mismatch");
 }
 

@@ -209,7 +209,7 @@ impl CrossChainValidator {
         // Validate solver addresses match between escrow and request intent
         // For Move/Aptos escrows: Check if escrow's reserved_solver (Aptos address) matches hub request intent's solver (Aptos address)
         // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
-        if let (Some(escrow_solver), Some(request_intent_solver)) = (&escrow_event.reserved_solver, &request_intent_event.solver) {
+        if let (Some(escrow_solver), Some(request_intent_solver)) = (&escrow_event.reserved_solver, &request_intent_event.reserved_solver) {
             // Determine chain type from the chain_type field set by the monitor
             let is_evm_escrow = escrow_event.chain_type == ChainType::Evm;
             
@@ -243,13 +243,13 @@ impl CrossChainValidator {
                     });
                 }
             }
-        } else if escrow_event.reserved_solver.is_some() || request_intent_event.solver.is_some() {
+        } else if escrow_event.reserved_solver.is_some() || request_intent_event.reserved_solver.is_some() {
             // One is reserved but the other is not - mismatch
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
                     "Escrow and request intent reservation mismatch: escrow reserved_solver={:?}, request intent solver={:?}",
-                    escrow_event.reserved_solver, request_intent_event.solver
+                    escrow_event.reserved_solver, request_intent_event.reserved_solver
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
@@ -294,7 +294,7 @@ impl CrossChainValidator {
         registry_address: &str,
     ) -> Result<ValidationResult> {
         // Check if request intent has a solver
-        let request_intent_solver = match &request_intent.solver {
+        let request_intent_solver = match &request_intent.reserved_solver {
             Some(solver) => solver,
             None => {
                 return Ok(ValidationResult {

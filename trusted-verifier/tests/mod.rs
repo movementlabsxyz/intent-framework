@@ -5,4 +5,4 @@
 mod helpers;
 
 #[allow(unused_imports)]
-pub use helpers::{build_test_config, build_test_config_with_evm};
+pub use helpers::{build_test_config, build_test_config_with_evm, create_base_request_intent, create_base_fulfillment, create_base_escrow_event};

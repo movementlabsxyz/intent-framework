@@ -6,45 +6,23 @@
 use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent};
 #[path = "mod.rs"]
 mod test_helpers;
+use test_helpers::{create_base_request_intent, create_base_escrow_event};
 
 /// Test that EVM escrow can be matched to hub intent by intent_id
 /// Why: Verify cross-chain matching logic correctly links EVM escrow to hub intent
 #[test]
 fn test_evm_escrow_cross_chain_matching() {
     // Step 1: Create hub intent
-    let hub_intent = RequestIntentEvent {
-        chain: "hub".to_string(),
-        intent_id: "0xhub_intent_abc123".to_string(),
-        issuer: "0xalice".to_string(),
-        offered_metadata: "{}".to_string(),
-        offered_amount: 1000, // amount that will be locked in escrow on connected chain
-        desired_metadata: "{}".to_string(),
-        desired_amount: 0, // Escrow only holds offered funds
-        expiry_time: 1000000,
-        revocable: false,
-        solver: None,
-        connected_chain_id: Some(31337),
-        timestamp: 0,
-    };
+    let hub_intent = create_base_request_intent();
     
     // Step 2: Create EVM escrow with matching intent_id
     // For EVM, the intent_id from Aptos is used directly (after conversion to uint256 on-chain)
     // In the verifier, we match by string intent_id
+    // For EVM, escrow_id must equal intent_id
     let evm_escrow = EscrowEvent {
-        chain: "connected".to_string(),
-        escrow_id: "0xhub_intent_abc123".to_string(), // For EVM, escrow_id = intent_id
-        intent_id: "0xhub_intent_abc123".to_string(), // Matches hub intent_id
-        issuer: "0xalice".to_string(),
-        offered_metadata: "{}".to_string(),
-        offered_amount: 1000, // Matches hub intent offered_amount
-        desired_metadata: "{}".to_string(),
-        desired_amount: 0, // Escrow only holds offered funds
-        expiry_time: 1000000,
-        revocable: false,
-        reserved_solver: None,
-        chain_id: 31337,
+        escrow_id: hub_intent.intent_id.clone(), // For EVM, escrow_id = intent_id
         chain_type: trusted_verifier::ChainType::Evm,
-        timestamp: 1,
+        ..create_base_escrow_event()
     };
 
     // Step 3: Verify matching logic (simulating the matching in validate_request_intent_fulfillment)
@@ -111,39 +89,20 @@ fn test_intent_id_conversion_to_evm_format() {
 /// Test EVM escrow matching with Aptos hub intent in cross-chain scenario
 /// Why: Verify complete cross-chain matching workflow from Aptos hub to EVM escrow
 #[test]
-fn test_evm_escrow_matching_with_aptos_hub_intent() {
-    // Step 1: Create Aptos hub intent
+fn test_evm_escrow_matching_with_hub_intent() {
+    // Step 1: Create  hub intent
     let hub_intent = RequestIntentEvent {
-        chain: "hub".to_string(),
-        intent_id: "0xcross_chain_test".to_string(),
-        issuer: "0xalice".to_string(),
-        offered_metadata: "{}".to_string(),
-        offered_amount: 2000, // amount that will be locked in escrow on connected chain
-        desired_metadata: "{}".to_string(),
-        desired_amount: 0, // Escrow only holds offered funds
         expiry_time: 2000000,
-        revocable: false,
-        solver: None,
-        connected_chain_id: Some(31337),
-        timestamp: 0,
+        ..create_base_request_intent()
     };
 
     // Step 2: Create EVM escrow on connected chain with matching intent_id
+    // For EVM, escrow_id must equal intent_id
     let evm_escrow = EscrowEvent {
-        chain: "connected".to_string(),
-        escrow_id: "0xcross_chain_test".to_string(), // EVM: escrow_id = intent_id
-        intent_id: "0xcross_chain_test".to_string(), // Matches hub intent
-        issuer: "0xalice".to_string(),
-        offered_metadata: "{}".to_string(),
-        offered_amount: 2000, // Matches hub intent offered_amount (amount that will be locked in escrow)
-        desired_metadata: "{}".to_string(),
-        desired_amount: 0, // Escrow only holds offered funds
-        expiry_time: 2000000, // Matches hub intent expiry
-        revocable: false,
-        reserved_solver: None,
-        chain_id: 31337,
+        escrow_id: hub_intent.intent_id.clone(), // EVM: escrow_id = intent_id
         chain_type: trusted_verifier::ChainType::Evm,
-        timestamp: 1,
+        expiry_time: 2000000, // Matches hub intent expiry
+        ..create_base_escrow_event()
     };
 
     // Step 3: Verify cross-chain matching (simulating validate_request_intent_fulfillment logic)

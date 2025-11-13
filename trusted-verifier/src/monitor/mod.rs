@@ -63,7 +63,7 @@ pub struct RequestIntentEvent {
     /// Whether the request intent can be revoked by the creator
     pub revocable: bool,
     /// Solver address if the request intent is reserved (None for unreserved request intents)
-    pub solver: Option<String>,
+    pub reserved_solver: Option<String>,
     /// Connected chain ID where escrow will be created (None for regular intents)
     pub connected_chain_id: Option<u64>,
     /// Timestamp when the event was received
@@ -538,7 +538,7 @@ impl EventMonitor {
                                 expiry_time: data.expiry_time.parse::<u64>()
                                     .context("Failed to parse expiry_time")?,
                                 revocable: data.revocable,
-                                solver,
+                                reserved_solver: solver,
                                 connected_chain_id: None, // OracleLimitOrderEvent is for escrows, not request intents
                                 timestamp,
                             });
@@ -572,7 +572,7 @@ impl EventMonitor {
                                 expiry_time: data.expiry_time.parse::<u64>()
                                     .context("Failed to parse expiry_time")?,
                                 revocable: data.revocable,
-                                solver,
+                                reserved_solver: solver,
                                 connected_chain_id,
                                 timestamp,
                             });

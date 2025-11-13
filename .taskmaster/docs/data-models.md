@@ -7,7 +7,7 @@ For detailed field-by-field documentation, see:
 - [Move Intent Framework API Reference](../../docs/move-intent-framework/api-reference.md#type-definitions) - TradeIntent, TradeSession, FungibleAssetLimitOrder
 - [Move event structures](../../move-intent-framework/sources/fa_intent.move) - LimitOrderEvent, LimitOrderFulfillmentEvent
 - [EVM Escrow documentation](../../docs/evm-intent-framework/README.md)
-- [Rust verifier structures](../../trusted-verifier/src/monitor/mod.rs) - IntentEvent, EscrowEvent, FulfillmentEvent, EscrowApproval
+- [Rust verifier structures](../../trusted-verifier/src/monitor/mod.rs) - RequestIntentEvent, EscrowEvent, FulfillmentEvent, EscrowApproval
 
 ## Overview
 
@@ -30,7 +30,7 @@ The verifier service normalizes blockchain events from different chains into com
 
 **Key Normalization Patterns**:
 
-- **IntentEvent** (`trusted-verifier/src/monitor/mod.rs:34-55`) - Normalizes `LimitOrderEvent` from Move hub chain
+- **RequestIntentEvent** (`trusted-verifier/src/monitor/mod.rs:34-55`) - Normalizes `LimitOrderEvent` from Move hub chain
 - **EscrowEvent** (`trusted-verifier/src/monitor/mod.rs:63-86`) - Normalizes `OracleLimitOrderEvent` (Move) and `EscrowInitialized` (EVM) from connected chains
 - **FulfillmentEvent** (`trusted-verifier/src/monitor/mod.rs:94-109`) - Normalizes `LimitOrderFulfillmentEvent` from hub chain
 - **EscrowApproval** (`trusted-verifier/src/monitor/mod.rs:123-134`) - Cryptographic approval structure for escrow release

@@ -242,7 +242,7 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 **Data Structures Exported**:
 
-- `IntentEvent` - Normalized intent event structure
+- `RequestIntentEvent` - Normalized request intent event structure
 - `EscrowEvent` - Normalized escrow event structure
 - `FulfillmentEvent` - Normalized fulfillment event structure
 - `ApprovalSignature` - Approval signature structure

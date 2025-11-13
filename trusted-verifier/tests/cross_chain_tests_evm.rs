@@ -3,7 +3,7 @@
 //! These tests verify that EVM escrow events can be matched to hub intent events
 //! across different chains using intent_id, and test intent ID format conversions.
 
-use trusted_verifier::monitor::{IntentEvent, EscrowEvent};
+use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent};
 #[path = "mod.rs"]
 mod test_helpers;
 
@@ -12,21 +12,21 @@ mod test_helpers;
 #[test]
 fn test_evm_escrow_cross_chain_matching() {
     // Step 1: Create hub intent
-    let hub_intent = IntentEvent {
+    let hub_intent = RequestIntentEvent {
         chain: "hub".to_string(),
         intent_id: "0xhub_intent_abc123".to_string(),
         issuer: "0xalice".to_string(),
-        source_metadata: "{}".to_string(),
-        source_amount: 0,
+        offered_metadata: "{}".to_string(),
+        offered_amount: 1000, // amount that will be locked in escrow on connected chain
         desired_metadata: "{}".to_string(),
-        desired_amount: 1000,
+        desired_amount: 0, // Escrow only holds offered funds
         expiry_time: 1000000,
         revocable: false,
         solver: None,
         connected_chain_id: Some(31337),
         timestamp: 0,
     };
-
+    
     // Step 2: Create EVM escrow with matching intent_id
     // For EVM, the intent_id from Aptos is used directly (after conversion to uint256 on-chain)
     // In the verifier, we match by string intent_id
@@ -35,10 +35,10 @@ fn test_evm_escrow_cross_chain_matching() {
         escrow_id: "0xhub_intent_abc123".to_string(), // For EVM, escrow_id = intent_id
         intent_id: "0xhub_intent_abc123".to_string(), // Matches hub intent_id
         issuer: "0xalice".to_string(),
-        source_metadata: "{}".to_string(),
-        source_amount: 1000,
+        offered_metadata: "{}".to_string(),
+        offered_amount: 1000, // Matches hub intent offered_amount
         desired_metadata: "{}".to_string(),
-        desired_amount: 1000,
+        desired_amount: 0, // Escrow only holds offered funds
         expiry_time: 1000000,
         revocable: false,
         reserved_solver: None,
@@ -54,7 +54,7 @@ fn test_evm_escrow_cross_chain_matching() {
     assert!(matching_intent.is_some(), "EVM escrow should match hub intent by intent_id");
     let matched_intent = matching_intent.unwrap();
     assert_eq!(matched_intent.intent_id, evm_escrow.intent_id, "Intent IDs should match");
-    assert_eq!(matched_intent.desired_amount, evm_escrow.source_amount, "Escrow locked amount should match intent desired amount");
+    assert_eq!(matched_intent.offered_amount, evm_escrow.offered_amount, "Escrow offered amount should match hub intent offered_amount");
     
     // Verify EVM-specific behavior: escrow_id equals intent_id for EVM
     assert_eq!(evm_escrow.escrow_id, evm_escrow.intent_id, "For EVM, escrow_id should equal intent_id");
@@ -112,14 +112,14 @@ fn test_intent_id_conversion_to_evm_format() {
 #[test]
 fn test_evm_escrow_matching_with_aptos_hub_intent() {
     // Step 1: Create Aptos hub intent
-    let hub_intent = IntentEvent {
+    let hub_intent = RequestIntentEvent {
         chain: "hub".to_string(),
         intent_id: "0xcross_chain_test".to_string(),
         issuer: "0xalice".to_string(),
-        source_metadata: "{}".to_string(),
-        source_amount: 0,
+        offered_metadata: "{}".to_string(),
+        offered_amount: 2000, // amount that will be locked in escrow on connected chain
         desired_metadata: "{}".to_string(),
-        desired_amount: 2000,
+        desired_amount: 0, // Escrow only holds offered funds
         expiry_time: 2000000,
         revocable: false,
         solver: None,
@@ -133,10 +133,10 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
         escrow_id: "0xcross_chain_test".to_string(), // EVM: escrow_id = intent_id
         intent_id: "0xcross_chain_test".to_string(), // Matches hub intent
         issuer: "0xalice".to_string(),
-        source_metadata: "{}".to_string(),
-        source_amount: 2000, // Matches hub intent desired_amount
+        offered_metadata: "{}".to_string(),
+        offered_amount: 2000, // Matches hub intent offered_amount (amount that will be locked in escrow)
         desired_metadata: "{}".to_string(),
-        desired_amount: 2000,
+        desired_amount: 0, // Escrow only holds offered funds
         expiry_time: 2000000, // Matches hub intent expiry
         revocable: false,
         reserved_solver: None,
@@ -153,7 +153,7 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
     
     // Verify all matching criteria (as per validate_intent_fulfillment validation)
     assert_eq!(matched.intent_id, evm_escrow.intent_id, "Intent IDs must match");
-    assert_eq!(matched.desired_amount, evm_escrow.source_amount, "Escrow locked amount should match intent desired amount");
+    assert_eq!(matched.offered_amount, evm_escrow.offered_amount, "Escrow offered amount should match hub intent offered_amount");
     assert_eq!(matched.expiry_time, evm_escrow.expiry_time, "Expiry times should match");
     assert_eq!(matched.issuer, evm_escrow.issuer, "Issuers should match");
     
@@ -161,7 +161,8 @@ fn test_evm_escrow_matching_with_aptos_hub_intent() {
     assert_eq!(evm_escrow.escrow_id, evm_escrow.intent_id, "For EVM, escrow_id should equal intent_id");
     
     // Verify validation criteria that would be checked in validate_intent_fulfillment
-    assert!(evm_escrow.source_amount >= matched.desired_amount, "Deposit amount should be >= required amount");
+    // Escrow desired_amount is always 0 (escrow only holds offered funds)
+    assert_eq!(evm_escrow.desired_amount, 0, "Escrow desired amount must be 0");
     assert_eq!(evm_escrow.desired_metadata, matched.desired_metadata, "Metadata should match");
 }
 

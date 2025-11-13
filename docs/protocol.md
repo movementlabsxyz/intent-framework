@@ -122,7 +122,7 @@ Connected Chain: OracleLimitOrderEvent.intent_id / EscrowInitialized.intentId
 
 **Matching Process**:
 
-1. Verifier observes `LimitOrderEvent` → stores `IntentEvent` with `intent_id`
+1. Verifier observes `LimitOrderEvent` → stores `RequestIntentEvent` with `intent_id`
 2. Verifier observes escrow event → stores `EscrowEvent` with `intent_id`
 3. When `LimitOrderFulfillmentEvent` observed → matches `fulfillment.intent_id` with `escrow.intent_id`
 4. If match found and validation passes → generates approval signature

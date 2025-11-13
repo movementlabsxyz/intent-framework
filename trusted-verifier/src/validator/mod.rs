@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::config::Config;
-use crate::monitor::{IntentEvent, EscrowEvent, FulfillmentEvent};
+use crate::monitor::{RequestIntentEvent, EscrowEvent, FulfillmentEvent};
 
 // ============================================================================
 // VALIDATION DATA STRUCTURES
@@ -94,7 +94,7 @@ impl CrossChainValidator {
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
     #[allow(dead_code)]
-    pub async fn validate_intent_safety(&self, intent: &IntentEvent) -> Result<ValidationResult> {
+    pub async fn validate_intent_safety(&self, intent: &RequestIntentEvent) -> Result<ValidationResult> {
         info!("Validating intent safety: {}", intent.intent_id);
         
         // 🔒 CRITICAL SECURITY CHECK: Verify intent is non-revocable
@@ -126,13 +126,15 @@ impl CrossChainValidator {
     /// Validates fulfillment of intent conditions on the connected chain.
     /// 
     /// This function performs comprehensive validation to ensure that:
-    /// 1. The escrow deposit amount matches the intent's desired amount
-    /// 2. The escrow deposit metadata matches the intent's desired metadata
-    /// 3. Additional conditions are met (solver reputation, etc.)
+    /// 1. The escrow's offered_amount matches the hub request intent's offered_amount
+    /// 2. The escrow's offered_metadata matches the hub request intent's offered_metadata
+    /// 3. The escrow's chain_id matches the hub request intent's offered_chain_id (when provided)
+    /// 4. The escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request intent)
+    /// 5. The escrow's reserved_solver matches the hub request intent's solver (with chain-specific validation)
     /// 
     /// # Arguments
     /// 
-    /// * `intent` - The intent event from the hub chain
+    /// * `request_intent_event` - The request intent event from the hub chain
     /// * `escrow_event` - The escrow event from the connected chain
     /// 
     /// # Returns
@@ -141,52 +143,73 @@ impl CrossChainValidator {
     /// * `Err(anyhow::Error)` - Validation failed due to error
     pub async fn validate_intent_fulfillment(
         &self,
-        intent: &IntentEvent,
+        request_intent_event: &RequestIntentEvent,
         escrow_event: &EscrowEvent,
     ) -> Result<ValidationResult> {
         info!("Validating intent fulfillment for intent: {}, escrow: {}", 
-              intent.intent_id, escrow_event.escrow_id);
+              request_intent_event.intent_id, escrow_event.escrow_id);
         
-        // Validate the escrow's desired_amount matches the hub intent's desired_amount
-        if escrow_event.desired_amount != intent.desired_amount {
+        // Validate the escrow's offered_amount matches the specified offered_amount in the hub request intent
+        if escrow_event.offered_amount != request_intent_event.offered_amount {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Escrow desired amount {} does not match hub intent desired amount {}",
-                    escrow_event.desired_amount, intent.desired_amount
+                    "Escrow offered amount {} does not match hub intent offered amount {}",
+                    escrow_event.offered_amount, request_intent_event.offered_amount
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
         
-        // Validate the escrow's desired_metadata matches the hub intent's desired_metadata
-        if escrow_event.desired_metadata != intent.desired_metadata {
+        // Validate the escrow's offered_metadata matches the specified offered_metadata in the hub request intent
+        if escrow_event.offered_metadata != request_intent_event.offered_metadata {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Escrow desired metadata '{}' does not match hub intent desired metadata '{}'",
-                    escrow_event.desired_metadata, intent.desired_metadata
+                    "Escrow offered metadata '{}' does not match hub intent offered metadata '{}'",
+                    escrow_event.offered_metadata, request_intent_event.offered_metadata
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
         
-        // Validate that cross-chain intents (with solver reservation) must have a connected_chain_id
-        if intent.solver.is_some() && intent.connected_chain_id.is_none() {
+        // Validate the escrow's chain_id matches the specified offered_chain_id in the hub request intent
+        // Note: offered_chain_id from Move event is stored as connected_chain_id in RequestIntentEvent.
+        // The escrow_event.chain_id is set by the verifier based on which monitor discovered it (from config),
+        // so we can trust it for validation.
+        if let Some(intent_offered_chain_id) = request_intent_event.connected_chain_id {
+            if escrow_event.chain_id != intent_offered_chain_id {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: format!(
+                        "Escrow chain_id {} does not match hub request intent offered_chain_id {}. Escrow was discovered on chain {} but intent specifies chain {}",
+                        escrow_event.chain_id, intent_offered_chain_id, escrow_event.chain_id, intent_offered_chain_id
+                    ),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        }
+        
+        // Validate that escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request intent)
+        if escrow_event.desired_amount != 0 {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Cross-chain intent {} has a reserved solver but no connected_chain_id. Cross-chain intents must specify the chain ID where the escrow will be created.",
-                    intent.intent_id
+                    "Escrow desired amount must be 0, but got {}. Escrow only holds offered funds; the actual requirement is specified in the hub request intent",
+                    escrow_event.desired_amount
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
+        
+        // Note: We don't validate escrow's desired_metadata because it's a placeholder.
+        // The actual requirement is the hub request intent's desired_metadata, which the solver
+        // must fulfill on the hub chain before the verifier approves escrow release
         
         // Validate solver addresses match between escrow and intent
         // For Aptos escrows: Check if escrow's reserved_solver (Aptos address) matches hub intent's solver (Aptos address)
         // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
-        if let (Some(escrow_solver), Some(intent_solver)) = (&escrow_event.reserved_solver, &intent.solver) {
+        if let (Some(escrow_solver), Some(intent_solver)) = (&escrow_event.reserved_solver, &request_intent_event.solver) {
             // Determine if this is an EVM escrow by checking chain_id
             // EVM chains typically have chain_id >= 1 (e.g., 1 for mainnet, 31337 for Hardhat)
             // Aptos chains can use various chain_ids (e.g., 1 for hub, 2 for connected Aptos chain)
@@ -203,7 +226,7 @@ impl CrossChainValidator {
                 let registry_address = &self.config.hub_chain.intent_module_address; // Registry is at module address
                 
                 let validation_result = self.validate_evm_escrow_solver(
-                    intent,
+                    request_intent_event,
                     escrow_solver,
                     hub_rpc_url,
                     registry_address,
@@ -225,31 +248,16 @@ impl CrossChainValidator {
                     });
                 }
             }
-        } else if escrow_event.reserved_solver.is_some() || intent.solver.is_some() {
+        } else if escrow_event.reserved_solver.is_some() || request_intent_event.solver.is_some() {
             // One is reserved but the other is not - mismatch
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
                     "Escrow and intent reservation mismatch: escrow reserved_solver={:?}, intent solver={:?}",
-                    escrow_event.reserved_solver, intent.solver
+                    escrow_event.reserved_solver, request_intent_event.solver
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
-        }
-        
-        // Validate chain_id matches between escrow and intent
-        // For cross-chain intents, verify escrow is created on the correct chain
-        if let Some(intent_chain_id) = intent.connected_chain_id {
-            if escrow_event.chain_id != intent_chain_id {
-                return Ok(ValidationResult {
-                    valid: false,
-                    message: format!(
-                        "Escrow chain_id {} does not match intent connected_chain_id {}",
-                        escrow_event.chain_id, intent_chain_id
-                    ),
-                    timestamp: chrono::Utc::now().timestamp() as u64,
-                });
-            }
         }
         // Note: EVM escrow validation is handled separately in validate_evm_escrow_solver
         
@@ -285,7 +293,7 @@ impl CrossChainValidator {
     /// * `Err(anyhow::Error)` - Validation failed due to error
     pub async fn validate_evm_escrow_solver(
         &self,
-        intent: &IntentEvent,
+        intent: &RequestIntentEvent,
         escrow_reserved_solver: &str,
         hub_chain_rpc_url: &str,
         registry_address: &str,
@@ -364,7 +372,7 @@ impl CrossChainValidator {
     #[allow(dead_code)]
     pub async fn validate_fulfillment(
         &self,
-        intent: &IntentEvent,
+        intent: &RequestIntentEvent,
         fulfillment: &FulfillmentEvent,
     ) -> Result<ValidationResult> {
         info!("Validating fulfillment for intent: {}", intent.intent_id);

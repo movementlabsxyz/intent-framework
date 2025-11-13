@@ -124,8 +124,8 @@ Behavior when source tokens aren't locked on hub chain.
 
 **Implementation** (`fa_intent_cross_chain.move:40-41`):
 
-- `create_cross_chain_request_intent()` withdraws 0 tokens (`primary_fungible_store::withdraw(account, source_metadata, 0)`)
-- Creates intent with `source_amount=0` in `LimitOrderEvent`
+- `create_cross_chain_request_intent()` withdraws 0 tokens (`primary_fungible_store::withdraw(account, offered_metadata, 0)`)
+- Creates intent with `offered_amount=0` in `LimitOrderEvent`
 - Tokens are locked in escrow on connected chain instead
 
 **Use Case**: Enables cross-chain swaps where assets are on different chains, with hub chain serving as coordination layer.
@@ -155,7 +155,7 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
 1. **Hub Chain - Intent Creation** (`testing-infra/e2e-tests-apt/submit-hub-intent.sh`):
    - User creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
    - Intent specifies desired USD token metadata and amount (e.g., 100M tokens)
-   - Intent uses `source_amount=0` since tokens are locked on connected chain
+   - Intent uses `offered_amount=0` since tokens are locked on connected chain
    - Intent is **reserved** for a specific solver: solver must be registered in the solver registry, signs the intent off-chain, and the signature is verified on-chain using the solver's public key from the registry
    - The solver's public key is looked up from the on-chain solver registry (no need to pass it explicitly)
 

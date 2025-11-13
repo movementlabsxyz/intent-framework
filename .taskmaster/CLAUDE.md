@@ -182,7 +182,7 @@ git commit -m "<type of change>: <description>
 **Commit Rule:**
 
 - **ALWAYS commit after completing each subtask or task** - This ensures incremental progress is saved
-- **Do NOT run `git add`** - Files should already be staged by the user before committing
+- **CRITICAL: NEVER run `git add` or `git add -A`** - Files must already be staged by the user before committing. Only run `git commit`, never stage files yourself.
 - Don't mention the subtask or task ID in the commit message.
 - Run tests before committing to ensure the changes work correctly
 

@@ -3,7 +3,7 @@
 //! These tests verify event structures and cache behavior
 //! without requiring external services.
 
-use trusted_verifier::monitor::{IntentEvent, EscrowEvent, FulfillmentEvent, EventMonitor};
+use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent, FulfillmentEvent, EventMonitor};
 use futures::future;
 #[path = "mod.rs"]
 mod test_helpers;
@@ -17,12 +17,12 @@ use test_helpers::build_test_config;
 /// Why: Verify critical security check - revocable intents must be rejected for escrow
 #[test]
 fn test_revocable_intent_rejection() {
-    let revocable_intent = IntentEvent {
+    let revocable_intent = RequestIntentEvent {
         chain: "hub".to_string(),
         intent_id: "0xrevocable".to_string(),
         issuer: "0xalice".to_string(),
-        source_metadata: String::new(),
-        source_amount: 1000,
+        offered_metadata: String::new(),
+        offered_amount: 1000,
         desired_metadata: String::new(),
         desired_amount: 2000,
         expiry_time: 0,
@@ -36,12 +36,12 @@ fn test_revocable_intent_rejection() {
     let result = is_safe_for_escrow(&revocable_intent);
     assert!(!result, "Revocable intents should NOT be safe for escrow");
     
-    let non_revocable_intent = IntentEvent {
+    let non_revocable_intent = RequestIntentEvent {
         chain: "hub".to_string(),
         intent_id: "0xsafe".to_string(),
         issuer: "0xbob".to_string(),
-        source_metadata: String::new(),
-        source_amount: 1000,
+        offered_metadata: String::new(),
+        offered_amount: 1000,
         desired_metadata: String::new(),
         desired_amount: 2000,
         expiry_time: 0,
@@ -71,8 +71,8 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
             escrow_id: "0xescrow".to_string(),
             intent_id: intent_id.to_string(),
             issuer: "0xissuer".to_string(),
-            source_metadata: "{}".to_string(),
-            source_amount: 1000,
+            offered_metadata: "{}".to_string(),
+            offered_amount: 1000,
             reserved_solver: None,
             chain_id: 2,
             desired_metadata: "{}".to_string(),
@@ -149,8 +149,8 @@ async fn test_multiple_concurrent_intents() {
             escrow_id: "0xescrow1".to_string(),
             intent_id: "0x01".to_string(),
             issuer: "0xissuer1".to_string(),
-            source_metadata: "{}".to_string(),
-            source_amount: 1000,
+            offered_metadata: "{}".to_string(),
+            offered_amount: 1000,
             reserved_solver: None,
             chain_id: 2,
             desired_metadata: "{}".to_string(),
@@ -164,8 +164,8 @@ async fn test_multiple_concurrent_intents() {
             escrow_id: "0xescrow2".to_string(),
             intent_id: "0x02".to_string(),
             issuer: "0xissuer2".to_string(),
-            source_metadata: "{}".to_string(),
-            source_amount: 2000,
+            offered_metadata: "{}".to_string(),
+            offered_amount: 2000,
             reserved_solver: None,
             chain_id: 2,
             desired_metadata: "{}".to_string(),
@@ -179,8 +179,8 @@ async fn test_multiple_concurrent_intents() {
             escrow_id: "0xescrow3".to_string(),
             intent_id: "0x03".to_string(),
             issuer: "0xissuer3".to_string(),
-            source_metadata: "{}".to_string(),
-            source_amount: 3000,
+            offered_metadata: "{}".to_string(),
+            offered_amount: 3000,
             reserved_solver: None,
             chain_id: 2,
             desired_metadata: "{}".to_string(),
@@ -273,7 +273,7 @@ async fn test_multiple_concurrent_intents() {
 // ============================================================================
 
 /// Helper function for validation logic
-fn is_safe_for_escrow(event: &IntentEvent) -> bool {
+fn is_safe_for_escrow(event: &RequestIntentEvent) -> bool {
     !event.revocable
 }
 

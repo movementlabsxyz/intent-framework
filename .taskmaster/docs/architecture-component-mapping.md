@@ -267,7 +267,7 @@ graph TB
 
 - **`trusted-verifier/src/monitor/mod.rs`**
   - **Purpose**: Monitors blockchain events from hub and connected chains (both Aptos and EVM)
-  - **Key Structures**: `IntentEvent`, `EscrowEvent`, `FulfillmentEvent`, `EventMonitor`
+  - **Key Structures**: `RequestIntentEvent`, `EscrowEvent`, `FulfillmentEvent`, `EventMonitor`
   - **Key Functions**: `poll_hub_events()`, `poll_connected_events()`, `poll_evm_events()`, `monitor_hub_chain()`, `monitor_connected_chain()`, `monitor_evm_chain()`, `get_cached_events()`
   - **Responsibilities**: Event polling from multiple chains, caching (both Aptos and EVM escrows), cross-chain event correlation, symmetrical handling of Aptos and EVM escrows
 
@@ -350,7 +350,7 @@ This section documents comprehensive communication patterns between domains, inc
 **Intent Management → Verification** (Event Emission):
 
 - `LimitOrderEvent`: Emitted when intent is created (`fa_intent.move`)
-  - Contains: `intent_id`, `source_metadata`, `source_amount`, `desired_metadata`, `desired_amount`, `expiry_time`, `revocable`
+  - Contains: `intent_id`, `offered_metadata`, `offered_amount`, `desired_metadata`, `desired_amount`, `expiry_time`, `revocable`
   - Purpose: Verifier monitors for new intents requiring validation
 - `LimitOrderFulfillmentEvent`: Emitted when intent is fulfilled (`fa_intent.move`)
   - Contains: `intent_id`, `solver`, `provided_metadata`, `provided_amount`, `timestamp`

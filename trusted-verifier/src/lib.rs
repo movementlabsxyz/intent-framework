@@ -14,6 +14,6 @@ pub mod evm_client;
 // Re-export commonly used types
 pub use crypto::{CryptoService, ApprovalSignature};
 pub use config::{Config, ChainConfig, VerifierConfig, ApiConfig};
-pub use monitor::{EventMonitor, IntentEvent, EscrowEvent, FulfillmentEvent};
+pub use monitor::{EventMonitor, RequestIntentEvent, EscrowEvent, FulfillmentEvent};
 pub use validator::{CrossChainValidator, ValidationResult};
 

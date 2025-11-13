@@ -1,7 +1,7 @@
 //! Event Monitoring Module
 //! 
 //! This module handles monitoring blockchain events from both hub and connected chains.
-//! It listens for intent creation events on the hub chain and escrow deposit events 
+//! It listens for request intent creation events on the hub chain and escrow deposit events 
 //! on the connected chain, providing real-time event processing and caching.
 //! 
 //! ## Security Requirements
@@ -26,23 +26,23 @@ use crate::evm_client::EvmClient;
 // EVENT DATA STRUCTURES
 // ============================================================================
 
-/// Intent creation event from the hub chain.
+/// Request intent creation event from the hub chain.
 /// 
-/// This event is emitted when a new intent is created on the hub chain.
+/// This event is emitted when a new request intent is created on the hub chain.
 /// The verifier monitors these events to track new trading opportunities
 /// and validate their safety for escrow operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IntentEvent {
-    /// Chain where the intent was created (hub or connected)
+pub struct RequestIntentEvent {
+    /// Chain where the request intent was created (hub or connected)
     pub chain: String,
-    /// Unique identifier for the intent
+    /// Unique identifier for the request intent
     pub intent_id: String,
-    /// Address of the issuer who created the intent
+    /// Address of the issuer who created the request intent
     pub issuer: String,
-    /// Metadata of the source asset being offered
-    pub source_metadata: String,
-    /// Amount of the source asset being offered
-    pub source_amount: u64,
+    /// Metadata of the asset being offered
+    pub offered_metadata: String,
+    /// Amount of the asset being offered (offered_amount from hub intent)
+    pub offered_amount: u64,
     /// Metadata of the desired asset
     pub desired_metadata: String,
     /// Amount of the desired asset
@@ -74,10 +74,10 @@ pub struct EscrowEvent {
     pub intent_id: String,
     /// Address of the issuer who created the escrow (who locked the funds)
     pub issuer: String,
-    /// Metadata of the source asset (what's locked in escrow)
-    pub source_metadata: String,
-    /// Amount of the source asset locked in escrow
-    pub source_amount: u64,
+    /// Metadata of the asset being offered (what's locked in escrow)
+    pub offered_metadata: String,
+    /// Amount of the source asset locked in escrow (offered_amount)
+    pub offered_amount: u64,
     /// Metadata of the desired asset (what solver needs to provide)
     pub desired_metadata: String,
     /// Amount of the desired asset
@@ -157,7 +157,7 @@ pub struct EventMonitor {
     /// Cryptographic operations for signature generation
     crypto: Arc<CryptoService>,
     /// In-memory cache of recent intent events
-    event_cache: Arc<RwLock<Vec<IntentEvent>>>,
+    event_cache: Arc<RwLock<Vec<RequestIntentEvent>>>,
     /// In-memory cache of recent escrow events
     /// 
     /// Note: Public for testing purposes
@@ -261,7 +261,7 @@ impl EventMonitor {
         Ok(())
     }
     
-    /// Monitors the hub chain for intent creation events.
+    /// Monitors the hub chain for request intent creation events.
     /// 
     /// This function runs in an infinite loop, polling the hub chain for
     /// new intent events. When events are found, it validates their safety
@@ -421,9 +421,9 @@ impl EventMonitor {
     /// 
     /// # Returns
     /// 
-    /// * `Ok(Vec<IntentEvent>)` - List of new intent events
+    /// * `Ok(Vec<RequestIntentEvent>)` - List of new request intent events
     /// * `Err(anyhow::Error)` - Failed to poll events
-    pub async fn poll_hub_events(&self) -> Result<Vec<IntentEvent>> {
+    pub async fn poll_hub_events(&self) -> Result<Vec<RequestIntentEvent>> {
         // Create Aptos client for hub chain
         let client = AptosClient::new(&self.config.hub_chain.rpc_url)?;
         
@@ -503,12 +503,12 @@ impl EventMonitor {
                                 .flatten();
                             
                             // OracleLimitOrderEvent doesn't have connected_chain_id (it's for escrows, not request intents)
-                            intent_events.push(IntentEvent {
+                            intent_events.push(RequestIntentEvent {
                                 chain: "hub".to_string(),
                                 intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
                                 issuer: data.issuer.clone(),
-                                source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
-                                source_amount: data.source_amount.parse::<u64>()
+                                offered_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
+                                offered_amount: data.source_amount.parse::<u64>()
                                     .context("Failed to parse source_amount")?,
                                 desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
                                 desired_amount: data.desired_amount.parse::<u64>()
@@ -534,15 +534,15 @@ impl EventMonitor {
                             
                             // Parse chain IDs from event
                             // For cross-chain intents: offered_chain_id is where escrow is (connected chain), desired_chain_id is hub
-                            // Use offered_chain_id as connected_chain_id for IntentEvent
+                            // Use offered_chain_id as connected_chain_id for RequestIntentEvent
                             let connected_chain_id = data.offered_chain_id.parse::<u64>().ok();
                             
-                            intent_events.push(IntentEvent {
+                            intent_events.push(RequestIntentEvent {
                                 chain: "hub".to_string(),
                                 intent_id: data.intent_id,  // Use intent_id for cross-chain linking
                                 issuer: data.issuer.clone(),
-                                source_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
-                                source_amount: data.offered_amount.parse::<u64>()
+                                offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
+                                offered_amount: data.offered_amount.parse::<u64>()
                                     .context("Failed to parse offered_amount")?,
                                 desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
                                 desired_amount: data.desired_amount.parse::<u64>()
@@ -618,8 +618,8 @@ impl EventMonitor {
                         escrow_id: data.intent_address.clone(),
                         intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain intent
                         issuer: data.issuer.clone(), // issuer is the escrow creator who locked the funds
-                        source_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
-                        source_amount: data.source_amount.parse::<u64>()
+                        offered_metadata: serde_json::to_string(&data.source_metadata).unwrap_or_default(),
+                        offered_amount: data.source_amount.parse::<u64>()
                             .context("Failed to parse source amount")?,
                         desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
                         desired_amount: data.desired_amount.parse::<u64>()
@@ -693,8 +693,8 @@ impl EventMonitor {
                 escrow_id,
                 intent_id,
                 issuer: event.maker.clone(), // maker is the escrow creator
-                source_metadata: format!("{{\"token\":\"{}\"}}", event.token), // Store token address in metadata
-                source_amount: 0, // We don't have amount from EscrowInitialized event, would need to query contract
+                offered_metadata: format!("{{\"token\":\"{}\"}}", event.token), // Store token address in metadata
+                offered_amount: 0, // We don't have amount from EscrowInitialized event, would need to query contract
                 desired_metadata: "{}".to_string(), // Not available in EscrowInitialized event
                 desired_amount: 0, // Not available in EscrowInitialized event
                 expiry_time: 0, // Not available in EscrowInitialized event (would need to query contract)
@@ -735,10 +735,10 @@ impl EventMonitor {
                 info!("Found matching intent: {} for escrow: {}", intent.intent_id, escrow_event.escrow_id);
                 
                 // 2. Check that deposit amount matches desired amount
-                if escrow_event.source_amount < intent.desired_amount {
+                if escrow_event.offered_amount < intent.desired_amount {
                     return Err(anyhow::anyhow!(
                         "Deposit amount {} is less than required amount {}",
-                        escrow_event.source_amount,
+                        escrow_event.offered_amount,
                         intent.desired_amount
                     ));
                 }
@@ -793,7 +793,7 @@ impl EventMonitor {
     /// # Returns
     /// 
     /// A vector containing all cached intent events
-    pub async fn get_cached_events(&self) -> Vec<IntentEvent> {
+    pub async fn get_cached_events(&self) -> Vec<RequestIntentEvent> {
         self.event_cache.read().await.clone()
     }
     

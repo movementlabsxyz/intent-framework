@@ -214,7 +214,7 @@ async fn get_events_handler(
     // Return intent, escrow, fulfillment events, and approvals in a combined structure
     #[derive(Debug, Serialize)]
     struct CombinedEvents {
-        intent_events: Vec<crate::monitor::IntentEvent>,
+        intent_events: Vec<crate::monitor::RequestIntentEvent>,
         escrow_events: Vec<crate::monitor::EscrowEvent>,
         fulfillment_events: Vec<crate::monitor::FulfillmentEvent>,
         approvals: Vec<crate::monitor::EscrowApproval>,

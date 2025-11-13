@@ -44,8 +44,6 @@ pub enum ChainType {
 /// and validate their safety for escrow operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestIntentEvent {
-    /// Chain where the request intent was created (hub or connected)
-    pub chain: String,
     /// Unique identifier for the request intent
     pub intent_id: String,
     /// Address of the issuer who created the request intent
@@ -77,8 +75,6 @@ pub struct RequestIntentEvent {
 /// fulfills the conditions specified in the original intent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EscrowEvent {
-    /// Chain where the escrow is located (hub or connected)
-    pub chain: String,
     /// Unique identifier for the escrow (on connected chain)
     pub escrow_id: String,
     /// Unique identifier for the intent on hub chain (for matching)
@@ -120,8 +116,6 @@ pub struct EscrowEvent {
 /// which triggers the approval workflow for escrow release on the connected chain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FulfillmentEvent {
-    /// Chain where the fulfillment occurred (hub)
-    pub chain: String,
     /// Unique identifier for the request intent that was fulfilled
     pub intent_id: String,
     /// Address of the request intent that was fulfilled
@@ -186,7 +180,11 @@ pub struct EventMonitor {
     #[doc(hidden)]
     pub escrow_cache: Arc<RwLock<Vec<EscrowEvent>>>,
     /// In-memory cache of fulfillment events
-    fulfillment_cache: Arc<RwLock<Vec<FulfillmentEvent>>>,
+    /// 
+    /// ⚠️ **WARNING**: This field is public ONLY for unit testing purposes.
+    /// It should not be accessed directly in production code.
+    #[doc(hidden)]
+    pub fulfillment_cache: Arc<RwLock<Vec<FulfillmentEvent>>>,
     /// In-memory cache of approval signatures for escrow release
     approval_cache: Arc<RwLock<Vec<EscrowApproval>>>,
 }
@@ -308,10 +306,9 @@ impl EventMonitor {
                         // Cache the event for API access (only non-revocable events)
                         {
                             let intent_id = event.intent_id.clone();
-                            let chain = event.chain.clone();
                             let mut cache = self.event_cache.write().await;
-                            // Check if this chain+intent_id combination already exists in the cache
-                            if !cache.iter().any(|cached| cached.intent_id == intent_id && cached.chain == chain) {
+                            // Check if this intent_id already exists in the cache
+                            if !cache.iter().any(|cached| cached.intent_id == intent_id) {
                                 cache.push(event);
                             }
                         }
@@ -356,10 +353,10 @@ impl EventMonitor {
                         // Cache the escrow event
                         {
                             let escrow_id = event.escrow_id.clone();
-                            let chain = event.chain.clone();
+                            let chain_id = event.chain_id;
                             let mut escrow_cache = self.escrow_cache.write().await;
-                            // Check if this chain+escrow_id combination already exists in the cache
-                            if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow_id && cached.chain == chain) {
+                            // Check if this chain_id+escrow_id combination already exists in the cache
+                            if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow_id && cached.chain_id == chain_id) {
                                 escrow_cache.push(event.clone());
                             }
                         }
@@ -409,10 +406,10 @@ impl EventMonitor {
                         // Cache the escrow event
                         {
                             let escrow_id = event.escrow_id.clone();
-                            let chain = event.chain.clone();
+                            let chain_id = event.chain_id;
                             let mut escrow_cache = self.escrow_cache.write().await;
-                            // Check if this chain+escrow_id combination already exists in the cache
-                            if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow_id && cached.chain == chain) {
+                            // Check if this chain_id+escrow_id combination already exists in the cache
+                            if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow_id && cached.chain_id == chain_id) {
                                 escrow_cache.push(event.clone());
                             }
                         }
@@ -479,7 +476,6 @@ impl EventMonitor {
                     if let Ok(data) = fulfillment_data_result {
                         // Create fulfillment event
                         let fulfillment_event = FulfillmentEvent {
-                            chain: "hub".to_string(),
                             intent_id: data.intent_id.clone(),
                             intent_address: data.intent_address.clone(),
                             solver: data.solver.clone(),
@@ -494,8 +490,8 @@ impl EventMonitor {
                         {
                             let intent_id = fulfillment_event.intent_id.clone();
                             let mut fulfillment_cache = self.fulfillment_cache.write().await;
-                            // Check if this chain+intent_id combination already exists in the cache
-                            if !fulfillment_cache.iter().any(|cached| cached.intent_id == intent_id && cached.chain == "hub") {
+                            // Check if this intent_id already exists in the cache
+                            if !fulfillment_cache.iter().any(|cached| cached.intent_id == intent_id) {
                                 fulfillment_cache.push(fulfillment_event.clone());
                                 info!("Received fulfillment event for request intent {} by solver {}", data.intent_id, data.solver);
                             } else {
@@ -526,7 +522,6 @@ impl EventMonitor {
                             
                             // OracleLimitOrderEvent doesn't have connected_chain_id (it's for escrows, not request intents)
                             intent_events.push(RequestIntentEvent {
-                                chain: "hub".to_string(),
                                 intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
                                 issuer: data.issuer.clone(),
                                 offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
@@ -560,7 +555,6 @@ impl EventMonitor {
                             let connected_chain_id = data.offered_chain_id.parse::<u64>().ok();
                             
                             intent_events.push(RequestIntentEvent {
-                                chain: "hub".to_string(),
                                 intent_id: data.intent_id,  // Use intent_id for cross-chain linking
                                 issuer: data.issuer.clone(),
                                 offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
@@ -636,7 +630,6 @@ impl EventMonitor {
                         .flatten();
                     
                     escrow_events.push(EscrowEvent {
-                        chain: "connected".to_string(),
                         escrow_id: data.intent_address.clone(),
                         intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain request intent
                         issuer: data.issuer.clone(), // issuer is the escrow creator who locked the funds
@@ -712,7 +705,6 @@ impl EventMonitor {
             let escrow_id = intent_id.clone();
             
             escrow_events.push(EscrowEvent {
-                chain: "connected".to_string(),
                 escrow_id,
                 intent_id,
                 issuer: event.maker.clone(), // maker is the escrow creator

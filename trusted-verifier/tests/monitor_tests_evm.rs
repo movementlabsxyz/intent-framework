@@ -20,7 +20,6 @@ async fn test_evm_escrow_detection_logic() {
     // Create a fulfillment event for an intent that doesn't exist in Aptos escrow cache
     // This should be detected as an EVM escrow
     let fulfillment = FulfillmentEvent {
-        chain: "hub".to_string(),
         intent_id: "0xevm_intent_123".to_string(),
         intent_address: "0xevm_addr".to_string(),
         solver: "0xsolver".to_string(),
@@ -58,7 +57,6 @@ async fn test_evm_escrow_ecdsa_signature_creation() {
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
 
     let fulfillment = FulfillmentEvent {
-        chain: "hub".to_string(),
         intent_id: "0xevm_test_intent".to_string(),
         intent_address: "0xevm_test_addr".to_string(),
         solver: "0xsolver".to_string(),
@@ -93,7 +91,6 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(trusted_verifier::monitor::EscrowEvent {
-            chain: "connected".to_string(),
             escrow_id: "0xaptos_escrow".to_string(),
             intent_id: "0xmvmt_intent".to_string(),
             issuer: "0xissuer".to_string(),
@@ -112,7 +109,6 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
 
     // Test Aptos escrow - should use Ed25519 signature
     let aptos_fulfillment = FulfillmentEvent {
-        chain: "hub".to_string(),
         intent_id: "0xmvmt_intent".to_string(),
         intent_address: "0xaptos_addr".to_string(),
         solver: "0xsolver".to_string(),
@@ -133,7 +129,6 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
 
     // Test EVM escrow - should use ECDSA signature
     let evm_fulfillment = FulfillmentEvent {
-        chain: "hub".to_string(),
         intent_id: "0xevm_intent".to_string(),
         intent_address: "0xevm_addr".to_string(),
         solver: "0xsolver".to_string(),
@@ -163,7 +158,6 @@ async fn test_evm_escrow_approval_flow() {
 
     let intent_id = "0xevm_workflow_intent";
     let fulfillment = FulfillmentEvent {
-        chain: "hub".to_string(),
         intent_id: intent_id.to_string(),
         intent_address: "0xworkflow_addr".to_string(),
         solver: "0xsolver".to_string(),
@@ -200,7 +194,6 @@ async fn test_evm_escrow_with_invalid_intent_id() {
 
     // Test with empty intent ID
     let fulfillment_empty = FulfillmentEvent {
-        chain: "hub".to_string(),
         intent_id: "".to_string(),
         intent_address: "0xaddr".to_string(),
         solver: "0xsolver".to_string(),
@@ -215,7 +208,6 @@ async fn test_evm_escrow_with_invalid_intent_id() {
 
     // Test with invalid hex format (if signature creation requires valid hex)
     let fulfillment_invalid = FulfillmentEvent {
-        chain: "hub".to_string(),
         intent_id: "not_a_valid_hex_string".to_string(),
         intent_address: "0xaddr".to_string(),
         solver: "0xsolver".to_string(),

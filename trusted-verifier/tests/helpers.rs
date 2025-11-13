@@ -80,8 +80,7 @@ pub fn build_test_config_with_evm() -> Config {
 #[allow(dead_code)]
 pub fn create_base_request_intent() -> RequestIntentEvent {
     RequestIntentEvent {
-        chain: "hub".to_string(),
-        intent_id: "0xintent123".to_string(),
+        intent_id: "0x0123456789abcd".to_string(), // Must be valid hex (even number of digits)
         issuer: "0xalice".to_string(),
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         offered_amount: 1000,
@@ -109,8 +108,7 @@ pub fn create_base_request_intent() -> RequestIntentEvent {
 #[allow(dead_code)]
 pub fn create_base_fulfillment() -> FulfillmentEvent {
     FulfillmentEvent {
-        chain: "hub".to_string(),
-        intent_id: "0xintent123".to_string(),
+        intent_id: "0x0123456789abcd".to_string(), // Must be valid hex (even number of digits)
         intent_address: "0xaddr".to_string(),
         solver: "0xsolver".to_string(),
         provided_metadata: "{}".to_string(),
@@ -133,9 +131,8 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
 #[allow(dead_code)]
 pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
-        chain: "connected".to_string(),
         escrow_id: "0xescrow123".to_string(),
-        intent_id: "0xintent123".to_string(),
+        intent_id: "0x0123456789abcd".to_string(), // Must be valid hex (even number of digits)
         issuer: "0xalice".to_string(),
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         offered_amount: 1000,

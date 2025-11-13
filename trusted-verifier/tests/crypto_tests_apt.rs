@@ -6,7 +6,7 @@ use trusted_verifier::crypto::CryptoService;
 
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config;
+use test_helpers::{build_test_config, create_base_fulfillment};
 
 /// Test that crypto service creates different key pairs for each instance
 /// Why: Ensure each verifier instance has a unique cryptographic identity to prevent key collisions
@@ -137,6 +137,38 @@ fn test_signature_contains_timestamp() {
     let now = chrono::Utc::now().timestamp() as u64;
     assert!(signature_data.timestamp <= now, "Timestamp should be in the past");
     assert!(signature_data.timestamp >= now - 3600, "Timestamp should be recent");
+}
+
+/// Test intent ID validation for signature creation
+/// Why: Valid intent IDs should succeed, invalid intent IDs should be rejected with clear error messages
+#[test]
+fn test_aptos_signature_intent_id_validation() {
+    let config = build_test_config();
+    let service = CryptoService::new(&config).unwrap();
+    
+    // Test with valid intent ID from base helper (should succeed)
+    let base_fulfillment = create_base_fulfillment();
+    let valid_intent_id = &base_fulfillment.intent_id;
+    let result = service.create_aptos_approval_signature(valid_intent_id);
+    assert!(result.is_ok(), "Should accept valid intent ID from base helper with even number of hex digits");
+    
+    // Test with intent ID that has odd number of hex digits (invalid)
+    let odd_digits_intent_id = "0x123";
+    let result = service.create_aptos_approval_signature(odd_digits_intent_id);
+    assert!(result.is_err(), "Should reject intent ID with odd number of hex digits");
+    
+    let error_msg = result.unwrap_err().to_string();
+    assert!(error_msg.contains("Invalid intent_id hex") || error_msg.contains("Odd number"),
+            "Error message should indicate invalid hex format: {}", error_msg);
+    
+    // Test with invalid hex string (non-hex characters)
+    let invalid_hex = "0xinvalid_hex_string";
+    let result = service.create_aptos_approval_signature(invalid_hex);
+    assert!(result.is_err(), "Should reject invalid hex string");
+    
+    let error_msg = result.unwrap_err().to_string();
+    assert!(error_msg.contains("Invalid intent_id hex"),
+            "Error message should indicate invalid hex format: {}", error_msg);
 }
 
 

@@ -383,7 +383,7 @@
         "id": "7",
         "title": "Add unit tests for missing/null field handling",
         "description": "Add unit tests for validation when optional fields are missing or mismatched",
-        "status": "in-progress",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "The verifier handles optional fields like connected_chain_id and solver. We need tests for: when connected_chain_id is None but escrow has chain_id, when connected_chain_id is Some but escrow chain_id doesn't match, and when solver is None in intent but Some in escrow (and vice versa).",
@@ -397,10 +397,11 @@
             "description": "Test validation behavior when intent doesn't specify connected_chain_id but escrow has chain_id",
             "dependencies": [],
             "details": "Create intent with connected_chain_id = None and escrow with chain_id. Verify whether validation passes or fails (should pass as connected_chain_id check is skipped when None).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent with connected_chain_id=None, escrow with chain_id, call validate_intent_fulfillment, verify behavior",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:36:14.891Z"
           },
           {
             "id": 2,
@@ -408,10 +409,11 @@
             "description": "Test that validation fails when intent connected_chain_id doesn't match escrow chain_id",
             "dependencies": [],
             "details": "Create intent with connected_chain_id = Some(2) and escrow with chain_id = 3. Verify validation fails with appropriate error message.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create intent and escrow with mismatched chain_ids, call validate_intent_fulfillment, assert valid=false",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:37:33.125Z"
           },
           {
             "id": 3,
@@ -426,13 +428,13 @@
             "updatedAt": "2025-11-13T14:21:44.507Z"
           }
         ],
-        "updatedAt": "2025-11-13T14:21:44.507Z"
+        "updatedAt": "2025-11-13T14:37:33.125Z"
       },
       {
         "id": "8",
         "title": "Add unit tests for duplicate event handling",
         "description": "Add unit tests to verify that duplicate events are properly handled",
-        "status": "pending",
+        "status": "done",
         "priority": "high",
         "dependencies": [],
         "details": "The monitor should reject duplicate events (already cached). We need tests for: duplicate escrow events are rejected, duplicate intent events are rejected, and duplicate fulfillment events are handled correctly.",
@@ -446,10 +448,11 @@
             "description": "Test that escrow events with same chain+escrow_id are not added to cache twice",
             "dependencies": [],
             "details": "Add an escrow event to cache, then try to add the same event again. Verify it's not duplicated in the cache.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Add escrow event, check cache, add same event again, verify cache size unchanged",
             "testFile": "trusted-verifier/tests/monitor_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:41:59.477Z"
           },
           {
             "id": 2,
@@ -457,10 +460,11 @@
             "description": "Test that intent events with same chain+intent_id are not added to cache twice",
             "dependencies": [],
             "details": "Add an intent event to cache, then try to add the same event again. Verify it's not duplicated.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Add intent event, check cache, add same event again, verify cache size unchanged",
             "testFile": "trusted-verifier/tests/monitor_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:42:00.720Z"
           },
           {
             "id": 3,
@@ -468,13 +472,14 @@
             "description": "Test that duplicate fulfillment events don't generate multiple approvals",
             "dependencies": [],
             "details": "Process a fulfillment event that generates approval, then process the same fulfillment again. Verify only one approval exists.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Process fulfillment, check approval, process same fulfillment again, verify single approval",
             "testFile": "trusted-verifier/tests/monitor_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:42:01.917Z"
           }
         ],
-        "updatedAt": "2025-01-27T00:00:00.000Z"
+        "updatedAt": "2025-11-13T14:42:01.917Z"
       },
       {
         "id": "9",
@@ -527,9 +532,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-13T14:21:44.511Z",
+      "lastModified": "2025-11-13T14:42:01.919Z",
       "taskCount": 9,
-      "completedCount": 6,
+      "completedCount": 8,
       "tags": [
         "master"
       ]

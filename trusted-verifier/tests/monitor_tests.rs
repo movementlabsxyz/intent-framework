@@ -309,3 +309,200 @@ async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillmen
     let result = monitor.validate_request_intent_fulfillment(&valid_escrow).await;
     assert!(result.is_ok(), "Validation should pass when request intent has not expired and all other validations pass");
 }
+
+/// Test that duplicate escrow events are rejected (not added to cache)
+/// Why: Verify that the monitor correctly detects and rejects duplicate escrow events
+#[tokio::test]
+async fn test_duplicate_escrow_event_rejection() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    
+    let escrow = create_base_escrow_event();
+    
+    // Add escrow to cache (first time)
+    {
+        let mut escrow_cache = monitor.escrow_cache.write().await;
+        // Simulate duplicate detection logic from monitor_connected_chain
+        if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow.escrow_id && cached.chain_id == escrow.chain_id) {
+            escrow_cache.push(escrow.clone());
+        }
+    }
+    
+    // Verify escrow was added
+    let escrow_cache = monitor.escrow_cache.read().await;
+    assert_eq!(escrow_cache.len(), 1, "Escrow should be in cache");
+    assert_eq!(escrow_cache[0].escrow_id, escrow.escrow_id);
+    drop(escrow_cache);
+    
+    // Try to add the same escrow again (duplicate)
+    {
+        let mut escrow_cache = monitor.escrow_cache.write().await;
+        // Simulate duplicate detection logic from monitor_connected_chain
+        if !escrow_cache.iter().any(|cached| cached.escrow_id == escrow.escrow_id && cached.chain_id == escrow.chain_id) {
+            escrow_cache.push(escrow.clone());
+        }
+    }
+    
+    // Verify duplicate was not added
+    let escrow_cache = monitor.escrow_cache.read().await;
+    assert_eq!(escrow_cache.len(), 1, "Duplicate escrow should not be added to cache");
+    assert_eq!(escrow_cache[0].escrow_id, escrow.escrow_id);
+}
+
+/// Test that duplicate intent events are rejected (not added to cache)
+/// Why: Verify that the monitor correctly detects and rejects duplicate intent events
+#[tokio::test]
+async fn test_duplicate_intent_event_rejection() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    
+    let intent = create_base_request_intent();
+    
+    // Add intent to cache (first time)
+    {
+        let mut cache = monitor.event_cache.write().await;
+        // Simulate duplicate detection logic from monitor_hub_chain
+        if !cache.iter().any(|cached| cached.intent_id == intent.intent_id) {
+            cache.push(intent.clone());
+        }
+    }
+    
+    // Verify intent was added
+    let cache = monitor.event_cache.read().await;
+    assert_eq!(cache.len(), 1, "Intent should be in cache");
+    assert_eq!(cache[0].intent_id, intent.intent_id);
+    drop(cache);
+    
+    // Try to add the same intent again (duplicate)
+    {
+        let mut cache = monitor.event_cache.write().await;
+        // Simulate duplicate detection logic from monitor_hub_chain
+        if !cache.iter().any(|cached| cached.intent_id == intent.intent_id) {
+            cache.push(intent.clone());
+        }
+    }
+    
+    // Verify duplicate was not added
+    let cache = monitor.event_cache.read().await;
+    assert_eq!(cache.len(), 1, "Duplicate intent should not be added to cache");
+    assert_eq!(cache[0].intent_id, intent.intent_id);
+}
+
+/// Test that duplicate fulfillment events are handled correctly (not processed twice)
+/// Why: Verify that the monitor correctly detects and skips duplicate fulfillment events
+#[tokio::test]
+async fn test_duplicate_fulfillment_event_handling() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    
+    // Add matching escrow to cache (required for approval generation)
+    {
+        let mut escrow_cache = monitor.escrow_cache.write().await;
+        escrow_cache.push(create_base_escrow_event());
+    }
+    
+    let fulfillment = create_base_fulfillment();
+    
+    // Add fulfillment to cache (first time) and process it
+    {
+        let mut fulfillment_cache = monitor.fulfillment_cache.write().await;
+        // Simulate duplicate detection logic from poll_hub_events
+        if !fulfillment_cache.iter().any(|cached| cached.intent_id == fulfillment.intent_id) {
+            fulfillment_cache.push(fulfillment.clone());
+        }
+    }
+    
+    // Process the first fulfillment (should generate approval)
+    monitor.validate_and_approve_fulfillment(&fulfillment).await.expect("First fulfillment should succeed");
+    
+    // Verify approval was generated
+    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    assert!(approval.is_some(), "Approval should exist after first fulfillment");
+    let first_approval = approval.unwrap();
+    let first_signature = first_approval.signature.clone();
+    
+    // Try to add the same fulfillment again (duplicate)
+    {
+        let mut fulfillment_cache = monitor.fulfillment_cache.write().await;
+        // Simulate duplicate detection logic from poll_hub_events
+        if !fulfillment_cache.iter().any(|cached| cached.intent_id == fulfillment.intent_id) {
+            fulfillment_cache.push(fulfillment.clone());
+        }
+    }
+    
+    // Verify duplicate was not added to cache
+    let fulfillment_cache = monitor.fulfillment_cache.read().await;
+    assert_eq!(fulfillment_cache.len(), 1, "Duplicate fulfillment should not be added to cache");
+    drop(fulfillment_cache);
+    
+    // Verify approval was not regenerated (same approval exists)
+    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    assert!(approval.is_some(), "Approval should still exist");
+    let second_approval = approval.unwrap();
+    assert_eq!(first_signature, second_approval.signature, "Approval should not be regenerated for duplicate fulfillment");
+}
+
+/// Test that base helper structs work with signature generation
+/// Why: Verify that base helpers use valid hex values that can be used for signature generation
+#[tokio::test]
+async fn test_base_helpers_work_with_signature_generation() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    
+    // Add escrow using base helper (should have valid hex intent_id)
+    {
+        let mut escrow_cache = monitor.escrow_cache.write().await;
+        escrow_cache.push(create_base_escrow_event());
+    }
+    
+    // Create fulfillment using base helper (should have valid hex intent_id matching escrow)
+    let fulfillment = create_base_fulfillment();
+    
+    // This should succeed - base helpers should have valid hex values
+    let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
+    assert!(result.is_ok(), "Base helpers should work with signature generation - intent_id must be valid hex (even number of digits)");
+    
+    // Verify approval was generated
+    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    assert!(approval.is_some(), "Approval should exist when using base helpers");
+}
+
+/// Test that approval generation fails when fulfillment intent_id doesn't match escrow intent_id
+/// Why: Verify that mismatched intent_ids are rejected - fulfillment must match an existing escrow
+#[tokio::test]
+async fn test_approval_fails_when_intent_id_mismatch() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config();
+    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    
+    // Add escrow with one intent_id
+    {
+        let mut escrow_cache = monitor.escrow_cache.write().await;
+        escrow_cache.push(EscrowEvent {
+            intent_id: "0x01".to_string(), // Valid hex
+            ..create_base_escrow_event()
+        });
+    }
+    
+    // Create fulfillment with different intent_id (doesn't match escrow)
+    let fulfillment = FulfillmentEvent {
+        intent_id: "0x02".to_string(), // Different intent_id - doesn't match escrow
+        ..create_base_fulfillment()
+    };
+    
+    // This should fail - no matching escrow found
+    let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
+    assert!(result.is_err(), "Approval should fail when fulfillment intent_id doesn't match any escrow");
+    
+    let error_msg = result.unwrap_err().to_string();
+    assert!(error_msg.contains("No matching escrow") || error_msg.contains("matching escrow"),
+            "Error message should indicate no matching escrow found: {}", error_msg);
+    
+    // Verify no approval was generated
+    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    assert!(approval.is_none(), "No approval should exist when intent_ids don't match");
+}

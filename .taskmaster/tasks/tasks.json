@@ -383,7 +383,7 @@
         "id": "7",
         "title": "Add unit tests for missing/null field handling",
         "description": "Add unit tests for validation when optional fields are missing or mismatched",
-        "status": "pending",
+        "status": "in-progress",
         "priority": "high",
         "dependencies": [],
         "details": "The verifier handles optional fields like connected_chain_id and solver. We need tests for: when connected_chain_id is None but escrow has chain_id, when connected_chain_id is Some but escrow chain_id doesn't match, and when solver is None in intent but Some in escrow (and vice versa).",
@@ -419,13 +419,14 @@
             "description": "Test validation when solver fields are mismatched (one None, one Some)",
             "dependencies": [],
             "details": "Test scenarios where intent has solver but escrow doesn't, and vice versa. Both should fail validation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test both solver mismatch scenarios, verify both are rejected",
             "testFile": "trusted-verifier/tests/cross_chain_tests.rs",
-            "parentId": "undefined"
+            "parentId": "undefined",
+            "updatedAt": "2025-11-13T14:21:44.507Z"
           }
         ],
-        "updatedAt": "2025-01-27T00:00:00.000Z"
+        "updatedAt": "2025-11-13T14:21:44.507Z"
       },
       {
         "id": "8",
@@ -526,7 +527,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-13T14:16:39.547Z",
+      "lastModified": "2025-11-13T14:21:44.511Z",
       "taskCount": 9,
       "completedCount": 6,
       "tags": [

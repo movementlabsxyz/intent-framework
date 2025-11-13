@@ -478,3 +478,63 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
             "Error message should mention reservation mismatch");
 }
 
+/// Test that verifier rejects escrows when request intent has no connected_chain_id
+/// Why: Verify that request intents must specify connected_chain_id for escrow validation
+#[tokio::test]
+async fn test_escrow_rejection_when_connected_chain_id_is_none() {
+    use trusted_verifier::validator::CrossChainValidator;
+    use test_helpers::build_test_config;
+    
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a hub intent without connected_chain_id
+    let hub_intent = RequestIntentEvent {
+        connected_chain_id: None,
+        ..create_base_request_intent()
+    };
+    
+    // Create an escrow with a chain_id
+    let escrow = EscrowEvent {
+        chain_id: 999,
+        ..create_base_escrow_event()
+    };
+    
+    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow).await
+        .expect("Validation should complete without error");
+    
+    assert!(!validation_result.valid, "Validation should fail when request intent has no connected_chain_id");
+    assert!(validation_result.message.contains("must specify connected_chain_id"),
+            "Error message should mention that connected_chain_id must be specified");
+}
+
+/// Test that verifier rejects escrows when connected_chain_id doesn't match escrow chain_id
+/// Why: Verify that chain_id mismatch validation works correctly
+#[tokio::test]
+async fn test_escrow_chain_id_mismatch_rejection() {
+    use trusted_verifier::validator::CrossChainValidator;
+    use test_helpers::build_test_config;
+    
+    let config = build_test_config();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    // Create a hub intent with connected_chain_id
+    let hub_intent = RequestIntentEvent {
+        connected_chain_id: Some(31337),
+        ..create_base_request_intent()
+    };
+    
+    // Create an escrow with mismatched chain_id
+    let escrow_mismatch = EscrowEvent {
+        chain_id: 999, // Different from connected_chain_id (31337)
+        ..create_base_escrow_event()
+    };
+    
+    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_mismatch).await
+        .expect("Validation should complete without error");
+    
+    assert!(!validation_result.valid, "Validation should fail when chain_id doesn't match connected_chain_id");
+    assert!(validation_result.message.contains("does not match"),
+            "Error message should mention chain_id does not match");
+}
+

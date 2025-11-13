@@ -126,11 +126,12 @@ impl CrossChainValidator {
     /// Validates fulfillment of request intent conditions on the connected chain.
     /// 
     /// This function performs comprehensive validation to ensure that:
-    /// 1. The escrow's offered_amount matches the hub request intent's offered_amount
-    /// 2. The escrow's offered_metadata matches the hub request intent's offered_metadata
-    /// 3. The escrow's chain_id matches the hub request intent's offered_chain_id (when provided)
-    /// 4. The escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request intent)
-    /// 5. The escrow's reserved_solver matches the hub request intent's solver (with chain-specific validation)
+    /// 1. The request intent has a connected_chain_id (required for escrow validation)
+    /// 2. The escrow's offered_amount matches the hub request intent's offered_amount
+    /// 3. The escrow's offered_metadata matches the hub request intent's offered_metadata
+    /// 4. The escrow's chain_id matches the hub request intent's connected_chain_id
+    /// 5. The escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request intent)
+    /// 6. The escrow's reserved_solver matches the hub request intent's solver (with chain-specific validation)
     /// 
     /// # Arguments
     /// 
@@ -148,6 +149,15 @@ impl CrossChainValidator {
     ) -> Result<ValidationResult> {
         info!("Validating request intent fulfillment for request intent: {}, escrow: {}", 
               request_intent_event.intent_id, escrow_event.escrow_id);
+        
+        // Validate that request intent has connected_chain_id (required for escrow validation)
+        if request_intent_event.connected_chain_id.is_none() {
+            return Ok(ValidationResult {
+                valid: false,
+                message: "Request intent must specify connected_chain_id for escrow validation".to_string(),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
         
         // Validate the escrow's offered_amount matches the specified offered_amount in the hub request intent
         if escrow_event.offered_amount != request_intent_event.offered_amount {

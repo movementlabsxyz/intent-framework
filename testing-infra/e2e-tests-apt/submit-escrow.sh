@@ -81,7 +81,9 @@ log "   Intent ID: $INTENT_ID"
 
 # Check and display initial balances using common function
 log ""
-display_balances
+display_balances_hub
+display_balances_connected_apt
+log_and_echo ""
 
 log ""
 log "   Creating escrow on connected chain..."
@@ -176,6 +178,8 @@ if [ -n "$ESCROW_ADDRESS" ] && [ "$ESCROW_ADDRESS" != "null" ]; then
 fi
 
 # Check final balances using common function
-display_balances
+display_balances_hub
+display_balances_connected_apt
+log_and_echo ""
 
 

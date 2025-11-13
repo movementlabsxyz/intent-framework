@@ -42,7 +42,9 @@ log ""
 
 # Check and display initial balances using common function
 log "   - Checking initial balances..."
-display_balances
+display_balances_hub
+display_balances_connected_apt
+log_and_echo ""
 
 # Update verifier config with current deployed addresses and account addresses
 log "   - Updating verifier configuration..."
@@ -434,7 +436,9 @@ else
 fi
 
 # Check final balances using common function
-display_balances
+display_balances_hub
+display_balances_connected_apt
+log_and_echo ""
 
 log_and_echo ""
 log_and_echo "📝 Useful commands:"

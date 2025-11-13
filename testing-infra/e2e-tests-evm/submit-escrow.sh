@@ -46,7 +46,9 @@ log "   Exchange rate: 1000 ETH = 1 APT"
 
 # Check and display initial balances using common function
 log ""
-display_balances
+display_balances_hub
+display_balances_connected_evm
+log_and_echo ""
 
 log ""
 log "   Creating escrow on EVM chain..."
@@ -104,6 +106,8 @@ log "   Escrow Address: $ESCROW_ADDRESS"
 log "   Locked Amount: 1000 ETH"
 
 # Check final balances using common function
-display_balances
+display_balances_hub
+display_balances_connected_evm
+log_and_echo ""
 
 

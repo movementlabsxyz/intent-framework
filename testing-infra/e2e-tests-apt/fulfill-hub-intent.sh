@@ -67,6 +67,8 @@ log "   Intent ID: $INTENT_ID"
 log "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
 
 # Check final balances using common function
-display_balances
+display_balances_hub
+display_balances_connected_apt
+log_and_echo ""
 
 

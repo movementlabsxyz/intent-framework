@@ -13,22 +13,38 @@ cd "$PROJECT_ROOT"
 # Generate a random intent_id that will be used for both hub and escrow
 INTENT_ID="0x$(openssl rand -hex 32)"
 
+# Determine if we're in EVM mode (CONNECTED_CHAIN_ID=31337 means EVM, not Aptos Chain 2)
+CONNECTED_CHAIN_ID=${CONNECTED_CHAIN_ID:-2}
+IS_EVM_MODE=false
+if [ "$CONNECTED_CHAIN_ID" = "31337" ]; then
+    IS_EVM_MODE=true
+fi
+
 # Get addresses
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
-CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
 
 # Get Alice and Bob addresses
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
+
+# Only get Chain 2 addresses if not in EVM mode
+if [ "$IS_EVM_MODE" = "false" ]; then
+    CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
+    ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
+else
+    CHAIN2_ADDRESS=""
+    ALICE_CHAIN2_ADDRESS=""
+fi
 
 log ""
 log "📋 Chain Information:"
 log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
-log "   Connected Chain (Chain 2): $CHAIN2_ADDRESS"
+if [ "$IS_EVM_MODE" = "false" ]; then
+    log "   Connected Chain (Chain 2): $CHAIN2_ADDRESS"
+    log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
+fi
 log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
-log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
@@ -39,7 +55,9 @@ log "   Expiry time: $EXPIRY_TIME"
 
 # Check and display initial balances using common function
 log ""
-display_balances
+display_balances_hub
+display_balances_connected_apt
+log_and_echo ""
 
 log ""
 log "   Creating intent on hub chain..."
@@ -57,11 +75,16 @@ log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
 OFFERED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
 DESIRED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
 
-# Get APT metadata on Chain 2
-log "     Getting APT metadata on Chain 2..."
-APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+# Get APT metadata on Chain 2 only if not in EVM mode
+if [ "$IS_EVM_MODE" = "false" ]; then
+    log "     Getting APT metadata on Chain 2..."
+    APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
+    log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
+    OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+else
+    # In EVM mode, use Chain 1 metadata for both (since escrow is on EVM, not Chain 2)
+    OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN1"
+fi
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
 # NOTE: Cross-chain request intents must be reserved. This requires:
@@ -85,8 +108,8 @@ log "     Generating solver signature..."
 # Generate solver signature using helper function
 # For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
 OFFERED_AMOUNT="100000000"
-# Connected chain ID: default to 2 (Aptos Chain 2), but can be overridden (e.g., 31337 for EVM)
-OFFERED_CHAIN_ID=${CONNECTED_CHAIN_ID:-2}  # Connected chain where escrow will be created
+# Connected chain ID: use CONNECTED_CHAIN_ID (defaults to 2 for Aptos, 31337 for EVM)
+OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
@@ -126,8 +149,7 @@ register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRES
 
 # Remove 0x prefix from signature for hex format
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
-# Connected chain ID: default to 2 (Aptos Chain 2), but can be overridden (e.g., 31337 for EVM)
-CONNECTED_CHAIN_ID=${CONNECTED_CHAIN_ID:-2}
+# Connected chain ID is already set above
 HUB_CHAIN_ID=1
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
@@ -173,6 +195,8 @@ fi
 save_intent_info "$INTENT_ID" "$HUB_INTENT_ADDRESS"
 
 # Check final balances using common function
-display_balances
+display_balances_hub
+display_balances_connected_apt
+log_and_echo ""
 
 

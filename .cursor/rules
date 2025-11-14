@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Intent Framework Project Rules
 
+For guidance on how to write rules, see [Cursor Rules Documentation](https://cursor.com/docs/context/rules).
+
 ## Commit Message Conventions
 
 **IMPORTANT:** All commit messages must be concise and professional.

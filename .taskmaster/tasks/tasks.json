@@ -1,14 +1,141 @@
 {
   "master": {
-    "tasks": [],
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Design outflow request intent structure and generalize hub intent creation",
+        "description": "Analyze and design the generalized hub request intent structure to support both inflow and outflow request intents",
+        "details": "Create wrapper functions for inflow (current) and outflow (new) request intents. For inflow: create_inflow_request_intent() wrapper around existing create_cross_chain_request_intent_entry() using FungibleAssetLimitOrder (no signature required). For outflow: create_outflow_request_intent() using OracleGuardedLimitOrder (requires verifier signature). Extend OracleGuardedLimitOrder struct to add requester_address_connected_chain: Option<address> field to store where solver should send tokens on connected chain. Design ensures tokens are locked on hub for outflow vs connected chain for inflow.",
+        "testStrategy": "Create unit tests validating both inflow and outflow intent creation with correct token locking behavior and struct field validation",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Define connected_chain_fulfill transaction format for Move/Aptos",
+        "description": "Design and document the transaction format for immediate solver transfers on Aptos connected chains",
+        "details": "Define transaction format using standard Move transfer functions (primary_fungible_store::deposit()) with intent_id encoded in transaction metadata/script arguments. Document exact transaction layout specification for solvers to follow. Create validation function validate_connected_chain_fulfill() that verifies transaction format (not values - contract doesn't know correct values). Transaction must immediately transfer tokens to requester address with no escrow or verifier involvement. Include intent_id for verifier tracking when querying by transaction hash.",
+        "testStrategy": "Test transaction format validation, metadata extraction, and ensure standard transfer functions work with appended intent_id metadata",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Define connected_chain_fulfill transaction format for EVM",
+        "description": "Design and document the transaction format for immediate solver transfers on EVM connected chains",
+        "details": "Define transaction format using standard ERC20 transfer(to, amount) with intent_id appended as metadata in transaction data field (32 bytes after function parameters). Data format: 0xa9059cbb (transfer selector) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes). ERC20 contract ignores extra intent_id bytes, but they remain verifiable on-chain. Create validation function validateConnectedChainFulfill() in IntentEscrow contract for format verification. No contract changes needed for transfers - uses existing ERC20 standard.",
+        "testStrategy": "Test transaction data field parsing, metadata extraction, verify ERC20 transfer ignores extra bytes, and validate transaction format checking",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement Move outflow request intent creation function",
+        "description": "Implement create_outflow_request_intent() function in fa_intent_cross_chain.move for outflow request intents",
+        "details": "Create function that uses fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement() to create OracleGuardedLimitOrder intent. Function withdraws actual tokens from user (locked on hub), stores requester_address_connected_chain, sets revocable=false for cross-chain safety, and requires verifier_public_key parameter. Extends existing cross-chain module while maintaining consistency with current inflow patterns. Returns Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>.",
+        "testStrategy": "Unit tests for outflow intent creation, token withdrawal verification, oracle requirement setup, and requester address storage",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Extend OracleGuardedLimitOrder struct with requester address field",
+        "description": "Add requester_address_connected_chain field to OracleGuardedLimitOrder struct in fa_intent_with_oracle.move",
+        "details": "Modify OracleGuardedLimitOrder struct to include requester_address_connected_chain: Option<address> field. This field stores the connected chain address where solver should send tokens for outflow intents. Update create_fa_to_fa_intent_with_oracle_requirement() function to accept and store this field. Field is Some(address) for outflow intents, None for regular oracle intents. Update all related functions to handle the new field appropriately.",
+        "testStrategy": "Test struct modification, field storage and retrieval, ensure backward compatibility with existing oracle intents, validate outflow intent requires non-None address",
+        "priority": "medium",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement inflow request intent wrapper function",
+        "description": "Create create_inflow_request_intent() wrapper function for clarity and consistency with new outflow function",
+        "details": "Implement wrapper around existing create_cross_chain_request_intent_entry() function in fa_intent_cross_chain.move for naming consistency. This maintains current inflow behavior (FungibleAssetLimitOrder, withdraws 0 tokens, no signature required) while providing clear distinction from outflow intents. Function should have identical parameters and behavior to current implementation but with clearer naming convention.",
+        "testStrategy": "Test wrapper function maintains exact same behavior as original, verify parameter passing and return values match current implementation",
+        "priority": "low",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Add Move transaction format validation functions",
+        "description": "Implement validation functions for connected_chain_fulfill transaction format in Move contracts",
+        "details": "Add validate_connected_chain_fulfill() view function that validates transaction format for Move/Aptos connected chains. Function should verify transaction includes intent_id in metadata, transaction format matches expected structure (standard transfer with metadata), and all required fields are present. Note: validates format only, not values (contract doesn't know correct values - only verifier does). Can be called off-chain by solver before submitting transaction for pre-flight validation.",
+        "testStrategy": "Test format validation logic, verify function correctly identifies valid/invalid transaction formats, test off-chain callable behavior",
+        "priority": "low",
+        "dependencies": [
+          2,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Add EVM transaction format validation functions",
+        "description": "Implement validation functions for connected_chain_fulfill transaction format in EVM contracts",
+        "details": "Add validateConnectedChainFulfill() view function to IntentEscrow contract that validates transaction format for EVM connected chains. Function should verify transaction data field includes intent_id metadata (32 bytes after function parameters), transaction format matches expected structure (transfer selector + to + amount + intent_id), and all required fields are present and properly formatted. Returns format validation result for off-chain solver usage.",
+        "testStrategy": "Test transaction data field validation, verify correct format detection for valid/invalid transactions, ensure proper byte layout verification",
+        "priority": "low",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Design verifier transaction validation logic",
+        "description": "Design comprehensive verifier validation logic for both Move/Aptos and EVM connected chains",
+        "details": "Design verifier system to receive transaction hash from solver (via API), query transaction by hash on connected chain, extract intent_id and transaction parameters from transaction data. For EVM: use eth_getTransactionByHash and decode data field. For Aptos: use Aptos RPC and extract from transaction metadata. Validate all parameters match intent requirements: intent_id matches hub request intent, to/requester address matches intent's requester_address_connected_chain, amount matches desired amount, solver address matches reserved solver. Verify transaction confirmed and transfer completed successfully.",
+        "testStrategy": "Test transaction hash querying, parameter extraction for both chains, validation logic against intent requirements, and transaction confirmation verification",
+        "priority": "high",
+        "dependencies": [
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement verifier approval signature generation",
+        "description": "Implement verifier approval signature generation after successful transaction validation",
+        "details": "After successful validation of connected_chain_fulfill transaction, implement verifier signing of intent_id to generate approval signature. Signature follows same pattern as existing oracle-guarded intents - verifier signs BCS-encoded intent_id. Solver uses this signature to fulfill hub intent via existing oracle-guarded intent mechanism (finish_fa_receiving_session_with_oracle()). Funds always go to reserved solver address regardless of who calls fulfillment function. Integrate with existing verifier infrastructure and approval workflows.",
+        "testStrategy": "Test signature generation process, verify signature compatibility with existing oracle-guarded intent verification, test hub intent fulfillment with generated signature",
+        "priority": "high",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
     "metadata": {
-      "version": "1.0.0",
-      "lastModified": "2025-11-13T15:41:19.883Z",
-      "taskCount": 0,
-      "completedCount": 0,
-      "tags": [
-        "master"
-      ]
+      "created": "2025-11-14T11:57:06.698Z",
+      "updated": "2025-11-14T11:57:06.698Z",
+      "description": "Tasks for master context"
     }
   }
 }

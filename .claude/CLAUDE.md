@@ -1,6 +1,7 @@
 # Claude Code Instructions
 
-See [`.cursor/rules`](.cursor/rules) for project rules including commit message conventions, documentation guidelines, markdown style rules, code organization, and coding standards.
+**Import project rules and conventions, treat as if import is in the main CLAUDE.md file.**
+@./.cursor/rules
 
 ## Task Master AI Instructions
 

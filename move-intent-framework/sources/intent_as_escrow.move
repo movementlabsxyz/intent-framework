@@ -82,6 +82,7 @@ module mvmt_intent::intent_as_escrow {
             //      This ensures funds can ONLY be released by verifier approval/rejection
             //      Verifiers can safely trigger actions elsewhere based on deposit events
             intent_id,
+            option::none(), // Not an outflow intent, so no requester address on connected chain
             option::some(reservation), // Escrows must always be reserved for a specific solver
         )
     }

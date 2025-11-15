@@ -17,6 +17,7 @@ public fun create_intent<Source: store, Args: store + drop, Witness: drop>(
 ```
 
 **Parameters:**
+
 - `offered_resource`: The resource being offered in the trade
 - `argument`: Trade-specific arguments (e.g., wanted asset type and amount)
 - `expiry_time`: Unix timestamp when the intent expires
@@ -34,6 +35,7 @@ public fun start_intent_session<Source: store, Args: store + drop>(
 ```
 
 **Parameters:**
+
 - `intent`: The trade intent object
 
 **Returns:** A tuple containing the offered resource and a trading session
@@ -48,6 +50,7 @@ public fun finish_intent_session<Witness: drop, Args: store + drop>(
 ```
 
 **Parameters:**
+
 - `session`: The active trading session
 - `_witness`: Verification witness proving trade conditions were met
 
@@ -68,6 +71,7 @@ public fun create_fa_to_fa_intent_entry(
 ```
 
 **Parameters:**
+
 - `offered_metadata`: Metadata of the asset being offered
 - `offered_amount`: Amount of the asset being offered
 - `desired_metadata`: Metadata of the desired asset
@@ -78,10 +82,10 @@ public fun create_fa_to_fa_intent_entry(
 
 **Returns:** A fungible asset trade intent object
 
-### Creating a Cross-Chain Request Intent
+### Creating an Inflow Request Intent
 
 ```move
-public entry fun create_cross_chain_request_intent_entry(
+public fun create_inflow_request_intent(
     account: &signer,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
@@ -93,10 +97,13 @@ public entry fun create_cross_chain_request_intent_entry(
     intent_id: address,
     solver: address,
     solver_signature: vector<u8>,
-)
+): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>
 ```
 
+**Returns:** The created intent object
+
 **Parameters:**
+
 - `account`: Signer creating the intent
 - `offered_metadata`: Metadata of the token type being offered (locked on another chain)
 - `offered_amount`: Amount of tokens that will be locked in escrow on the connected chain
@@ -115,6 +122,90 @@ public entry fun create_cross_chain_request_intent_entry(
 - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
 
+**Entry Function:** For transaction calls, use `create_inflow_request_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
+
+### Creating an Outflow Request Intent
+
+```move
+public fun create_outflow_request_intent(
+    account: &signer,
+    offered_metadata: Object<Metadata>,
+    offered_amount: u64,
+    offered_chain_id: u64,
+    desired_metadata: Object<Metadata>,
+    desired_amount: u64,
+    desired_chain_id: u64,
+    expiry_time: u64,
+    intent_id: address,
+    requester_address_connected_chain: address,
+    verifier_public_key: vector<u8>,
+    solver: address,
+    solver_signature: vector<u8>,
+): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>
+```
+
+**Returns:** The created intent object
+
+**Parameters:**
+
+- `account`: Signer creating the intent
+- `offered_metadata`: Metadata of the token type being offered (locked on hub chain)
+- `offered_amount`: Amount of tokens to withdraw and lock on hub chain
+- `offered_chain_id`: Chain ID of the hub chain (where tokens are locked)
+- `desired_metadata`: Metadata of the desired token type
+- `desired_amount`: Amount of desired tokens
+- `desired_chain_id`: Chain ID where tokens are desired (connected chain)
+- `expiry_time`: Unix timestamp when intent expires
+- `intent_id`: Intent ID for cross-chain linking
+- `requester_address_connected_chain`: Address on connected chain where solver should send tokens
+- `verifier_public_key`: Public key of the verifier that will approve the connected chain transaction (32 bytes)
+- `solver`: Address of the solver authorized to fulfill this intent (must be registered in solver registry)
+- `solver_signature`: Ed25519 signature from the solver authorizing this intent
+
+**Note**: This intent locks actual tokens on the hub chain. The solver must transfer tokens on the connected chain first, then the verifier approves that transaction. The solver receives the locked tokens from the hub as reward. This function uses `OracleGuardedLimitOrder` and requires verifier signature for fulfillment.
+
+**Aborts:**
+- `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
+- `EINVALID_SIGNATURE`: Signature verification failed
+
+**Entry Function:** For transaction calls, use `create_outflow_request_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
+
+### Fulfilling an Inflow Request Intent
+
+```move
+public entry fun fulfill_inflow_request_intent(
+    solver: &signer,
+    intent: Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
+    payment_amount: u64,
+)
+```
+
+**Parameters:**
+
+- `solver`: Signer fulfilling the intent
+- `intent`: Object reference to the inflow intent to fulfill
+- `payment_amount`: Amount of tokens to provide
+
+**Note**: This function is used to fulfill inflow request intents where tokens are locked on the connected chain (in escrow) and desired on the hub. The solver provides the desired tokens to the requester on the hub chain. No verifier signature is required for inflow intents.
+
+### Fulfilling an Outflow Request Intent
+
+```move
+public entry fun fulfill_outflow_request_intent(
+    solver: &signer,
+    intent: Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>,
+    verifier_signature_bytes: vector<u8>,
+)
+```
+
+**Parameters:**
+
+- `solver`: Signer fulfilling the intent
+- `intent`: Object reference to the outflow intent to fulfill
+- `verifier_signature_bytes`: Verifier's Ed25519 signature as bytes (signs the intent_id, proves connected chain transfer)
+
+**Note**: This function is used to fulfill outflow request intents where tokens are locked on the hub chain and desired on the connected chain. The solver must first transfer tokens on the connected chain, then the verifier approves that transaction. The solver receives the locked tokens from the hub as reward. Verifier signature is required - it proves the solver transferred tokens on the connected chain.
+
 ### Starting a Fungible Asset Session
 
 ```move
@@ -124,6 +215,7 @@ public fun start_fa_offering_session(
 ```
 
 **Parameters:**
+
 - `intent`: The fungible asset trade intent
 
 **Returns:** The offered fungible asset and trading session
@@ -138,6 +230,7 @@ public fun finish_fa_receiving_session(
 ```
 
 **Parameters:**
+
 - `session`: The active trading session
 - `payment`: The fungible asset being provided as payment
 
@@ -159,6 +252,7 @@ public fun create_draft_intent(
 ```
 
 **Parameters:**
+
 - `offered_metadata`: Metadata of the asset being offered
 - `offered_amount`: Amount of the asset being offered
 - `desired_metadata`: Metadata of the desired asset
@@ -178,6 +272,7 @@ public fun add_solver_to_draft_intent(
 ```
 
 **Parameters:**
+
 - `draft`: The draft intent
 - `solver_address`: Address of the solver
 
@@ -193,6 +288,7 @@ public fun verify_and_create_reservation(
 ```
 
 **Parameters:**
+
 - `intent_to_sign`: The intent data that was signed
 - `solver_signature`: The solver's signature
 
@@ -215,6 +311,7 @@ public fun verify_and_create_reservation_from_registry(
 ```
 
 **Parameters:**
+
 - `intent_to_sign`: The intent data that was signed
 - `solver_signature`: The solver's signature
 
@@ -242,6 +339,7 @@ public fun create_oracle_guarded_intent_entry(
 ```
 
 **Parameters:**
+
 - `offered_metadata`: Metadata of the asset being offered
 - `offered_amount`: Amount of the asset being offered
 - `desired_metadata`: Metadata of the desired asset
@@ -261,6 +359,7 @@ public fun new_oracle_signature_requirement(
 ```
 
 **Parameters:**
+
 - `min_reported_value`: Minimum value the oracle must report
 - `public_key`: Authorized oracle's public key
 
@@ -276,6 +375,7 @@ public fun new_oracle_signature_witness(
 ```
 
 **Parameters:**
+
 - `reported_value`: Value reported by the oracle
 - `signature`: Oracle's signature
 
@@ -290,6 +390,7 @@ public fun start_oracle_intent_session(
 ```
 
 **Parameters:**
+
 - `intent`: The oracle-guarded trade intent
 
 **Returns:** The offered fungible asset and trading session
@@ -304,6 +405,7 @@ public fun finish_oracle_intent_session(
 ```
 
 **Parameters:**
+
 - `session`: The active trading session
 - `oracle_witness`: Oracle signature witness proving external data
 

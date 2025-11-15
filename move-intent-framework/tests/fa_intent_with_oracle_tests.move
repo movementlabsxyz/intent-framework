@@ -146,6 +146,7 @@ module mvmt_intent::fa_intent_with_oracle_tests {
             requirement,
             true, // revocable by default for tests
             @0x1, // dummy intent_id for testing
+            std::option::none(), // Not an outflow intent, so no requester address on connected chain
             std::option::none(), // unreserved intent
         );
 

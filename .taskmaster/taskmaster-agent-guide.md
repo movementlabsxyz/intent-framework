@@ -171,13 +171,6 @@ task-master update-subtask --id=<id> --prompt="implementation notes..."
 task-master set-status --id=<id> --status=done
 
 # IMPORTANT: Commit after each subtask and task completion
-# After marking a subtask or task as done, create a commit with the changes
-git commit -m "<type of change>: <description>
-
-- <more detailed points if needed (optional)>
-- <more detailed points if needed (optional)>
-"
-```
 
 **Commit Rule:**
 

@@ -74,14 +74,14 @@ OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 # NOTE: Cross-chain request intents must be reserved. This requires:
 # 1. Off-chain negotiation with solver (Bob)
 # 2. Solver signs IntentToSign structure (BCS-encoded)
-# 3. Pass solver address and signature to create_cross_chain_request_intent_entry
+# 3. Pass solver address and signature to create_inflow_request_intent
 #
 # In production, the solver would sign off-chain using their private key.
 # For e2e tests, we can use the utils::get_intent_to_sign_hash function to get the hash:
 # 1. Call utils::get_intent_to_sign_hash() to get the BCS-encoded hash via event
 # 2. Sign the hash with Ed25519 using Bob's private key (requires helper script)
 # 3. Convert signature to hex format
-# 4. Use the signature in create_cross_chain_request_intent_entry (solver must be registered in registry)
+# 4. Use the signature in create_inflow_request_intent (solver must be registered in registry)
 #
 log "   - Creating cross-chain request intent on Chain 1..."
 log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN1"
@@ -134,7 +134,7 @@ register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRES
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
 HUB_CHAIN_ID=1
 aptos move run --profile alice-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_cross_chain::create_cross_chain_request_intent_entry" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
     --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then

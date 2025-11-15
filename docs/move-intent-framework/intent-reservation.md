@@ -47,8 +47,8 @@ graph TD
    - Solver creates an `IntentToSign` by calling `add_solver_to_draft_intent` to add the solver address to the draft.
 4. Solver signature:
    - Solver signs the `IntentToSign` data and returns the signature to the offerer.
-5. `fa_intent.move` or `fa_intent_cross_chain.move`
-   - **Offerer** submits transaction calling `create_fa_to_fa_intent_entry` (or `create_cross_chain_request_intent_entry` for cross-chain) with the solver address and **solver's signature**
+5. `fa_intent.move`, `fa_intent_inflow.move`, or `fa_intent_outflow.move`
+   - **Offerer** submits transaction calling `create_fa_to_fa_intent_entry` (or `create_inflow_request_intent` / `create_outflow_request_intent` for cross-chain) with the solver address and **solver's signature**
    - **Contract** verifies the signature:
      - For `create_fa_to_fa_intent_entry`: Calls `verify_and_create_reservation` which:
        - Gets the solver's authentication key from the blockchain
@@ -56,7 +56,7 @@ graph TD
        - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
        - If verification succeeds, creates an `IntentReserved` struct
        - If verification fails, the transaction aborts with `EINVALID_SIGNATURE` or `EINVALID_AUTH_KEY_FORMAT`
-     - For `create_cross_chain_request_intent_entry`: Uses `verify_and_create_reservation_from_registry` which:
+     - For `create_inflow_request_intent` or `create_outflow_request_intent`: Uses `verify_and_create_reservation_from_registry` which:
        - Looks up the solver's public key from the on-chain solver registry
        - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
        - If verification succeeds, creates an `IntentReserved` struct

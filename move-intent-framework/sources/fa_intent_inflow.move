@@ -1,4 +1,4 @@
-module mvmt_intent::fa_intent_cross_chain {
+module mvmt_intent::fa_intent_inflow {
     use std::signer;
     use std::option;
     use std::error;
@@ -17,14 +17,14 @@ module mvmt_intent::fa_intent_cross_chain {
     const EINVALID_SIGNATURE: u64 = 2;
 
     // ============================================================================
-    // GENERIC CROSS-CHAIN INTENT FUNCTIONS
+    // SHARED UTILITIES
     // ============================================================================
 
     /// Creates a draft intent for cross-chain request.
     /// This is step 1 of the reserved intent flow:
     /// 1. User creates draft using this function (off-chain)
     /// 2. Solver signs the draft and returns signature (off-chain)
-    /// 3. User calls create_cross_chain_request_intent_entry with the signature (on-chain)
+    /// 3. User calls create_inflow_request_intent with the signature (on-chain)
     public fun create_cross_chain_draft_intent(
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -47,33 +47,69 @@ module mvmt_intent::fa_intent_cross_chain {
         )
     }
 
-    /// Entry function to create a cross-chain request intent using the solver registry.
-    /// The solver's public key is looked up from the on-chain registry.
-    ///
+    // ============================================================================
+    // INFLOW REQUEST INTENT FUNCTIONS
+    // ============================================================================
+
+    /// Entry function for solver to fulfill an inflow request intent.
+    /// 
+    /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
+    /// The solver provides the desired tokens to the requester on the hub chain.
+    /// No verifier signature is required for inflow intents.
+    /// 
     /// # Arguments
-    /// - `account`: Signer creating the intent
-    /// - `offered_metadata`: Metadata of the token type being offered (locked on another chain)
+    /// - `solver`: Signer fulfilling the intent
+    /// - `intent`: Object reference to the inflow intent to fulfill (FungibleAssetLimitOrder)
+    /// - `payment_amount`: Amount of tokens to provide
+    public entry fun fulfill_inflow_request_intent(
+        solver: &signer,
+        intent: Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
+        payment_amount: u64,
+    ) {
+        let intent_address = object::object_address(&intent);
+        let solver_address = signer::address_of(solver);
+        
+        // 1. Start the session (this unlocks 0 tokens, but creates the session)
+        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(solver, intent);
+        
+        // Deposit the unlocked tokens (which are 0 for inflow intents)
+        primary_fungible_store::deposit(solver_address, unlocked_fa);
+        
+        // 2. Infer desired metadata from the intent's stored argument
+        let argument = intent::get_argument(&session);
+        let desired_metadata = fa_intent::get_desired_metadata(argument);
+        
+        // 3. Withdraw the desired tokens from solver's account
+        let payment_fa = primary_fungible_store::withdraw(solver, desired_metadata, payment_amount);
+        
+        // 4. Finish the session by providing the payment tokens and emit fulfillment event
+        fa_intent::finish_fa_receiving_session_with_event(session, payment_fa, intent_address, solver_address);
+    }
+
+    /// Creates an inflow request intent and returns the intent object.
+    /// 
+    /// This is the core implementation that both the entry function and tests use.
+    /// 
+    /// # Arguments
+    /// - `account`: Signer of the requester creating the intent
+    /// - `offered_metadata`: Metadata of the token type being offered (locked on connected chain)
     /// - `offered_amount`: Amount of tokens offered (locked in escrow on connected chain)
+    /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Amount of desired tokens
+    /// - `desired_chain_id`: Chain ID of the hub chain (where this intent is created)
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `intent_id`: Intent ID for cross-chain linking
-    /// - `connected_chain_id`: Chain ID where the escrow will be created (must match verifier config)
-    /// - `hub_chain_id`: Chain ID of the hub chain (where this intent is created)
     /// - `solver`: Address of the solver authorized to fulfill this intent (must be registered)
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
+    ///
+    /// # Returns
+    /// - `Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>`: The created intent object
     ///
     /// # Aborts
     /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
     /// - `EINVALID_SIGNATURE`: Signature verification failed
-    ///
-    /// # Note
-    /// This function accepts any fungible asset metadata, enabling cross-chain swaps with any FA pair.
-    /// Cross-chain request intents MUST be reserved to ensure solver commitment across chains.
-    /// The solver must be registered in the solver registry before calling this function.
-    /// The offered_chain_id specifies which chain the escrow will be created on, allowing the verifier
-    /// to validate that escrows are created on the correct chain.
-    public entry fun create_cross_chain_request_intent_entry(
+    public fun create_inflow_request_intent(
         account: &signer,
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -85,7 +121,7 @@ module mvmt_intent::fa_intent_cross_chain {
         intent_id: address,
         solver: address,
         solver_signature: vector<u8>,
-    ) {
+    ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Withdraw 0 tokens of offered type (no tokens locked on hub chain, just requesting for cross-chain swap)
         let fa: FungibleAsset = primary_fungible_store::withdraw(account, offered_metadata, 0);
 
@@ -110,7 +146,7 @@ module mvmt_intent::fa_intent_cross_chain {
         // Fail if signature verification failed - cross-chain intents must be reserved
         assert!(option::is_some(&reservation_result), error::invalid_argument(EINVALID_SIGNATURE));
         
-        let _intent_obj = fa_intent::create_fa_to_fa_intent(
+        fa_intent::create_fa_to_fa_intent(
             fa,
             offered_chain_id, // where escrow is created
             desired_metadata,
@@ -122,49 +158,41 @@ module mvmt_intent::fa_intent_cross_chain {
             false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
                    // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
-        );
-        
-        // Event is already emitted by create_fa_to_fa_intent with the correct intent_id
-        // Intent address can be obtained from the LimitOrderEvent if needed
+        )
     }
 
-    /// Entry function for solver to fulfill a cross-chain request intent.
+    /// Entry function to create an inflow request intent.
     /// 
-    /// This function:
-    /// 1. Starts the session (unlocks 0 tokens since cross-chain intent has tokens locked on different chain)
-    /// 2. Infers desired token metadata from the intent
-    /// 3. Provides the desired tokens to the intent creator
-    /// 4. Finishes the session to complete the intent
-    /// 
-    /// This is used for cross-chain swaps where tokens are locked in escrow on a different chain.
-    /// 
-    /// # Arguments
-    /// - `solver`: Signer fulfilling the intent
-    /// - `intent`: Object reference to the intent to fulfill
-    /// - `payment_amount`: Amount of tokens to provide
-    public entry fun fulfill_cross_chain_request_intent(
-        solver: &signer,
-        intent: Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
-        payment_amount: u64,
+    /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
+    /// The solver's public key is looked up from the on-chain solver registry.
+    ///
+    /// For argument descriptions and abort conditions, see `create_inflow_request_intent`.
+    public entry fun create_inflow_request_intent_entry(
+        account: &signer,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain_id: u64,
+        desired_metadata: Object<Metadata>,
+        desired_amount: u64,
+        desired_chain_id: u64,
+        expiry_time: u64,
+        intent_id: address,
+        solver: address,
+        solver_signature: vector<u8>,
     ) {
-        let intent_address = object::object_address(&intent);
-        let solver_address = signer::address_of(solver);
-        
-        // 1. Start the session (this unlocks 0 tokens, but creates the session)
-        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(solver, intent);
-        
-        // Deposit the unlocked tokens (which are 0 for cross-chain intents)
-        primary_fungible_store::deposit(solver_address, unlocked_fa);
-        
-        // 2. Infer desired metadata from the intent's stored argument
-        let argument = intent::get_argument(&session);
-        let desired_metadata = fa_intent::get_desired_metadata(argument);
-        
-        // 3. Withdraw the desired tokens from solver's account
-        let payment_fa = primary_fungible_store::withdraw(solver, desired_metadata, payment_amount);
-        
-        // 4. Finish the session by providing the payment tokens and emit fulfillment event
-        fa_intent::finish_fa_receiving_session_with_event(session, payment_fa, intent_address, solver_address);
+        let _intent_obj = create_inflow_request_intent(
+            account,
+            offered_metadata,
+            offered_amount,
+            offered_chain_id,
+            desired_metadata,
+            desired_amount,
+            desired_chain_id,
+            expiry_time,
+            intent_id,
+            solver,
+            solver_signature,
+        );
     }
 }
 

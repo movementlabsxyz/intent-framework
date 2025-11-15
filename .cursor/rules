@@ -9,13 +9,28 @@ For guidance on how to write rules, see [Cursor Rules Documentation](https://cur
 
 ## Commit Message Conventions
 
+After marking a subtask or task as done, create a commit with the changes
+
+```bash
+git commit -m "<type of change>: <description>
+
+- <more detailed points if needed (optional)>
+- <more detailed points if needed (optional)>
+"
+```
+
 **IMPORTANT:** All commit messages must be concise and professional.
 
+- Do NOT git add anything
 - Keep commit messages brief and to the point
 - Do NOT include advertising, promotional text, or references to Claude/AI assistance
-- Do NOT include phrases like "Generated with Claude Code" or "Co-Authored-By: Claude"
+- Do NOT include phrases like "Generated with Claude Code" or "Co-Authored-By ..."
 - Follow conventional commit format when applicable (e.g., `feat:`, `fix:`, `refactor:`)
 - Focus on what changed and why, not who/what tool made the change
+
+## Context Requirements
+
+**IMPORTANT:** The root [README.md](README.md) must always be included in context when working on this project. It provides essential project overview, quick start instructions, and links to all major components.
 
 ## Documentation
 

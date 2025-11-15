@@ -59,6 +59,7 @@ module mvmt_intent::fa_intent_with_oracle {
         issuer: address,
         requirement: OracleSignatureRequirement,
         intent_id: address, // Intent ID from hub chain (for escrows) - used for signature verification
+        requester_address_connected_chain: Option<address>, // Address on connected chain where solver should send tokens (for outflow intents)
     }
 
     /// Witness type proving receipt completion after oracle validation.
@@ -127,6 +128,7 @@ module mvmt_intent::fa_intent_with_oracle {
     /// - `requirement`: Oracle public key and minimum reported value used for verification
     /// - `revocable`: Whether the intent can be revoked by the owner
     /// - `intent_id`: The original intent ID from hub chain (for escrows) or same as intent_address (for regular intents)
+    /// - `requester_address_connected_chain`: Optional address on connected chain where solver should send tokens (for outflow intents)
     /// - `reservation`: Optional reservation specifying which solver can claim the escrow
     ///
     /// # Returns
@@ -140,6 +142,7 @@ module mvmt_intent::fa_intent_with_oracle {
         requirement: OracleSignatureRequirement,
         revocable: bool,
         intent_id: address,
+        requester_address_connected_chain: Option<address>,
         reservation: Option<IntentReserved>,
     ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         // Capture metadata and amount before depositing
@@ -160,7 +163,7 @@ module mvmt_intent::fa_intent_with_oracle {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, OracleGuardedLimitOrder, OracleGuardedWitness>(
             FungibleStoreManager { extend_ref, delete_ref },
-            OracleGuardedLimitOrder { desired_metadata, desired_amount, issuer, requirement, intent_id },
+            OracleGuardedLimitOrder { desired_metadata, desired_amount, issuer, requirement, intent_id, requester_address_connected_chain },
             expiry_time,
             issuer,
             OracleGuardedWitness {},

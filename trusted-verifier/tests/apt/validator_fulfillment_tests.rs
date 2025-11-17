@@ -28,8 +28,8 @@ fn test_extract_aptos_fulfillment_params_success() {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
-                "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
-                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
                 "0x17d7840",
                 "0x1111111111111111111111111111111111111111111111111111111111111111"
             ]
@@ -41,11 +41,11 @@ fn test_extract_aptos_fulfillment_params_success() {
 
     assert!(result.is_ok(), "Extraction should succeed for valid transaction");
     let params = result.unwrap();
-    assert_eq!(params.recipient, "0x742d35cc6634c0532925a3b844bc9e7595f0beb");
+    assert_eq!(params.recipient, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert_eq!(params.amount, 25000000u64); // 0x17d7840 in decimal
     assert_eq!(params.intent_id, "0x1111111111111111111111111111111111111111111111111111111111111111");
-    assert_eq!(params.solver, "0xsolver123456789012345678901234567890123456789012345678901234567890");
-    assert_eq!(params.token_metadata, "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    assert_eq!(params.solver, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    assert_eq!(params.token_metadata, "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
 }
 
 /// Test that extract_aptos_fulfillment_params fails when transaction is not a transfer_with_intent_id call
@@ -111,15 +111,13 @@ async fn test_validate_outflow_fulfillment_success() {
     
     let request_intent = RequestIntentEvent {
         desired_amount: 25000000,
-        requester_address_connected_chain: Some("0x742d35cc6634c0532925a3b844bc9e7595f0beb".to_string()),
-        reserved_solver: Some("0xsolver123456789012345678901234567890123456789012345678901234567890".to_string()),
+        requester_address_connected_chain: Some("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string()),
         ..create_base_request_intent()
     };
     
     let tx_params = FulfillmentTransactionParams {
-        recipient: "0x742d35cc6634c0532925a3b844bc9e7595f0beb".to_string(),
+        recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         amount: 25000000,
-        solver: "0xsolver123456789012345678901234567890123456789012345678901234567890".to_string(),
         ..create_base_fulfillment_transaction_params()
     };
     

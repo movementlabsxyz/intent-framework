@@ -26,11 +26,11 @@ use test_helpers::{build_test_config, create_base_request_intent, create_base_fu
 fn test_extract_evm_fulfillment_params_success() {
     // ERC20 transfer selector: 0xa9059cbb
     // Calldata: selector (4 bytes) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes)
-    // to: 0x742d35cc6634c0532925a3b844bc9e7595f0beb (padded to 32 bytes = 64 hex chars)
+    // to: 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (padded to 32 bytes = 64 hex chars)
     // amount: 0x17d7840 = 25000000 (padded to 32 bytes = 64 hex chars)
     // intent_id: 0x1111111111111111111111111111111111111111111111111111111111111111 (64 hex chars)
     // Total: 8 (selector) + 64 (to) + 64 (amount) + 64 (intent_id) = 200 hex chars
-    let calldata = "a9059cbb0000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb00000000000000000000000000000000000000000000000000000000017d78401111111111111111111111111111111111111111111111111111111111111111";
+    let calldata = "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000000000000000000000000000000017d78401111111111111111111111111111111111111111111111111111111111111111";
     
     let tx = EvmTransaction {
         input: format!("0x{}", calldata),
@@ -43,14 +43,14 @@ fn test_extract_evm_fulfillment_params_success() {
     let params = result.unwrap();
     // EVM addresses are 20 bytes, but stored as 32 bytes in calldata (padded with zeros at the start)
     // The extraction gets the full 32-byte value: 0x + 64 hex chars
-    assert_eq!(params.recipient, "0x0000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb");
+    assert_eq!(params.recipient, "0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert_eq!(params.amount, 25000000u64); // 0x17d7840 in decimal
     assert_eq!(params.intent_id, "0x1111111111111111111111111111111111111111111111111111111111111111");
-    assert_eq!(params.solver, "0xsolver1234567890123456789012345678901234567890");
-    assert_eq!(params.token_metadata, "0xtoken1234567890123456789012345678901234567890");
+    assert_eq!(params.solver, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    assert_eq!(params.token_metadata, "0xcccccccccccccccccccccccccccccccccccccccc");
     
     // Verify the transaction's `to` field is used for token_metadata
-    assert_eq!(tx.to, Some("0xtoken1234567890123456789012345678901234567890".to_string()));
+    assert_eq!(tx.to, Some("0xcccccccccccccccccccccccccccccccccccccccc".to_string()));
 }
 
 /// Test that extract_evm_fulfillment_params fails when transaction is not an ERC20 transfer call
@@ -84,7 +84,7 @@ fn test_extract_evm_fulfillment_params_wrong_selector() {
 #[test]
 fn test_extract_evm_fulfillment_params_insufficient_calldata() {
     let tx = EvmTransaction {
-        input: "0xa9059cbb0000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb".to_string(), // Too short
+        input: "0xa9059cbb0000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // Too short - missing amount and intent_id
         ..create_base_evm_transaction()
     };
 
@@ -115,15 +115,13 @@ async fn test_validate_outflow_fulfillment_success() {
     
     let request_intent = RequestIntentEvent {
         desired_amount: 25000000,
-        requester_address_connected_chain: Some("0x742d35cc6634c0532925a3b844bc9e7595f0beb".to_string()),
-        reserved_solver: Some("0xsolver123456789012345678901234567890123456789012345678901234567890".to_string()),
+        requester_address_connected_chain: Some("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string()),
         ..create_base_request_intent()
     };
     
     let tx_params = FulfillmentTransactionParams {
-        recipient: "0x742d35cc6634c0532925a3b844bc9e7595f0beb".to_string(),
+        recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         amount: 25000000,
-        solver: "0xsolver123456789012345678901234567890123456789012345678901234567890".to_string(),
         ..create_base_fulfillment_transaction_params()
     };
     

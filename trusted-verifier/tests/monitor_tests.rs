@@ -39,7 +39,6 @@ fn test_revocable_intent_rejection() {
     
     let non_revocable_intent = RequestIntentEvent {
         intent_id: "0xsafe".to_string(),
-        requester: "0xbob".to_string(),
         ..create_base_request_intent()
     };
     
@@ -59,9 +58,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
-            escrow_id: "0xescrow123".to_string(),
             intent_id: intent_id.to_string(),
-            timestamp: 1,
             ..create_base_escrow_event()
         });
     }
@@ -69,14 +66,12 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
     // Act: call approval generation on fulfillment with same intent_id
     let fulfillment = FulfillmentEvent {
         intent_id: intent_id.to_string(),
-        provided_amount: 1000,
-        timestamp: 2,
         ..create_base_fulfillment()
     };
     monitor.validate_and_approve_fulfillment(&fulfillment).await.expect("Approval generation should succeed");
 
     // Assert: approval exists for escrow
-    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    let approval = monitor.get_approval_for_escrow("0x2222222222222222222222222222222222222222222222222222222222222222").await;
     assert!(approval.is_some(), "Approval should exist for escrow");
     let approval = approval.unwrap();
     assert_eq!(approval.intent_id, intent_id);
@@ -92,8 +87,6 @@ async fn test_returns_error_when_no_matching_escrow() {
 
     let fulfillment = FulfillmentEvent {
         intent_id: "0x999".to_string(), // Valid hex but no matching escrow
-        provided_amount: 1000,
-        timestamp: 2,
         ..create_base_fulfillment()
     };
     
@@ -124,24 +117,16 @@ async fn test_multiple_concurrent_intents() {
         EscrowEvent {
             escrow_id: "0xescrow1".to_string(),
             intent_id: "0x01".to_string(),
-            issuer: "0xissuer1".to_string(),
-            timestamp: 1,
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow2".to_string(),
             intent_id: "0x02".to_string(),
-            issuer: "0xissuer2".to_string(),
-            offered_amount: 2000,
-            timestamp: 1,
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow3".to_string(),
             intent_id: "0x03".to_string(),
-            issuer: "0xissuer3".to_string(),
-            offered_amount: 3000,
-            timestamp: 1,
             ..create_base_escrow_event()
         },
     ];
@@ -156,26 +141,14 @@ async fn test_multiple_concurrent_intents() {
     let fulfillments = vec![
         FulfillmentEvent {
             intent_id: "0x01".to_string(),
-            intent_address: "0xaddr1".to_string(),
-            solver: "0xsolver1".to_string(),
-            provided_amount: 1000,
-            timestamp: 2,
             ..create_base_fulfillment()
         },
         FulfillmentEvent {
             intent_id: "0x02".to_string(),
-            intent_address: "0xaddr2".to_string(),
-            solver: "0xsolver2".to_string(),
-            provided_amount: 2000,
-            timestamp: 2,
             ..create_base_fulfillment()
         },
         FulfillmentEvent {
             intent_id: "0x03".to_string(),
-            intent_address: "0xaddr3".to_string(),
-            solver: "0xsolver3".to_string(),
-            provided_amount: 3000,
-            timestamp: 2,
             ..create_base_fulfillment()
         },
     ];
@@ -254,7 +227,6 @@ async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillmen
     //       Both have no solver reservation, so solver validation passes ✓
     let escrow_event = EscrowEvent {
         intent_id: expired_request_intent.intent_id.clone(),
-        timestamp: 1,
         ..create_base_escrow_event()
     };
     
@@ -300,7 +272,6 @@ async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillmen
     // - Both have no solver reservation, so solver validation passes ✓
     let valid_escrow = EscrowEvent {
         intent_id: non_expired_request_intent.intent_id.clone(),
-        timestamp: 1,
         ..create_base_escrow_event()
     };
     
@@ -419,7 +390,7 @@ async fn test_duplicate_fulfillment_event_handling() {
     monitor.validate_and_approve_fulfillment(&fulfillment).await.expect("First fulfillment should succeed");
     
     // Verify approval was generated
-    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    let approval = monitor.get_approval_for_escrow("0x2222222222222222222222222222222222222222222222222222222222222222").await;
     assert!(approval.is_some(), "Approval should exist after first fulfillment");
     let first_approval = approval.unwrap();
     let first_signature = first_approval.signature.clone();
@@ -439,7 +410,7 @@ async fn test_duplicate_fulfillment_event_handling() {
     drop(fulfillment_cache);
     
     // Verify approval was not regenerated (same approval exists)
-    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    let approval = monitor.get_approval_for_escrow("0x2222222222222222222222222222222222222222222222222222222222222222").await;
     assert!(approval.is_some(), "Approval should still exist");
     let second_approval = approval.unwrap();
     assert_eq!(first_signature, second_approval.signature, "Approval should not be regenerated for duplicate fulfillment");
@@ -467,7 +438,7 @@ async fn test_base_helpers_work_with_signature_generation() {
     assert!(result.is_ok(), "Base helpers should work with signature generation - intent_id must be valid hex (even number of digits)");
     
     // Verify approval was generated
-    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    let approval = monitor.get_approval_for_escrow("0x2222222222222222222222222222222222222222222222222222222222222222").await;
     assert!(approval.is_some(), "Approval should exist when using base helpers");
 }
 
@@ -503,7 +474,7 @@ async fn test_approval_fails_when_intent_id_mismatch() {
             "Error message should indicate no matching escrow found: {}", error_msg);
     
     // Verify no approval was generated
-    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    let approval = monitor.get_approval_for_escrow("0x2222222222222222222222222222222222222222222222222222222222222222").await;
     assert!(approval.is_none(), "No approval should exist when intent_ids don't match");
 }
 
@@ -532,6 +503,6 @@ async fn test_approval_fails_when_no_escrow_exists() {
             "Error message should indicate no matching escrow found: {}", error_msg);
     
     // Verify no approval was generated
-    let approval = monitor.get_approval_for_escrow("0xescrow123").await;
+    let approval = monitor.get_approval_for_escrow("0x2222222222222222222222222222222222222222222222222222222222222222").await;
     assert!(approval.is_none(), "No approval should exist when no escrow is in cache");
 }

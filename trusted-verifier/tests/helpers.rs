@@ -63,9 +63,9 @@ pub fn build_test_config_with_evm() -> Config {
     let mut config = build_test_config();
     config.connected_chain_evm = Some(EvmChainConfig {
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xEscrowAddress123".to_string(),
+        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(), // EVM contract address (40 hex chars)
         chain_id: 31337,
-        verifier_address: "0xVerifierAddress456".to_string(),
+        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // EVM address (40 hex chars)
     });
     config
 }
@@ -84,14 +84,14 @@ pub fn build_test_config_with_evm() -> Config {
 pub fn create_base_request_intent() -> RequestIntentEvent {
     RequestIntentEvent {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        requester: "0xalice".to_string(),
-        offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
+        requester: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
-        desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(),
+        desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0,
         expiry_time: 0, // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some("0xsolver".to_string()),
+        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
         connected_chain_id: Some(2),
         requester_address_connected_chain: None, // Can be set explicitly in tests for outflow intents
         timestamp: 0,
@@ -113,8 +113,8 @@ pub fn create_base_request_intent() -> RequestIntentEvent {
 pub fn create_base_fulfillment() -> FulfillmentEvent {
     FulfillmentEvent {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        intent_address: "0xaddr".to_string(),
-        solver: "0xsolver".to_string(),
+        intent_address: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string(), // Intent object address (64 hex chars for Aptos)
+        solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 0,
         timestamp: 0, // Should be set explicitly in tests
@@ -126,8 +126,8 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
 /// ```
 /// let escrow = create_base_escrow_event();
 /// let custom_escrow = EscrowEvent {
-///     escrow_id: "0xescrow123".to_string(),
-///     intent_id: "0xintent456".to_string(),
+///     escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(),
+///     intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
 ///     offered_amount: 1000,
 ///     ..escrow
 /// };
@@ -135,16 +135,16 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
 #[allow(dead_code)]
 pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
-        escrow_id: "0xescrow123".to_string(),
+        escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(), // Escrow address (64 hex chars for Aptos)
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        issuer: "0xalice".to_string(), // EscrowEvent.issuer is the solver who locked funds (not the requester)
-        offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
+        issuer: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // EscrowEvent.issuer is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
+        offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
-        desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(),
+        desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0, // Escrow desired_amount must be 0 (validation requirement)
         expiry_time: 0, // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some("0xsolver".to_string()),
+        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
         chain_id: 2,
         chain_type: ChainType::Move,
         timestamp: 0, // Should be set explicitly in tests
@@ -165,10 +165,10 @@ pub fn create_base_escrow_event() -> EscrowEvent {
 pub fn create_base_fulfillment_transaction_params() -> FulfillmentTransactionParams {
     FulfillmentTransactionParams {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        recipient: "0xrecipient".to_string(),
+        recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // Requester who receives tokens on connected chain
         amount: 0, // Should be set explicitly in tests
-        solver: "0xsolver".to_string(),
-        token_metadata: "0xmetadata".to_string(),
+        solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        token_metadata: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(), // Token contract address (EVM) or metadata object (Aptos)
     }
 }
 
@@ -177,7 +177,7 @@ pub fn create_base_fulfillment_transaction_params() -> FulfillmentTransactionPar
 /// ```
 /// let base = create_base_aptos_transaction();
 /// let custom = AptosTransaction {
-///     hash: "0xcustom".to_string(),
+///     hash: "0x123123".to_string(), 
 ///     success: false,
 ///     ..base
 /// };
@@ -186,11 +186,11 @@ pub fn create_base_fulfillment_transaction_params() -> FulfillmentTransactionPar
 pub fn create_base_aptos_transaction() -> AptosTransaction {
     AptosTransaction {
         version: "12345".to_string(),
-        hash: "0xabc123".to_string(),
+        hash: "0x123123".to_string(), // Transaction hash - arbitrary test value
         success: true,
         events: vec![],
         payload: None, // Should be set explicitly in tests
-        sender: Some("0xsolver123456789012345678901234567890123456789012345678901234567890".to_string()),
+        sender: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
     }
 }
 
@@ -199,7 +199,7 @@ pub fn create_base_aptos_transaction() -> AptosTransaction {
 /// ```
 /// let base = create_base_evm_transaction();
 /// let custom = EvmTransaction {
-///     hash: "0xcustom".to_string(),
+///     hash: "0x123123".to_string(),
 ///     status: Some("0x0".to_string()), // Failed
 ///     ..base
 /// };
@@ -207,15 +207,15 @@ pub fn create_base_aptos_transaction() -> AptosTransaction {
 #[allow(dead_code)]
 pub fn create_base_evm_transaction() -> EvmTransaction {
     EvmTransaction {
-        hash: "0xabc123".to_string(),
-        block_number: Some("0x12345".to_string()),
+        hash: "0x123123".to_string(), // Transaction hash - arbitrary test value
+        block_number: Some("0x1000".to_string()), // Block 4096 - arbitrary test value
         transaction_index: Some("0x0".to_string()),
-        from: "0xsolver1234567890123456789012345678901234567890".to_string(),
-        to: Some("0xtoken1234567890123456789012345678901234567890".to_string()),
+        from: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(), // Solver who sends the transfer
+        to: Some("0xcccccccccccccccccccccccccccccccccccccccc".to_string()), // Token contract address
         input: "0x".to_string(), // Should be set explicitly in tests
         value: "0x0".to_string(),
-        gas: "0x5208".to_string(),
-        gas_price: "0x3b9aca00".to_string(),
+        gas: "0xfde8".to_string(), // ~65,000 gas (typical for ERC20 transfer)
+        gas_price: "0x3b9aca00".to_string(), // 1 Gwei (1,000,000,000 wei) - typical test value
         status: Some("0x1".to_string()), // Success
     }
 }

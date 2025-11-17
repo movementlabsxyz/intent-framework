@@ -106,7 +106,7 @@ async fn test_successful_evm_solver_validation() {
     let _ = tracing_subscriber::fmt::try_init();
     
     let solver_address = "0xsolver_aptos";
-    let registered_evm_address = "0x1234567890123456789012345678901234567890";
+    let registered_evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let (_mock_server, config, validator) = setup_mock_server_with_evm_address_response(
         solver_address,
         Some(registered_evm_address),
@@ -144,7 +144,7 @@ async fn test_rejection_when_solver_not_registered() {
     
     let request_intent = create_test_request_intent(Some(solver_address.to_string()));
     
-    let escrow_reserved_solver = "0x1234567890123456789012345678901234567890";
+    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
@@ -244,7 +244,7 @@ async fn test_error_handling_for_registry_query_failures() {
     
     let request_intent = create_test_request_intent(Some("0xsolver_aptos".to_string()));
     
-    let escrow_reserved_solver = "0x1234567890123456789012345678901234567890";
+    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,

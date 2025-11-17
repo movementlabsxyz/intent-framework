@@ -63,7 +63,7 @@ fn test_intent_id_conversion_to_evm_format() {
     assert_eq!(intent_id_padded[31], 0x34, "Second byte should be at correct position");
 
     // Test 2: Full 32-byte hex string (no padding needed)
-    let mvmt_intent_id_full = "0x1234567890123456789012345678901234567890123456789012345678901234";
+    let mvmt_intent_id_full = "0x1111111111111111111111111111111111111111111111111111111111111111";
     let intent_id_hex_full = mvmt_intent_id_full.strip_prefix("0x").unwrap_or(mvmt_intent_id_full);
     let intent_id_bytes_full = hex::decode(intent_id_hex_full).unwrap();
     

@@ -30,14 +30,15 @@
         "id": "3",
         "title": "Define connected_chain_fulfill transaction format for EVM",
         "description": "Design and document the transaction format for immediate solver transfers on EVM connected chains",
-        "details": "Define transaction format using standard ERC20 transfer(to, amount) with intent_id appended as metadata in transaction data field (32 bytes after function parameters). Data format: 0xa9059cbb (transfer selector) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes). ERC20 contract ignores extra intent_id bytes, but they remain verifiable on-chain. Create validation function validateConnectedChainFulfill() in IntentEscrow contract for format verification. No contract changes needed for transfers - uses existing ERC20 standard.",
+        "details": "Defined transaction format using standard ERC20 transfer(to, amount) with intent_id appended as metadata in transaction data field (32 bytes after function parameters). Data format: 0xa9059cbb (transfer selector) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes). ERC20 contract ignores extra intent_id bytes, but they remain verifiable on-chain. Created solver CLI tool (connected_chain_tx_template) that generates the ERC20 calldata payload with intent_id appended. Documented the transaction format specification in protocol.md. Added comprehensive Rust tests (connected_chain_tx_template_test.rs) that verify EVM calldata generation, padding, selector correctness, and error handling. No contract changes needed for transfers - uses existing ERC20 standard. On-chain validation function was not implemented (same rationale as Aptos - validation responsibility shifted to solver tooling and verifier).",
         "testStrategy": "Test transaction data field parsing, metadata extraction, verify ERC20 transfer ignores extra bytes, and validate transaction format checking",
         "priority": "medium",
         "dependencies": [
           "1"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2025-11-17T11:18:44.140Z"
       },
       {
         "id": "4",
@@ -109,7 +110,7 @@
         "id": "9",
         "title": "Design verifier transaction validation logic",
         "description": "Design comprehensive verifier validation logic for both Move/Aptos and EVM connected chains",
-        "details": "Design verifier system to receive transaction hash from solver (via API), query transaction by hash on connected chain, extract intent_id and transaction parameters from transaction data. For EVM: use eth_getTransactionByHash and decode data field. For Aptos: use Aptos RPC and extract from transaction metadata. Validate all parameters match intent requirements: intent_id matches hub request intent, to/requester address matches intent's requester_address_connected_chain, amount matches desired amount, solver address matches reserved solver. Verify transaction confirmed and transfer completed successfully.",
+        "details": "Design verifier system to receive transaction hash from solver (via API), query transaction by hash on connected chain, extract intent_id and transaction parameters from transaction data. For EVM: use eth_getTransactionByHash and decode data field to extract intent_id from appended calldata (32 bytes after ERC20 transfer parameters). For Aptos: use Aptos RPC get_transaction_by_hash and extract intent_id from function arguments (utils::transfer_with_intent_id() explicitly includes intent_id as a parameter). Validate all parameters match intent requirements: intent_id matches hub request intent, to/requester address matches intent's requester_address_connected_chain, amount matches desired amount, solver address matches reserved solver. Verify transaction confirmed and transfer completed successfully.",
         "testStrategy": "Test transaction hash querying, parameter extraction for both chains, validation logic against intent requirements, and transaction confirmation verification",
         "priority": "high",
         "dependencies": [
@@ -135,9 +136,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-01-27T00:00:00.000Z",
+      "lastModified": "2025-11-17T11:18:44.144Z",
       "taskCount": 10,
-      "completedCount": 4,
+      "completedCount": 5,
       "tags": [
         "master"
       ]

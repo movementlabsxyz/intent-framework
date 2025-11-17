@@ -78,6 +78,38 @@ pub struct EscrowInitializedEvent {
     pub transaction_hash: String,
 }
 
+/// EVM transaction details from JSON-RPC
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct EvmTransaction {
+    /// Transaction hash
+    #[serde(rename = "hash")]
+    pub hash: String,
+    /// Block number (hex string)
+    #[serde(rename = "blockNumber")]
+    pub block_number: Option<String>,
+    /// Transaction index in block (hex string)
+    #[serde(rename = "transactionIndex")]
+    pub transaction_index: Option<String>,
+    /// From address (sender)
+    #[serde(rename = "from")]
+    pub from: String,
+    /// To address (recipient/contract)
+    #[serde(rename = "to")]
+    pub to: Option<String>,
+    /// Transaction data (calldata)
+    pub input: String,
+    /// Transaction value (in wei, hex string)
+    pub value: String,
+    /// Gas used (hex string)
+    #[serde(rename = "gas")]
+    pub gas: String,
+    /// Gas price (hex string)
+    #[serde(rename = "gasPrice")]
+    pub gas_price: String,
+    /// Transaction status (1 = success, 0 = failure, null = pending)
+    pub status: Option<String>,
+}
+
 // ============================================================================
 // EVM CLIENT IMPLEMENTATION
 // ============================================================================
@@ -229,6 +261,57 @@ impl EvmClient {
         }
 
         Ok(events)
+    }
+
+    /// Queries transaction details by hash using eth_getTransactionByHash
+    ///
+    /// # Arguments
+    ///
+    /// * `hash` - Transaction hash (with or without 0x prefix)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(EvmTransaction)` - Transaction information
+    /// * `Err(anyhow::Error)` - Failed to query transaction
+    pub async fn get_transaction(&self, hash: &str) -> Result<EvmTransaction> {
+        // Normalize hash (ensure 0x prefix)
+        let hash = if hash.starts_with("0x") {
+            hash.to_string()
+        } else {
+            format!("0x{}", hash)
+        };
+
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "eth_getTransactionByHash".to_string(),
+            params: vec![serde_json::json!(hash)],
+            id: 1,
+        };
+
+        let response: JsonRpcResponse<EvmTransaction> = self
+            .client
+            .post(&self.base_url)
+            .json(&request)
+            .send()
+            .await
+            .with_context(|| format!("Failed to send eth_getTransactionByHash request to {}", self.base_url))?
+            .json()
+            .await
+            .with_context(|| format!("Failed to parse eth_getTransactionByHash response from {}", self.base_url))?;
+
+        if let Some(error) = response.error {
+            return Err(anyhow::anyhow!(
+                "JSON-RPC error from {}: {} (code: {})",
+                self.base_url,
+                error.message,
+                error.code
+            ));
+        }
+
+        match response.result {
+            Some(tx) => Ok(tx),
+            None => Err(anyhow::anyhow!("Transaction not found: {}", hash)),
+        }
     }
 
     /// Gets the current block number

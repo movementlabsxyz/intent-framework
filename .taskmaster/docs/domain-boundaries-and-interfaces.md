@@ -236,7 +236,7 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 - `CrossChainValidator::validate_intent_safety()` - Validate intent safety
 - `CrossChainValidator::validate_fulfillment()` - Validate fulfillment
 - `CrossChainValidator::validate_intent_fulfillment()` - Validate escrow fulfills intent
-- `CrossChainValidator::validate_evm_escrow_solver()` - Validate EVM escrow solver matches registry
+- `validator::evm::validate_evm_escrow_solver()` - Validate EVM escrow solver matches registry (standalone function in `validator/evm.rs`)
 - `CryptoService::create_aptos_approval_signature(intent_id)` - Generate Ed25519 approval signature (Aptos) - signs the `intent_id`
 - `CryptoService::create_evm_approval_signature(intent_id)` - Generate ECDSA approval signature (EVM) - signs the `intent_id`
 

@@ -4,7 +4,7 @@
 
 use trusted_verifier::crypto::CryptoService;
 
-#[path = "mod.rs"]
+#[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::build_test_config;
 

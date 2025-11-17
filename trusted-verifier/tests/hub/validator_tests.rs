@@ -5,7 +5,7 @@
 
 use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::monitor::{RequestIntentEvent, FulfillmentEvent};
-#[path = "mod.rs"]
+#[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{build_test_config, create_base_request_intent, create_base_fulfillment};
 

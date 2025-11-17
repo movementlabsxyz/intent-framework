@@ -21,6 +21,11 @@ use crate::config::Config;
 use crate::monitor::EventMonitor;
 use crate::validator::CrossChainValidator;
 use crate::crypto::{CryptoService, ApprovalSignature};
+use anyhow;
+
+// Chain-specific modules
+mod aptos;
+mod evm;
 
 // ============================================================================
 // API REQUEST/RESPONSE STRUCTURES
@@ -48,6 +53,21 @@ pub struct ApiResponse<T> {
 struct ApprovalRequest {
     /// Whether to approve (true) or reject (false) the operation
     pub approve: bool,
+}
+
+/// Request structure for validating outflow fulfillment transactions.
+/// 
+/// This structure contains the transaction hash and chain information needed
+/// to validate a connected chain fulfillment transaction.
+#[derive(Debug, Deserialize)]
+struct ValidateFulfillmentRequest {
+    /// Transaction hash on the connected chain
+    pub transaction_hash: String,
+    /// Chain type: "aptos" or "evm"
+    pub chain_type: String,
+    /// Intent ID to validate against (optional, will be extracted from transaction if not provided)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub intent_id: Option<String>,
 }
 
 // ============================================================================
@@ -161,10 +181,11 @@ impl ApiServer {
             .and_then(get_approvals_handler);
         
         // Get approval for specific escrow endpoint
+        let approval_by_escrow_monitor = monitor.clone();
         let approval_by_escrow = warp::path("approvals")
             .and(warp::path::param())
             .and(warp::get())
-            .and(with_monitor(monitor))
+            .and(with_monitor(approval_by_escrow_monitor))
             .and_then(get_approval_by_escrow_handler);
         
         // Create approval signature endpoint - creates approval/rejection signatures
@@ -177,11 +198,21 @@ impl ApiServer {
         // Get public key endpoint - returns verifier's public key
         let public_key = warp::path("public-key")
             .and(warp::get())
-            .and(with_crypto_service(crypto_service))
+            .and(with_crypto_service(crypto_service.clone()))
             .and_then(get_public_key_handler);
         
+        // Validate fulfillment endpoint - validates connected chain transactions
+        let validate_fulfillment_monitor = monitor.clone();
+        let validate_fulfillment_validator = _validator.clone();
+        let validate_fulfillment = warp::path("validate-fulfillment")
+            .and(warp::post())
+            .and(warp::body::json())
+            .and(with_monitor(validate_fulfillment_monitor))
+            .and(with_validator(validate_fulfillment_validator))
+            .and_then(handle_fulfillment_validation);
+        
         // Combine all routes
-        health.or(events).or(approvals).or(approval_by_escrow).or(approval).or(public_key)
+        health.or(events).or(approvals).or(approval_by_escrow).or(approval).or(public_key).or(validate_fulfillment)
     }
 }
 
@@ -355,6 +386,107 @@ async fn get_public_key_handler(
     }))
 }
 
+/// Handler for the validate-fulfillment endpoint.
+/// 
+/// This function validates a connected chain transaction by:
+/// 1. Querying the transaction by hash (chain-specific)
+/// 2. Extracting intent_id and transaction parameters
+/// 3. Finding the matching request intent
+/// 4. Validating all parameters match intent requirements
+/// 
+/// # Arguments
+/// 
+/// * `request` - The validation request containing transaction hash and chain type
+/// * `monitor` - The event monitor instance
+/// * `validator` - The cross-chain validator instance
+/// 
+/// # Returns
+/// 
+/// * `Ok(warp::Reply)` - JSON response with validation result
+/// * `Err(warp::Rejection)` - Failed to validate transaction
+async fn handle_fulfillment_validation(
+    request: ValidateFulfillmentRequest,
+    monitor: Arc<RwLock<EventMonitor>>,
+    validator: Arc<RwLock<CrossChainValidator>>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let monitor = monitor.read().await;
+    let validator = validator.read().await;
+    
+    // Get config from monitor (monitor stores config internally)
+    // We need to access it through the monitor's internal structure
+    // For now, we'll get it from the API server's config
+    // TODO: Add a method to EventMonitor to get config, or pass config separately
+    
+    // Query transaction based on chain type
+    let (tx_params, tx_success) = match request.chain_type.as_str() {
+        "aptos" => {
+            match aptos::query_aptos_fulfillment_transaction(&request.transaction_hash, &validator).await {
+                Ok(result) => result,
+                Err(error_msg) => {
+                    return Ok(warp::reply::json(&ApiResponse::<crate::validator::ValidationResult> {
+                        success: false,
+                        data: None,
+                        error: Some(error_msg),
+                    }));
+                }
+            }
+        },
+        "evm" => {
+            match evm::query_evm_fulfillment_transaction(&request.transaction_hash, &validator).await {
+                Ok(result) => result,
+                Err(error_msg) => {
+                    return Ok(warp::reply::json(&ApiResponse::<crate::validator::ValidationResult> {
+                        success: false,
+                        data: None,
+                        error: Some(error_msg),
+                    }));
+                }
+            }
+        },
+        _ => {
+            return Ok(warp::reply::json(&ApiResponse::<crate::validator::ValidationResult> {
+                success: false,
+                data: None,
+                error: Some(format!("Invalid chain_type: {}. Must be 'aptos' or 'evm'", request.chain_type)),
+            }));
+        }
+    };
+    
+    // Find matching request intent
+    let intent_id = request.intent_id.as_ref().unwrap_or(&tx_params.intent_id);
+    let intent_cache = monitor.get_cached_events().await;
+    let request_intent = match intent_cache.iter().find(|intent| intent.intent_id == *intent_id) {
+        Some(intent) => intent,
+        None => {
+            return Ok(warp::reply::json(&ApiResponse::<crate::validator::ValidationResult> {
+                success: false,
+                data: None,
+                error: Some(format!("Request intent not found: {}", intent_id)),
+            }));
+        }
+    };
+    
+    // Validate transaction against intent
+    let validation_result = match crate::validator::validate_outflow_fulfillment(&validator, request_intent, &tx_params, tx_success) {
+        Ok(result) => result,
+        Err(e) => {
+            return Ok(warp::reply::json(&ApiResponse::<crate::validator::ValidationResult> {
+                success: false,
+                data: None,
+                error: Some(format!("Validation failed: {}", e)),
+            }));
+        }
+    };
+    
+    let valid = validation_result.valid;
+    let message = validation_result.message.clone();
+    Ok(warp::reply::json(&ApiResponse {
+        success: valid,
+        data: Some(validation_result),
+        error: if valid { None } else { Some(message) },
+    }))
+}
+
 // ============================================================================
 // WARP FILTER HELPERS
 // ============================================================================
@@ -393,4 +525,22 @@ fn with_crypto_service(
     crypto_service: Arc<RwLock<CryptoService>>,
 ) -> impl Filter<Extract = (Arc<RwLock<CryptoService>>,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || crypto_service.clone())
+}
+
+/// Creates a warp filter that provides access to the cross-chain validator.
+/// 
+/// This helper function creates a filter that injects the validator
+/// into request handlers.
+/// 
+/// # Arguments
+/// 
+/// * `validator` - The cross-chain validator instance
+/// 
+/// # Returns
+/// 
+/// A warp filter that provides the validator to handlers
+fn with_validator(
+    validator: Arc<RwLock<CrossChainValidator>>,
+) -> impl Filter<Extract = (Arc<RwLock<CrossChainValidator>>,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || validator.clone())
 }

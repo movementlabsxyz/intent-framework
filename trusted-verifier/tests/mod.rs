@@ -5,4 +5,13 @@
 mod helpers;
 
 #[allow(unused_imports)]
-pub use helpers::{build_test_config, build_test_config_with_evm, create_base_request_intent, create_base_fulfillment, create_base_escrow_event};
+pub use helpers::{
+    build_test_config, 
+    build_test_config_with_evm, 
+    create_base_request_intent, 
+    create_base_fulfillment, 
+    create_base_escrow_event,
+    create_base_fulfillment_transaction_params,
+    create_base_aptos_transaction,
+    create_base_evm_transaction,
+};

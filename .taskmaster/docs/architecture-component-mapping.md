@@ -25,7 +25,7 @@ graph TB
     
     subgraph Layer2["Layer 2 (Depends on Foundation + Layer 1)"]
         SM[Settlement Domain<br/>Fulfillment Functions<br/>Completion Functions<br/>Claim Functions]
-        VM[Verification Domain<br/>monitor/mod.rs, validator/mod.rs<br/>crypto/mod.rs, api/mod.rs]
+        VM[Verification Domain<br/>monitor/, validator/<br/>crypto/mod.rs, api/]
     end
     
     IM -->|Provides reservation &<br/>oracle-intent systems| EM
@@ -69,7 +69,7 @@ graph TB
     end
     
     subgraph "Verification Domain"
-        VM[monitor/mod.rs<br/>validator/mod.rs<br/>crypto/mod.rs<br/>api/mod.rs]
+        VM[monitor/<br/>validator/<br/>crypto/mod.rs<br/>api/]
     end
     
     IM -->|Creates intents<br/>Emits events| VM
@@ -265,7 +265,10 @@ graph TB
 
 #### Event Monitoring
 
-- **`trusted-verifier/src/monitor/mod.rs`**
+- **`trusted-verifier/src/monitor/`**
+  - **`mod.rs`**: Main monitor module with `EventMonitor` struct, shared types, and generic monitoring logic
+  - **`aptos.rs`**: Aptos-specific escrow event polling (`poll_aptos_escrow_events()`)
+  - **`evm.rs`**: EVM-specific escrow event polling (`poll_evm_escrow_events()`)
   - **Purpose**: Monitors blockchain events from hub and connected chains (both Aptos and EVM)
   - **Key Structures**: `RequestIntentEvent`, `EscrowEvent`, `FulfillmentEvent`, `EventMonitor`
   - **Key Functions**: `poll_hub_events()`, `poll_connected_events()`, `poll_evm_events()`, `monitor_hub_chain()`, `monitor_connected_chain()`, `monitor_evm_chain()`, `get_cached_events()`
@@ -273,10 +276,13 @@ graph TB
 
 #### Cross-Chain Validation
 
-- **`trusted-verifier/src/validator/mod.rs`**
+- **`trusted-verifier/src/validator/`**
+  - **`mod.rs`**: Main validator module with `CrossChainValidator` struct, shared types, and generic validation logic
+  - **`aptos.rs`**: Aptos-specific transaction parameter extraction (`extract_aptos_fulfillment_params()`)
+  - **`evm.rs`**: EVM-specific transaction parameter extraction and escrow solver validation (`extract_evm_fulfillment_params()`, `validate_evm_escrow_solver()`)
   - **Purpose**: Validates cross-chain state consistency and escrow safety
-  - **Key Structures**: `ValidationResult`, `CrossChainValidator`
-  - **Key Functions**: `validate_intent_safety()`, `validate_fulfillment()`, `validate_escrow_safety()`
+  - **Key Structures**: `ValidationResult`, `CrossChainValidator`, `FulfillmentTransactionParams`
+  - **Key Functions**: `validate_intent_safety()`, `validate_fulfillment()`, `validate_escrow_safety()`, `validate_outflow_fulfillment()`
   - **Security**: **CRITICAL** - Validates `revocable = false` requirement
   - **Responsibilities**: Intent safety checks, fulfillment validation, approval decision logic
 
@@ -290,11 +296,14 @@ graph TB
 
 #### REST API Server
 
-- **`trusted-verifier/src/api/mod.rs`**
+- **`trusted-verifier/src/api/`**
+  - **`mod.rs`**: Main API module with route definitions, shared handlers, and `ApiServer` struct
+  - **`aptos.rs`**: Aptos-specific transaction querying (`query_aptos_fulfillment_transaction()`)
+  - **`evm.rs`**: EVM-specific transaction querying (`query_evm_fulfillment_transaction()`)
   - **Purpose**: REST API for external system integration
-  - **Key Endpoints**: `/health`, `/public-key`, `/events`, `/approvals`, `/approval`
+  - **Key Endpoints**: `/health`, `/public-key`, `/events`, `/approvals`, `/approval`, `/validate-fulfillment`
   - **Key Structures**: `ApiServer`, `ApiResponse<T>`
-  - **Responsibilities**: HTTP request handling, event/approval retrieval, manual approval creation
+  - **Responsibilities**: HTTP request handling, event/approval retrieval, manual approval creation, fulfillment validation
 
 #### Configuration Management
 
@@ -497,4 +506,4 @@ This table provides a concise overview of domain boundaries, listing the primary
 | **Intent Management** | `intent.move`, `fa_intent.move`, `fa_intent_with_oracle.move`, `fa_intent_cross_chain.move`, `intent_reservation.move` | Intent lifecycle, creation, validation, event emission |
 | **Escrow** | `intent_as_escrow.move`, `intent_as_escrow_entry.move`, `IntentEscrow.sol` | Asset custody, fund locking, verifier integration |
 | **Settlement** | Functions in `fa_intent.move`, `intent_as_escrow.move`, `IntentEscrow.sol` | Intent fulfillment, escrow completion, asset transfers |
-| **Verification** | `monitor/mod.rs`, `validator/mod.rs`, `crypto/mod.rs`, `api/mod.rs`, `config/mod.rs`, `aptos_client.rs`, `evm_client.rs` | Event monitoring (hub, Aptos, EVM), cross-chain validation, approval signatures (Ed25519 & ECDSA) |
+| **Verification** | `monitor/` (mod.rs, aptos.rs, evm.rs), `validator/` (mod.rs, aptos.rs, evm.rs), `crypto/mod.rs`, `api/` (mod.rs, aptos.rs, evm.rs), `config/mod.rs`, `aptos_client.rs`, `evm_client.rs` | Event monitoring (hub, Aptos, EVM), cross-chain validation, approval signatures (Ed25519 & ECDSA) |

@@ -111,7 +111,7 @@ pub struct AptosEvent {
 
 /// Transaction details from Aptos
 #[derive(Debug, Deserialize)]
-pub struct TransactionInfo {
+pub struct AptosTransaction {
     #[allow(dead_code)]
     pub version: String,
     #[allow(dead_code)]
@@ -120,6 +120,12 @@ pub struct TransactionInfo {
     pub success: bool,
     #[allow(dead_code)]
     pub events: Vec<AptosEvent>,
+    /// Transaction payload (contains function call information)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub payload: Option<serde_json::Value>,
+    /// Transaction sender
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sender: Option<String>,
 }
 
 // ============================================================================
@@ -427,10 +433,10 @@ impl AptosClient {
     ///
     /// # Returns
     ///
-    /// * `Ok(TransactionInfo)` - Transaction information
+    /// * `Ok(AptosTransaction)` - Transaction information
     /// * `Err(anyhow::Error)` - Failed to query transaction
     #[allow(dead_code)]
-    pub async fn get_transaction(&self, hash: &str) -> Result<TransactionInfo> {
+    pub async fn get_transaction(&self, hash: &str) -> Result<AptosTransaction> {
         let url = format!("{}/v1/transactions/by_hash/{}", self.base_url, hash);
         
         let response = self.client
@@ -441,7 +447,7 @@ impl AptosClient {
             .error_for_status()
             .context("Transaction request failed")?;
 
-        let tx: TransactionInfo = response.json().await
+        let tx: AptosTransaction = response.json().await
             .context("Failed to parse transaction response")?;
 
         Ok(tx)

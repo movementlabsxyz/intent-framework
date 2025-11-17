@@ -4,7 +4,7 @@
 //! across different chains using intent_id, and test intent ID format conversions.
 
 use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent};
-#[path = "mod.rs"]
+#[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{create_base_request_intent, create_base_escrow_event};
 

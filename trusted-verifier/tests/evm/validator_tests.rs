@@ -9,7 +9,7 @@ use trusted_verifier::config::Config;
 use wiremock::{MockServer, Mock, ResponseTemplate};
 use wiremock::matchers::{method, path, body_json};
 use serde_json::json;
-#[path = "mod.rs"]
+#[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{build_test_config, create_base_request_intent};
 
@@ -116,7 +116,7 @@ async fn test_successful_evm_solver_validation() {
     
     // Test with matching address
     let escrow_reserved_solver = registered_evm_address;
-    let result = validator.validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
@@ -145,7 +145,7 @@ async fn test_rejection_when_solver_not_registered() {
     let request_intent = create_test_request_intent(Some(solver_address.to_string()));
     
     let escrow_reserved_solver = "0x1234567890123456789012345678901234567890";
-    let result = validator.validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
@@ -177,7 +177,7 @@ async fn test_rejection_when_evm_addresses_dont_match() {
     
     // Escrow has a different address
     let escrow_reserved_solver = "0x2222222222222222222222222222222222222222";
-    let result = validator.validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
@@ -216,7 +216,7 @@ async fn test_evm_address_normalization() {
         
         let request_intent = create_test_request_intent(Some(solver_address.to_string()));
         
-        let result = validator.validate_evm_escrow_solver(
+        let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
             &request_intent,
             escrow_addr,
             &config.hub_chain.rpc_url,
@@ -245,7 +245,7 @@ async fn test_error_handling_for_registry_query_failures() {
     let request_intent = create_test_request_intent(Some("0xsolver_aptos".to_string()));
     
     let escrow_reserved_solver = "0x1234567890123456789012345678901234567890";
-    let result = validator.validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,

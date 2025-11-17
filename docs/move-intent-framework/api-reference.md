@@ -119,6 +119,7 @@ public fun create_inflow_request_intent(
 **Note**: This intent has 0 tokens locked on the hub chain because tokens are in escrow elsewhere. The `offered_amount` specifies how much will be locked in escrow on the connected chain. Cross-chain request intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
 
 **Aborts:**
+
 - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
 
@@ -128,7 +129,7 @@ public fun create_inflow_request_intent(
 
 ```move
 public fun create_outflow_request_intent(
-    account: &signer,
+    requester_signer: &signer,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
     offered_chain_id: u64,
@@ -148,7 +149,7 @@ public fun create_outflow_request_intent(
 
 **Parameters:**
 
-- `account`: Signer creating the intent
+- `requester_signer`: Signer of the requester creating the intent
 - `offered_metadata`: Metadata of the token type being offered (locked on hub chain)
 - `offered_amount`: Amount of tokens to withdraw and lock on hub chain
 - `offered_chain_id`: Chain ID of the hub chain (where tokens are locked)
@@ -165,8 +166,10 @@ public fun create_outflow_request_intent(
 **Note**: This intent locks actual tokens on the hub chain. The solver must transfer tokens on the connected chain first, then the verifier approves that transaction. The solver receives the locked tokens from the hub as reward. This function uses `OracleGuardedLimitOrder` and requires verifier signature for fulfillment.
 
 **Aborts:**
+
 - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
+- `EINVALID_REQUESTER_ADDRESS`: `requester_address_connected_chain` is zero address (0x0)
 
 **Entry Function:** For transaction calls, use `create_outflow_request_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
 
@@ -297,6 +300,7 @@ public fun verify_and_create_reservation(
 **Note**: This function extracts the public key from the solver's authentication key on-chain. It only works for accounts with the old authentication key format (33 bytes with 0x00 prefix). For cross-chain intents or accounts created with `aptos init` (new format, 32 bytes), solvers must be registered in the solver registry and use `verify_and_create_reservation_from_registry` instead.
 
 **Aborts:**
+
 - `EINVALID_AUTH_KEY_FORMAT`: Authentication key format is invalid
 - `EPUBLIC_KEY_VALIDATION_FAILED`: Public key validation failed
 - `EINVALID_SIGNATURE`: Signature verification failed
@@ -320,6 +324,7 @@ public fun verify_and_create_reservation_from_registry(
 **Note**: This function looks up the solver's public key from the on-chain solver registry. The solver must be registered in the registry before calling this function. This is the recommended approach for cross-chain intents and accounts created with `aptos init` (new format, 32 bytes) where the public key cannot be extracted from the authentication key.
 
 **Aborts:**
+
 - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
 

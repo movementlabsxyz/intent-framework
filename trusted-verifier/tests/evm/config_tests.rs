@@ -5,7 +5,7 @@
 
 use trusted_verifier::config::Config;
 
-#[path = "mod.rs"]
+#[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::build_test_config_with_evm;
 

@@ -12,6 +12,8 @@ module mvmt_intent::fa_intent_outflow {
 
     /// The solver signature is invalid and cannot be verified.
     const EINVALID_SIGNATURE: u64 = 2;
+    /// The requester address on the connected chain is invalid (zero address).
+    const EINVALID_REQUESTER_ADDRESS: u64 = 3;
 
     // ============================================================================
     // SHARED UTILITIES
@@ -107,7 +109,7 @@ module mvmt_intent::fa_intent_outflow {
     /// This is the core implementation that both the entry function and tests use.
     /// 
     /// # Arguments
-    /// - `account`: Signer of the requester creating the intent
+    /// - `requester_signer`: Signer of the requester creating the intent
     /// - `offered_metadata`: Metadata of the token type being offered (locked on hub chain)
     /// - `offered_amount`: Amount of tokens to withdraw and lock on hub chain
     /// - `offered_chain_id`: Chain ID of the hub chain (where tokens are locked)
@@ -127,8 +129,9 @@ module mvmt_intent::fa_intent_outflow {
     /// # Aborts
     /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
     /// - `EINVALID_SIGNATURE`: Signature verification failed
+    /// - `EINVALID_REQUESTER_ADDRESS`: requester_address_connected_chain is zero address (0x0)
     public fun create_outflow_request_intent(
-        account: &signer,
+        requester_signer: &signer,
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
         offered_chain_id: u64,
@@ -142,8 +145,12 @@ module mvmt_intent::fa_intent_outflow {
         solver: address,
         solver_signature: vector<u8>,
     ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
+        // Validate requester_address_connected_chain is not zero address
+        // Outflow intents require a valid address on the connected chain where the solver should send tokens
+        assert!(requester_address_connected_chain != @0x0, error::invalid_argument(EINVALID_REQUESTER_ADDRESS));
+        
         // Withdraw actual tokens from user (locked on hub chain for outflow)
-        let fa: FungibleAsset = primary_fungible_store::withdraw(account, offered_metadata, offered_amount);
+        let fa: FungibleAsset = primary_fungible_store::withdraw(requester_signer, offered_metadata, offered_amount);
         
         // Verify solver signature and create reservation using the solver registry
         let intent_to_sign = intent_reservation::new_intent_to_sign(
@@ -154,7 +161,7 @@ module mvmt_intent::fa_intent_outflow {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            signer::address_of(account),
+            signer::address_of(requester_signer),
             solver,
         );
         
@@ -189,7 +196,7 @@ module mvmt_intent::fa_intent_outflow {
             placeholder_metadata, // Use same metadata as locked tokens (placeholder for payment check)
             hub_desired_amount,    // 0 - nothing desired on hub, desired on connected chain
             expiry_time,
-            signer::address_of(account),
+            signer::address_of(requester_signer),
             requirement,
             false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable
                    // Ensures consistent safety guarantees for verifiers across chains
@@ -207,7 +214,7 @@ module mvmt_intent::fa_intent_outflow {
     ///
     /// For argument descriptions and abort conditions, see `create_outflow_request_intent`.
     public entry fun create_outflow_request_intent_entry(
-        account: &signer,
+        requester_signer: &signer,
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
         offered_chain_id: u64,
@@ -222,7 +229,7 @@ module mvmt_intent::fa_intent_outflow {
         solver_signature: vector<u8>,
     ) {
         let _intent_obj = create_outflow_request_intent(
-            account,
+            requester_signer,
             offered_metadata,
             offered_amount,
             offered_chain_id,

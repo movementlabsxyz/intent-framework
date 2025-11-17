@@ -10,12 +10,16 @@
 //! ⚠️ **CRITICAL**: All validations must verify that escrow intents are **non-revocable** 
 //! (`revocable = false`) before issuing any approval signatures.
 
-use anyhow::{Result, Context};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::config::Config;
 use crate::monitor::{RequestIntentEvent, EscrowEvent, FulfillmentEvent, ChainType};
+
+// Chain-specific modules
+pub mod aptos;
+pub mod evm;
 
 // ============================================================================
 // VALIDATION DATA STRUCTURES
@@ -54,6 +58,11 @@ pub struct CrossChainValidator {
 }
 
 impl CrossChainValidator {
+    /// Returns a reference to the validator's configuration
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
     /// Creates a new cross-chain validator with the given configuration.
     /// 
     /// This function initializes HTTP clients for communication with both
@@ -230,7 +239,7 @@ impl CrossChainValidator {
                 let hub_rpc_url = &self.config.hub_chain.rpc_url;
                 let registry_address = &self.config.hub_chain.intent_module_address; // Registry is at module address
                 
-                let validation_result = self.validate_evm_escrow_solver(
+                let validation_result = evm::validate_evm_escrow_solver(
                     request_intent_event,
                     escrow_solver,
                     hub_rpc_url,
@@ -264,7 +273,7 @@ impl CrossChainValidator {
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        // Note: EVM escrow validation is handled separately in validate_evm_escrow_solver
+        // Note: EVM escrow validation is handled separately in evm::validate_evm_escrow_solver
         
         // Additional validation logic can be added here:
         // - Check solver reputation and authorization
@@ -276,84 +285,6 @@ impl CrossChainValidator {
         Ok(ValidationResult {
             valid: true,
             message: "Request intent fulfillment validation successful".to_string(),
-            timestamp: chrono::Utc::now().timestamp() as u64,
-        })
-    }
-    
-    /// Validates that an EVM escrow's reserved solver matches the registered solver's EVM address.
-    /// 
-    /// This function checks that the EVM escrow's reservedSolver address matches
-    /// the EVM address registered in the solver registry for the hub request intent's solver.
-    /// 
-    /// # Arguments
-    /// 
-    /// * `request_intent` - The request intent event from the hub chain (must have a solver)
-    /// * `escrow_reserved_solver` - The reserved solver EVM address from the escrow
-    /// * `hub_chain_rpc_url` - RPC URL of the hub chain (to query solver registry)
-    /// * `registry_address` - Address where the solver registry is deployed
-    /// 
-    /// # Returns
-    /// 
-    /// * `Ok(ValidationResult)` - Validation result with detailed information
-    /// * `Err(anyhow::Error)` - Validation failed due to error
-    pub async fn validate_evm_escrow_solver(
-        &self,
-        request_intent: &RequestIntentEvent,
-        escrow_reserved_solver: &str,
-        hub_chain_rpc_url: &str,
-        registry_address: &str,
-    ) -> Result<ValidationResult> {
-        // Check if request intent has a solver
-        let request_intent_solver = match &request_intent.reserved_solver {
-            Some(solver) => solver,
-            None => {
-                return Ok(ValidationResult {
-                    valid: false,
-                    message: "Hub request intent does not have a reserved solver".to_string(),
-                    timestamp: chrono::Utc::now().timestamp() as u64,
-                });
-            }
-        };
-        
-        // Query solver registry for EVM address
-        let aptos_client = crate::aptos_client::AptosClient::new(hub_chain_rpc_url)?;
-        let registered_evm_address = aptos_client.get_solver_evm_address(request_intent_solver, registry_address)
-            .await
-            .context("Failed to query solver EVM address from registry")?;
-        
-        let registered_evm_address = match registered_evm_address {
-            Some(addr) => addr,
-            None => {
-                return Ok(ValidationResult {
-                    valid: false,
-                    message: format!("Solver '{}' is not registered in the solver registry", request_intent_solver),
-                    timestamp: chrono::Utc::now().timestamp() as u64,
-                });
-            }
-        };
-        
-        // Normalize addresses for comparison (lowercase, ensure 0x prefix)
-        let escrow_solver_normalized = escrow_reserved_solver.strip_prefix("0x")
-            .unwrap_or(escrow_reserved_solver)
-            .to_lowercase();
-        let registered_solver_normalized = registered_evm_address.strip_prefix("0x")
-            .unwrap_or(&registered_evm_address)
-            .to_lowercase();
-        
-        if escrow_solver_normalized != registered_solver_normalized {
-            return Ok(ValidationResult {
-                valid: false,
-                message: format!(
-                    "EVM escrow reserved solver '{}' does not match registered solver EVM address '{}'",
-                    escrow_reserved_solver, registered_evm_address
-                ),
-                timestamp: chrono::Utc::now().timestamp() as u64,
-            });
-        }
-        
-        Ok(ValidationResult {
-            valid: true,
-            message: "EVM escrow solver validation successful".to_string(),
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
     }
@@ -474,4 +405,168 @@ impl CrossChainValidator {
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
     }
+}
+
+// ============================================================================
+// FULFILLMENT TRANSACTION EXTRACTION
+// ============================================================================
+
+/// Extracted parameters from a connected chain fulfillment transaction
+#[derive(Debug, Clone)]
+pub struct FulfillmentTransactionParams {
+    /// Intent ID extracted from transaction
+    pub intent_id: String,
+    /// Recipient address (where tokens were sent)
+    pub recipient: String,
+    /// Amount transferred
+    pub amount: u64,
+    /// Solver address (transaction sender)
+    pub solver: String,
+    /// Token metadata/address
+    /// 
+    /// Note: Currently extracted but not used in validation. Kept for completeness
+    /// and potential future validation logic.
+    #[allow(dead_code)]
+    pub token_metadata: String,
+}
+
+// Re-export chain-specific functions for convenience
+pub use aptos::extract_aptos_fulfillment_params;
+pub use evm::extract_evm_fulfillment_params;
+
+/// Validates an outflow fulfillment transaction against a request intent
+/// 
+/// This function validates that a connected chain transaction properly fulfills
+/// an outflow request intent by checking:
+/// - Transaction was confirmed and successful
+/// - intent_id matches the request intent
+/// - Recipient address matches requester_address_connected_chain
+/// - Amount matches desired_amount
+/// - Solver address matches reserved solver
+/// 
+/// ## Solver Registration Requirements
+/// 
+/// **IMPORTANT**: The solver must be registered in the solver registry with the correct
+/// address for the connected chain. All addresses (Aptos address for Aptos chains,
+/// EVM address for EVM chains) must be provided during registration. If the solver
+/// address for the connected chain is not found in the registry, this indicates an
+/// error on the solver's side - they must register correctly before attempting to
+/// fulfill intents. The verifier will reject transactions from unregistered or
+/// incorrectly registered solvers.
+/// 
+/// # Arguments
+/// 
+/// * `validator` - The cross-chain validator instance
+/// * `request_intent` - The outflow request intent from the hub chain
+/// * `tx_params` - Extracted parameters from the connected chain transaction
+/// * `tx_success` - Whether the transaction was successful
+/// 
+/// # Returns
+/// 
+/// * `Ok(ValidationResult)` - Validation result
+/// * `Err(anyhow::Error)` - Validation failed due to error
+pub fn validate_outflow_fulfillment(
+    _validator: &CrossChainValidator,
+    request_intent: &RequestIntentEvent,
+    tx_params: &FulfillmentTransactionParams,
+    tx_success: bool,
+) -> Result<ValidationResult> {
+    info!("Validating outflow fulfillment for intent: {}", request_intent.intent_id);
+
+    // Validate transaction was successful
+    if !tx_success {
+        return Ok(ValidationResult {
+            valid: false,
+            message: "Transaction was not successful".to_string(),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        });
+    }
+
+    // Validate intent_id matches
+    if tx_params.intent_id != request_intent.intent_id {
+        return Ok(ValidationResult {
+            valid: false,
+            message: format!(
+                "Transaction intent_id '{}' does not match request intent '{}'",
+                tx_params.intent_id, request_intent.intent_id
+            ),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        });
+    }
+
+    // Validate recipient matches requester_address_connected_chain (for outflow intents)
+    if let Some(ref requester_address) = request_intent.requester_address_connected_chain {
+        // Normalize addresses for comparison (remove 0x prefix, lowercase)
+        let tx_recipient = tx_params.recipient.strip_prefix("0x").unwrap_or(&tx_params.recipient).to_lowercase();
+        let requester = requester_address.strip_prefix("0x").unwrap_or(requester_address).to_lowercase();
+        
+        if tx_recipient != requester {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Transaction recipient '{}' does not match request intent requester_address_connected_chain '{}'",
+                    tx_params.recipient, requester_address
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+    } else {
+        // For outflow intents, requester_address_connected_chain should be present
+        // An outflow request intent without a requester address on the connected chain is rejected
+        // by the Move contract itself (see create_outflow_request_intent which aborts with
+        // EINVALID_REQUESTER_ADDRESS if requester_address_connected_chain is zero address).
+        // If we receive such an intent with missing requester_address_connected_chain, it indicates
+        // the field wasn't populated when the event was processed (should query intent object to get it).
+        // For outflow intents (connected_chain_id is Some), this is required for validation
+        if request_intent.connected_chain_id.is_some() {
+            return Ok(ValidationResult {
+                valid: false,
+                message: "Request intent has connected_chain_id but missing requester_address_connected_chain (required for outflow validation)".to_string(),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+    }
+
+    // Validate amount matches desired_amount
+    if tx_params.amount != request_intent.desired_amount {
+        return Ok(ValidationResult {
+            valid: false,
+            message: format!(
+                "Transaction amount {} does not match request intent desired amount {}",
+                tx_params.amount, request_intent.desired_amount
+            ),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        });
+    }
+
+    // Validate solver matches reserved solver
+    if let Some(ref reserved_solver) = request_intent.reserved_solver {
+        // Normalize addresses for comparison (remove 0x prefix, lowercase)
+        let tx_solver = tx_params.solver.strip_prefix("0x").unwrap_or(&tx_params.solver).to_lowercase();
+        let reserved = reserved_solver.strip_prefix("0x").unwrap_or(reserved_solver).to_lowercase();
+        
+        if tx_solver != reserved {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Transaction solver '{}' does not match reserved solver '{}'",
+                    tx_params.solver, reserved_solver
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+    } else {
+        return Ok(ValidationResult {
+            valid: false,
+            message: "Request intent has no reserved solver".to_string(),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        });
+    }
+
+    // All validations passed
+    Ok(ValidationResult {
+        valid: true,
+        message: "Outflow fulfillment validation successful".to_string(),
+        timestamp: chrono::Utc::now().timestamp() as u64,
+    })
 }

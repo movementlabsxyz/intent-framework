@@ -7,6 +7,9 @@ use rand::RngCore;
 use base64::{engine::general_purpose, Engine as _};
 use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config, EvmChainConfig};
 use trusted_verifier::monitor::{RequestIntentEvent, FulfillmentEvent, EscrowEvent, ChainType};
+use trusted_verifier::validator::FulfillmentTransactionParams;
+use trusted_verifier::aptos_client::AptosTransaction;
+use trusted_verifier::evm_client::EvmTransaction;
 
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
 /// Keys are encoded using standard Base64 to satisfy CryptoService requirements.
@@ -80,7 +83,7 @@ pub fn build_test_config_with_evm() -> Config {
 #[allow(dead_code)]
 pub fn create_base_request_intent() -> RequestIntentEvent {
     RequestIntentEvent {
-        intent_id: "0x0123456789abcd".to_string(), // Must be valid hex (even number of digits)
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
         issuer: "0xalice".to_string(),
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         offered_amount: 1000,
@@ -90,6 +93,7 @@ pub fn create_base_request_intent() -> RequestIntentEvent {
         revocable: false,
         reserved_solver: Some("0xsolver".to_string()),
         connected_chain_id: Some(2),
+        requester_address_connected_chain: None, // Can be set explicitly in tests for outflow intents
         timestamp: 0,
     }
 }
@@ -108,7 +112,7 @@ pub fn create_base_request_intent() -> RequestIntentEvent {
 #[allow(dead_code)]
 pub fn create_base_fulfillment() -> FulfillmentEvent {
     FulfillmentEvent {
-        intent_id: "0x0123456789abcd".to_string(), // Must be valid hex (even number of digits)
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
         intent_address: "0xaddr".to_string(),
         solver: "0xsolver".to_string(),
         provided_metadata: "{}".to_string(),
@@ -132,7 +136,7 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
 pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
         escrow_id: "0xescrow123".to_string(),
-        intent_id: "0x0123456789abcd".to_string(), // Must be valid hex (even number of digits)
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
         issuer: "0xalice".to_string(),
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         offered_amount: 1000,
@@ -144,6 +148,75 @@ pub fn create_base_escrow_event() -> EscrowEvent {
         chain_id: 2,
         chain_type: ChainType::Move,
         timestamp: 0, // Should be set explicitly in tests
+    }
+}
+
+/// Create a base fulfillment transaction params with default test values.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let base = create_base_fulfillment_transaction_params();
+/// let custom = FulfillmentTransactionParams {
+///     intent_id: "0xcustom".to_string(),
+///     amount: 5000,
+///     ..base
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_fulfillment_transaction_params() -> FulfillmentTransactionParams {
+    FulfillmentTransactionParams {
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
+        recipient: "0xrecipient".to_string(),
+        amount: 0, // Should be set explicitly in tests
+        solver: "0xsolver".to_string(),
+        token_metadata: "0xmetadata".to_string(),
+    }
+}
+
+/// Create a base Aptos transaction with default test values.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let base = create_base_aptos_transaction();
+/// let custom = AptosTransaction {
+///     hash: "0xcustom".to_string(),
+///     success: false,
+///     ..base
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_aptos_transaction() -> AptosTransaction {
+    AptosTransaction {
+        version: "12345".to_string(),
+        hash: "0xabc123".to_string(),
+        success: true,
+        events: vec![],
+        payload: None, // Should be set explicitly in tests
+        sender: Some("0xsolver123456789012345678901234567890123456789012345678901234567890".to_string()),
+    }
+}
+
+/// Create a base EVM transaction with default test values.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let base = create_base_evm_transaction();
+/// let custom = EvmTransaction {
+///     hash: "0xcustom".to_string(),
+///     status: Some("0x0".to_string()), // Failed
+///     ..base
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_evm_transaction() -> EvmTransaction {
+    EvmTransaction {
+        hash: "0xabc123".to_string(),
+        block_number: Some("0x12345".to_string()),
+        transaction_index: Some("0x0".to_string()),
+        from: "0xsolver1234567890123456789012345678901234567890".to_string(),
+        to: Some("0xtoken1234567890123456789012345678901234567890".to_string()),
+        input: "0x".to_string(), // Should be set explicitly in tests
+        value: "0x0".to_string(),
+        gas: "0x5208".to_string(),
+        gas_price: "0x3b9aca00".to_string(),
+        status: Some("0x1".to_string()), // Success
     }
 }
 

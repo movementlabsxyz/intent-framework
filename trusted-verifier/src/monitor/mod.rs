@@ -20,7 +20,10 @@ use crate::config::Config;
 use crate::validator::CrossChainValidator;
 use crate::crypto::CryptoService;
 use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, OracleLimitOrderEvent as AptosOracleLimitOrderEvent, LimitOrderFulfillmentEvent as AptosLimitOrderFulfillmentEvent};
-use crate::evm_client::EvmClient;
+
+// Chain-specific modules
+mod aptos;
+mod evm;
 
 // ============================================================================
 // EVENT DATA STRUCTURES
@@ -64,6 +67,9 @@ pub struct RequestIntentEvent {
     pub reserved_solver: Option<String>,
     /// Connected chain ID where escrow will be created (None for regular intents)
     pub connected_chain_id: Option<u64>,
+    /// Requester address on connected chain (for outflow intents - where solver should send tokens)
+    /// None for inflow intents or if not available
+    pub requester_address_connected_chain: Option<String>,
     /// Timestamp when the event was received
     pub timestamp: u64,
 }
@@ -345,7 +351,7 @@ impl EventMonitor {
         info!("Starting connected Aptos chain monitoring for escrow events on {}", connected_chain_apt.name);
         
         loop {
-            match self.poll_connected_events().await {
+            match aptos::poll_aptos_escrow_events(&self.config).await {
                 Ok(events) => {
                     for event in events {
                         info!("Received escrow event: {:?}", event);
@@ -398,7 +404,7 @@ impl EventMonitor {
         info!("Starting connected EVM chain monitoring for escrow events on chain_id {}", connected_chain_evm.chain_id);
         
         loop {
-            match self.poll_evm_events().await {
+            match evm::poll_evm_escrow_events(&self.config).await {
                 Ok(events) => {
                     for event in events {
                         info!("Received EVM escrow event: {:?}", event);
@@ -535,6 +541,7 @@ impl EventMonitor {
                                 revocable: data.revocable,
                                 reserved_solver: solver,
                                 connected_chain_id: None, // OracleLimitOrderEvent is for escrows, not request intents
+                                requester_address_connected_chain: None, // Not available from event, would need to query intent object
                                 timestamp,
                             });
                         }
@@ -568,6 +575,7 @@ impl EventMonitor {
                                 revocable: data.revocable,
                                 reserved_solver: solver,
                                 connected_chain_id,
+                                requester_address_connected_chain: None, // Not available from LimitOrderEvent, would need to query intent object for outflow intents
                                 timestamp,
                             });
                         }
@@ -579,150 +587,6 @@ impl EventMonitor {
         Ok(intent_events)
     }
     
-    /// Polls the connected chain for new escrow events.
-    /// 
-    /// This function queries the connected chain's event logs for new
-    /// escrow deposit events. Since module events are emitted in user transactions,
-    /// we query known test accounts for their events.
-    /// Escrows use oracle-guarded intents, so we monitor OracleLimitOrderEvent.
-    /// 
-    /// # Returns
-    /// 
-    /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
-    /// * `Err(anyhow::Error)` - Failed to poll events
-    pub async fn poll_connected_events(&self) -> Result<Vec<EscrowEvent>> {
-        let connected_chain_apt = self.config.connected_chain_apt.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No connected Aptos chain configured"))?;
-        
-        // Create Aptos client for connected chain
-        let client = AptosClient::new(&connected_chain_apt.rpc_url)?;
-        
-        // Query events from known test accounts
-        let known_accounts = connected_chain_apt.known_accounts.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected Aptos chain"))?;
-        
-        let mut escrow_events = Vec::new();
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_secs();
-        
-        // Query each known account for events
-        for account in known_accounts {
-            let account_address = account.strip_prefix("0x")
-                .unwrap_or(account);
-            
-            let raw_events = client.get_account_events(account_address, None, None, Some(100))
-                .await
-                .context(format!("Failed to fetch events for account {}", account))?;
-            
-            for event in raw_events {
-                let event_type = event.r#type.clone();
-                
-                // Escrows use oracle-guarded intents, so we look for OracleLimitOrderEvent
-                if event_type.contains("OracleLimitOrderEvent") {
-                    let data: AptosOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
-                        .context("Failed to parse OracleLimitOrderEvent as escrow")?;
-                    
-                    // Query reserved solver address from escrow object (if reserved)
-                    let reserved_solver = client.get_intent_solver(&data.intent_address, &connected_chain_apt.escrow_module_address.as_ref().unwrap_or(&connected_chain_apt.intent_module_address))
-                        .await
-                        .ok()
-                        .flatten();
-                    
-                    escrow_events.push(EscrowEvent {
-                        escrow_id: data.intent_address.clone(),
-                        intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain request intent
-                        issuer: data.issuer.clone(), // issuer is the escrow creator who locked the funds
-                        offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
-                        offered_amount: data.offered_amount.parse::<u64>()
-                            .context("Failed to parse offered amount")?,
-                        desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
-                        desired_amount: data.desired_amount.parse::<u64>()
-                            .context("Failed to parse desired amount")?,
-                        expiry_time: data.expiry_time.parse::<u64>()
-                            .context("Failed to parse expiry time")?,
-                        revocable: data.revocable,
-                        reserved_solver,
-                        chain_id: connected_chain_apt.chain_id, // Chain ID from config
-                        chain_type: ChainType::Move, // This escrow came from Aptos (Move) monitoring
-                        timestamp,
-                    });
-                }
-            }
-        }
-        
-        Ok(escrow_events)
-    }
-    
-    /// Polls the EVM connected chain for new escrow initialization events.
-    /// 
-    /// This function queries the EVM chain's event logs for EscrowInitialized events
-    /// emitted by the IntentEscrow contract. It converts them to EscrowEvent format
-    /// for consistent processing.
-    /// 
-    /// # Returns
-    /// 
-    /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
-    /// * `Err(anyhow::Error)` - Failed to poll events
-    pub async fn poll_evm_events(&self) -> Result<Vec<EscrowEvent>> {
-        let connected_chain_evm = self.config.connected_chain_evm.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No connected EVM chain configured"))?;
-        
-        // Create EVM client for connected chain
-        let client = EvmClient::new(&connected_chain_evm.rpc_url, &connected_chain_evm.escrow_contract_address)
-            .context(format!("Failed to create EVM client for RPC URL: {}", connected_chain_evm.rpc_url))?;
-        
-        // Get current block number to use as "to_block"
-        // For "from_block", we could track the last processed block, but for now use a recent block
-        let current_block = client.get_block_number().await
-            .context(format!("Failed to get block number from EVM chain at {}", connected_chain_evm.rpc_url))?;
-        let from_block = if current_block > 1000 {
-            Some(current_block - 1000) // Look back 1000 blocks
-        } else {
-            Some(0)
-        };
-        
-        let mut escrow_events = Vec::new();
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_secs();
-        
-        // Query EVM chain for EscrowInitialized events
-        let evm_events = client.get_escrow_initialized_events(from_block, None).await
-            .with_context(|| format!("Failed to fetch EVM escrow events from chain {} (RPC: {}, contract: {}, from_block: {:?})", 
-                connected_chain_evm.chain_id, connected_chain_evm.rpc_url, connected_chain_evm.escrow_contract_address, from_block))?;
-        
-        for event in evm_events {
-            // Convert EVM event to EscrowEvent format
-            // Note: EVM escrows don't have all the same fields as Aptos escrows
-            // We'll use placeholder values for fields that don't exist in EVM
-            
-            // Convert intent_id from hex string to address format
-            // EVM intent_id is uint256, we'll use it as-is (it's already hex)
-            let intent_id = event.intent_id.clone();
-            
-            // For EVM, escrow_id is the intent_id (escrow is keyed by intent_id)
-            let escrow_id = intent_id.clone();
-            
-            escrow_events.push(EscrowEvent {
-                escrow_id,
-                intent_id,
-                issuer: event.maker.clone(), // maker is the escrow creator
-                offered_metadata: format!("{{\"token\":\"{}\"}}", event.token), // Store token address in metadata
-                offered_amount: 0, // We don't have amount from EscrowInitialized event, would need to query contract
-                desired_metadata: "{}".to_string(), // Not available in EscrowInitialized event
-                desired_amount: 0, // Not available in EscrowInitialized event
-                expiry_time: 0, // Not available in EscrowInitialized event (would need to query contract)
-                revocable: false, // EVM escrows are always non-revocable
-                reserved_solver: Some(event.reserved_solver.clone()),
-                chain_id: connected_chain_evm.chain_id,
-                chain_type: ChainType::Evm, // This escrow came from EVM monitoring
-                timestamp,
-            });
-        }
-        
-        Ok(escrow_events)
-    }
     
     /// Validates that an escrow event fulfills the conditions of an existing request intent.
     /// 

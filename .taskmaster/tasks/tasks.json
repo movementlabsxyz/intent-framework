@@ -17,13 +17,13 @@
         "id": "2",
         "title": "Define connected_chain_fulfill transaction format for Move/Aptos",
         "description": "Design and document the transaction format for immediate solver transfers on Aptos connected chains",
-        "details": "Define transaction format using standard Move transfer functions (primary_fungible_store::deposit()) with intent_id encoded in transaction metadata/script arguments. Document exact transaction layout specification for solvers to follow. Create validation function validate_connected_chain_fulfill() that verifies transaction format (not values - contract doesn't know correct values). Transaction must immediately transfer tokens to requester address with no escrow or verifier involvement. Include intent_id for verifier tracking when querying by transaction hash.",
-        "testStrategy": "Test transaction format validation, metadata extraction, and ensure standard transfer functions work with appended intent_id metadata",
+        "details": "Created on-chain helper function utils::transfer_with_intent_id() that accepts recipient, metadata, amount, and intent_id as parameters. This function performs the transfer and includes intent_id in the transaction payload so the verifier can extract it when querying by transaction hash. Created solver CLI tool (connected_chain_tx_template) that generates the aptos move run command to call this function directly. Documented the transaction format specification in protocol.md. Added comprehensive unit tests: Move tests (utils_tests.move) verify transfer_with_intent_id function behavior including successful transfers, balance verification, and error cases. Rust tests (connected_chain_tx_template_test.rs) verify address normalization, command generation, and error handling for both Aptos and EVM paths. Transaction immediately transfers tokens to requester address with no escrow or verifier involvement. The on-chain function approach is simpler than requiring script compilation.",
+        "testStrategy": "Document transaction format specification, verify on-chain function includes intent_id in transaction payload, test solver CLI tool generates correct commands",
         "priority": "medium",
         "dependencies": [
           "1"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -41,15 +41,15 @@
       },
       {
         "id": "4",
-        "title": "Implement Move outflow request intent creation function",
-        "description": "Implement create_outflow_request_intent() function in fa_intent_cross_chain.move for outflow request intents",
-        "details": "Create function that uses fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement() to create OracleGuardedLimitOrder intent. Function withdraws actual tokens from user (locked on hub), stores requester_address_connected_chain, sets revocable=false for cross-chain safety, and requires verifier_public_key parameter. Extends existing cross-chain module while maintaining consistency with current inflow patterns. Returns Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>.",
-        "testStrategy": "Unit tests for outflow intent creation, token withdrawal verification, oracle requirement setup, and requester address storage",
+        "title": "Split cross-chain module and implement outflow request intent creation",
+        "description": "Split fa_intent_cross_chain.move into separate inflow and outflow modules, and implement create_outflow_request_intent() function in fa_intent_outflow.move",
+        "details": "Refactored architecture by splitting fa_intent_cross_chain.move into fa_intent_inflow.move and fa_intent_outflow.move for better organization. Created create_outflow_request_intent() as a public function in fa_intent_outflow.move that uses fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement() to create OracleGuardedLimitOrder intent. Function withdraws actual tokens from user (locked on hub), stores requester_address_connected_chain, sets revocable=false for cross-chain safety, and requires verifier_public_key parameter. Function returns Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>. Created entry wrapper create_outflow_request_intent_entry() for transaction calls. Added comprehensive tests including creation, fulfillment, and type safety tests.",
+        "testStrategy": "Unit tests for outflow intent creation, token withdrawal verification, oracle requirement setup, requester address storage, end-to-end fulfillment flow, and type safety (cannot fulfill outflow with inflow function)",
         "priority": "high",
         "dependencies": [
           "1"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -67,15 +67,15 @@
       },
       {
         "id": "6",
-        "title": "Implement inflow request intent wrapper function",
-        "description": "Create create_inflow_request_intent() wrapper function for clarity and consistency with new outflow function",
-        "details": "Implement wrapper around existing create_cross_chain_request_intent_entry() function in fa_intent_cross_chain.move for naming consistency. This maintains current inflow behavior (FungibleAssetLimitOrder, withdraws 0 tokens, no signature required) while providing clear distinction from outflow intents. Function should have identical parameters and behavior to current implementation but with clearer naming convention.",
-        "testStrategy": "Test wrapper function maintains exact same behavior as original, verify parameter passing and return values match current implementation",
+        "title": "Refactor inflow request intent into separate module",
+        "description": "Refactor inflow intent creation into fa_intent_inflow.move module with create_inflow_request_intent() public function",
+        "details": "As part of module split, refactored inflow intent creation into fa_intent_inflow.move. Created create_inflow_request_intent() as a public function (not just a wrapper) that returns Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>. Function maintains current inflow behavior (FungibleAssetLimitOrder, withdraws 0 tokens, no signature required) while providing clear distinction from outflow intents. Created entry wrapper create_inflow_request_intent_entry() for transaction calls. Added comprehensive tests including creation (verifying 0 tokens locked), fulfillment, and type safety tests.",
+        "testStrategy": "Test creation function verifies 0 tokens locked, end-to-end fulfillment flow, type safety (cannot fulfill inflow with outflow function), and parameter passing matches expected behavior",
         "priority": "low",
         "dependencies": [
           "4"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -135,9 +135,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-14T12:46:20.562Z",
+      "lastModified": "2025-01-27T00:00:00.000Z",
       "taskCount": 10,
-      "completedCount": 1,
+      "completedCount": 4,
       "tags": [
         "master"
       ]

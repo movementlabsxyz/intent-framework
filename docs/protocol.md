@@ -1,6 +1,6 @@
 # Protocol Specification
 
-This document specifies the cross-chain intent protocol: how intents, escrows, and verifiers work together across chains. For component-specific implementation details, see the [component documentation](#component-documentation).
+This document specifies the cross-chain intent protocol: how intents, escrows, and verifiers work together across chains. For component-specific implementation details, see the component README files in the repository.
 
 ## Table of Contents
 
@@ -134,13 +134,14 @@ sequenceDiagram
    - **Step 1**: User creates draft using `create_cross_chain_draft_intent()` with `offered_amount` (amount that will be locked on hub chain), `offered_chain_id` (hub chain), and `desired_chain_id` (connected chain)
    - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
 2. **Hub**: User calls `create_outflow_request_intent()` with `offered_amount` (amount to lock on hub), `intent_id`, `offered_chain_id` (hub), `desired_chain_id` (connected), `requester_address_connected_chain` (where solver should send tokens), `verifier_public_key`, `solver` address, and `solver_signature`. The function locks tokens on the hub and creates an oracle-guarded intent requiring verifier signature (emits `OracleLimitOrderEvent` with `revocable=false`).
-3. **Connected Chain**: Solver transfers tokens directly to `requester_address_connected_chain` using standard token transfer (not an escrow).
+3. **Connected Chain**: Solver transfers tokens directly to `requester_address_connected_chain` using standard token transfer (not an escrow). The transaction must include `intent_id` as metadata for verifier tracking. See [Connected Chain Outflow Fulfillment Transaction Format](#connected-chain-outflow-fulfillment-transaction-format) for exact specification.
 4. **Solver**: Informs the verifier about the transaction hash/ID from the connected chain transfer.
 5. **Verifier**: Checks the connected chain for the transaction to verify the transfer occurred, matches the `intent_id` with the hub intent, validates conditions are met, and generates approval signature by signing the `intent_id`.
 6. **Hub**: Solver calls `fulfill_outflow_request_intent()` with the verifier signature. The function verifies the signature, unlocks the tokens locked on hub, and transfers them to the solver as reward.
 7. **Result**: Requester receives tokens on connected chain, solver receives locked tokens from hub as reward.
 
 **Key Differences from Inflow Flow**:
+
 - Tokens are locked on hub (not connected chain)
 - No escrow on connected chain - solver transfers directly
 - Verifier signature is required for fulfillment (oracle-guarded intent)
@@ -263,3 +264,55 @@ All escrows MUST specify a reserved solver address at creation:
 - ECDSA signatures for verifier approvals
 - Message: `keccak256(intentId)` - signature itself is the approval
 - Ethereum signed message format
+
+## Connected Chain Outflow Fulfillment Transaction Format
+
+For outflow intents, solvers must transfer tokens on the connected chain using a standardized transaction format that includes `intent_id` metadata for verifier tracking.
+
+### Move/Aptos Connected Chain Format
+
+Use the solver CLI to generate an `aptos move run` command that calls the on-chain `utils::transfer_with_intent_id()` function directly.
+
+```bash
+cargo run --bin connected_chain_tx_template -- \
+  --chain aptos \
+  --recipient 0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
+  --metadata 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
+  --amount 25000000 \
+  --intent-id 0x5678123456789012345678901234567890123456789012345678901234567890
+```
+
+The command prints:
+
+1. A summary of the parameters that must match the hub intent (`recipient`, `amount`, `intent_id`)
+2. An `aptos move run` command to call the on-chain `utils::transfer_with_intent_id()` function directly
+3. Instructions for replacing placeholders (`<solver-profile>`, `<module_address>`)
+
+The on-chain `utils::transfer_with_intent_id()` function:
+
+- Transfers tokens from the solver's account to the recipient address
+- Includes `intent_id` as an explicit parameter in the transaction payload
+
+This guarantees that every connected-chain transaction encodes `intent_id`, making it observable via Aptos RPC. The verifier later queries the transaction hash, extracts the function arguments, and matches them against the hub intent requirements.
+
+**Note:** The intent framework module (including `utils::transfer_with_intent_id()`) must be deployed on the connected chain before solvers can use this approach.
+
+### EVM Connected Chain Format
+
+Use the same CLI with `--chain evm` to generate the ERC20 payload that appends `intent_id` after the standard `transfer(to, amount)` arguments.
+
+```bash
+cargo run --bin connected_chain_tx_template -- \
+  --chain evm \
+  --recipient 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
+  --amount 1000000000000000000 \
+  --intent-id 0x5678123456789012345678901234567890123456789012345678901234567890
+```
+
+The CLI prints:
+
+1. A summary of the parameters that must match the hub intent (`recipient`, `amount`, `intent_id`)
+2. A `cast send` command example with the complete data payload that includes `intent_id` as extra calldata
+3. Instructions for replacing the `<token_address>` placeholder
+
+The data payload extends the standard ERC20 `transfer(to, amount)` function call with an extra 32-byte `intent_id` word. The ERC20 contract ignores these extra bytes (they don't match any function signature), but they remain in the transaction data for verifier tracking. The verifier reads the appended `intent_id` when it fetches the transaction via `eth_getTransactionByHash`, ensuring it can link the connected-chain transfer back to the hub intent.

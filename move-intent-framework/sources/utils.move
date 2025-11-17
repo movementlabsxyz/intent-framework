@@ -3,9 +3,10 @@ module mvmt_intent::utils {
     use std::signer;
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::object;
+    use aptos_framework::object::{Self as object, Object};
     use aptos_framework::event;
-    use aptos_framework::fungible_asset::Metadata;
+    use aptos_framework::fungible_asset::{FungibleAsset, Metadata};
+    use aptos_framework::primary_fungible_store;
     use mvmt_intent::intent_reservation;
 
     #[event]
@@ -91,6 +92,41 @@ module mvmt_intent::utils {
         event::emit(IntentHashEvent {
             hash: intent_hash,
         });
+    }
+
+    /// Transfers fungible assets to a recipient and includes intent_id in the transaction payload.
+    /// 
+    /// This is a helper function for connected-chain transfers (outflow intents) that allows
+    /// solvers to transfer tokens while including intent_id metadata. The intent_id is included
+    /// as a parameter so the verifier can extract it from the transaction when querying by hash.
+    /// 
+    /// # Arguments
+    /// - `sender`: Signer of the solver account (must have tokens to transfer)
+    /// - `recipient`: Address on the connected chain where tokens should be sent
+    /// - `metadata`: Metadata object address for the token type
+    /// - `amount`: Amount of tokens to transfer (base units)
+    /// - `intent_id`: Intent ID that links this transaction to the hub intent (for verifier tracking)
+    /// 
+    /// # Note
+    /// This function is designed for outflow intents where solvers transfer tokens on connected chains.
+    /// The intent_id parameter ensures the verifier can link the connected-chain transaction back
+    /// to the hub intent when validating fulfillment.
+    public entry fun transfer_with_intent_id(
+        sender: &signer,
+        recipient: address,
+        metadata: Object<Metadata>,
+        amount: u64,
+        intent_id: address,
+    ) {
+        // Withdraw tokens from sender's account
+        let asset: FungibleAsset = primary_fungible_store::withdraw(sender, metadata, amount);
+        
+        // Deposit tokens to recipient address
+        primary_fungible_store::deposit(recipient, asset);
+        
+        // Keep intent_id in payload so the verifier can read it from the transaction
+        // The verifier queries the transaction by hash and extracts intent_id from function arguments
+        let _intent_id = intent_id;
     }
 }
 

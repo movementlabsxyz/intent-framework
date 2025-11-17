@@ -14,20 +14,10 @@ cargo build
 
 ### Usage
 
-Generate a signature for an intent:
+See [docs/solver/README.md](../docs/solver/README.md) for detailed usage instructions and examples:
 
-```bash
-cargo run --bin sign_intent -- \
-  --profile bob-chain1 \
-  --chain-address 0x123 \
-  --source-metadata 0xabc \
-  --desired-metadata 0xdef \
-  --desired-amount 100000000 \
-  --expiry-time 1234567890 \
-  --issuer 0xalice \
-  --solver 0xbob \
-  --chain-num 1
-```
+- **Signature Generation**: See the [Reserved Intents](../docs/solver/README.md#reserved-intents) section
+- **Connected Chain Outflow Fulfillment Transaction Templates**: See the [Connected Chain Outflow Fulfillment Transaction Templates](../docs/solver/README.md#connected-chain-outflow-fulfillment-transaction-templates) section
 
 ### Development Commands
 

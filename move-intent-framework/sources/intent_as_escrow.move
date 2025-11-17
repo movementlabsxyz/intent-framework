@@ -39,7 +39,7 @@ module mvmt_intent::intent_as_escrow {
     /// Creates a simple escrow with verifier approval requirement
     /// 
     /// # Arguments
-    /// - `user`: Signer of the escrow creator
+    /// - `requester_signer`: Signer of the escrow creator (requester who created the request intent on hub chain)
     /// - `offered_asset`: Asset to be escrowed
     /// - `verifier_public_key`: Public key of authorized verifier
     /// - `expiry_time`: Unix timestamp when escrow expires
@@ -52,7 +52,7 @@ module mvmt_intent::intent_as_escrow {
     /// # Aborts
     /// - If reservation is None (escrows must always be reserved for a specific solver)
     public fun create_escrow(
-        user: &signer,
+        requester_signer: &signer,
         offered_asset: FungibleAsset,
         verifier_public_key: ed25519::UnvalidatedPublicKey,
         expiry_time: u64,
@@ -76,7 +76,7 @@ module mvmt_intent::intent_as_escrow {
             placeholder_metadata,
             placeholder_amount,
             expiry_time,
-            signer::address_of(user),
+            signer::address_of(requester_signer),
             requirement,
             false, // 🔒 CRITICAL: escrow intents MUST be non-revocable for security!
             //      This ensures funds can ONLY be released by verifier approval/rejection

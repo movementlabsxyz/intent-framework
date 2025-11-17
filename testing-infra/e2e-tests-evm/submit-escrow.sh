@@ -53,7 +53,7 @@ log_and_echo ""
 log ""
 log "   Creating escrow on EVM chain..."
 log "   - Alice locks 1000 ETH in escrow on Chain 3 (EVM)"
-log "   - User provides hub chain intent_id when creating escrow"
+log "   - Requester provides hub chain intent_id when creating escrow"
 log "   - Using intent_id from hub chain: $INTENT_ID"
 log "   - Exchange rate: 1000 ETH = 1 APT"
 

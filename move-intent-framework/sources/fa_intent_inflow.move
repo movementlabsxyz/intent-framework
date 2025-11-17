@@ -22,9 +22,9 @@ module mvmt_intent::fa_intent_inflow {
 
     /// Creates a draft intent for cross-chain request.
     /// This is step 1 of the reserved intent flow:
-    /// 1. User creates draft using this function (off-chain)
+    /// 1. Requester creates draft using this function (off-chain)
     /// 2. Solver signs the draft and returns signature (off-chain)
-    /// 3. User calls create_inflow_request_intent with the signature (on-chain)
+    /// 3. Requester calls create_inflow_request_intent with the signature (on-chain)
     public fun create_cross_chain_draft_intent(
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -33,7 +33,7 @@ module mvmt_intent::fa_intent_inflow {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
     ): intent_reservation::IntentDraft {
         intent_reservation::create_draft_intent(
             offered_metadata,
@@ -43,7 +43,7 @@ module mvmt_intent::fa_intent_inflow {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            issuer,
+            requester,
         )
     }
 

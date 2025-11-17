@@ -39,7 +39,7 @@ fn test_revocable_intent_rejection() {
     
     let non_revocable_intent = RequestIntentEvent {
         intent_id: "0xsafe".to_string(),
-        issuer: "0xbob".to_string(),
+        requester: "0xbob".to_string(),
         ..create_base_request_intent()
     };
     

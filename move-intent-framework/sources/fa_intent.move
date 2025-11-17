@@ -31,7 +31,7 @@ module mvmt_intent::fa_intent {
     struct FungibleAssetLimitOrder has store, drop {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
-        issuer: address,
+        requester: address,
         intent_id: Option<address>, // Optional cross-chain intent_id for linking (None for regular intents)
         offered_chain_id: u64,
         desired_chain_id: u64,
@@ -58,7 +58,7 @@ module mvmt_intent::fa_intent {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         desired_chain_id: u64,
-        issuer: address,
+        requester: address,
         expiry_time: u64,
         revocable: bool,
     }
@@ -85,7 +85,7 @@ module mvmt_intent::fa_intent {
     /// - `desired_metadata`: Metadata of the desired token type
     /// - `desired_amount`: Minimum amount of the desired token required
     /// - `expiry_time`: Unix timestamp when the intent expires
-    /// - `issuer`: Address of the intent creator
+    /// - `requester`: Address of the intent creator
     /// 
     /// # Returns
     /// - `Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>`: Intent object
@@ -96,7 +96,7 @@ module mvmt_intent::fa_intent {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
@@ -105,7 +105,7 @@ module mvmt_intent::fa_intent {
         let offered_metadata = fungible_asset::asset_metadata(&offered_fungible_asset);
         let offered_amount = fungible_asset::amount(&offered_fungible_asset);
         
-        let coin_store_ref = object::create_object(issuer);
+        let coin_store_ref = object::create_object(requester);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
         let delete_ref = object::generate_delete_ref(&coin_store_ref);
         let transfer_ref = object::generate_transfer_ref(&coin_store_ref);
@@ -119,9 +119,9 @@ module mvmt_intent::fa_intent {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
             FungibleStoreManager { extend_ref, delete_ref},
-            FungibleAssetLimitOrder { desired_metadata, desired_amount, issuer, intent_id, offered_chain_id, desired_chain_id },
+            FungibleAssetLimitOrder { desired_metadata, desired_amount, requester, intent_id, offered_chain_id, desired_chain_id },
             expiry_time,
-            issuer,
+            requester,
             FungibleAssetRecipientWitness {},
             reservation,
             revocable,
@@ -145,7 +145,7 @@ module mvmt_intent::fa_intent {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            issuer,
+            requester,
             revocable,
         });
 
@@ -177,7 +177,7 @@ module mvmt_intent::fa_intent {
         solver: address,
         solver_signature: vector<u8>,
     ) {
-        let issuer = signer::address_of(account);
+        let requester = signer::address_of(account);
         let reservation = if (vector::is_empty(&solver_signature)) {
             option::none()  // Explicitly unreserved intent
         } else {
@@ -189,7 +189,7 @@ module mvmt_intent::fa_intent {
                 desired_amount,
                 chain_id,
                 expiry_time,
-                issuer,
+                requester,
                 solver,
             );
             let result = intent_reservation::verify_and_create_reservation(
@@ -298,7 +298,7 @@ module mvmt_intent::fa_intent {
             error::invalid_argument(EAMOUNT_NOT_MEET),
         );
 
-        primary_fungible_store::deposit(argument.issuer, received_fa);
+        primary_fungible_store::deposit(argument.requester, received_fa);
         
         // Emit fulfillment event
         let timestamp = timestamp::now_seconds();
@@ -337,7 +337,7 @@ module mvmt_intent::fa_intent {
             error::invalid_argument(EAMOUNT_NOT_MEET),
         );
 
-        primary_fungible_store::deposit(argument.issuer, received_fa);
+        primary_fungible_store::deposit(argument.requester, received_fa);
         intent::finish_intent_session(session, FungibleAssetRecipientWitness {})
     }
 

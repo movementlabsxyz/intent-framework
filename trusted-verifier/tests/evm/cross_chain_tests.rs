@@ -116,7 +116,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
     assert_eq!(matched.intent_id, evm_escrow.intent_id, "Intent IDs must match");
     assert_eq!(matched.offered_amount, evm_escrow.offered_amount, "Escrow offered amount should match hub intent offered_amount");
     assert_eq!(matched.expiry_time, evm_escrow.expiry_time, "Expiry times should match");
-    assert_eq!(matched.issuer, evm_escrow.issuer, "Issuers should match");
+    assert_eq!(matched.requester, evm_escrow.issuer, "Request intent requester should match escrow issuer");
     
     // Verify EVM-specific behavior: escrow_id equals intent_id
     assert_eq!(evm_escrow.escrow_id, evm_escrow.intent_id, "For EVM, escrow_id should equal intent_id");

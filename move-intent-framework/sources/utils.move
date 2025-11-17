@@ -47,7 +47,7 @@ module mvmt_intent::utils {
     /// - `desired_amount`: Amount of desired tokens
     /// - `desired_chain_id`: Chain ID where desired tokens are located
     /// - `expiry_time`: Unix timestamp when intent expires
-    /// - `issuer`: Address of the intent issuer
+    /// - `requester`: Address of the intent requester
     /// - `solver_address`: Address of the solver (must match signer)
     ///
     /// # Note
@@ -66,7 +66,7 @@ module mvmt_intent::utils {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
         solver_address: address,
     ) {
         // Verify solver signer matches solver_address
@@ -81,7 +81,7 @@ module mvmt_intent::utils {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            issuer,
+            requester,
             solver_address,
         );
         

@@ -148,19 +148,19 @@ Race condition prevention mechanisms.
 
 Transferring USD tokens from a connected chain to a hub chain using the intent framework.
 
-**Use Case**: A user wants to transfer USD tokens from Chain 2 (connected chain) to Chain 1 (hub chain). The tokens are locked in an escrow on Chain 2, and a solver provides equivalent tokens on Chain 1. After the solver fulfills the intent on Chain 1, the verifier approves the escrow release on Chain 2, transferring the locked tokens to the solver.
+**Use Case**: A requester wants to transfer USD tokens from Chain 2 (connected chain) to Chain 1 (hub chain). The tokens are locked in an escrow on Chain 2, and a solver provides equivalent tokens on Chain 1. After the solver fulfills the intent on Chain 1, the verifier approves the escrow release on Chain 2, transferring the locked tokens to the solver.
 
 **Flow**:
 
 1. **Hub Chain - Intent Creation** (`testing-infra/e2e-tests-apt/submit-hub-intent.sh`):
-   - User creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
+   - Requester creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
    - Intent specifies desired USD token metadata and amount (e.g., 100M tokens)
    - Intent uses `offered_amount=0` since tokens are locked on connected chain
    - Intent is **reserved** for a specific solver: solver must be registered in the solver registry, signs the intent off-chain, and the signature is verified on-chain using the solver's public key from the registry
    - The solver's public key is looked up from the on-chain solver registry (no need to pass it explicitly)
 
 2. **Connected Chain - Escrow Creation** (`testing-infra/e2e-tests-apt/submit-escrow.sh`):
-   - User locks USD tokens in escrow on connected chain using `create_escrow_from_fa()`
+   - Requester locks USD tokens in escrow on connected chain using `create_escrow_from_fa()`
    - Escrow specifies reserved solver address (funds will go to this address when released)
    - Escrow links to hub intent via shared `intent_id`
    - Escrow is non-revocable (`revocable=false`)
@@ -168,7 +168,7 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
 3. **Hub Chain - Intent Fulfillment** (`testing-infra/e2e-tests-apt/fulfill-hub-intent.sh`):
    - Solver monitors hub chain events and sees the intent
    - Solver provides USD tokens on hub chain using `fulfill_cross_chain_request_intent()`
-   - User receives tokens on hub chain
+   - Requester receives tokens on hub chain
 
 4. **Verifier - Validation and Approval** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
    - Verifier monitors hub chain for request intent events and connected chain (Aptos or EVM) for escrow events

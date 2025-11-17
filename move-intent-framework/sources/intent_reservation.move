@@ -43,7 +43,7 @@ module mvmt_intent::intent_reservation {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
     }
 
     /// The data structure that is signed by the solver off-chain.
@@ -55,7 +55,7 @@ module mvmt_intent::intent_reservation {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
         solver: address,
     }
 
@@ -68,7 +68,7 @@ module mvmt_intent::intent_reservation {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
         solver: address,
     ): IntentToSign {
         IntentToSign {
@@ -79,7 +79,7 @@ module mvmt_intent::intent_reservation {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            issuer,
+            requester,
             solver,
         }
     }
@@ -98,7 +98,7 @@ module mvmt_intent::intent_reservation {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
     ): IntentDraft {
         IntentDraft {
             offered_metadata,
@@ -108,7 +108,7 @@ module mvmt_intent::intent_reservation {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            issuer,
+            requester,
         }
     }
 
@@ -125,7 +125,7 @@ module mvmt_intent::intent_reservation {
             desired_amount: draft.desired_amount,
             desired_chain_id: draft.desired_chain_id,
             expiry_time: draft.expiry_time,
-            issuer: draft.issuer,
+            requester: draft.requester,
             solver,
         }
     }

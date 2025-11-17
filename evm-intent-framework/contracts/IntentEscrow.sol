@@ -20,7 +20,7 @@ contract IntentEscrow {
 
     /// @notice Escrow data structure
     struct Escrow {
-        address maker;           // User who deposited funds
+        address maker;           // Requester who deposited funds (requester who created the request intent on hub chain)
         address token;           // ERC20 token address
         uint256 amount;          // Amount deposited
         bool isClaimed;          // Whether funds have been claimed
@@ -33,7 +33,7 @@ contract IntentEscrow {
 
     /// @notice Events
     event EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver);
-    event DepositMade(uint256 indexed intentId, address indexed user, uint256 amount, uint256 total);
+    event DepositMade(uint256 indexed intentId, address indexed requester, uint256 amount, uint256 total);
     event EscrowClaimed(uint256 indexed intentId, address indexed recipient, uint256 amount);
     event EscrowCancelled(uint256 indexed intentId, address indexed maker, uint256 amount);
 

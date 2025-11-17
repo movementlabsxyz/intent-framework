@@ -59,7 +59,7 @@ module mvmt_intent::intent {
     /// - `offered_resource`: The resource to be locked in the intent
     /// - `argument`: Trading conditions and parameters
     /// - `expiry_time`: Unix timestamp when the intent expires
-    /// - `issuer`: Address of the intent creator
+    /// - `requester`: Address of the intent creator
     /// - `_witness`: Witness type that must be provided to complete the intent
     /// - `revocable`: Whether the intent can be revoked by the owner
     /// 
@@ -69,12 +69,12 @@ module mvmt_intent::intent {
         offered_resource: Source,
         argument: Args,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
         _witness: Witness,
         reservation: Option<IntentReserved>,
         revocable: bool,
     ): Object<TradeIntent<Source, Args>> {
-        let constructor_ref = object::create_object(issuer);
+        let constructor_ref = object::create_object(requester);
         let object_signer = object::generate_signer(&constructor_ref);
         let self_delete_ref = object::generate_delete_ref(&constructor_ref);
 
@@ -195,10 +195,10 @@ module mvmt_intent::intent {
     /// - `ENOT_OWNER`: If the signer is not the owner of the intent
     /// - `ENOT_REVOCABLE`: If the intent is not revocable
     public fun revoke_intent<Source: store, Args: store + drop>(
-        issuer: &signer,
+        requester: &signer,
         intent: Object<TradeIntent<Source, Args>>,
     ): Source acquires TradeIntent {
-        assert!(object::owner(intent) == signer::address_of(issuer), error::permission_denied(ENOT_OWNER));
+        assert!(object::owner(intent) == signer::address_of(requester), error::permission_denied(ENOT_OWNER));
         let TradeIntent {
             offered_resource,
             argument: _,

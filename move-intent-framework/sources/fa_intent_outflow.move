@@ -21,9 +21,9 @@ module mvmt_intent::fa_intent_outflow {
 
     /// Creates a draft intent for cross-chain request.
     /// This is step 1 of the reserved intent flow:
-    /// 1. User creates draft using this function (off-chain)
+    /// 1. Requester creates draft using this function (off-chain)
     /// 2. Solver signs the draft and returns signature (off-chain)
-    /// 3. User calls create_outflow_request_intent with the signature (on-chain)
+    /// 3. Requester calls create_outflow_request_intent with the signature (on-chain)
     public fun create_cross_chain_draft_intent(
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -32,7 +32,7 @@ module mvmt_intent::fa_intent_outflow {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
     ): intent_reservation::IntentDraft {
         intent_reservation::create_draft_intent(
             offered_metadata,
@@ -42,7 +42,7 @@ module mvmt_intent::fa_intent_outflow {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            issuer,
+            requester,
         )
     }
 
@@ -149,7 +149,7 @@ module mvmt_intent::fa_intent_outflow {
         // Outflow intents require a valid address on the connected chain where the solver should send tokens
         assert!(requester_address_connected_chain != @0x0, error::invalid_argument(EINVALID_REQUESTER_ADDRESS));
         
-        // Withdraw actual tokens from user (locked on hub chain for outflow)
+        // Withdraw actual tokens from requester (locked on hub chain for outflow)
         let fa: FungibleAsset = primary_fungible_store::withdraw(requester_signer, offered_metadata, offered_amount);
         
         // Verify solver signature and create reservation using the solver registry

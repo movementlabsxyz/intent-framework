@@ -27,7 +27,7 @@ module mvmt_intent::intent_as_escrow_tests {
         solver: &signer,
         _verifier: &signer,
     ) {
-        // Register and mint tokens for user and solver (same token type for escrow)
+        // Register and mint tokens for requester and solver (same token type for escrow)
         let (offered_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, user, 100);
         let (_desired_token_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
@@ -39,7 +39,7 @@ module mvmt_intent::intent_as_escrow_tests {
         let (verifier_secret_key, validated_pk) = ed25519::generate_keys();
         let verifier_public_key = ed25519::public_key_to_unvalidated(&validated_pk);
         
-        // User creates escrow (must specify reserved solver)
+        // Requester creates escrow (must specify reserved solver)
         let offered_asset = primary_fungible_store::withdraw(user, offered_token_type, 50);
         let reservation = intent_reservation::new_reservation(signer::address_of(solver));
         let escrow_intent = intent_as_escrow::create_escrow(
@@ -68,7 +68,7 @@ module mvmt_intent::intent_as_escrow_tests {
             verifier_signature,
         );
         
-        // User should have received payment tokens
+        // Requester should have received payment tokens
         assert!(primary_fungible_store::balance(signer::address_of(user), offered_token_type) == 50);
         
         // Solver should have received escrowed tokens
@@ -229,7 +229,7 @@ module mvmt_intent::intent_as_escrow_tests {
             reservation, // Escrow must be reserved for a specific solver
         );
         
-        // User tries to revoke the escrow directly - this should fail because escrow is non-revocable
+        // Requester tries to revoke the escrow directly - this should fail because escrow is non-revocable
         fa_intent_with_oracle::revoke_fa_intent(user, escrow_intent);
     }
 
@@ -267,7 +267,7 @@ module mvmt_intent::intent_as_escrow_tests {
             signer::address_of(solver), // Reserved solver address
         );
         
-        // Verify user's balance decreased by 50
+        // Verify requester's balance decreased by 50
         assert!(primary_fungible_store::balance(signer::address_of(user), fa_metadata) == 50);
         
         // Verify escrow intent was created (it should exist)

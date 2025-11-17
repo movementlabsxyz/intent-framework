@@ -59,7 +59,7 @@ function getEscrow(uint256 intentId) external view returns (address, address, ui
 ### Events
 
 - `EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver)`
-- `DepositMade(uint256 indexed intentId, address indexed user, uint256 amount, uint256 total)`
+- `DepositMade(uint256 indexed intentId, address indexed requester, uint256 amount, uint256 total)` - `requester` is the requester who created the escrow
 - `EscrowClaimed(uint256 indexed intentId, address indexed recipient, uint256 amount)`
 - `EscrowCancelled(uint256 indexed intentId, address indexed maker, uint256 amount)`
 

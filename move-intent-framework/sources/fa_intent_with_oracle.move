@@ -56,7 +56,7 @@ module mvmt_intent::fa_intent_with_oracle {
     struct OracleGuardedLimitOrder has store, drop {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
-        issuer: address,
+        requester: address,
         requirement: OracleSignatureRequirement,
         intent_id: address, // Intent ID from hub chain (for escrows) - used for signature verification
         requester_address_connected_chain: Option<address>, // Address on connected chain where solver should send tokens (for outflow intents)
@@ -82,7 +82,7 @@ module mvmt_intent::fa_intent_with_oracle {
         offered_amount: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
-        issuer: address,
+        requester: address,
         expiry_time: u64,
         min_reported_value: u64,
         revocable: bool,
@@ -120,11 +120,11 @@ module mvmt_intent::fa_intent_with_oracle {
     /// oracle threshold) are captured in the intent arguments.
     ///
     /// # Arguments
-    /// - `offered_fungible_asset`: The asset being offered by the issuer
-    /// - `desired_metadata`: Metadata handle of the asset the issuer wants to receive
+    /// - `offered_fungible_asset`: The asset being offered by the requester
+    /// - `desired_metadata`: Metadata handle of the asset the requester wants to receive
     /// - `desired_amount`: Minimum amount of the desired asset that must be paid
     /// - `expiry_time`: Unix timestamp after which the intent can no longer be filled
-    /// - `issuer`: Address of the intent creator
+    /// - `requester`: Address of the intent creator
     /// - `requirement`: Oracle public key and minimum reported value used for verification
     /// - `revocable`: Whether the intent can be revoked by the owner
     /// - `intent_id`: The original intent ID from hub chain (for escrows) or same as intent_address (for regular intents)
@@ -138,7 +138,7 @@ module mvmt_intent::fa_intent_with_oracle {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
         requirement: OracleSignatureRequirement,
         revocable: bool,
         intent_id: address,
@@ -149,7 +149,7 @@ module mvmt_intent::fa_intent_with_oracle {
         let offered_metadata = fungible_asset::asset_metadata(&offered_fungible_asset);
         let offered_amount = fungible_asset::amount(&offered_fungible_asset);
         
-        let coin_store_ref = object::create_object(issuer);
+        let coin_store_ref = object::create_object(requester);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
         let delete_ref = object::generate_delete_ref(&coin_store_ref);
         let transfer_ref = object::generate_transfer_ref(&coin_store_ref);
@@ -163,9 +163,9 @@ module mvmt_intent::fa_intent_with_oracle {
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, OracleGuardedLimitOrder, OracleGuardedWitness>(
             FungibleStoreManager { extend_ref, delete_ref },
-            OracleGuardedLimitOrder { desired_metadata, desired_amount, issuer, requirement, intent_id, requester_address_connected_chain },
+            OracleGuardedLimitOrder { desired_metadata, desired_amount, requester, requirement, intent_id, requester_address_connected_chain },
             expiry_time,
-            issuer,
+            requester,
             OracleGuardedWitness {},
             reservation,
             revocable,
@@ -174,12 +174,12 @@ module mvmt_intent::fa_intent_with_oracle {
         // Emit event after creating intent so we have the intent address
         event::emit(OracleLimitOrderEvent {
             intent_address: object::object_address(&intent_obj),
-            intent_id,  // Pass the intent ID from user (hub chain intent ID for escrows)
+            intent_id,  // Pass the intent ID from requester (hub chain intent ID for escrows)
             offered_metadata,
             offered_amount,
             desired_metadata,
             desired_amount,
-            issuer,
+            requester,
             expiry_time,
             min_reported_value: requirement.min_reported_value,
             revocable,
@@ -247,7 +247,7 @@ module mvmt_intent::fa_intent_with_oracle {
 
         verify_oracle_requirement(argument, &oracle_witness_opt);
 
-        primary_fungible_store::deposit(argument.issuer, received_fa);
+        primary_fungible_store::deposit(argument.requester, received_fa);
         intent::finish_intent_session(session, OracleGuardedWitness {})
     }
 

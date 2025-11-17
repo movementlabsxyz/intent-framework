@@ -636,7 +636,7 @@ pub struct LimitOrderEvent {
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub desired_amount: String,
     pub desired_chain_id: String,
-    pub issuer: String,
+    pub requester: String,
     pub expiry_time: String,
     pub revocable: bool,
 }
@@ -650,7 +650,7 @@ pub struct OracleLimitOrderEvent {
     pub offered_amount: String,
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub desired_amount: String,
-    pub issuer: String,
+    pub requester: String,
     pub expiry_time: String,
     pub min_reported_value: String,
     pub revocable: bool,

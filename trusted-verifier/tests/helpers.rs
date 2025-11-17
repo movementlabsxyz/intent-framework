@@ -84,7 +84,7 @@ pub fn build_test_config_with_evm() -> Config {
 pub fn create_base_request_intent() -> RequestIntentEvent {
     RequestIntentEvent {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        issuer: "0xalice".to_string(),
+        requester: "0xalice".to_string(),
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(),
@@ -137,7 +137,7 @@ pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
         escrow_id: "0xescrow123".to_string(),
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        issuer: "0xalice".to_string(),
+        issuer: "0xalice".to_string(), // EscrowEvent.issuer is the solver who locked funds (not the requester)
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"0xdesired_meta\"}".to_string(),

@@ -49,8 +49,8 @@ pub enum ChainType {
 pub struct RequestIntentEvent {
     /// Unique identifier for the request intent
     pub intent_id: String,
-    /// Address of the issuer who created the request intent
-    pub issuer: String,
+    /// Address of the requester who created the request intent
+    pub requester: String,
     /// Metadata of the asset being offered
     pub offered_metadata: String,
     /// Amount of the asset being offered (offered_amount from hub intent)
@@ -303,7 +303,7 @@ impl EventMonitor {
                         
                         // 🔒 CRITICAL SECURITY CHECK: Reject revocable request intents
                         if event.revocable {
-                            error!("SECURITY: Rejecting revocable request intent {} from {} - NOT safe for escrow", event.intent_id, event.issuer);
+                            error!("SECURITY: Rejecting revocable request intent {} from {} - NOT safe for escrow", event.intent_id, event.requester);
                             continue; // Skip this event - do not cache or process
                         }
                         
@@ -529,7 +529,7 @@ impl EventMonitor {
                             // OracleLimitOrderEvent doesn't have connected_chain_id (it's for escrows, not request intents)
                             intent_events.push(RequestIntentEvent {
                                 intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
-                                issuer: data.issuer.clone(),
+                                requester: data.requester.clone(),
                                 offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
                                 offered_amount: data.offered_amount.parse::<u64>()
                                     .context("Failed to parse offered amount")?,
@@ -563,7 +563,7 @@ impl EventMonitor {
                             
                             intent_events.push(RequestIntentEvent {
                                 intent_id: data.intent_id,  // Use intent_id for cross-chain linking
-                                issuer: data.issuer.clone(),
+                                requester: data.requester.clone(),
                                 offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
                                 offered_amount: data.offered_amount.parse::<u64>()
                                     .context("Failed to parse offered_amount")?,
@@ -585,6 +585,45 @@ impl EventMonitor {
         }
         
         Ok(intent_events)
+    }
+    
+    /// Polls connected chains for new escrow events.
+    /// 
+    /// This function queries connected chains (Aptos and/or EVM) for escrow initialization
+    /// events. It handles both Aptos and EVM chains if configured.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events from all connected chains
+    /// * `Err(anyhow::Error)` - Failed to poll events
+    pub async fn poll_connected_events(&self) -> Result<Vec<EscrowEvent>> {
+        let mut escrow_events = Vec::new();
+        
+        // Poll Aptos connected chain if configured
+        if let Some(_) = &self.config.connected_chain_apt {
+            match aptos::poll_aptos_escrow_events(&self.config).await {
+                Ok(mut events) => {
+                    escrow_events.append(&mut events);
+                }
+                Err(e) => {
+                    error!("Failed to poll Aptos escrow events: {}", e);
+                }
+            }
+        }
+        
+        // Poll EVM connected chain if configured
+        if let Some(_) = &self.config.connected_chain_evm {
+            match evm::poll_evm_escrow_events(&self.config).await {
+                Ok(mut events) => {
+                    escrow_events.append(&mut events);
+                }
+                Err(e) => {
+                    error!("Failed to poll EVM escrow events: {}", e);
+                }
+            }
+        }
+        
+        Ok(escrow_events)
     }
     
     

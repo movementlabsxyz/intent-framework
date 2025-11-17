@@ -10,9 +10,9 @@ This document outlines the strategy for implementing the **outflow** functionali
 
 **Current implementation:**
 
-1. **Hub Chain**: User creates cross-chain request intent (tokens locked on connected chain, desired on hub)
-2. **Connected Chain**: User creates escrow with tokens locked
-3. **Hub Chain**: Solver fulfills intent by providing desired tokens to user on hub
+1. **Hub Chain**: Requester creates cross-chain request intent (tokens locked on connected chain, desired on hub)
+2. **Connected Chain**: Requester creates escrow with tokens locked
+3. **Hub Chain**: Solver fulfills intent by providing desired tokens to requester on hub
 4. **Verifier**: Validates fulfillment and generates approval signature
 5. **Connected Chain**: Escrow released to reserved solver using verifier signature
 
@@ -22,7 +22,7 @@ This document outlines the strategy for implementing the **outflow** functionali
 
 **What we need to implement:**
 
-1. **Hub Chain**: User creates request intent with tokens **locked on hub** (user tokens going IN to hub)
+1. **Hub Chain**: Requester creates request intent with tokens **locked on hub** (requester tokens going IN to hub)
 2. **Connected Chain**: Solver creates **connected_chain_fulfill** transaction that **immediately** transfers desired tokens directly to requester address (connected chain) (single transaction, includes `intent_id` as metadata, no escrow, no verifier involvement)
 3. **Verifier**: Receives transaction hash from solver, queries transaction by hash, extracts `intent_id` and validates transaction matches intent requirements, then generates approval signature
 4. **Hub Chain**: Solver fulfills hub intent using oracle-guarded intent mechanism with verifier signature (unlocks tokens to reserved solver)
@@ -52,7 +52,7 @@ The verifier's role is **only** to:
 
 ### Hub Chain Request Intent
 
-- User locks tokens on hub chain (opposite of current flow)
+- Requester locks tokens on hub chain (opposite of current flow)
 - Intent specifies:
   - `offered_amount`: Amount locked on hub chain
   - `offered_chain_id`: Hub chain ID (where tokens are locked)
@@ -247,7 +247,7 @@ The verifier's role is **only** to:
      - All standard cross-chain intent parameters
      - `requester_address_connected_chain`: Address on connected chain where solver sends tokens
      - `verifier_public_key`: Verifier's public key for `OracleSignatureRequirement`
-   - Withdraws actual tokens from user (tokens locked on hub, not 0)
+   - Withdraws actual tokens from requester (tokens locked on hub, not 0)
    - Creates `OracleGuardedLimitOrder` with `requester_address_connected_chain` field (needs struct extension)
    - Sets `revocable = false` (critical for cross-chain safety)
    - Returns `Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>`
@@ -367,7 +367,7 @@ The verifier's role is **only** to:
 2. **Create outflow request intent wrapper function**:
    - `create_outflow_request_intent()` in `fa_intent_cross_chain.move`
    - Uses `fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement()`
-   - Withdraws actual tokens from user (tokens locked on hub)
+   - Withdraws actual tokens from requester (tokens locked on hub)
    - Creates `OracleGuardedLimitOrder` (requires verifier signature for fulfillment)
    - Adds `requester_address_connected_chain` parameter
 

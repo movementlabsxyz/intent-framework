@@ -85,7 +85,7 @@ module mvmt_intent::fa_entryflow_tests {
         offerer = @0xcafe,
         solver = @0xdead
     )]
-    /// Integration-style test exercising user and solver transactions end-to-end.
+    /// Integration-style test exercising requester and solver transactions end-to-end.
     fun test_fa_limit_order(
         aptos_framework: &signer,
         offerer: &signer,

@@ -13,5 +13,5 @@ Infrastructure setup for running chains for development and testing.
 
 ## E2E Tests
 
-- **[Aptos E2E Tests](./e2e-tests-apt/README.md)** - Tests Aptos-only cross-chain intents (Chain 1 → Chain 2)
-- **[EVM E2E Tests](./e2e-tests-evm/README.md)** - Tests mixed-chain intents (Aptos Chain 1 → EVM Chain 3)
+- **[Move VM E2E Tests](./e2e-tests-mvm/README.md)** - Tests Move VM-only cross-chain intents (Chain 1 → Chain 2)
+- **[EVM E2E Tests](./e2e-tests-evm/README.md)** - Tests mixed-chain intents (Move VM Chain 1 → EVM Chain 3)

@@ -275,8 +275,11 @@ pub async fn validate_request_intent_fulfillment(monitor: &EventMonitor, escrow_
     );
 
     let cache = monitor.event_cache.read().await;
-    let matching_request_intent =
-        cache.iter().find(|request_intent| request_intent.intent_id == escrow_event.intent_id);
+    // Normalize intent IDs for comparison (handles leading zero differences)
+    let escrow_intent_id_normalized = crate::monitor::generic::normalize_intent_id(&escrow_event.intent_id);
+    let matching_request_intent = cache.iter().find(|request_intent| {
+        crate::monitor::generic::normalize_intent_id(&request_intent.intent_id) == escrow_intent_id_normalized
+    });
 
     match matching_request_intent {
         Some(request_intent) => {
@@ -372,7 +375,11 @@ pub async fn validate_request_intent_fulfillment(monitor: &EventMonitor, escrow_
 /// before hub fulfillment occurs.
 pub async fn validate_and_approve_fulfillment(monitor: &EventMonitor, fulfillment: &FulfillmentEvent) -> Result<()> {
     let escrow_cache = monitor.escrow_cache.read().await;
-    let matching_escrow = escrow_cache.iter().find(|escrow| escrow.intent_id == fulfillment.intent_id);
+    // Normalize intent IDs for comparison (handles leading zero differences)
+    let fulfillment_intent_id_normalized = crate::monitor::generic::normalize_intent_id(&fulfillment.intent_id);
+    let matching_escrow = escrow_cache.iter().find(|escrow| {
+        crate::monitor::generic::normalize_intent_id(&escrow.intent_id) == fulfillment_intent_id_normalized
+    });
 
     // Find matching escrow in cache
     let (escrow_id, is_evm_escrow) = match matching_escrow {

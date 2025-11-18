@@ -4,7 +4,7 @@
 # This file MUST be sourced AFTER util.sh
 # Usage: 
 #   source "$(dirname "$0")/../util.sh"
-#   source "$(dirname "$0")/../util_apt.sh"
+#   source "$(dirname "$0")/../util_mvm.sh"
 #
 # Note: This file depends on functions from util.sh (log, log_and_echo, setup_project_root, etc.)
 

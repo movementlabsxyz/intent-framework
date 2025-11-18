@@ -15,7 +15,7 @@ use ethereum_types::U256;
     name = "connected_chain_tx_template", // Binary name shown in help output
     author,  // Populated from Cargo package metadata
     version, // Uses crate version for `--version`
-    about = "Generate Aptos/EVM connected-chain transfer templates with embedded intent_id metadata"
+    about = "Generate Move VM/EVM connected-chain transfer templates with embedded intent_id metadata"
 )]
 struct Args {
     /// Target connected chain type
@@ -26,7 +26,7 @@ struct Args {
     #[arg(long)]
     recipient: String,
 
-    /// Amount to transfer (base units). Parsed as u64 for Aptos, U256 for EVM.
+    /// Amount to transfer (base units). Parsed as u64 for Move VM, U256 for EVM.
     #[arg(long)]
     amount: String,
 
@@ -34,7 +34,7 @@ struct Args {
     #[arg(long, value_name = "0x...")]
     intent_id: String,
 
-    /// Metadata object address (required for Aptos transfers)
+    /// Metadata object address (required for Move VM transfers)
     #[arg(long)]
     metadata: Option<String>,
 
@@ -42,7 +42,7 @@ struct Args {
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
 enum ChainType {
-    Aptos,
+    Mvm,
     Evm,
 }
 
@@ -50,20 +50,20 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.chain {
-        ChainType::Aptos => generate_aptos_template(&args),
+        ChainType::Mvm => generate_mvm_template(&args),
         ChainType::Evm => generate_evm_template(&args),
     }
 }
 
-/// Generates Aptos CLI command to call the on-chain transfer_with_intent_id function.
+/// Generates Move VM CLI command to call the on-chain transfer_with_intent_id function.
 /// 
 /// This function calls the on-chain utils::transfer_with_intent_id() entry function
 /// which includes intent_id as a parameter so the verifier can extract it from the
 /// transaction payload when querying by transaction hash.
 /// 
 /// **Why this approach differs from EVM:**
-/// Aptos allows us to create a contract function that transfers tokens from the solver's
-/// account to the recipient in one call. This is possible because Aptos's
+/// Move VM allows us to create a contract function that transfers tokens from the solver's
+/// account to the recipient in one call. This is possible because Move VM's
 /// `primary_fungible_store` framework supports withdrawing from one account and depositing
 /// to another within a single function call. By including intent_id as an explicit parameter
 /// in this custom function, we ensure it's part of the transaction payload and can be
@@ -71,24 +71,24 @@ fn main() -> Result<()> {
 /// standard ERC20 tokens from the solver's account (without requiring approval/transferFrom),
 /// so the solver must call transfer() directly from their account and append intent_id as
 /// extra calldata.
-fn generate_aptos_template(args: &Args) -> Result<()> {
+fn generate_mvm_template(args: &Args) -> Result<()> {
     let metadata = args
         .metadata
         .as_ref()
-        .context("--metadata is required for --chain aptos")?;
+        .context("--metadata is required for --chain mvm")?;
 
     // Normalize all addresses to lowercase hex with 0x prefix
     let metadata_addr = normalize_address(metadata)?;
     let recipient_addr = normalize_address(&args.recipient)?;
     let intent_id_addr = normalize_address(&args.intent_id)?;
     
-    // Parse amount as u64 for Aptos (base units)
+    // Parse amount as u64 for Move VM (base units)
     let amount: u64 = args
         .amount
         .parse()
-        .context("--amount must be a u64 when --chain aptos")?;
+        .context("--amount must be a u64 when --chain mvm")?;
 
-    println!("=== Connected Aptos Chain : Outflow fulfill transaction ===\n");
+    println!("=== Connected Move VM Chain : Outflow fulfill transaction ===\n");
     println!("Recipient: {}", recipient_addr);
     println!("Amount   : {} (u64 base units)", amount);
     println!("Intent ID: {}", intent_id_addr);

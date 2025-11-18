@@ -3,7 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
-source "$SCRIPT_DIR/../util_apt.sh"
+source "$SCRIPT_DIR/../util_mvm.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -256,8 +256,8 @@ else
                 continue
             fi
             
-            # Verify escrow_id is a valid Aptos object address format
-            # Aptos addresses: 0x followed by 1-64 hex characters (3-66 chars total)
+            # Verify escrow_id is a valid Move VM object address format
+            # Move VM addresses: 0x followed by 1-64 hex characters (3-66 chars total)
             # Object addresses can be shorter than 64 hex chars (leading zeros may be omitted)
             if [ ${#ESCROW_ID} -lt 3 ] || [ ${#ESCROW_ID} -gt 66 ] || ! echo "$ESCROW_ID" | grep -qE '^0x[0-9a-fA-F]{1,64}$'; then
                 log_and_echo "   ❌ ERROR: escrow_id from approval is invalid: $ESCROW_ID"

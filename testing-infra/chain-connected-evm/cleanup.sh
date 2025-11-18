@@ -20,7 +20,7 @@ log_and_echo "🧹 Cleaning up chains and processes..."
 
 ./testing-infra/chain-connected-evm/stop-chain.sh || true
 ./testing-infra/chain-hub/stop-chain.sh
-./testing-infra/chain-connected-apt/stop-chain.sh
+./testing-infra/chain-connected-mvm/stop-chain.sh
 stop_verifier
 
 log_and_echo "✅ Cleanup complete"

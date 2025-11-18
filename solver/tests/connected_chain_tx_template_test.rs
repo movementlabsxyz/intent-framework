@@ -82,9 +82,9 @@ mod tests {
     }
 
     #[test]
-    fn test_normalize_address_aptos_format() {
-        // What is tested: Full 64-character Aptos address format is normalized correctly
-        // Why: Aptos addresses are 64 hex chars; we must handle full-length addresses
+    fn test_normalize_address_mvm_format() {
+        // What is tested: Full 64-character Move VM address format is normalized correctly
+        // Why: Move VM addresses are 64 hex chars; we must handle full-length addresses
         let addr = "0x7a4086988c99f3961fc8505fc4de995706fc5d3a6f5a3c55f95e49cae4b5bf45";
         let result = normalize_address(addr).unwrap();
         assert_eq!(result, addr.to_lowercase());
@@ -134,10 +134,10 @@ mod tests {
     }
 
     // ============================================================================
-    // Aptos Command Generation Tests
+    // Move VM Command Generation Tests
     // ============================================================================
 
-    fn generate_aptos_command(recipient: &str, metadata: &str, amount: u64, intent_id: &str) -> Result<String, String> {
+    fn generate_mvm_command(recipient: &str, metadata: &str, amount: u64, intent_id: &str) -> Result<String, String> {
         let recipient_addr = normalize_address(recipient)?;
         let metadata_addr = normalize_address(metadata)?;
         let intent_id_addr = normalize_address(intent_id)?;
@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn test_aptos_command_generation() {
+    fn test_mvm_command_generation() {
         // What is tested: Complete aptos move run command is generated with all required arguments
         // Why: Solvers need a ready-to-use command; format must match Aptos CLI expectations
         let recipient = "0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
@@ -157,7 +157,7 @@ mod tests {
         let amount = 25000000u64;
         let intent_id = "0x5678123456789012345678901234567890123456789012345678901234567890";
         
-        let result = generate_aptos_command(recipient, metadata, amount, intent_id).unwrap();
+        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
         
         // Should contain the function call
         assert!(result.contains("utils::transfer_with_intent_id"));
@@ -172,15 +172,15 @@ mod tests {
     }
 
     #[test]
-    fn test_aptos_command_address_normalization() {
+    fn test_mvm_command_address_normalization() {
         // What is tested: All addresses in command are normalized to lowercase with 0x prefix
-        // Why: Aptos CLI requires consistent address format; normalization prevents errors
+        // Why: Aptos CLI requires consistent address format; normalization prevents errors (Move VM addresses)
         let recipient = "0xCAFE1234"; // Uppercase
         let metadata = "1234567890abcdef"; // No prefix
         let amount = 1000u64;
         let intent_id = "0x5678";
         
-        let result = generate_aptos_command(recipient, metadata, amount, intent_id).unwrap();
+        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
         
         // All addresses should be normalized to lowercase with 0x prefix
         assert!(result.contains("address:0xcafe1234"));
@@ -189,7 +189,7 @@ mod tests {
     }
 
     #[test]
-    fn test_aptos_command_zero_amount() {
+    fn test_mvm_command_zero_amount() {
         // What is tested: Zero amount is handled correctly in command generation
         // Why: Edge case that should work (though not practical for transfers)
         let recipient = "0x1234";
@@ -197,14 +197,14 @@ mod tests {
         let amount = 0u64;
         let intent_id = "0x9abc";
         
-        let result = generate_aptos_command(recipient, metadata, amount, intent_id).unwrap();
+        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
         
         // Should handle zero amount
         assert!(result.contains("u64:0"));
     }
 
     #[test]
-    fn test_aptos_command_large_amount() {
+    fn test_mvm_command_large_amount() {
         // What is tested: Maximum u64 value is handled correctly
         // Why: Ensures large token amounts don't cause overflow or formatting issues
         let recipient = "0x1234";
@@ -212,14 +212,14 @@ mod tests {
         let amount = u64::MAX;
         let intent_id = "0x9abc";
         
-        let result = generate_aptos_command(recipient, metadata, amount, intent_id).unwrap();
+        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
         
         // Should handle max u64 value
         assert!(result.contains(&format!("u64:{}", u64::MAX)));
     }
 
     #[test]
-    fn test_aptos_command_invalid_recipient() {
+    fn test_mvm_command_invalid_recipient() {
         // What is tested: Invalid recipient address is rejected with error
         // Why: Invalid addresses should fail early before command generation
         let recipient = "0xinvalid";
@@ -227,27 +227,27 @@ mod tests {
         let amount = 1000u64;
         let intent_id = "0x9abc";
         
-        let result = generate_aptos_command(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
 
     #[test]
-    fn test_aptos_command_invalid_metadata() {
+    fn test_mvm_command_invalid_metadata() {
         // What is tested: Invalid metadata address is rejected with error
-        // Why: Metadata is required for Aptos; invalid format should be caught
+        // Why: Metadata is required for Move VM; invalid format should be caught
         let recipient = "0x1234";
         let metadata = "0xinvalid";
         let amount = 1000u64;
         let intent_id = "0x9abc";
         
-        let result = generate_aptos_command(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
 
     #[test]
-    fn test_aptos_command_invalid_intent_id() {
+    fn test_mvm_command_invalid_intent_id() {
         // What is tested: Invalid intent_id address is rejected with error
         // Why: Intent ID must be valid hex address for verifier tracking
         let recipient = "0x1234";
@@ -255,16 +255,16 @@ mod tests {
         let amount = 1000u64;
         let intent_id = "0xinvalid";
         
-        let result = generate_aptos_command(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
 
     #[test]
-    fn test_aptos_command_invalid_amount_parsing() {
+    fn test_mvm_command_invalid_amount_parsing() {
         // What is tested: Non-numeric amount string is rejected
         // Why: Amount must parse as u64; invalid strings should fail with clear error
-        fn generate_aptos_command_with_string_amount(recipient: &str, metadata: &str, amount: &str, intent_id: &str) -> Result<String, String> {
+        fn generate_mvm_command_with_string_amount(recipient: &str, metadata: &str, amount: &str, intent_id: &str) -> Result<String, String> {
             let recipient_addr = normalize_address(recipient)?;
             let metadata_addr = normalize_address(metadata)?;
             let intent_id_addr = normalize_address(intent_id)?;
@@ -283,7 +283,7 @@ mod tests {
         let amount = "not_a_number";
         let intent_id = "0x9abc";
         
-        let result = generate_aptos_command_with_string_amount(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command_with_string_amount(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid amount"));
     }

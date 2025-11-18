@@ -48,8 +48,9 @@ pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
                     {
                         let intent_id = event.intent_id.clone();
                         let mut cache = monitor.event_cache.write().await;
-                        // Check if this intent_id already exists in the cache
-                        if !cache.iter().any(|cached| cached.intent_id == intent_id) {
+                        // Check if this intent_id already exists in the cache (normalize for comparison)
+                        let normalized_intent_id = crate::monitor::generic::normalize_intent_id(&intent_id);
+                        if !cache.iter().any(|cached| crate::monitor::generic::normalize_intent_id(&cached.intent_id) == normalized_intent_id) {
                             cache.push(event);
                         }
                     }

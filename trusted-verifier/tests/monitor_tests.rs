@@ -20,6 +20,50 @@ fn is_safe_for_escrow(event: &RequestIntentEvent) -> bool {
 
 
 // ============================================================================
+// INTENT ID NORMALIZATION TESTS
+// ============================================================================
+
+/// Test that normalize_intent_id handles leading zeros correctly
+/// What is tested: Intent IDs with leading zeros are normalized to match those without
+/// Why: EVM and Move VM may format the same intent_id differently (with/without leading zeros)
+#[test]
+fn test_normalize_intent_id_leading_zeros() {
+    use trusted_verifier::monitor::normalize_intent_id;
+    
+    // Test case from the actual error: one has leading zero, one doesn't
+    let with_leading_zero = "0x0911ddf3c2ef882c7c42af3f65b2c32b3f26fde142cf30afd2ea58f8a16ef9b7";
+    let without_leading_zero = "0x911ddf3c2ef882c7c42af3f65b2c32b3f26fde142cf30afd2ea58f8a16ef9b7";
+    
+    let normalized_with = normalize_intent_id(with_leading_zero);
+    let normalized_without = normalize_intent_id(without_leading_zero);
+    
+    assert_eq!(normalized_with, normalized_without, "Intent IDs with and without leading zeros should normalize to the same value");
+    assert_eq!(normalized_with, "0x911ddf3c2ef882c7c42af3f65b2c32b3f26fde142cf30afd2ea58f8a16ef9b7");
+}
+
+/// Test that normalize_intent_id handles all-zero intent IDs
+/// What is tested: Intent ID with all zeros is normalized correctly
+/// Why: Edge case that should be handled gracefully
+#[test]
+fn test_normalize_intent_id_all_zeros() {
+    use trusted_verifier::monitor::normalize_intent_id;
+    
+    assert_eq!(normalize_intent_id("0x0000"), "0x0");
+    assert_eq!(normalize_intent_id("0x0"), "0x0");
+}
+
+/// Test that normalize_intent_id handles case differences
+/// What is tested: Uppercase hex characters are normalized to lowercase
+/// Why: Ensures consistent comparison regardless of input case
+#[test]
+fn test_normalize_intent_id_case() {
+    use trusted_verifier::monitor::normalize_intent_id;
+    
+    assert_eq!(normalize_intent_id("0xABCDEF"), "0xabcdef");
+    assert_eq!(normalize_intent_id("0xabcdef"), "0xabcdef");
+}
+
+// ============================================================================
 // TESTS
 // ============================================================================
 

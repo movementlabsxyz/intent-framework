@@ -152,25 +152,25 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
 
 **Flow**:
 
-1. **Hub Chain - Intent Creation** (`testing-infra/e2e-tests-apt/submit-hub-intent.sh`):
+1. **Hub Chain - Intent Creation** (`testing-infra/e2e-tests-mvm/submit-hub-intent.sh`):
    - Requester creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
    - Intent specifies desired USD token metadata and amount (e.g., 100M tokens)
    - Intent uses `offered_amount=0` since tokens are locked on connected chain
    - Intent is **reserved** for a specific solver: solver must be registered in the solver registry, signs the intent off-chain, and the signature is verified on-chain using the solver's public key from the registry
    - The solver's public key is looked up from the on-chain solver registry (no need to pass it explicitly)
 
-2. **Connected Chain - Escrow Creation** (`testing-infra/e2e-tests-apt/submit-escrow.sh`):
+2. **Connected Chain - Escrow Creation** (`testing-infra/e2e-tests-mvm/submit-escrow.sh`):
    - Requester locks USD tokens in escrow on connected chain using `create_escrow_from_fa()`
    - Escrow specifies reserved solver address (funds will go to this address when released)
    - Escrow links to hub intent via shared `intent_id`
    - Escrow is non-revocable (`revocable=false`)
 
-3. **Hub Chain - Intent Fulfillment** (`testing-infra/e2e-tests-apt/fulfill-hub-intent.sh`):
+3. **Hub Chain - Intent Fulfillment** (`testing-infra/e2e-tests-mvm/fulfill-hub-intent.sh`):
    - Solver monitors hub chain events and sees the intent
    - Solver provides USD tokens on hub chain using `fulfill_cross_chain_request_intent()`
    - Requester receives tokens on hub chain
 
-4. **Verifier - Validation and Approval** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
+4. **Verifier - Validation and Approval** (`testing-infra/e2e-tests-mvm/release-escrow.sh`):
    - Verifier monitors hub chain for request intent events and connected chain (Move VM or EVM) for escrow events
    - Verifier actively polls connected chains and caches escrows when created (symmetrical for both Move VM and EVM)
    - Verifier validates escrow is non-revocable (critical security check)
@@ -178,7 +178,7 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
    - Verifier validates `chain_id` matches between intent `offered_chain_id` and escrow `chain_id`
    - Verifier signs the `intent_id` to generate approval signature after hub fulfillment is confirmed (Ed25519 for Move VM, ECDSA for EVM) - signature itself is the approval
 
-5. **Connected Chain - Escrow Release** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
+5. **Connected Chain - Escrow Release** (`testing-infra/e2e-tests-mvm/release-escrow.sh`):
    - Anyone can call `complete_escrow_from_fa()` with verifier signature (signature itself is the approval)
    - Funds are transferred to the reserved solver address specified at escrow creation
    - Solver receives locked tokens on connected chain

@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Aptos Intent Framework provides a simple escrow system through the `intent_as_escrow.move` module. This abstraction makes it easy to lock tokens and wait for verifier approval. The actual swap conditions and logic happen off-chain or on another chain - this chain just locks tokens and awaits binary yes/no from the verifier.
+The Move VM Intent Framework provides a simple escrow system through the `intent_as_escrow.move` module. This abstraction makes it easy to lock tokens and wait for verifier approval. The actual swap conditions and logic happen off-chain or on another chain - this chain just locks tokens and awaits binary yes/no from the verifier.
 
 **Important**: Escrows created through `intent_as_escrow` **must** specify a reserved solver address. While the underlying `fa_intent_with_oracle` intent type supports optional reservations, escrows enforce this requirement for security (preventing signature replay attacks).
 
@@ -85,7 +85,7 @@ If escrow expires, requester can reclaim tokens
 
 ## Architecture
 
-The escrow system is deployed on a single Aptos chain. The verifier (oracle) monitors escrow conditions (possibly on other chains) and signs the `intent_id` to approve the escrow release. The signature itself is the approval.
+The escrow system is deployed on a single Move VM chain. The verifier (oracle) monitors escrow conditions (possibly on other chains) and signs the `intent_id` to approve the escrow release. The signature itself is the approval.
 
 ## Security Features
 

@@ -3,7 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
-source "$SCRIPT_DIR/../util_apt.sh"
+source "$SCRIPT_DIR/../util_mvm.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -14,7 +14,7 @@ log "🛑 STOPPING CONNECTED CHAIN (Chain 2)"
 log "======================================"
 
 log "🧹 Stopping Chain 2..."
-docker-compose -f testing-infra/chain-connected-apt/docker-compose-connected-chain-apt.yml -p aptos-chain2 down
+docker-compose -f testing-infra/chain-connected-mvm/docker-compose-connected-chain-mvm.yml -p aptos-chain2 down
 
 log ""
 log "🧹 Cleaning up Chain 2 Aptos CLI profiles..."

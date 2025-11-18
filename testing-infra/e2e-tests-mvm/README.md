@@ -1,11 +1,11 @@
-# Aptos E2E Tests
+# Move VM E2E Tests
 
-Tests Aptos-only cross-chain intent framework: intents on Chain 1 (hub) and escrows on Chain 2 (connected).
+Tests Move VM-only cross-chain intent framework: intents on Chain 1 (hub) and escrows on Chain 2 (connected).
 
 ## Quick Start
 
 ```bash
-./testing-infra/e2e-tests-apt/run-tests.sh
+./testing-infra/e2e-tests-mvm/run-tests.sh
 ```
 
 ## What's Tested

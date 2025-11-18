@@ -72,8 +72,9 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     {
                         let intent_id = fulfillment_event.intent_id.clone();
                         let mut fulfillment_cache = monitor.fulfillment_cache.write().await;
-                        // Check if this intent_id already exists in the cache
-                        if !fulfillment_cache.iter().any(|cached| cached.intent_id == intent_id) {
+                        // Check if this intent_id already exists in the cache (normalize for comparison)
+                        let normalized_intent_id = crate::monitor::generic::normalize_intent_id(&intent_id);
+                        if !fulfillment_cache.iter().any(|cached| crate::monitor::generic::normalize_intent_id(&cached.intent_id) == normalized_intent_id) {
                             fulfillment_cache.push(fulfillment_event.clone());
                             info!("Received fulfillment event for request intent {} by solver {}", data.intent_id, data.solver);
                         } else {

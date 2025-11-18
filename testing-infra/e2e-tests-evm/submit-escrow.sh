@@ -59,7 +59,7 @@ log "   - Exchange rate: 1000 ETH = 1 APT"
 
 cd evm-intent-framework
 
-# Convert intent_id from Aptos format to EVM uint256
+# Convert intent_id from Move VM format to EVM uint256
 INTENT_ID_EVM=$(convert_intent_id_to_evm "$INTENT_ID")
 log "     Intent ID (EVM): $INTENT_ID_EVM"
 

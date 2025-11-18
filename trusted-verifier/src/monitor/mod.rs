@@ -22,7 +22,8 @@ mod inflow_evm;
 mod outflow_mvm;
 mod outflow_evm;
 
-// Re-export public types
+// Re-export public types and functions
 pub use generic::{
     ChainType, EscrowApproval, EscrowEvent, EventMonitor, FulfillmentEvent, RequestIntentEvent,
+    normalize_intent_id,
 };

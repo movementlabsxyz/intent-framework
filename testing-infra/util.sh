@@ -26,7 +26,7 @@ setup_project_root() {
     # Scripts in testing-infra/*/* need to go up 2 levels
     # Scripts in testing-infra/* need to go up 1 level
     if [[ "$script_dir" == *"/testing-infra/"*"/"* ]]; then
-        # Script is in a subdirectory (e.g., testing-infra/e2e-tests-apt/)
+        # Script is in a subdirectory (e.g., testing-infra/e2e-tests-mvm/)
         PROJECT_ROOT="$( cd "$script_dir/../../.." && pwd )"
     else
         # Script is directly in testing-infra/
@@ -79,9 +79,9 @@ display_balances_hub() {
     log_and_echo "      Bob:   $bob1 Octas"
 }
 
-# Display balances for Chain 2 (Connected Aptos)
+# Display balances for Chain 2 (Connected Move VM)
 # Usage: display_balances_connected_apt
-# Fetches and displays Alice and Bob balances on the Connected Aptos chain
+# Fetches and displays Alice and Bob balances on the Connected Move VM chain
 # Only displays if Chain 2 profiles exist (skips silently if they don't)
 display_balances_connected_apt() {
     # Check if Chain 2 profiles exist

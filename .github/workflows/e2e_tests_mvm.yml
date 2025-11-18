@@ -1,4 +1,4 @@
-name: "E2E Tests (Connected Aptos Chain)"
+name: "E2E Tests (Connected Move VM Chain)"
 on:
   pull_request:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  e2e-tests-apt:
+  e2e-tests-mvm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,5 +22,5 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
       
       - name: Run E2E integration tests
-        run: nix develop --command bash -c './testing-infra/e2e-tests-apt/run-tests.sh'
+        run: nix develop --command bash -c './testing-infra/e2e-tests-mvm/run-tests.sh'
 

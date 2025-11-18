@@ -133,11 +133,11 @@ Enter the environment with `nix develop` from the project root.
 
 ### Local Chain Setup
 
-Deploy the Intent Framework to a local Aptos network:
+Deploy the Intent Framework to a local Move VM network:
 
 ```bash
 # 1. Setup local chain (optional)
-./testing-infra/connected-chain-apt/setup-dual-chains.sh
+./testing-infra/chain-connected-mvm/setup-chain.sh
 
 # 2. Configure Aptos CLI to use local chain (port 8080)
 aptos init --profile local --network local

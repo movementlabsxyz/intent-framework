@@ -30,4 +30,5 @@ pub use generic::{
 pub use outflow_mvm::extract_mvm_fulfillment_params;
 pub use outflow_evm::extract_evm_fulfillment_params;
 pub use outflow_generic::validate_outflow_fulfillment;
-pub use inflow_generic::validate_request_intent_fulfillment;
+// Note: validate_request_intent_fulfillment is used internally but not re-exported
+// Use trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment if needed

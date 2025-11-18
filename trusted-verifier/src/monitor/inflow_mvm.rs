@@ -23,14 +23,14 @@ use crate::monitor::generic::{EscrowEvent, ChainType};
 /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
 /// * `Err(anyhow::Error)` - Failed to poll events
 pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>> {
-    let connected_chain_apt = config.connected_chain_apt.as_ref()
+    let connected_chain_mvm = config.connected_chain_mvm.as_ref()
         .ok_or_else(|| anyhow::anyhow!("No connected Move VM chain configured"))?;
     
     // Create Move VM client for connected chain
-    let client = MvmClient::new(&connected_chain_apt.rpc_url)?;
+    let client = MvmClient::new(&connected_chain_mvm.rpc_url)?;
     
     // Query events from known test accounts
-    let known_accounts = connected_chain_apt.known_accounts.as_ref()
+    let known_accounts = connected_chain_mvm.known_accounts.as_ref()
         .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected Move VM chain"))?;
     
     let mut escrow_events = Vec::new();
@@ -56,7 +56,7 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
                     .context("Failed to parse OracleLimitOrderEvent as escrow")?;
                 
                 // Query reserved solver address from escrow object (if reserved)
-                let reserved_solver = client.get_intent_solver(&data.intent_address, &connected_chain_apt.escrow_module_address.as_ref().unwrap_or(&connected_chain_apt.intent_module_address))
+                let reserved_solver = client.get_intent_solver(&data.intent_address, &connected_chain_mvm.escrow_module_address.as_ref().unwrap_or(&connected_chain_mvm.intent_module_address))
                     .await
                     .ok()
                     .flatten();
@@ -75,7 +75,7 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
                         .context("Failed to parse expiry time")?,
                     revocable: data.revocable,
                     reserved_solver,
-                    chain_id: connected_chain_apt.chain_id, // Chain ID from config
+                    chain_id: connected_chain_mvm.chain_id, // Chain ID from config
                     chain_type: ChainType::Mvm, // This escrow came from Move VM monitoring
                     timestamp,
                 });

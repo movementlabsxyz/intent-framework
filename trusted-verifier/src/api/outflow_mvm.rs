@@ -30,7 +30,7 @@ pub async fn query_mvm_fulfillment_transaction(
     use crate::validator::extract_mvm_fulfillment_params;
     
     // Get Move VM client from config
-    let mvm_config = validator.config().connected_chain_apt.as_ref()
+    let mvm_config = validator.config().connected_chain_mvm.as_ref()
         .ok_or_else(|| "Move VM chain not configured".to_string())?;
     
     let mvm_client = MvmClient::new(&mvm_config.rpc_url)

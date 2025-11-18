@@ -33,7 +33,7 @@ pub fn build_test_config() -> Config {
             escrow_module_address: None,
             known_accounts: Some(vec!["0x1".to_string()]),
         },
-        connected_chain_apt: Some(ChainConfig {
+        connected_chain_mvm: Some(ChainConfig {
             name: "connected".to_string(),
             rpc_url: "http://127.0.0.1:18082".to_string(),
             chain_id: 2,
@@ -62,6 +62,7 @@ pub fn build_test_config() -> Config {
 pub fn build_test_config_with_evm() -> Config {
     let mut config = build_test_config();
     config.connected_chain_evm = Some(EvmChainConfig {
+        name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(), // EVM contract address (40 hex chars)
         chain_id: 31337,

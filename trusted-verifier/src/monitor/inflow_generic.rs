@@ -58,7 +58,7 @@ use super::inflow_evm;
 /// 
 /// Returns early if no connected Move VM chain is configured.
 pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
-    let connected_chain_apt = match &monitor.config.connected_chain_apt {
+    let connected_chain_mvm = match &monitor.config.connected_chain_mvm {
         Some(chain) => chain,
         None => {
             info!("No connected Move VM chain configured, skipping connected chain monitoring");
@@ -68,7 +68,7 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
 
     info!(
         "Starting connected Move VM chain monitoring for escrow events on {}",
-        connected_chain_apt.name
+        connected_chain_mvm.name
     );
 
     loop {
@@ -140,8 +140,8 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
     };
 
     info!(
-        "Starting connected EVM chain monitoring for escrow events on chain_id {}",
-        connected_chain_evm.chain_id
+        "Starting connected EVM chain monitoring for escrow events on {}",
+        connected_chain_evm.name
     );
 
     loop {
@@ -208,7 +208,7 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
 pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowEvent>> {
     let mut escrow_events = Vec::new();
 
-    if let Some(_) = &monitor.config.connected_chain_apt {
+    if let Some(_) = &monitor.config.connected_chain_mvm {
         match inflow_mvm::poll_mvm_escrow_events(&monitor.config).await {
             Ok(mut events) => {
                 escrow_events.append(&mut events);

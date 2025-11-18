@@ -24,5 +24,7 @@ mod inflow_evm;
 mod outflow_mvm;
 mod outflow_evm;
 
-// Re-export generic structures and ApiServer for convenience
-pub use generic::{ApiResponse, ApiServer};
+// Re-export ApiServer for convenience
+pub use generic::ApiServer;
+// Note: ApiResponse is used internally but not re-exported
+// Use crate::api::generic::ApiResponse if needed

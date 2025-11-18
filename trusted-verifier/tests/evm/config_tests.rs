@@ -16,12 +16,14 @@ fn test_evm_chain_config_structure() {
     use trusted_verifier::config::EvmChainConfig;
     
     let evm_config = EvmChainConfig {
+        name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
         chain_id: 31337,
         verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
     };
     
+    assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(evm_config.escrow_contract_address, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
     assert_eq!(evm_config.chain_id, 31337);
@@ -36,6 +38,7 @@ fn test_connected_chain_evm_with_values() {
     let mut config = Config::default();
     
     config.connected_chain_evm = Some(EvmChainConfig {
+        name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
         chain_id: 31337,
@@ -44,6 +47,7 @@ fn test_connected_chain_evm_with_values() {
     
     assert!(config.connected_chain_evm.is_some());
     let evm_config = config.connected_chain_evm.as_ref().unwrap();
+    assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(evm_config.escrow_contract_address, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
     assert_eq!(evm_config.chain_id, 31337);
@@ -65,6 +69,7 @@ fn test_evm_config_serialization() {
     // Verify EVM config fields
     assert!(deserialized.connected_chain_evm.is_some());
     let evm_config = deserialized.connected_chain_evm.as_ref().unwrap();
+    assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(evm_config.escrow_contract_address, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
     assert_eq!(evm_config.chain_id, 31337);
@@ -80,12 +85,14 @@ fn test_evm_chain_config_with_all_fields() {
     assert!(config.connected_chain_evm.is_some(), "EVM chain should be configured");
     
     let evm_config = config.connected_chain_evm.as_ref().unwrap();
+    assert!(!evm_config.name.is_empty(), "Name should be set");
     assert!(!evm_config.rpc_url.is_empty(), "RPC URL should be set");
     assert!(!evm_config.escrow_contract_address.is_empty(), "Escrow contract address should be set");
     assert!(evm_config.chain_id > 0, "Chain ID should be set");
     assert!(!evm_config.verifier_address.is_empty(), "Verifier address should be set");
     
     // Verify specific values from build_test_config_with_evm
+    assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(evm_config.escrow_contract_address, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
     assert_eq!(evm_config.chain_id, 31337);
@@ -103,6 +110,7 @@ fn test_evm_config_loading() {
     
     // Verify all required fields are present
     let evm_config = config.connected_chain_evm.as_ref().unwrap();
+    assert!(!evm_config.name.is_empty());
     assert!(!evm_config.rpc_url.is_empty());
     assert!(!evm_config.escrow_contract_address.is_empty());
     assert!(evm_config.chain_id > 0);

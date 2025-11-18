@@ -250,7 +250,7 @@ impl EventMonitor {
         let hub_monitor = outflow_generic::monitor_hub_chain(self);
         
         // Conditionally start connected Move VM chain monitoring if configured - for inflow intents
-        if let Some(_) = &self.config.connected_chain_apt {
+        if let Some(_) = &self.config.connected_chain_mvm {
             info!("Connected Move VM chain configured, starting connected chain monitoring");
             let mvm_monitor = inflow_generic::monitor_connected_chain(self);
             let evm_monitor = if let Some(_) = &self.config.connected_chain_evm {

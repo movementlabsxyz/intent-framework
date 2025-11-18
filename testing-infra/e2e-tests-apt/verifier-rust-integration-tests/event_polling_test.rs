@@ -3,13 +3,13 @@
 //! These tests verify event polling functionality for both chains.
 //! They require the Aptos chains to be running with deployed contracts.
 
-use trusted_verifier::aptos_client::AptosClient;
+use trusted_verifier::mvm_client::MvmClient;
 
 /// Test that we can query events on Chain 1
 /// Why: Event polling is core functionality for monitoring blockchain activity
 #[tokio::test]
 async fn test_get_account_events_chain1() {
-    let client = AptosClient::new("http://127.0.0.1:8080").unwrap();
+    let client = MvmClient::new("http://127.0.0.1:8080").unwrap();
     
     // Query events for the system account (0x1 always exists)
     let address = "0x1";
@@ -30,7 +30,7 @@ async fn test_get_account_events_chain1() {
 /// Why: Event polling is core functionality for monitoring blockchain activity
 #[tokio::test]
 async fn test_get_account_events_chain2() {
-    let client = AptosClient::new("http://127.0.0.1:8082").unwrap();
+    let client = MvmClient::new("http://127.0.0.1:8082").unwrap();
     
     // Query events for the system account (0x1 always exists)
     let address = "0x1";

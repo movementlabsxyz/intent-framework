@@ -3,7 +3,7 @@
 //! These tests verify that contracts are deployed on both chains.
 //! They require contracts to be deployed via deploy-contracts.sh
 
-use trusted_verifier::aptos_client::AptosClient;
+use trusted_verifier::mvm_client::MvmClient;
 
 /// Test that intent framework contracts are deployed on the chains
 /// Why: Verifier needs contracts to be deployed before it can monitor events
@@ -13,7 +13,7 @@ async fn test_contracts_deployed_on_chain1() {
     let config = trusted_verifier::config::Config::load()
         .expect("Failed to load verifier config - ensure config/verifier.toml exists with module addresses");
     
-    let _aptos_client = AptosClient::new("http://127.0.0.1:8080").unwrap();
+    let _mvm_client = MvmClient::new("http://127.0.0.1:8080").unwrap();
     
     // Extract the account address from the module address
     // Module address format: "0x{address}::module_name"

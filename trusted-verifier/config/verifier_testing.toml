@@ -13,17 +13,18 @@ known_accounts = ["71d612fd87129226c861233f9686601fef4afe791ec2a49c92b4bd6c33e5c
 
 # Connected Move VM Chain Configuration  
 # The connected Move VM chain is where escrow events occur and are monitored
-[connected_chain_apt]
-name = "Connected Chain Apt"
+[connected_chain_mvm]
+name = "Connected Move VM Chain"
 rpc_url = "http://127.0.0.1:8082"
 chain_id = 2
 intent_module_address = "0x4f733abc2052a89514c258cfec3cbe0e26369dac36b66255e0e37fa07c0f013a"
 escrow_module_address = "0x4f733abc2052a89514c258cfec3cbe0e26369dac36b66255e0e37fa07c0f013a"
 known_accounts = ["fe6d5e530a3efb47b5df0b3891904e97dd19ad7e91da3add3acc027126675314"]
 
-# Verifier Configuration
-# Cryptographic keys and timing parameters for the verifier
+# Connected EVM Chain Configuration
+# The connected EVM chain is where EVM escrow events occur and are monitored
 [connected_chain_evm]
+name = "Connected EVM Chain"
 rpc_url = "http://127.0.0.1:8545"
 escrow_contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 chain_id = 31337

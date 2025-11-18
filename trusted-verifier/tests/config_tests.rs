@@ -13,7 +13,7 @@ fn test_default_config_creation() {
     
     assert_eq!(config.hub_chain.name, "Hub Chain");
     assert_eq!(config.hub_chain.rpc_url, "http://127.0.0.1:8080");
-    assert!(config.connected_chain_apt.is_none(), "Default config should have no connected Move VM chain");
+    assert!(config.connected_chain_mvm.is_none(), "Default config should have no connected Move VM chain");
     assert!(config.connected_chain_evm.is_none(), "Default config should have no connected EVM chain");
 }
 
@@ -24,7 +24,7 @@ fn test_known_accounts_field() {
     let config = Config::default();
     
     assert_eq!(config.hub_chain.known_accounts, None);
-    assert!(config.connected_chain_apt.is_none());
+    assert!(config.connected_chain_mvm.is_none());
 }
 
 /// Test that known_accounts can be set to Some(vec)
@@ -38,15 +38,15 @@ fn test_known_accounts_with_values() {
     assert_eq!(config.hub_chain.known_accounts, Some(vec!["0xalice".to_string(), "0xbob".to_string()]));
 }
 
-/// Test that connected_chain_apt can be set to Some(ChainConfig)
-/// Why: Verify connected_chain_apt accepts actual values when configured
+/// Test that connected_chain_mvm can be set to Some(ChainConfig)
+/// Why: Verify connected_chain_mvm accepts actual values when configured
 #[test]
-fn test_connected_chain_apt_with_values() {
+fn test_connected_chain_mvm_with_values() {
     use trusted_verifier::config::ChainConfig;
     let mut config = Config::default();
     
-    config.connected_chain_apt = Some(ChainConfig {
-        name: "Connected Chain Apt".to_string(),
+    config.connected_chain_mvm = Some(ChainConfig {
+        name: "Connected Move VM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 2,
         intent_module_address: "0x123".to_string(),
@@ -54,8 +54,8 @@ fn test_connected_chain_apt_with_values() {
         known_accounts: Some(vec!["0xalice2".to_string(), "0xbob2".to_string()]),
     });
     
-    assert_eq!(config.connected_chain_apt.as_ref().unwrap().name, "Connected Chain Apt");
-    assert_eq!(config.connected_chain_apt.as_ref().unwrap().known_accounts, Some(vec!["0xalice2".to_string(), "0xbob2".to_string()]));
+    assert_eq!(config.connected_chain_mvm.as_ref().unwrap().name, "Connected Move VM Chain");
+    assert_eq!(config.connected_chain_mvm.as_ref().unwrap().known_accounts, Some(vec!["0xalice2".to_string(), "0xbob2".to_string()]));
 }
 
 /// Test that config can be serialized and deserialized

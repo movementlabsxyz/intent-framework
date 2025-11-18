@@ -23,7 +23,7 @@ pub struct Config {
     pub hub_chain: ChainConfig,
     /// Connected Move VM chain configuration (optional, where escrow events occur on Move VM)
     #[serde(default)]
-    pub connected_chain_apt: Option<ChainConfig>,
+    pub connected_chain_mvm: Option<ChainConfig>,
     /// Connected EVM chain configuration (optional, for escrow on EVM)
     #[serde(default)]
     pub connected_chain_evm: Option<EvmChainConfig>,
@@ -58,6 +58,8 @@ pub struct ChainConfig {
 /// Used when escrows are hosted on EVM chains instead of Move-based chains.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvmChainConfig {
+    /// Human-readable name for the chain
+    pub name: String,
     /// RPC endpoint URL for EVM chain communication
     pub rpc_url: String,
     /// Address of the IntentEscrow contract (single contract, one escrow per intentId)
@@ -151,7 +153,7 @@ impl Config {
                 escrow_module_address: None,
                 known_accounts: None, // Should be set in config/verifier.toml
             },
-            connected_chain_apt: None, // Optional connected Move VM chain configuration
+            connected_chain_mvm: None, // Optional connected Move VM chain configuration
             verifier: VerifierConfig {
                 private_key: "REPLACE_WITH_PRIVATE_KEY".to_string(),
                 public_key: "REPLACE_WITH_PUBLIC_KEY".to_string(),

@@ -64,13 +64,14 @@ pub fn extract_mvm_fulfillment_params(tx: &MvmTransaction) -> Result<Fulfillment
         return Err(anyhow::anyhow!("Invalid metadata: expected object with 'inner' field or string"));
     };
     
+    // Aptos serializes u64 values as hex strings in transaction payload arguments
     let amount_str = args[2].as_str()
-        .ok_or_else(|| anyhow::anyhow!("Invalid amount"))?;
+        .ok_or_else(|| anyhow::anyhow!("Invalid amount: expected hex string"))?;
     let amount = u64::from_str_radix(
         amount_str.strip_prefix("0x").unwrap_or(amount_str),
         16,
     )
-    .context("Failed to parse amount")?;
+    .context("Failed to parse amount from hex string")?;
     
     let intent_id = args[3].as_str()
         .ok_or_else(|| anyhow::anyhow!("Invalid intent_id"))?

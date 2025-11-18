@@ -102,13 +102,18 @@ pub fn validate_outflow_fulfillment(
         }
     }
 
-    // Validate amount matches desired_amount
-    if tx_params.amount != request_intent.desired_amount {
+    // Validate amount matches expected amount
+    // For outflow intents: desired_amount on hub is 0 (nothing desired on hub), but the actual
+    // desired amount on connected chain should match offered_amount (tokens locked on hub)
+    // This function is specifically for outflow validation, so we use offered_amount
+    let expected_amount = request_intent.offered_amount;
+    
+    if tx_params.amount != expected_amount {
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Transaction amount {} does not match request intent desired amount {}",
-                tx_params.amount, request_intent.desired_amount
+                "Transaction amount {} does not match request intent offered amount {} (tokens locked on hub)",
+                tx_params.amount, expected_amount
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });

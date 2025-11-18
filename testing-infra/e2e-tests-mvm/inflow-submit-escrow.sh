@@ -67,6 +67,8 @@ fi
 
 ORACLE_PUBLIC_KEY="0x${ORACLE_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
+CONNECTED_CHAIN_ID=2
+HUB_CHAIN_ID=1
 
 log ""
 log "🔑 Configuration:"
@@ -102,7 +104,7 @@ log "     Reserved solver (Bob): $BOB_CHAIN2_ADDRESS"
 
 aptos move run --profile alice-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
-    --args "address:${OFFERED_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_FA_METADATA_CHAIN2}" "u64:100000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS

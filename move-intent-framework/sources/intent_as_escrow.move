@@ -3,7 +3,7 @@
 /// This module provides a clean abstraction over the oracle-intent system,
 /// allowing users to create escrows with simple yes/no verifier approval.
 /// 
-/// ⚠️ **IMPORTANT**: This module uses "verifier" terminology in its public API,
+/// **IMPORTANT**: This module uses "verifier" terminology in its public API,
 /// but internally calls oracle functions from fa_intent_with_oracle.move.
 /// The verifier IS an oracle - we use oracle implementation to create verifier functionality.
 /// 
@@ -78,7 +78,7 @@ module mvmt_intent::intent_as_escrow {
             expiry_time,
             signer::address_of(requester_signer),
             requirement,
-            false, // 🔒 CRITICAL: escrow intents MUST be non-revocable for security!
+            false, // CRITICAL: escrow intents MUST be non-revocable for security!
             //      This ensures funds can ONLY be released by verifier approval/rejection
             //      Verifiers can safely trigger actions elsewhere based on deposit events
             intent_id,

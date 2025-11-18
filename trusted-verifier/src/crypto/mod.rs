@@ -7,7 +7,7 @@
 //! 
 //! ## Security Requirements
 //! 
-//! ⚠️ **CRITICAL**: All cryptographic operations must use secure random number generation
+//! **CRITICAL**: All cryptographic operations must use secure random number generation
 //! and proper key management practices. Private keys must never be exposed or logged.
 
 use anyhow::Result;

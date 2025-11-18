@@ -7,7 +7,7 @@
 //! 
 //! ## Security Requirements
 //! 
-//! ⚠️ **CRITICAL**: All validations must verify that escrow intents are **non-revocable** 
+//! **CRITICAL**: All validations must verify that escrow intents are **non-revocable** 
 //! (`revocable = false`) before issuing any approval signatures.
 
 use anyhow::Result;
@@ -106,7 +106,7 @@ impl CrossChainValidator {
     pub async fn validate_request_intent_safety(&self, request_intent: &RequestIntentEvent) -> Result<ValidationResult> {
         info!("Validating request intent safety: {}", request_intent.intent_id);
         
-        // 🔒 CRITICAL SECURITY CHECK: Verify request intent is non-revocable
+        // CRITICAL SECURITY CHECK: Verify request intent is non-revocable
         if request_intent.revocable {
             return Ok(ValidationResult {
                 valid: false,

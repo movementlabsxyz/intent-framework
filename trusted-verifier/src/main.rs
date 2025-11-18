@@ -15,7 +15,7 @@
 //! 
 //! ## Security Requirements
 //! 
-//! ⚠️ **CRITICAL**: The verifier must ensure that escrow intents are **non-revocable** 
+//! **CRITICAL**: The verifier must ensure that escrow intents are **non-revocable** 
 //! (`revocable = false`) before triggering any actions elsewhere.
 
 use anyhow::Result;

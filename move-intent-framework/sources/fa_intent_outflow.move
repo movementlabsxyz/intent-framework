@@ -198,7 +198,7 @@ module mvmt_intent::fa_intent_outflow {
             expiry_time,
             signer::address_of(requester_signer),
             requirement,
-            false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable
+            false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable
                    // Ensures consistent safety guarantees for verifiers across chains
             intent_id,
             option::some(requester_address_connected_chain), // Store where solver should send tokens on connected chain

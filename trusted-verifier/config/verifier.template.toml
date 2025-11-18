@@ -3,7 +3,7 @@
 # This file contains all configuration settings for the trusted verifier service.
 # Copy this template to verifier.toml and update the values for your environment.
 #
-# ⚠️  SECURITY WARNING: This file contains private keys and should never be committed to version control!
+# SECURITY WARNING: This file contains private keys and should never be committed to version control!
 
 # Hub Chain Configuration
 # The hub chain is where intents are created and monitored

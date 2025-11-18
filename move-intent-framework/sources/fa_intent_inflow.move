@@ -155,7 +155,7 @@ module mvmt_intent::fa_intent_inflow {
             expiry_time,
             signer::address_of(account),
             reservation_result, // Reserved for specific solver
-            false, // 🔒 CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
+            false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
                    // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
         )

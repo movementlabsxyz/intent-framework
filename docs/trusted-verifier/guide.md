@@ -7,7 +7,7 @@ This guide covers how to run the verifier locally with the dual‑chain setup, t
 File: `trusted-verifier/config/verifier.toml` (relative to project root)
 
 - **hub_chain**: `rpc_url`, `chain_id`, `intent_module_address`, `known_accounts` (required)
-- **connected_chain_apt**: `rpc_url`, `chain_id`, `intent_module_address`, `escrow_module_address`, `known_accounts` (optional, for Move VM escrow monitoring)
+- **connected_chain_mvm**: `rpc_url`, `chain_id`, `intent_module_address`, `escrow_module_address`, `known_accounts` (optional, for Move VM escrow monitoring)
 - **connected_chain_evm**: `rpc_url`, `chain_id`, `escrow_contract_address`, `verifier_address` (optional, for EVM escrow monitoring)
 - **verifier**: `private_key` (base64, 32‑byte), `public_key` (base64, 32‑byte), polling/timeout
 - **api**: `host`, `port`
@@ -15,7 +15,7 @@ File: `trusted-verifier/config/verifier.toml` (relative to project root)
 The verifier automatically monitors all configured chains concurrently:
 
 - Hub chain monitoring is always enabled
-- Move VM connected chain monitoring starts if `[connected_chain_apt]` is configured
+- Move VM connected chain monitoring starts if `[connected_chain_mvm]` is configured
 - EVM connected chain monitoring starts if `[connected_chain_evm]` is configured
 
 Keys

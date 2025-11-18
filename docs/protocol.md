@@ -275,7 +275,7 @@ Use the solver CLI to generate an `aptos move run` command that calls the on-cha
 
 ```bash
 cargo run --bin connected_chain_tx_template -- \
-  --chain aptos \
+  --chain mvm \
   --recipient 0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
   --metadata 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
   --amount 25000000 \

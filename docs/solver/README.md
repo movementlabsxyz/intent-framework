@@ -101,7 +101,7 @@ Outflow intents require solvers to execute a transfer on the connected chain and
 
 ```bash
 cargo run --bin connected_chain_tx_template -- \
-  --chain aptos \
+  --chain mvm \
   --recipient 0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
   --metadata 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
   --amount 25000000 \

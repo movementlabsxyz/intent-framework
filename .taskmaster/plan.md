@@ -9,7 +9,7 @@ This plan defines the cross-chain intent flow and supporting verifier needed to 
 - **Verifier**: observes hub intent creation and fulfillment plus connected-chain escrows, links them by `intent_id`, and produces an approval signature to release escrow after hub fulfillment is observed.
 - **Tooling**: Docker localnets for Aptos chains, Hardhat for EVM chain, Move modules for intents/escrows, Solidity contracts for EVM escrows, and a Rust verifier with REST API and auto-escrow-release integration scripts.
 
-**Note**: Hub Chain = Chain 1 (intent creation). Connected Chain = Chain 2 (Aptos escrow) or Chain 3 (EVM escrow). Verifier observes hub fulfillment first, then approves escrow release.
+**Note**: Hub Chain = Chain 1 (intent creation). Connected Chain = Chain 2 (Move VM escrow) or Chain 3 (EVM escrow). Verifier observes hub fulfillment first, then approves escrow release.
 
 ## Future Work
 

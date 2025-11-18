@@ -91,7 +91,7 @@ The verifier's role is **only** to:
 
 ## Strategy Analysis
 
-### Scenario A: Aptos Connected Chain
+### Scenario A: Move VM Connected Chain
 
 #### Current Move Intent Framework Capabilities
 
@@ -100,9 +100,9 @@ The verifier's role is **only** to:
 - `intent_as_escrow::create_escrow_from_fa()`: Creates escrow on connected chain
 - `intent_as_escrow::complete_escrow_from_fa()`: Completes escrow with verifier signature
 
-#### Implementation Approach for Outflow (Move/Aptos)
+#### Implementation Approach for Outflow (Move VM)
 
-##### Connected Chain Fulfill Transaction with Intent ID Metadata (Move/Aptos)
+##### Connected Chain Fulfill Transaction with Intent ID Metadata (Move VM)
 
 - On **connected chain**: Solver creates a **connected_chain_fulfill** transaction that:
   - **Immediately** transfers tokens directly to requester address (connected chain) using standard Move transfer functions (e.g., `primary_fungible_store::deposit()`)
@@ -114,7 +114,7 @@ The verifier's role is **only** to:
   - Verifier can extract `intent_id` from transaction payload when querying by transaction hash
 - Solver provides transaction hash to verifier (via API or off-chain communication)
 - Verifier validates:
-  - Queries transaction by hash using Aptos RPC
+  - Queries transaction by hash using Move VM RPC
   - Extracts `intent_id` from transaction metadata
   - Validates transaction parameters match intent requirements:
     - `to` address matches requester address (connected chain)
@@ -124,7 +124,7 @@ The verifier's role is **only** to:
 - On **hub chain**: Verifier generates approval signature after validation
 - Anyone with signature can fulfill the hub intent (tokens go to reserved solver)
 
-##### Advantages (Move/Aptos)
+##### Advantages (Move VM)
 
 - **No contract changes needed for transfer** - uses standard Move transfer functions
 - **Single transaction** - solver transfers tokens immediately
@@ -216,7 +216,7 @@ The verifier's role is **only** to:
    - Or use separate mapping `intent_id -> requester_address_connected_chain`
 
 3. **Define connected_chain_fulfill transaction format**:
-   - **For Move/Aptos**: Standard transfer function with `intent_id` in transaction metadata/script arguments
+   - **For Move VM**: Standard transfer function with `intent_id` in transaction metadata/script arguments
    - **For EVM**: Standard ERC20 `transfer()` with `intent_id` appended in transaction `data` field (32 bytes after function parameters)
    - Document exact transaction format specification for both chains
    - Ensure `intent_id` linking is clear and verifiable
@@ -229,7 +229,7 @@ The verifier's role is **only** to:
    - Validate all parameters match intent requirements (requester address (connected chain), amount, solver address)
    - Verify transaction was confirmed and transfer completed successfully
 
-### Task 2: Move Implementation (Aptos Connected Chain)
+### Task 2: Move Implementation (Move VM Connected Chain)
 
 1. **Create inflow request intent wrapper function**:
    - New function: `create_inflow_request_intent()` in `fa_intent_cross_chain.move`
@@ -259,7 +259,7 @@ The verifier's role is **only** to:
    - This field is required for outflow intents (must be `some`), optional for regular oracle intents (can be `none`)
 
 4. **Define connected_chain_fulfill transaction format**:
-   - Document standard transaction format for Move/Aptos
+   - Document standard transaction format for Move VM
    - Standard transfer function call (e.g., `primary_fungible_store::deposit()`)
    - `intent_id` encoded in transaction metadata/script arguments
    - Transaction format specification for solver to follow
@@ -330,7 +330,7 @@ The verifier's role is **only** to:
      - Decode transaction `data` field
      - Extract function parameters: `to` address, `amount`
      - Extract metadata: `intent_id` (bytes after function parameters)
-   - **For Move/Aptos**: Query transaction by hash using Aptos RPC
+   - **For Move VM**: Query transaction by hash using Move VM RPC
      - Extract `intent_id` from transaction metadata/script arguments
      - Extract transfer parameters from transaction payload
    - Validate all parameters match intent requirements:

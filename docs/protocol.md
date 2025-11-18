@@ -253,7 +253,7 @@ All escrows MUST specify a reserved solver address at creation:
 
 ### Cryptographic Operations
 
-**Aptos/Move Chains**:
+**Move VM Chains**:
 
 - Ed25519 signatures for verifier approvals
 - Signature over BCS-encoded `intent_id` (address) - the signature itself is the approval
@@ -269,7 +269,7 @@ All escrows MUST specify a reserved solver address at creation:
 
 For outflow intents, solvers must transfer tokens on the connected chain using a standardized transaction format that includes `intent_id` metadata for verifier tracking.
 
-### Move/Aptos Connected Chain Format
+### Move VM Connected Chain Format
 
 Use the solver CLI to generate an `aptos move run` command that calls the on-chain `utils::transfer_with_intent_id()` function directly.
 
@@ -293,7 +293,7 @@ The on-chain `utils::transfer_with_intent_id()` function:
 - Transfers tokens from the solver's account to the recipient address
 - Includes `intent_id` as an explicit parameter in the transaction payload
 
-This guarantees that every connected-chain transaction encodes `intent_id`, making it observable via Aptos RPC. The verifier later queries the transaction hash, extracts the function arguments, and matches them against the hub intent requirements.
+This guarantees that every connected-chain transaction encodes `intent_id`, making it observable via Move VM RPC. The verifier later queries the transaction hash, extracts the function arguments, and matches them against the hub intent requirements.
 
 **Note:** The intent framework module (including `utils::transfer_with_intent_id()`) must be deployed on the connected chain before solvers can use this approach.
 

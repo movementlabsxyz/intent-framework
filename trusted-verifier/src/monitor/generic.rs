@@ -1,7 +1,7 @@
 //! Generic monitor structures and EventMonitor definition
 //!
 //! This module contains shared event structures and the EventMonitor struct definition
-//! that are used across all flow types (inflow/outflow) and chain types (Aptos/EVM).
+//! that are used across all flow types (inflow/outflow) and chain types (Move VM/EVM).
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -18,12 +18,12 @@ use crate::crypto::CryptoService;
 /// Type of blockchain where an escrow or intent is located.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ChainType {
-    /// Move-based chain (e.g., Aptos)
-    Move,
+    /// Move VM-based chain (e.g., Aptos)
+    Mvm,
     /// EVM-compatible chain (e.g., Ethereum, Polygon, Arbitrum)
     Evm,
     /// Solana chain
-    Solana,
+    Svm,
 }
 
 /// Request intent creation event from the hub chain.
@@ -86,7 +86,7 @@ pub struct EscrowEvent {
     /// Whether the escrow intent can be revoked (should always be false for security)
     pub revocable: bool,
     /// Reserved solver address if the escrow is reserved (None for unreserved escrows)
-    /// For Aptos escrows: Aptos address
+    /// For Move VM escrows: Move VM address
     /// For EVM escrows: EVM address (0x-prefixed hex string)
     pub reserved_solver: Option<String>,
     /// Chain ID where this escrow is located
@@ -229,7 +229,7 @@ impl EventMonitor {
     /// 
     /// This function runs monitoring loops:
     /// 1. Hub chain monitoring for request intent events (always)
-    /// 2. Connected Aptos chain monitoring for escrow events (if configured)
+    /// 2. Connected Move VM chain monitoring for escrow events (if configured)
     /// 3. Connected EVM chain monitoring for escrow events (if configured)
     /// 
     /// The function blocks until all monitors complete (which should be never
@@ -249,10 +249,10 @@ impl EventMonitor {
         // Start hub chain monitoring (always required) - for outflow intents
         let hub_monitor = outflow_generic::monitor_hub_chain(self);
         
-        // Conditionally start connected Aptos chain monitoring if configured - for inflow intents
+        // Conditionally start connected Move VM chain monitoring if configured - for inflow intents
         if let Some(_) = &self.config.connected_chain_apt {
-            info!("Connected Aptos chain configured, starting connected chain monitoring");
-            let aptos_monitor = inflow_generic::monitor_connected_chain(self);
+            info!("Connected Move VM chain configured, starting connected chain monitoring");
+            let mvm_monitor = inflow_generic::monitor_connected_chain(self);
             let evm_monitor = if let Some(_) = &self.config.connected_chain_evm {
                 info!("Connected EVM chain configured, starting EVM chain monitoring");
                 Some(inflow_generic::monitor_evm_chain(self))
@@ -263,9 +263,9 @@ impl EventMonitor {
             
             // Run all monitors concurrently
             if let Some(evm) = evm_monitor {
-                tokio::try_join!(hub_monitor, aptos_monitor, evm)?;
+                tokio::try_join!(hub_monitor, mvm_monitor, evm)?;
             } else {
-                tokio::try_join!(hub_monitor, aptos_monitor)?;
+                tokio::try_join!(hub_monitor, mvm_monitor)?;
             }
         } else if let Some(_) = &self.config.connected_chain_evm {
             info!("Connected EVM chain configured, starting EVM chain monitoring");
@@ -296,8 +296,8 @@ impl EventMonitor {
     
     /// Polls connected chains for new escrow events.
     /// 
-    /// This function queries connected chains (Aptos and/or EVM) for escrow initialization
-    /// events. It handles both Aptos and EVM chains if configured.
+    /// This function queries connected chains (Move VM and/or EVM) for escrow initialization
+    /// events. It handles both Move VM and EVM chains if configured.
     /// 
     /// # Returns
     /// 

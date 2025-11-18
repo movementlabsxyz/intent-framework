@@ -10,14 +10,14 @@ mod test_helpers;
 use test_helpers::build_test_config_with_evm;
 
 /// Test that EVM escrow detection logic correctly identifies EVM escrows
-/// Why: Verify that escrows are correctly identified as EVM when not in Aptos cache and EVM is configured
+/// Why: Verify that escrows are correctly identified as EVM when not in Move VM cache and EVM is configured
 #[tokio::test]
 async fn test_evm_escrow_detection_logic() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_evm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
 
-    // Create a fulfillment event for an intent that doesn't exist in Aptos escrow cache
+    // Create a fulfillment event for an intent that doesn't exist in Move VM escrow cache
     // This should be detected as an EVM escrow
     let fulfillment = FulfillmentEvent {
         intent_id: "0xevm_intent_123".to_string(),
@@ -29,7 +29,7 @@ async fn test_evm_escrow_detection_logic() {
     };
 
     // The monitor should detect this as EVM escrow because:
-    // 1. It's not in the Aptos escrow cache
+    // 1. It's not in the Move VM escrow cache
     // 2. connected_chain_evm is configured
     // This will be verified by checking that ECDSA signature is created (not Ed25519)
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
@@ -79,19 +79,19 @@ async fn test_evm_escrow_ecdsa_signature_creation() {
     }
 }
 
-/// Test that EVM and Aptos escrows are correctly differentiated
-/// Why: Verify that the monitor correctly chooses ECDSA for EVM and Ed25519 for Aptos
+/// Test that EVM and Move VM escrows are correctly differentiated
+/// Why: Verify that the monitor correctly chooses ECDSA for EVM and Ed25519 for Move VM
 #[tokio::test]
-async fn test_evm_vs_aptos_escrow_differentiation() {
+async fn test_evm_vs_mvm_escrow_differentiation() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_evm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
 
-    // First, add an Aptos escrow to the cache
+    // First, add a Move VM escrow to the cache
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(trusted_verifier::monitor::EscrowEvent {
-            escrow_id: "0xaptos_escrow".to_string(),
+            escrow_id: "0xmvm_escrow".to_string(),
             intent_id: "0xmvmt_intent".to_string(),
             issuer: "0xissuer".to_string(),
             offered_metadata: "{}".to_string(),
@@ -102,28 +102,28 @@ async fn test_evm_vs_aptos_escrow_differentiation() {
             revocable: false,
             reserved_solver: None,
             chain_id: 2,
-            chain_type: trusted_verifier::ChainType::Move,
+            chain_type: trusted_verifier::ChainType::Mvm,
             timestamp: 1,
         });
     }
 
-    // Test Aptos escrow - should use Ed25519 signature
-    let aptos_fulfillment = FulfillmentEvent {
+    // Test Move VM escrow - should use Ed25519 signature
+    let mvm_fulfillment = FulfillmentEvent {
         intent_id: "0xmvmt_intent".to_string(),
-        intent_address: "0xaptos_addr".to_string(),
+        intent_address: "0xmvm_addr".to_string(),
         solver: "0xsolver".to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 2,
     };
 
-    let aptos_result = monitor.validate_and_approve_fulfillment(&aptos_fulfillment).await;
-    if aptos_result.is_ok() {
-        let aptos_approval = monitor.get_approval_for_escrow("0xaptos_escrow").await;
-        if let Some(approval) = aptos_approval {
+    let mvm_result = monitor.validate_and_approve_fulfillment(&mvm_fulfillment).await;
+    if mvm_result.is_ok() {
+        let mvm_approval = monitor.get_approval_for_escrow("0xmvm_escrow").await;
+        if let Some(approval) = mvm_approval {
             // Ed25519 signatures are 64 bytes (not 65)
             let sig_bytes = base64::engine::general_purpose::STANDARD.decode(&approval.signature).unwrap();
-            assert_eq!(sig_bytes.len(), 64, "Aptos escrow should use Ed25519 signature (64 bytes)");
+            assert_eq!(sig_bytes.len(), 64, "Move VM escrow should use Ed25519 signature (64 bytes)");
         }
     }
 

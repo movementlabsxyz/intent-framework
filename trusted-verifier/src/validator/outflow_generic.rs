@@ -22,7 +22,7 @@ use super::generic::{CrossChainValidator, FulfillmentTransactionParams, Validati
 /// ## Solver Registration Requirements
 /// 
 /// **IMPORTANT**: The solver must be registered in the solver registry with the correct
-/// address for the connected chain. All addresses (Aptos address for Aptos chains,
+/// address for the connected chain. All addresses (Move VM address for Move VM chains,
 /// EVM address for EVM chains) must be provided during registration. If the solver
 /// address for the connected chain is not found in the registry, this indicates an
 /// error on the solver's side - they must register correctly before attempting to

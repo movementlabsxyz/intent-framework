@@ -1,30 +1,30 @@
-//! Unit tests for Aptos transaction extraction and validation logic
+//! Unit tests for Move VM transaction extraction and validation logic
 //!
 //! These tests verify that transaction parameters can be correctly extracted
-//! from Aptos transactions for outflow fulfillment validation.
+//! from Move VM transactions for outflow fulfillment validation.
 
-use trusted_verifier::validator::{extract_aptos_fulfillment_params, validate_outflow_fulfillment, FulfillmentTransactionParams};
+use trusted_verifier::validator::{extract_mvm_fulfillment_params, validate_outflow_fulfillment, FulfillmentTransactionParams};
 use trusted_verifier::validator::CrossChainValidator;
-use trusted_verifier::aptos_client::AptosTransaction;
+use trusted_verifier::mvm_client::MvmTransaction;
 use trusted_verifier::monitor::RequestIntentEvent;
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config, create_base_request_intent, create_base_fulfillment_transaction_params, create_base_aptos_transaction};
+use test_helpers::{build_test_config, create_base_request_intent, create_base_fulfillment_transaction_params, create_base_mvm_transaction};
 
 // ============================================================================
-// APTOS TRANSACTION EXTRACTION TESTS
+// MOVE VM TRANSACTION EXTRACTION TESTS
 // ============================================================================
 
-/// Test that extract_aptos_fulfillment_params successfully extracts parameters from valid Aptos transaction
+/// Test that extract_mvm_fulfillment_params successfully extracts parameters from valid Move VM transaction
 /// 
 /// What is tested: Extracting intent_id, recipient, amount, solver, and token_metadata from a valid
-/// Aptos transaction that calls utils::transfer_with_intent_id().
+/// Move VM transaction that calls utils::transfer_with_intent_id().
 /// 
-/// Why: Verify that the extraction function correctly parses Aptos transaction payloads
+/// Why: Verify that the extraction function correctly parses Move VM transaction payloads
 /// to extract all required parameters for validation.
 #[test]
-fn test_extract_aptos_fulfillment_params_success() {
-    let tx = AptosTransaction {
+fn test_extract_mvm_fulfillment_params_success() {
+    let tx = MvmTransaction {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
@@ -34,10 +34,10 @@ fn test_extract_aptos_fulfillment_params_success() {
                 "0x1111111111111111111111111111111111111111111111111111111111111111"
             ]
         })),
-        ..create_base_aptos_transaction()
+        ..create_base_mvm_transaction()
     };
 
-    let result = extract_aptos_fulfillment_params(&tx);
+    let result = extract_mvm_fulfillment_params(&tx);
 
     assert!(result.is_ok(), "Extraction should succeed for valid transaction");
     let params = result.unwrap();
@@ -48,24 +48,24 @@ fn test_extract_aptos_fulfillment_params_success() {
     assert_eq!(params.token_metadata, "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
 }
 
-/// Test that extract_aptos_fulfillment_params fails when transaction is not a transfer_with_intent_id call
+/// Test that extract_mvm_fulfillment_params fails when transaction is not a transfer_with_intent_id call
 /// 
-/// What is tested: Attempting to extract parameters from an Aptos transaction that doesn't call
+/// What is tested: Attempting to extract parameters from a Move VM transaction that doesn't call
 /// utils::transfer_with_intent_id() should fail with an appropriate error.
 /// 
 /// Why: Verify that the extraction function correctly identifies and rejects transactions
 /// that are not the expected fulfillment transaction type.
 #[test]
-fn test_extract_aptos_fulfillment_params_wrong_function() {
-    let tx = AptosTransaction {
+fn test_extract_mvm_fulfillment_params_wrong_function() {
+    let tx = MvmTransaction {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer",
             "arguments": ["0xrecipient", "0xmetadata", "0x100"]
         })),
-        ..create_base_aptos_transaction()
+        ..create_base_mvm_transaction()
     };
 
-    let result = extract_aptos_fulfillment_params(&tx);
+    let result = extract_mvm_fulfillment_params(&tx);
 
     assert!(result.is_err(), "Extraction should fail for wrong function");
     let error_msg = result.unwrap_err().to_string();
@@ -73,20 +73,20 @@ fn test_extract_aptos_fulfillment_params_wrong_function() {
             error_msg.contains("not a transfer_with_intent_id"));
 }
 
-/// Test that extract_aptos_fulfillment_params fails when transaction payload is missing
+/// Test that extract_mvm_fulfillment_params fails when transaction payload is missing
 /// 
-/// What is tested: Attempting to extract parameters from an Aptos transaction without a payload
+/// What is tested: Attempting to extract parameters from a Move VM transaction without a payload
 /// should fail with an appropriate error.
 /// 
 /// Why: Verify that the extraction function handles missing payload gracefully.
 #[test]
-fn test_extract_aptos_fulfillment_params_missing_payload() {
-    let tx = AptosTransaction {
+fn test_extract_mvm_fulfillment_params_missing_payload() {
+    let tx = MvmTransaction {
         payload: None,
-        ..create_base_aptos_transaction()
+        ..create_base_mvm_transaction()
     };
 
-    let result = extract_aptos_fulfillment_params(&tx);
+    let result = extract_mvm_fulfillment_params(&tx);
 
     assert!(result.is_err(), "Extraction should fail when payload is missing");
     assert!(result.unwrap_err().to_string().contains("payload"));

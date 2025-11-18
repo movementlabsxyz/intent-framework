@@ -12,6 +12,6 @@ pub use helpers::{
     create_base_fulfillment, 
     create_base_escrow_event,
     create_base_fulfillment_transaction_params,
-    create_base_aptos_transaction,
+    create_base_mvm_transaction,
     create_base_evm_transaction,
 };

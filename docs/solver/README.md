@@ -13,7 +13,7 @@ For quick start instructions, see the [component README](../../solver/README.md)
 The solver tools provide command-line utilities for solvers to:
 
 1. **Generate Signatures**: Sign `IntentToSign` structures to commit to fulfilling reserved intents
-2. **Build Connected-Chain Outflow Fulfillment Transactions**: Generate Aptos/EVM payload templates that embed `intent_id`
+2. **Build Connected-Chain Outflow Fulfillment Transactions**: Generate Move VM/EVM payload templates that embed `intent_id`
 3. **Intent Management**: (Future) Tools for monitoring and managing intent fulfillment
 
 ## Architecture
@@ -95,9 +95,9 @@ For more details on the reserved intent flow, see [Protocol Documentation](../pr
 
 ## Connected Chain Outflow Fulfillment Transaction Templates
 
-Outflow intents require solvers to execute a transfer on the connected chain and encode the hub `intent_id` in that transaction. The `connected_chain_tx_template` binary produces canonical templates for both Aptos and EVM transfers:
+Outflow intents require solvers to execute a transfer on the connected chain and encode the hub `intent_id` in that transaction. The `connected_chain_tx_template` binary produces canonical templates for both Move VM and EVM transfers:
 
-**For Aptos:**
+**For Move VM:**
 
 ```bash
 cargo run --bin connected_chain_tx_template -- \
@@ -118,12 +118,12 @@ cargo run --bin connected_chain_tx_template -- \
   --intent-id 0x5678123456789012345678901234567890123456789012345678901234567890
 ```
 
-**Note:** For Aptos, `--metadata` must be a hex address (the object address of the Metadata object), not a module path like `0x1::fungible_asset::AptosCoinMetadata`. You can get the metadata object address from the token's metadata object.
+**Note:** For Move VM, `--metadata` must be a hex address (the object address of the Metadata object), not a module path like `0x1::fungible_asset::AptosCoinMetadata`. You can get the metadata object address from the token's metadata object.
 
 The binary prints:
 
 - The parameters that must match the hub intent
-- For Aptos: The `aptos move run` command to call the on-chain `utils::transfer_with_intent_id()` function directly. This function performs the transfer and includes `intent_id` in the transaction payload. No script compilation needed - just call the function with the provided arguments.
+- For Move VM: The `aptos move run` command to call the on-chain `utils::transfer_with_intent_id()` function directly. This function performs the transfer and includes `intent_id` in the transaction payload. No script compilation needed - just call the function with the provided arguments.
 - For EVM: The ERC20 calldata blob that extends `transfer(to, amount)` with an extra 32-byte `intent_id` word. This value is supplied as `data` when calling the ERC20 contract so the verifier can read it via `eth_getTransactionByHash`.
 
-**Note:** For Aptos, the intent framework module (including `utils::transfer_with_intent_id()`) must be deployed on the connected chain. Once deployed, solvers can call the function directly without needing to compile scripts.
+**Note:** For Move VM, the intent framework module (including `utils::transfer_with_intent_id()`) must be deployed on the connected chain. Once deployed, solvers can call the function directly without needing to compile scripts.

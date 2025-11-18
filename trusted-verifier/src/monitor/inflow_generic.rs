@@ -26,16 +26,16 @@ use base64::{engine::general_purpose, Engine as _};
 use tracing::{error, info};
 
 use super::generic::{EscrowApproval, EscrowEvent, EventMonitor, FulfillmentEvent};
-use super::inflow_aptos;
+use super::inflow_mvm;
 use super::inflow_evm;
 
 // ============================================================================
 // CONNECTED CHAIN MONITORING
 // ============================================================================
 
-/// Monitors the connected Aptos chain for escrow deposit events.
+/// Monitors the connected Move VM chain for escrow deposit events.
 /// 
-/// This function runs in an infinite loop, polling the connected Aptos chain
+/// This function runs in an infinite loop, polling the connected Move VM chain
 /// for escrow deposit events. When events are found, it caches them and validates
 /// that they fulfill the conditions of existing hub request intents.
 /// 
@@ -56,23 +56,23 @@ use super::inflow_evm;
 /// 
 /// # Behavior
 /// 
-/// Returns early if no connected Aptos chain is configured.
+/// Returns early if no connected Move VM chain is configured.
 pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
     let connected_chain_apt = match &monitor.config.connected_chain_apt {
         Some(chain) => chain,
         None => {
-            info!("No connected Aptos chain configured, skipping connected chain monitoring");
+            info!("No connected Move VM chain configured, skipping connected chain monitoring");
             return Ok(());
         }
     };
 
     info!(
-        "Starting connected Aptos chain monitoring for escrow events on {}",
+        "Starting connected Move VM chain monitoring for escrow events on {}",
         connected_chain_apt.name
     );
 
     loop {
-        match inflow_aptos::poll_aptos_escrow_events(&monitor.config).await {
+        match inflow_mvm::poll_mvm_escrow_events(&monitor.config).await {
             Ok(events) => {
                 for event in events {
                     info!("Received escrow event: {:?}", event);
@@ -187,8 +187,8 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
 
 /// Polls connected chains for new escrow events.
 /// 
-/// This function queries connected chains (Aptos and/or EVM) for escrow initialization
-/// events. It handles both Aptos and EVM chains if configured, aggregating events
+/// This function queries connected chains (Move VM and/or EVM) for escrow initialization
+/// events. It handles both Move VM and EVM chains if configured, aggregating events
 /// from all connected chains into a single vector.
 /// 
 /// # Arguments
@@ -209,12 +209,12 @@ pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowE
     let mut escrow_events = Vec::new();
 
     if let Some(_) = &monitor.config.connected_chain_apt {
-        match inflow_aptos::poll_aptos_escrow_events(&monitor.config).await {
+        match inflow_mvm::poll_mvm_escrow_events(&monitor.config).await {
             Ok(mut events) => {
                 escrow_events.append(&mut events);
             }
             Err(e) => {
-                error!("Failed to poll Aptos escrow events: {}", e);
+                error!("Failed to poll Move VM escrow events: {}", e);
             }
         }
     }
@@ -345,7 +345,7 @@ pub async fn validate_request_intent_fulfillment(monitor: &EventMonitor, escrow_
 /// 
 /// ## Signature Generation
 /// 
-/// - **Aptos escrows**: Ed25519 signature (signed with intent_id)
+/// - **Move VM escrows**: Ed25519 signature (signed with intent_id)
 /// - **EVM escrows**: ECDSA signature (signed with intent_id, base64 encoded)
 /// 
 /// ## Security Notes
@@ -413,12 +413,12 @@ pub async fn validate_and_approve_fulfillment(monitor: &EventMonitor, fulfillmen
         let signature_base64 = general_purpose::STANDARD.encode(&ecdsa_sig_bytes);
         (signature_base64, chrono::Utc::now().timestamp() as u64)
     } else {
-        // Aptos escrow: Create Ed25519 signature
+        // Move VM escrow: Create Ed25519 signature
         info!(
-            "Creating Ed25519 signature for Aptos escrow (escrow_id: {}, intent_id: {})",
+            "Creating Ed25519 signature for Move VM escrow (escrow_id: {}, intent_id: {})",
             escrow_id, fulfillment.intent_id
         );
-        let approval_sig = monitor.crypto.create_aptos_approval_signature(&fulfillment.intent_id)?;
+        let approval_sig = monitor.crypto.create_mvm_approval_signature(&fulfillment.intent_id)?;
         (approval_sig.signature, approval_sig.timestamp)
     };
 
@@ -455,7 +455,7 @@ pub async fn validate_and_approve_fulfillment(monitor: &EventMonitor, fulfillmen
 /// 
 /// This function provides access to the escrow event cache for API endpoints
 /// and external monitoring systems. The cache contains all escrow events that
-/// have been observed on connected chains (both Aptos and EVM).
+/// have been observed on connected chains (both Move VM and EVM).
 /// 
 /// # Arguments
 /// 

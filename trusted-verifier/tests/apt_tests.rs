@@ -1,13 +1,13 @@
-//! Aptos-specific test suite
+//! Move VM-specific test suite
 //!
-//! This module includes all Aptos-specific tests from the apt/ subdirectory.
+//! This module includes all Move VM-specific tests from the mvm/ subdirectory.
 
-#[path = "apt/validator_fulfillment_tests.rs"]
+#[path = "mvm/validator_fulfillment_tests.rs"]
 mod validator_fulfillment_tests;
 
-#[path = "apt/crypto_tests.rs"]
+#[path = "mvm/crypto_tests.rs"]
 mod crypto_tests;
 
-#[path = "apt/cross_chain_tests.rs"]
+#[path = "mvm/cross_chain_tests.rs"]
 mod cross_chain_tests;
 

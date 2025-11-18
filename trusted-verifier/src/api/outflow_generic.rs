@@ -22,7 +22,7 @@ use crate::monitor::EventMonitor;
 use crate::validator::CrossChainValidator;
 
 // Chain-specific modules
-use super::outflow_aptos;
+use super::outflow_mvm;
 use super::outflow_evm;
 
 // ============================================================================
@@ -37,7 +37,7 @@ use super::outflow_evm;
 pub struct ValidateOutflowFulfillmentRequest {
     /// Transaction hash on the connected chain
     pub transaction_hash: String,
-    /// Chain type: "aptos" or "evm"
+    /// Chain type: "mvm" or "evm"
     pub chain_type: String,
     /// Intent ID to validate against (optional, will be extracted from transaction if not provided)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -94,8 +94,8 @@ pub async fn handle_outflow_fulfillment_validation(
     
     // Query transaction based on chain type (chain-specific)
     let (tx_params, tx_success) = match request.chain_type.as_str() {
-        "aptos" => {
-            match outflow_aptos::query_aptos_fulfillment_transaction(&request.transaction_hash, &validator).await {
+        "mvm" => {
+            match outflow_mvm::query_mvm_fulfillment_transaction(&request.transaction_hash, &validator).await {
                 Ok(result) => result,
                 Err(error_msg) => {
                     return Ok(warp::reply::json(&ApiResponse::<OutflowFulfillmentValidationResponse> {
@@ -122,7 +122,7 @@ pub async fn handle_outflow_fulfillment_validation(
             return Ok(warp::reply::json(&ApiResponse::<OutflowFulfillmentValidationResponse> {
                 success: false,
                 data: None,
-                error: Some(format!("Invalid chain_type: {}. Must be 'aptos' or 'evm'", request.chain_type)),
+                error: Some(format!("Invalid chain_type: {}. Must be 'mvm' or 'evm'", request.chain_type)),
             }));
         }
     };
@@ -154,13 +154,13 @@ pub async fn handle_outflow_fulfillment_validation(
     };
     
     // If validation passed, generate approval signature for hub chain fulfillment
-    // Note: Hub chain is always Aptos, so we always use Ed25519 signature
+    // Note: Hub chain is always Move VM, so we always use Ed25519 signature
     let approval_signature = if validation_result.valid {
         let crypto = crypto_service.read().await;
         let intent_id = intent_id.clone();
         
-        // Generate signature for hub chain (always Aptos/Ed25519 regardless of connected chain type)
-        match crypto.create_aptos_approval_signature(&intent_id) {
+        // Generate signature for hub chain (always Move VM/Ed25519 regardless of connected chain type)
+        match crypto.create_mvm_approval_signature(&intent_id) {
             Ok(sig) => {
                 info!("Generated hub chain approval signature for outflow intent_id: {} (signature for hub chain fulfillment)", intent_id);
                 Some(sig)

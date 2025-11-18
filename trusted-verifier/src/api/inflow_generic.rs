@@ -33,7 +33,7 @@ use crate::monitor::EventMonitor;
 pub struct ValidateInflowEscrowRequest {
     /// Escrow ID on the connected chain
     pub escrow_id: String,
-    /// Chain type: "aptos" or "evm" (currently unused, reserved for future use)
+    /// Chain type: "mvm" or "evm" (currently unused, reserved for future use)
     #[allow(dead_code)]
     pub chain_type: String,
 }

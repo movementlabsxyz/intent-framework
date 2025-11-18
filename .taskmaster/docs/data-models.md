@@ -1,6 +1,6 @@
 # Data Models Documentation
 
-This document provides architectural guidance on how data structures relate across chains and domains in the Intent Framework. 
+This document provides architectural guidance on how data structures relate across chains and domains in the Intent Framework.
 
 For detailed field-by-field documentation, see:
 
@@ -34,7 +34,7 @@ The verifier service normalizes blockchain events from different chains into com
 - **EscrowEvent** (`trusted-verifier/src/monitor/mod.rs`) - Normalizes `OracleLimitOrderEvent` (Move) and `EscrowInitialized` (EVM) from connected chains
 - **FulfillmentEvent** (`trusted-verifier/src/monitor/mod.rs`) - Normalizes `LimitOrderFulfillmentEvent` from hub chain
 - **EscrowApproval** (`trusted-verifier/src/monitor/mod.rs`) - Cryptographic approval structure for escrow release
-- **ChainType** (`trusted-verifier/src/monitor/mod.rs`) - Enum representing blockchain type (Move, Evm, Solana) for escrow events
+- **ChainType** (`trusted-verifier/src/monitor/mod.rs`) - Enum representing blockchain type (Mvm, Evm, Svm) for escrow events
 
 **Normalization Purpose**: These structures abstract away chain-specific differences (Move address types vs EVM address types, BCS vs ABI encoding) to enable unified cross-chain validation logic. See [`trusted-verifier/src/monitor/mod.rs`](../../trusted-verifier/src/monitor/mod.rs) for complete field definitions.
 
@@ -56,7 +56,7 @@ The `intent_id` field serves as the primary cross-chain linking mechanism:
 - `LimitOrderEvent.intent_id: address` - Event correlation field
 - `EscrowEvent.intent_id: String` - Verifier event matching field
 - `EscrowEvent.chain_id: u64` - Chain ID where escrow is located (set by verifier from config, trusted)
-- `EscrowEvent.chain_type: ChainType` - Blockchain type (Move, Evm, Solana) - set by verifier based on which monitor discovered the event (trusted)
+- `EscrowEvent.chain_type: ChainType` - Blockchain type (Mvm, Evm, Svm) - set by verifier based on which monitor discovered the event (trusted)
 
 ### Reserved Solver Addressing
 

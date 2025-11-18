@@ -1,7 +1,7 @@
-//! Aptos REST Client Module
+//! Move VM REST Client Module
 //!
-//! This module provides a client for communicating with Aptos blockchain nodes
-//! via their HTTP REST API. It handles account queries, event polling, and
+//! This module provides a client for communicating with Move VM-based blockchain nodes
+//! (e.g., Aptos) via their HTTP REST API. It handles account queries, event polling, and
 //! transaction verification.
 //!
 //! ## Features
@@ -9,7 +9,7 @@
 //! - Query account information
 //! - Poll for events on specific accounts
 //! - Get transaction details
-//! - Parse and handle Aptos REST API responses
+//! - Parse and handle Move VM REST API responses
 
 use anyhow::{Context, Result};
 use reqwest::Client;
@@ -20,14 +20,14 @@ use std::time::Duration;
 // API RESPONSE STRUCTURES
 // ============================================================================
 
-/// Aptos REST API response wrapper
+/// Move VM REST API response wrapper
 #[derive(Debug, Deserialize)]
-pub struct AptosResponse<T> {
+pub struct MvmResponse<T> {
     #[allow(dead_code)]
     pub inner: T,
 }
 
-/// Account information from Aptos
+/// Account information from Move VM chain
 #[derive(Debug, Deserialize)]
 pub struct AccountInfo {
     #[allow(dead_code)]
@@ -36,7 +36,7 @@ pub struct AccountInfo {
     pub authentication_key: String,
 }
 
-/// Resource data from Aptos account
+/// Resource data from Move VM account
 #[derive(Debug, Deserialize, Clone)]
 pub struct ResourceData {
     #[serde(rename = "type")]
@@ -93,10 +93,10 @@ pub struct EventGuid {
     pub account_address: String,
 }
 
-/// Event from Aptos blockchain
+/// Event from Move VM blockchain
 /// Can be either a module event (with guid) or legacy EventHandle event (with key)
 #[derive(Debug, Deserialize, Clone)]
-pub struct AptosEvent {
+pub struct MvmEvent {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[allow(dead_code)]
     pub guid: Option<EventGuid>,
@@ -109,9 +109,9 @@ pub struct AptosEvent {
     pub data: serde_json::Value,
 }
 
-/// Transaction details from Aptos
+/// Transaction details from Move VM chain
 #[derive(Debug, Deserialize)]
-pub struct AptosTransaction {
+pub struct MvmTransaction {
     #[allow(dead_code)]
     pub version: String,
     #[allow(dead_code)]
@@ -119,7 +119,7 @@ pub struct AptosTransaction {
     #[allow(dead_code)]
     pub success: bool,
     #[allow(dead_code)]
-    pub events: Vec<AptosEvent>,
+    pub events: Vec<MvmEvent>,
     /// Transaction payload (contains function call information)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payload: Option<serde_json::Value>,
@@ -129,27 +129,27 @@ pub struct AptosTransaction {
 }
 
 // ============================================================================
-// APTOS CLIENT IMPLEMENTATION
+// MOVE VM CLIENT IMPLEMENTATION
 // ============================================================================
 
-/// Client for communicating with Aptos blockchain nodes via REST API
-pub struct AptosClient {
+/// Client for communicating with Move VM-based blockchain nodes (e.g., Aptos) via REST API
+pub struct MvmClient {
     /// HTTP client for making requests
     client: Client,
-    /// Base URL of the Aptos node (e.g., "http://127.0.0.1:8080")
+    /// Base URL of the Move VM node (e.g., "http://127.0.0.1:8080")
     base_url: String,
 }
 
-impl AptosClient {
-    /// Creates a new Aptos client for the given node URL
+impl MvmClient {
+    /// Creates a new Move VM client for the given node URL
     ///
     /// # Arguments
     ///
-    /// * `node_url` - Base URL of the Aptos node (e.g., "http://127.0.0.1:8080")
+    /// * `node_url` - Base URL of the Move VM node (e.g., "http://127.0.0.1:8080")
     ///
     /// # Returns
     ///
-    /// * `Ok(AptosClient)` - Successfully created client
+    /// * `Ok(MvmClient)` - Successfully created client
     /// * `Err(anyhow::Error)` - Failed to create client
     pub fn new(node_url: &str) -> Result<Self> {
         let client = Client::builder()
@@ -163,7 +163,7 @@ impl AptosClient {
         })
     }
 
-    /// Queries account information from the Aptos blockchain
+    /// Queries account information from the Move VM blockchain
     ///
     /// # Arguments
     ///
@@ -191,10 +191,10 @@ impl AptosClient {
         Ok(account)
     }
 
-    /// Queries events for a specific account on the Aptos blockchain
+    /// Queries events for a specific account on the Move VM blockchain
     ///
     /// This method queries module events by scanning transaction history.
-    /// For modern Aptos modules that use `event::emit()`, events are stored
+    /// For modern Move VM modules that use `event::emit()`, events are stored
     /// in transaction history, not as event handles.
     ///
     /// ## Event Discovery Strategy
@@ -205,12 +205,12 @@ impl AptosClient {
     /// This would allow querying via `/v1/accounts/{address}/events/{creation_number}`,
     /// providing a stable, queryable endpoint at a known address.
     /// 
-    /// However, Aptos has **deprecated EventHandle in favor of module events**.
+    /// However, Move VM chains (e.g., Aptos) have **deprecated EventHandle in favor of module events**.
     /// See: https://aptos.guide/network/blockchain/events
     ///
     /// **Current approach**: Query known user accounts' transaction history to extract
     /// module events. This is suitable for our test scenario with Alice/Bob accounts.
-    /// For production, consider using the Aptos Indexer GraphQL API for more efficient
+    /// For production, consider using the Move VM Indexer GraphQL API (e.g., Aptos Indexer) for more efficient
     /// querying by event type across all accounts.
     ///
     /// # Arguments
@@ -222,7 +222,7 @@ impl AptosClient {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<AptosEvent>)` - List of events
+    /// * `Ok(Vec<MvmEvent>)` - List of events
     /// * `Err(anyhow::Error)` - Failed to query events
     pub async fn get_account_events(
         &self,
@@ -230,7 +230,7 @@ impl AptosClient {
         event_handle: Option<&str>,
         start: Option<u64>,
         limit: Option<u64>,
-    ) -> Result<Vec<AptosEvent>> {
+    ) -> Result<Vec<MvmEvent>> {
         // For legacy EventHandle events, use the old approach
         if let Some(handle) = event_handle {
             return self.get_events_by_creation_number(address, handle, start, limit).await;
@@ -277,7 +277,7 @@ impl AptosClient {
                     // Extract key if present (for EventHandle events)
                     let key = event_json.get("key").and_then(|k| k.as_str()).map(|s| s.to_string());
                     
-                    events.push(AptosEvent {
+                    events.push(MvmEvent {
                         guid,
                         key,
                         sequence_number,
@@ -302,7 +302,7 @@ impl AptosClient {
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<AptosEvent>)` - List of events
+    /// * `Ok(Vec<MvmEvent>)` - List of events
     /// * `Err(anyhow::Error)` - Failed to query events
     async fn get_events_by_creation_number(
         &self,
@@ -310,7 +310,7 @@ impl AptosClient {
         creation_number: &str,
         start: Option<u64>,
         limit: Option<u64>,
-    ) -> Result<Vec<AptosEvent>> {
+    ) -> Result<Vec<MvmEvent>> {
         let mut url = format!("{}/v1/accounts/{}/events/{}", self.base_url, address, creation_number);
 
         // Add query parameters
@@ -341,7 +341,7 @@ impl AptosClient {
         let response = response.error_for_status()
             .context("Events request failed")?;
 
-        let events: Vec<AptosEvent> = response.json().await
+        let events: Vec<MvmEvent> = response.json().await
             .context("Failed to parse events response")?;
 
         Ok(events)
@@ -383,7 +383,7 @@ impl AptosClient {
     /// Note: An alternative approach would be to query transactions and extract events
     /// from transaction history, but this is not supported because:
     /// 1. It's less efficient (fetching full transactions vs just events)
-    /// 2. It's not the official Aptos API pattern for event monitoring
+    /// 2. It's not the official Move VM API pattern for event monitoring
     /// 3. Event handles are the standard way to track module events
     ///
     /// # Arguments
@@ -433,10 +433,10 @@ impl AptosClient {
     ///
     /// # Returns
     ///
-    /// * `Ok(AptosTransaction)` - Transaction information
+    /// * `Ok(MvmTransaction)` - Transaction information
     /// * `Err(anyhow::Error)` - Failed to query transaction
     #[allow(dead_code)]
-    pub async fn get_transaction(&self, hash: &str) -> Result<AptosTransaction> {
+    pub async fn get_transaction(&self, hash: &str) -> Result<MvmTransaction> {
         let url = format!("{}/v1/transactions/by_hash/{}", self.base_url, hash);
         
         let response = self.client
@@ -447,7 +447,7 @@ impl AptosClient {
             .error_for_status()
             .context("Transaction request failed")?;
 
-        let tx: AptosTransaction = response.json().await
+        let tx: MvmTransaction = response.json().await
             .context("Failed to parse transaction response")?;
 
         Ok(tx)
@@ -529,7 +529,7 @@ impl AptosClient {
     ///
     /// # Arguments
     ///
-    /// * `solver_address` - Aptos address of the solver
+    /// * `solver_address` - Move VM address of the solver
     /// * `registry_address` - Address where the solver registry is deployed (usually @mvmt_intent)
     ///
     /// # Returns
@@ -575,7 +575,7 @@ impl AptosClient {
         }
     }
 
-    /// Calls a view function on the Aptos blockchain.
+    /// Calls a view function on the Move VM blockchain.
     ///
     /// # Arguments
     ///

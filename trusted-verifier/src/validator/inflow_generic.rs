@@ -105,7 +105,7 @@ pub async fn validate_request_intent_fulfillment(
     // must fulfill on the hub chain before the verifier approves escrow release
     
     // Validate solver addresses match between escrow and request intent
-    // For Move/Aptos escrows: Check if escrow's reserved_solver (Aptos address) matches hub request intent's solver (Aptos address)
+    // For Move VM escrows: Check if escrow's reserved_solver (Move VM address) matches hub request intent's solver (Move VM address)
     // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
     if let (Some(escrow_solver), Some(request_intent_solver)) = (&escrow_event.reserved_solver, &request_intent_event.reserved_solver) {
         // Determine chain type from the chain_type field set by the monitor
@@ -113,7 +113,7 @@ pub async fn validate_request_intent_fulfillment(
         
         if is_evm_escrow {
             // EVM escrow: Compare EVM addresses
-            // The escrow_solver is an EVM address, request_intent_solver is an Aptos address
+            // The escrow_solver is an EVM address, request_intent_solver is a Move VM address
             // We need to query the solver registry to get the EVM address for request_intent_solver
             let hub_rpc_url = &validator.config.hub_chain.rpc_url;
             let registry_address = &validator.config.hub_chain.intent_module_address; // Registry is at module address
@@ -129,7 +129,7 @@ pub async fn validate_request_intent_fulfillment(
                 return Ok(validation_result);
             }
         } else {
-            // Aptos escrow: Compare Aptos addresses directly
+            // Move VM escrow: Compare Move VM addresses directly
             if escrow_solver != request_intent_solver {
                 return Ok(ValidationResult {
                     valid: false,

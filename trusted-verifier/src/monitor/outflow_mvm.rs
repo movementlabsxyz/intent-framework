@@ -1,16 +1,16 @@
-//! Outflow Aptos-specific monitoring functions
+//! Outflow Move VM-specific monitoring functions
 //!
-//! This module contains Aptos-specific event polling logic
-//! for hub chain request intent events on Aptos.
+//! This module contains Move VM-specific event polling logic
+//! for hub chain request intent events on Move VM chains.
 
 use anyhow::{Result, Context};
 use tracing::{info, error};
 
-use crate::aptos_client::{AptosClient, LimitOrderEvent as AptosLimitOrderEvent, OracleLimitOrderEvent as AptosOracleLimitOrderEvent, LimitOrderFulfillmentEvent as AptosLimitOrderFulfillmentEvent};
+use crate::mvm_client::{MvmClient, LimitOrderEvent as MvmLimitOrderEvent, OracleLimitOrderEvent as MvmOracleLimitOrderEvent, LimitOrderFulfillmentEvent as MvmLimitOrderFulfillmentEvent};
 use crate::monitor::generic::{EventMonitor, RequestIntentEvent, FulfillmentEvent};
 use crate::monitor::inflow_generic;
 
-/// Polls the hub Aptos chain for new request intent events.
+/// Polls the hub Move VM chain for new request intent events.
 /// 
 /// This function queries the hub chain's event logs for new request intent
 /// creation events. Since module events are emitted in user transactions,
@@ -25,8 +25,8 @@ use crate::monitor::inflow_generic;
 /// * `Ok(Vec<RequestIntentEvent>)` - List of new request intent events
 /// * `Err(anyhow::Error)` - Failed to poll events
 pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntentEvent>> {
-    // Create Aptos client for hub chain
-    let client = AptosClient::new(&monitor.config.hub_chain.rpc_url)?;
+    // Create Move VM client for hub chain
+    let client = MvmClient::new(&monitor.config.hub_chain.rpc_url)?;
         
     // Query events from known test accounts
     let known_accounts = monitor.config.hub_chain.known_accounts.as_ref()
@@ -53,7 +53,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
             // Handle LimitOrderEvent, OracleLimitOrderEvent, and LimitOrderFulfillmentEvent
             if event_type.contains("LimitOrderFulfillmentEvent") {
                 // Try to parse as fulfillment event
-                let fulfillment_data_result: Result<AptosLimitOrderFulfillmentEvent, _> = serde_json::from_value(event.data.clone());
+                let fulfillment_data_result: Result<MvmLimitOrderFulfillmentEvent, _> = serde_json::from_value(event.data.clone());
                 
                 if let Ok(data) = fulfillment_data_result {
                     // Create fulfillment event
@@ -90,7 +90,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                 }
             } else if event_type.contains("LimitOrderEvent") || event_type.contains("OracleLimitOrderEvent") {
                 // Try to parse as OracleLimitOrderEvent first (it has min_reported_value)
-                let data_result: Result<AptosOracleLimitOrderEvent, _> = serde_json::from_value(event.data.clone());
+                let data_result: Result<MvmOracleLimitOrderEvent, _> = serde_json::from_value(event.data.clone());
                 
                 match data_result {
                     Ok(data) => {
@@ -124,7 +124,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     }
                     Err(_) => {
                         // Try to parse as regular LimitOrderEvent
-                        let data: AptosLimitOrderEvent = serde_json::from_value(event.data.clone())
+                        let data: MvmLimitOrderEvent = serde_json::from_value(event.data.clone())
                             .context("Failed to parse LimitOrderEvent")?;
                         
                         // Query solver address from request intent object (if reserved)

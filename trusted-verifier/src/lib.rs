@@ -8,7 +8,7 @@ pub mod validator;
 pub mod crypto;
 pub mod config;
 pub mod api;
-pub mod aptos_client;
+pub mod mvm_client;
 pub mod evm_client;
 
 // Re-export commonly used types

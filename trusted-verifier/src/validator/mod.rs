@@ -18,16 +18,16 @@ pub mod inflow_generic;
 pub mod outflow_generic;
 
 // Flow + chain specific modules
-mod inflow_aptos;
+mod inflow_mvm;
 pub mod inflow_evm;
-mod outflow_aptos;
+mod outflow_mvm;
 mod outflow_evm;
 
 // Re-export public types and functions
 pub use generic::{
     CrossChainValidator, FulfillmentTransactionParams, ValidationResult,
 };
-pub use outflow_aptos::extract_aptos_fulfillment_params;
+pub use outflow_mvm::extract_mvm_fulfillment_params;
 pub use outflow_evm::extract_evm_fulfillment_params;
 pub use outflow_generic::validate_outflow_fulfillment;
 pub use inflow_generic::validate_request_intent_fulfillment;

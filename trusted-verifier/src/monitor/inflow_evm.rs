@@ -54,7 +54,7 @@ pub async fn poll_evm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
     
     for event in evm_events {
         // Convert EVM event to EscrowEvent format
-        // Note: EVM escrows don't have all the same fields as Aptos escrows
+        // Note: EVM escrows don't have all the same fields as Move VM escrows
         // We'll use placeholder values for fields that don't exist in EVM
         
         // Convert intent_id from hex string to address format

@@ -33,7 +33,7 @@ use crate::config::Config;
 /// This structure contains the signature and timestamp for escrow releases.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApprovalSignature {
-    /// Base64-encoded signature (Ed25519 for Aptos, ECDSA for EVM)
+    /// Base64-encoded signature (Ed25519 for Move VM, ECDSA for EVM)
     pub signature: String,
     /// Timestamp when signature was created
     pub timestamp: u64,
@@ -49,9 +49,9 @@ pub struct ApprovalSignature {
 /// verification, and other cryptographic operations required for secure
 /// cross-chain validation and approval signatures.
 pub struct CryptoService {
-    /// Private key for signing operations (Ed25519 for Aptos)
+    /// Private key for signing operations (Ed25519 for Move VM)
     signing_key: SigningKey,
-    /// Public key for signature verification (Ed25519 for Aptos)
+    /// Public key for signature verification (Ed25519 for Move VM)
     verifying_key: VerifyingKey,
     /// ECDSA signing key for EVM operations (secp256k1)
     /// Derived from Ed25519 private key by taking first 32 bytes
@@ -131,7 +131,7 @@ impl CryptoService {
     /// * `Err(anyhow::Error)` - Failed to create signature
     /// Creates an approval signature (legacy - signs approval value).
     /// 
-    /// NOTE: This is deprecated. Use create_aptos_approval_signature() instead.
+    /// NOTE: This is deprecated. Use create_mvm_approval_signature() instead.
     /// Kept for backward compatibility with API endpoints.
     pub fn create_approval_signature(&self, approve: bool) -> Result<ApprovalSignature> {
         let approval_value: u64 = if approve { 1 } else { 0 };
@@ -149,7 +149,7 @@ impl CryptoService {
         })
     }
 
-    /// Creates an Aptos approval signature by signing the intent_id.
+    /// Creates a Move VM approval signature by signing the intent_id.
     /// 
     /// The verifier signs the intent_id to approve it. The signature itself is the approval.
     /// Each signature is unique per intent_id.
@@ -162,7 +162,7 @@ impl CryptoService {
     /// 
     /// * `Ok(ApprovalSignature)` - Cryptographic approval signature unique to this intent
     /// * `Err(anyhow::Error)` - Failed to create signature
-    pub fn create_aptos_approval_signature(&self, intent_id: &str) -> Result<ApprovalSignature> {
+    pub fn create_mvm_approval_signature(&self, intent_id: &str) -> Result<ApprovalSignature> {
         // Remove 0x prefix if present
         let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
         
@@ -170,7 +170,7 @@ impl CryptoService {
         let intent_id_bytes = hex::decode(intent_id_hex)
             .map_err(|e| anyhow::anyhow!("Invalid intent_id hex: {}", e))?;
         
-        // Pad to 32 bytes (Aptos address format) - left-pad with zeros
+        // Pad to 32 bytes (Move VM address format) - left-pad with zeros
         let mut intent_id_padded = [0u8; 32];
         if intent_id_bytes.len() <= 32 {
             intent_id_padded[32 - intent_id_bytes.len()..].copy_from_slice(&intent_id_bytes);
@@ -297,7 +297,7 @@ impl CryptoService {
             return Err(anyhow::anyhow!("Intent ID too long: {} bytes", intent_id_bytes.len()));
         }
         
-        // Sign only the intent_id (symmetric with Aptos - signature itself is the approval)
+        // Sign only the intent_id (symmetric with Move VM - signature itself is the approval)
         // Hash with keccak256
         let mut hasher = Keccak256::new();
         hasher.update(&intent_id_padded);

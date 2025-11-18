@@ -200,10 +200,10 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 **In Scope**:
 
-- Event monitoring from hub and connected chains (Aptos and EVM)
-- Symmetrical monitoring of Aptos and EVM escrows (both cached and validated when created)
+- Event monitoring from hub and connected chains (Move VM and EVM)
+- Symmetrical monitoring of Move VM and EVM escrows (both cached and validated when created)
 - Cross-chain state validation
-- Approval signature generation (Ed25519 for Aptos, ECDSA for EVM)
+- Approval signature generation (Ed25519 for Move VM, ECDSA for EVM)
 - Event correlation and matching
 - REST API for external integration
 
@@ -227,36 +227,36 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 **Public Functions** (Rust):
 
 - `EventMonitor::poll_hub_events()` - Poll hub chain for intent events
-- `EventMonitor::poll_connected_events()` - Poll Aptos connected chain for escrow events
+- `EventMonitor::poll_connected_events()` - Poll Move VM connected chain for escrow events
 - `EventMonitor::poll_evm_events()` - Poll EVM connected chain for escrow events
 - `EventMonitor::monitor_hub_chain()` - Monitor hub chain continuously
-- `EventMonitor::monitor_connected_chain()` - Monitor Aptos connected chain continuously
+- `EventMonitor::monitor_connected_chain()` - Monitor Move VM connected chain continuously
 - `EventMonitor::monitor_evm_chain()` - Monitor EVM connected chain continuously
 - `EventMonitor::get_cached_events()` - Get cached events
 - `CrossChainValidator::validate_intent_safety()` - Validate intent safety
 - `CrossChainValidator::validate_fulfillment()` - Validate fulfillment
 - `CrossChainValidator::validate_intent_fulfillment()` - Validate escrow fulfills intent
-- `validator::evm::validate_evm_escrow_solver()` - Validate EVM escrow solver matches registry (standalone function in `validator/evm.rs`)
-- `CryptoService::create_aptos_approval_signature(intent_id)` - Generate Ed25519 approval signature (Aptos) - signs the `intent_id`
+- `validator::inflow_evm::validate_evm_escrow_solver()` - Validate EVM escrow solver matches registry (standalone function in `validator/inflow_evm.rs`)
+- `CryptoService::create_mvm_approval_signature(intent_id)` - Generate Ed25519 approval signature (Move VM) - signs the `intent_id`
 - `CryptoService::create_evm_approval_signature(intent_id)` - Generate ECDSA approval signature (EVM) - signs the `intent_id`
 
 **Data Structures Exported**:
 
 - `RequestIntentEvent` - Normalized request intent event structure
-- `EscrowEvent` - Normalized escrow event structure with `chain_type` field (Move, Evm, Solana) set by verifier based on monitor that discovered it
+- `EscrowEvent` - Normalized escrow event structure with `chain_type` field (Mvm, Evm, Svm) set by verifier based on monitor that discovered it
 - `FulfillmentEvent` - Normalized fulfillment event structure
 - `ApprovalSignature` - Approval signature structure
 - `ValidationResult` - Validation result structure
 
 ### Verification: Internal Components
 
-- Event polling and caching mechanisms (symmetrical for Aptos and EVM)
+- Event polling and caching mechanisms (symmetrical for Move VM and EVM)
 - Cross-chain event correlation logic (`intent_id` matching)
 - Chain ID validation (ensures escrow created on correct connected chain)
-- Solver address validation (Aptos addresses directly, EVM addresses via solver registry)
-- Cryptographic operations (Ed25519 for Aptos, ECDSA for EVM)
+- Solver address validation (Move VM addresses directly, EVM addresses via solver registry)
+- Cryptographic operations (Ed25519 for Move VM, ECDSA for EVM)
 - Configuration management
-- Blockchain RPC clients (AptosClient for Aptos chains, EvmClient for EVM chains)
+- Blockchain RPC clients (MvmClient for Move VM chains, EvmClient for EVM chains)
 
 ### Verification: Data Ownership
 

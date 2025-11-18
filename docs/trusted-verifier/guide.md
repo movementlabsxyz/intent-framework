@@ -7,7 +7,7 @@ This guide covers how to run the verifier locally with the dual‑chain setup, t
 File: `trusted-verifier/config/verifier.toml` (relative to project root)
 
 - **hub_chain**: `rpc_url`, `chain_id`, `intent_module_address`, `known_accounts` (required)
-- **connected_chain_apt**: `rpc_url`, `chain_id`, `intent_module_address`, `escrow_module_address`, `known_accounts` (optional, for Aptos escrow monitoring)
+- **connected_chain_apt**: `rpc_url`, `chain_id`, `intent_module_address`, `escrow_module_address`, `known_accounts` (optional, for Move VM escrow monitoring)
 - **connected_chain_evm**: `rpc_url`, `chain_id`, `escrow_contract_address`, `verifier_address` (optional, for EVM escrow monitoring)
 - **verifier**: `private_key` (base64, 32‑byte), `public_key` (base64, 32‑byte), polling/timeout
 - **api**: `host`, `port`
@@ -15,7 +15,7 @@ File: `trusted-verifier/config/verifier.toml` (relative to project root)
 The verifier automatically monitors all configured chains concurrently:
 
 - Hub chain monitoring is always enabled
-- Aptos connected chain monitoring starts if `[connected_chain_apt]` is configured
+- Move VM connected chain monitoring starts if `[connected_chain_apt]` is configured
 - EVM connected chain monitoring starts if `[connected_chain_evm]` is configured
 
 Keys
@@ -38,14 +38,14 @@ This script sets up chains, deploys contracts, submits intents, runs integration
 - **Hub chain**
   - `LimitOrderEvent` — intent creation (issuer, amounts, metadata, expiry, revocable, solver, offered_chain_id, desired_chain_id)
   - `LimitOrderFulfillmentEvent` — fulfillment (intent_id, solver, provided amount/metadata)
-- **Connected Aptos chain**
+- **Connected Move VM chain**
   - `OracleLimitOrderEvent` (escrow) — escrow deposit with verifier public key and desired amounts
 - **Connected EVM chain**
   - `EscrowInitialized` — escrow creation (intentId, maker, token, reservedSolver)
 - **Linking**
   - Shared `intent_id` across chains links hub intents to escrows on connected chains
   - Verifier validates `chain_id` matches between intent `offered_chain_id` and escrow `chain_id`
-  - Each `EscrowEvent` includes a `chain_type` field (Move, Evm, Solana) set by the verifier based on which monitor discovered the event. This is trusted because it comes from the verifier's configuration, not from untrusted event data.
+  - Each `EscrowEvent` includes a `chain_type` field (Mvm, Evm, Svm) set by the verifier based on which monitor discovered the event. This is trusted because it comes from the verifier's configuration, not from untrusted event data.
 
 ## Cross‑Chain Flow
 

@@ -7,7 +7,7 @@ use anyhow::Result;
 use tracing::{info, error};
 
 use super::generic::{EventMonitor, RequestIntentEvent, FulfillmentEvent};
-use super::outflow_aptos;
+use super::outflow_mvm;
 
 // ============================================================================
 // HUB CHAIN MONITORING
@@ -83,12 +83,12 @@ pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
 /// 
 /// # Note
 /// 
-/// Currently, the hub chain is always Aptos. This function delegates to
-/// outflow_aptos::poll_hub_events for Aptos-specific polling logic.
+/// Currently, the hub chain is always Move VM. This function delegates to
+/// outflow_mvm::poll_hub_events for Move VM-specific polling logic.
 pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntentEvent>> {
-    // Hub chain is currently always Aptos
-    // Delegate to Aptos-specific polling
-    outflow_aptos::poll_hub_events(monitor).await
+    // Hub chain is currently always Move VM
+    // Delegate to Move VM-specific polling
+    outflow_mvm::poll_hub_events(monitor).await
 }
 
 // ============================================================================

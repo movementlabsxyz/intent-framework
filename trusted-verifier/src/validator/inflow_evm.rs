@@ -41,8 +41,8 @@ pub async fn validate_evm_escrow_solver(
     };
     
     // Query solver registry for EVM address
-    let aptos_client = crate::aptos_client::AptosClient::new(hub_chain_rpc_url)?;
-    let registered_evm_address = aptos_client.get_solver_evm_address(request_intent_solver, registry_address)
+    let mvm_client = crate::mvm_client::MvmClient::new(hub_chain_rpc_url)?;
+    let registered_evm_address = mvm_client.get_solver_evm_address(request_intent_solver, registry_address)
         .await
         .context("Failed to query solver EVM address from registry")?;
     

@@ -1,7 +1,7 @@
 //! Generic validator structures and CrossChainValidator definition
 //!
 //! This module contains shared validation structures and the CrossChainValidator struct definition
-//! that are used across all flow types (inflow/outflow) and chain types (Aptos/EVM).
+//! that are used across all flow types (inflow/outflow) and chain types (Move VM/EVM).
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;

@@ -16,7 +16,7 @@ fn test_evm_escrow_cross_chain_matching() {
     let hub_intent = create_base_request_intent();
     
     // Step 2: Create EVM escrow with matching intent_id
-    // For EVM, the intent_id from Aptos is used directly (after conversion to uint256 on-chain)
+    // For EVM, the intent_id from Move VM is used directly (after conversion to uint256 on-chain)
     // In the verifier, we match by string intent_id
     // For EVM, escrow_id must equal intent_id
     let evm_escrow = EscrowEvent {
@@ -39,11 +39,11 @@ fn test_evm_escrow_cross_chain_matching() {
     assert_eq!(evm_escrow.escrow_id, evm_escrow.intent_id, "For EVM, escrow_id should equal intent_id");
 }
 
-/// Test intent ID format conversion from Aptos hex to EVM format
-/// Why: Verify that Aptos hex intent IDs can be properly converted for EVM use
+/// Test intent ID format conversion from Move VM hex to EVM format
+/// Why: Verify that Move VM hex intent IDs can be properly converted for EVM use
 #[test]
 fn test_intent_id_conversion_to_evm_format() {
-    // Aptos intent IDs are hex strings (e.g., "0xabc123")
+    // Move VM intent IDs are hex strings (e.g., "0xabc123")
     // EVM intent IDs are uint256 values (32 bytes)
     // The conversion pads hex strings to 32 bytes
     
@@ -86,8 +86,8 @@ fn test_intent_id_conversion_to_evm_format() {
     assert_eq!(intent_id_padded_empty, [0u8; 32], "Empty intent ID should pad to all zeros");
 }
 
-/// Test EVM escrow matching with Aptos hub intent in cross-chain scenario
-/// Why: Verify complete cross-chain matching workflow from Aptos hub to EVM escrow
+/// Test EVM escrow matching with Move VM hub intent in cross-chain scenario
+/// Why: Verify complete cross-chain matching workflow from Move VM hub to EVM escrow
 #[test]
 fn test_evm_escrow_matching_with_hub_intent() {
     // Step 1: Create  hub intent
@@ -109,7 +109,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
     let intent_cache = vec![hub_intent.clone()];
     let matching_intent = intent_cache.iter().find(|intent| intent.intent_id == evm_escrow.intent_id);
     
-    assert!(matching_intent.is_some(), "Should find matching Aptos hub intent for EVM escrow");
+    assert!(matching_intent.is_some(), "Should find matching Move VM hub intent for EVM escrow");
     let matched = matching_intent.unwrap();
     
     // Verify all matching criteria (as per validate_request_intent_fulfillment validation)

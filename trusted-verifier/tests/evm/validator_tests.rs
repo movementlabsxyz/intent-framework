@@ -105,7 +105,7 @@ fn create_test_request_intent(solver: Option<String>) -> RequestIntentEvent {
 async fn test_successful_evm_solver_validation() {
     let _ = tracing_subscriber::fmt::try_init();
     
-    let solver_address = "0xsolver_aptos";
+    let solver_address = "0xsolver_mvm";
     let registered_evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let (_mock_server, config, validator) = setup_mock_server_with_evm_address_response(
         solver_address,
@@ -166,7 +166,7 @@ async fn test_rejection_when_solver_not_registered() {
 async fn test_rejection_when_evm_addresses_dont_match() {
     let _ = tracing_subscriber::fmt::try_init();
     
-    let solver_address = "0xsolver_aptos";
+    let solver_address = "0xsolver_mvm";
     let registered_evm_address = "0x1111111111111111111111111111111111111111";
     let (_mock_server, config, validator) = setup_mock_server_with_evm_address_response(
         solver_address,
@@ -208,7 +208,7 @@ async fn test_evm_address_normalization() {
     ];
     
     for (escrow_addr, registered_addr, should_match) in test_cases {
-        let solver_address = "0xsolver_aptos";
+        let solver_address = "0xsolver_mvm";
         let (_mock_server, config, validator) = setup_mock_server_with_evm_address_response(
             solver_address,
             Some(registered_addr),
@@ -240,9 +240,9 @@ async fn test_error_handling_for_registry_query_failures() {
     let _ = tracing_subscriber::fmt::try_init();
     
     // Setup mock server that returns a 500 error (simulating network/server error)
-    let (_mock_server, config, validator) = setup_mock_server_with_error(500).await;
+    let (_mock_server, config, _validator) = setup_mock_server_with_error(500).await;
     
-    let request_intent = create_test_request_intent(Some("0xsolver_aptos".to_string()));
+    let request_intent = create_test_request_intent(Some("0xsolver_mvm".to_string()));
     
     let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(

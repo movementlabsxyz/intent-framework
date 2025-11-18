@@ -1,16 +1,16 @@
-//! Inflow Aptos-specific monitoring functions
+//! Inflow Move VM-specific monitoring functions
 //!
-//! This module contains Aptos-specific event polling logic
-//! for escrow events on connected Aptos chains.
+//! This module contains Move VM-specific event polling logic
+//! for escrow events on connected Move VM chains.
 
 use anyhow::{Result, Context};
 use crate::config::Config;
-use crate::aptos_client::{AptosClient, OracleLimitOrderEvent as AptosOracleLimitOrderEvent};
+use crate::mvm_client::{MvmClient, OracleLimitOrderEvent as MvmOracleLimitOrderEvent};
 use crate::monitor::generic::{EscrowEvent, ChainType};
 
-/// Polls the connected Aptos chain for new escrow initialization events.
+/// Polls the connected Move VM chain for new escrow initialization events.
 /// 
-/// This function queries the Aptos chain's event logs for OracleLimitOrderEvent
+/// This function queries the Move VM chain's event logs for OracleLimitOrderEvent
 /// events emitted by escrow intents. It converts them to EscrowEvent format
 /// for consistent processing.
 /// 
@@ -22,16 +22,16 @@ use crate::monitor::generic::{EscrowEvent, ChainType};
 /// 
 /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
 /// * `Err(anyhow::Error)` - Failed to poll events
-pub async fn poll_aptos_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>> {
+pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>> {
     let connected_chain_apt = config.connected_chain_apt.as_ref()
-        .ok_or_else(|| anyhow::anyhow!("No connected Aptos chain configured"))?;
+        .ok_or_else(|| anyhow::anyhow!("No connected Move VM chain configured"))?;
     
-    // Create Aptos client for connected chain
-    let client = AptosClient::new(&connected_chain_apt.rpc_url)?;
+    // Create Move VM client for connected chain
+    let client = MvmClient::new(&connected_chain_apt.rpc_url)?;
     
     // Query events from known test accounts
     let known_accounts = connected_chain_apt.known_accounts.as_ref()
-        .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected Aptos chain"))?;
+        .ok_or_else(|| anyhow::anyhow!("No known accounts configured for connected Move VM chain"))?;
     
     let mut escrow_events = Vec::new();
     let timestamp = std::time::SystemTime::now()
@@ -52,7 +52,7 @@ pub async fn poll_aptos_escrow_events(config: &Config) -> Result<Vec<EscrowEvent
             
             // Escrows use oracle-guarded intents, so we look for OracleLimitOrderEvent
             if event_type.contains("OracleLimitOrderEvent") {
-                let data: AptosOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
+                let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
                     .context("Failed to parse OracleLimitOrderEvent as escrow")?;
                 
                 // Query reserved solver address from escrow object (if reserved)
@@ -76,7 +76,7 @@ pub async fn poll_aptos_escrow_events(config: &Config) -> Result<Vec<EscrowEvent
                     revocable: data.revocable,
                     reserved_solver,
                     chain_id: connected_chain_apt.chain_id, // Chain ID from config
-                    chain_type: ChainType::Move, // This escrow came from Aptos (Move) monitoring
+                    chain_type: ChainType::Mvm, // This escrow came from Move VM monitoring
                     timestamp,
                 });
             }

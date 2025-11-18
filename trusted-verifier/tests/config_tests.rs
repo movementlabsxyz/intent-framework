@@ -13,7 +13,7 @@ fn test_default_config_creation() {
     
     assert_eq!(config.hub_chain.name, "Hub Chain");
     assert_eq!(config.hub_chain.rpc_url, "http://127.0.0.1:8080");
-    assert!(config.connected_chain_apt.is_none(), "Default config should have no connected Aptos chain");
+    assert!(config.connected_chain_apt.is_none(), "Default config should have no connected Move VM chain");
     assert!(config.connected_chain_evm.is_none(), "Default config should have no connected EVM chain");
 }
 

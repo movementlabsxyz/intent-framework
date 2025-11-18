@@ -1,7 +1,7 @@
 //! Generic API structures and handlers
 //!
 //! This module contains shared structures, helper functions, and generic API handlers
-//! that are used across all flow types (inflow/outflow) and chain types (Aptos/EVM).
+//! that are used across all flow types (inflow/outflow) and chain types (Move VM/EVM).
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};

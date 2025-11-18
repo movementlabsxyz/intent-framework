@@ -1,26 +1,26 @@
-//! Outflow Aptos-specific validation functions
+//! Outflow Move VM-specific validation functions
 //!
-//! This module contains Aptos-specific transaction parsing and parameter extraction
+//! This module contains Move VM-specific transaction parsing and parameter extraction
 //! for outflow fulfillment validation.
 
 use anyhow::{Result, Context};
-use crate::aptos_client::AptosTransaction;
+use crate::mvm_client::MvmTransaction;
 use crate::validator::generic::FulfillmentTransactionParams;
 
-/// Extracts intent_id and transaction parameters from an Aptos transaction
+/// Extracts intent_id and transaction parameters from a Move VM transaction
 /// 
 /// This function parses the transaction payload to extract parameters from
 /// `utils::transfer_with_intent_id()` function calls.
 /// 
 /// # Arguments
 /// 
-/// * `tx` - The Aptos transaction information
+/// * `tx` - The Move VM transaction information
 /// 
 /// # Returns
 /// 
 /// * `Ok(FulfillmentTransactionParams)` - Extracted parameters
 /// * `Err(anyhow::Error)` - Failed to extract parameters
-pub fn extract_aptos_fulfillment_params(tx: &AptosTransaction) -> Result<FulfillmentTransactionParams> {
+pub fn extract_mvm_fulfillment_params(tx: &MvmTransaction) -> Result<FulfillmentTransactionParams> {
     // Extract payload to get function call information
     let payload = tx.payload.as_ref()
         .ok_or_else(|| anyhow::anyhow!("Transaction payload not found"))?;

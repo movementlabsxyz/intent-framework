@@ -8,7 +8,7 @@ use base64::{engine::general_purpose, Engine as _};
 use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config, EvmChainConfig};
 use trusted_verifier::monitor::{RequestIntentEvent, FulfillmentEvent, EscrowEvent, ChainType};
 use trusted_verifier::validator::FulfillmentTransactionParams;
-use trusted_verifier::aptos_client::AptosTransaction;
+use trusted_verifier::mvm_client::MvmTransaction;
 use trusted_verifier::evm_client::EvmTransaction;
 
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
@@ -113,7 +113,7 @@ pub fn create_base_request_intent() -> RequestIntentEvent {
 pub fn create_base_fulfillment() -> FulfillmentEvent {
     FulfillmentEvent {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        intent_address: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string(), // Intent object address (64 hex chars for Aptos)
+        intent_address: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string(), // Intent object address (64 hex chars for Move VM)
         solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 0,
@@ -135,7 +135,7 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
 #[allow(dead_code)]
 pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
-        escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(), // Escrow address (64 hex chars for Aptos)
+        escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(), // Escrow address (64 hex chars for Move VM)
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
         issuer: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // EscrowEvent.issuer is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
@@ -146,7 +146,7 @@ pub fn create_base_escrow_event() -> EscrowEvent {
         revocable: false,
         reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
         chain_id: 2,
-        chain_type: ChainType::Move,
+        chain_type: ChainType::Mvm,
         timestamp: 0, // Should be set explicitly in tests
     }
 }
@@ -168,23 +168,23 @@ pub fn create_base_fulfillment_transaction_params() -> FulfillmentTransactionPar
         recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // Requester who receives tokens on connected chain
         amount: 0, // Should be set explicitly in tests
         solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
-        token_metadata: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(), // Token contract address (EVM) or metadata object (Aptos)
+        token_metadata: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(), // Token contract address (EVM) or metadata object (Move VM)
     }
 }
 
-/// Create a base Aptos transaction with default test values.
+/// Create a base Move VM transaction with default test values.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let base = create_base_aptos_transaction();
-/// let custom = AptosTransaction {
+/// let base = create_base_mvm_transaction();
+/// let custom = MvmTransaction {
 ///     hash: "0x123123".to_string(), 
 ///     success: false,
 ///     ..base
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_aptos_transaction() -> AptosTransaction {
-    AptosTransaction {
+pub fn create_base_mvm_transaction() -> MvmTransaction {
+    MvmTransaction {
         version: "12345".to_string(),
         hash: "0x123123".to_string(), // Transaction hash - arbitrary test value
         success: true,

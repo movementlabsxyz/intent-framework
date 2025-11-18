@@ -171,12 +171,12 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
    - Requester receives tokens on hub chain
 
 4. **Verifier - Validation and Approval** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
-   - Verifier monitors hub chain for request intent events and connected chain (Aptos or EVM) for escrow events
-   - Verifier actively polls connected chains and caches escrows when created (symmetrical for both Aptos and EVM)
+   - Verifier monitors hub chain for request intent events and connected chain (Move VM or EVM) for escrow events
+   - Verifier actively polls connected chains and caches escrows when created (symmetrical for both Move VM and EVM)
    - Verifier validates escrow is non-revocable (critical security check)
-   - Verifier validates solver addresses match (Aptos addresses directly, EVM addresses via solver registry)
+   - Verifier validates solver addresses match (Move VM addresses directly, EVM addresses via solver registry)
    - Verifier validates `chain_id` matches between intent `offered_chain_id` and escrow `chain_id`
-   - Verifier signs the `intent_id` to generate approval signature after hub fulfillment is confirmed (Ed25519 for Aptos, ECDSA for EVM) - signature itself is the approval
+   - Verifier signs the `intent_id` to generate approval signature after hub fulfillment is confirmed (Ed25519 for Move VM, ECDSA for EVM) - signature itself is the approval
 
 5. **Connected Chain - Escrow Release** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
    - Anyone can call `complete_escrow_from_fa()` with verifier signature (signature itself is the approval)

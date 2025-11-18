@@ -72,7 +72,7 @@ Response (abbreviated)
         "revocable": false,
         "reserved_solver": "0x...",
         "chain_id": 2,
-        "chain_type": "Move",
+        "chain_type": "Mvm",
         "timestamp": 1761761513
       }
     ],

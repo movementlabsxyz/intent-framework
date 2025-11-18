@@ -17,9 +17,9 @@ mod inflow_generic;
 mod outflow_generic;
 
 // Flow + chain specific modules
-mod inflow_aptos;
+mod inflow_mvm;
 mod inflow_evm;
-mod outflow_aptos;
+mod outflow_mvm;
 mod outflow_evm;
 
 // Re-export public types

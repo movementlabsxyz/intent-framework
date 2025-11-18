@@ -1,12 +1,12 @@
-//! EVM-specific API handlers
+//! Outflow EVM-specific API handlers
 //!
 //! This module contains EVM-specific transaction querying and parameter extraction
-//! for fulfillment validation.
+//! for outflow fulfillment validation on EVM connected chains.
 
 use anyhow::Result;
 use crate::validator::{CrossChainValidator, FulfillmentTransactionParams};
 
-/// Queries an EVM transaction and extracts fulfillment parameters.
+/// Queries an EVM transaction and extracts fulfillment parameters for outflow validation.
 /// 
 /// This function handles the EVM-specific logic for:
 /// 1. Creating an EVM client from configuration

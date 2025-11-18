@@ -1,4 +1,4 @@
-//! Inflow validation API handlers
+//! Inflow validation API handlers (chain-agnostic)
 //!
 //! This module handles API endpoints for inflow intent validation.
 //! Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub chain.
@@ -18,7 +18,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::api::ApiResponse;
+use crate::api::generic::ApiResponse;
 use crate::monitor::EventMonitor;
 
 // ============================================================================

@@ -1,12 +1,12 @@
-//! Aptos-specific API handlers
+//! Outflow Aptos-specific API handlers
 //!
 //! This module contains Aptos-specific transaction querying and parameter extraction
-//! for fulfillment validation.
+//! for outflow fulfillment validation on Aptos connected chains.
 
 use anyhow::Result;
 use crate::validator::{CrossChainValidator, FulfillmentTransactionParams};
 
-/// Queries an Aptos transaction and extracts fulfillment parameters.
+/// Queries an Aptos transaction and extracts fulfillment parameters for outflow validation.
 /// 
 /// This function handles the Aptos-specific logic for:
 /// 1. Creating an Aptos client from configuration

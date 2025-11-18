@@ -1,4 +1,4 @@
-//! Outflow validation API handlers
+//! Outflow validation API handlers (chain-agnostic)
 //!
 //! This module handles API endpoints for outflow intent validation.
 //! Outflow intents have tokens locked on the hub chain and request tokens on the connected chain.
@@ -16,14 +16,14 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, error};
 
-use crate::api::ApiResponse;
-use crate::crypto::{CryptoService, ApprovalSignature};
+use crate::api::generic::ApiResponse;
+use crate::crypto::ApprovalSignature;
 use crate::monitor::EventMonitor;
 use crate::validator::CrossChainValidator;
 
 // Chain-specific modules
-use super::aptos;
-use super::evm;
+use super::outflow_aptos;
+use super::outflow_evm;
 
 // ============================================================================
 // REQUEST/RESPONSE STRUCTURES
@@ -87,15 +87,15 @@ pub async fn handle_outflow_fulfillment_validation(
     request: ValidateOutflowFulfillmentRequest,
     monitor: Arc<RwLock<EventMonitor>>,
     validator: Arc<RwLock<CrossChainValidator>>,
-    crypto_service: Arc<RwLock<CryptoService>>,
+    crypto_service: Arc<RwLock<crate::crypto::CryptoService>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let monitor = monitor.read().await;
     let validator = validator.read().await;
     
-    // Query transaction based on chain type
+    // Query transaction based on chain type (chain-specific)
     let (tx_params, tx_success) = match request.chain_type.as_str() {
         "aptos" => {
-            match aptos::query_aptos_fulfillment_transaction(&request.transaction_hash, &validator).await {
+            match outflow_aptos::query_aptos_fulfillment_transaction(&request.transaction_hash, &validator).await {
                 Ok(result) => result,
                 Err(error_msg) => {
                     return Ok(warp::reply::json(&ApiResponse::<OutflowFulfillmentValidationResponse> {
@@ -107,7 +107,7 @@ pub async fn handle_outflow_fulfillment_validation(
             }
         },
         "evm" => {
-            match evm::query_evm_fulfillment_transaction(&request.transaction_hash, &validator).await {
+            match outflow_evm::query_evm_fulfillment_transaction(&request.transaction_hash, &validator).await {
                 Ok(result) => result,
                 Err(error_msg) => {
                     return Ok(warp::reply::json(&ApiResponse::<OutflowFulfillmentValidationResponse> {
@@ -127,7 +127,7 @@ pub async fn handle_outflow_fulfillment_validation(
         }
     };
     
-    // Find matching request intent
+    // Find matching request intent (flow-agnostic logic)
     let intent_id = request.intent_id.as_ref().unwrap_or(&tx_params.intent_id);
     let intent_cache = monitor.get_cached_events().await;
     let request_intent = match intent_cache.iter().find(|intent| intent.intent_id == *intent_id) {
@@ -141,7 +141,7 @@ pub async fn handle_outflow_fulfillment_validation(
         }
     };
     
-    // Validate transaction against intent
+    // Validate transaction against intent (flow-agnostic logic)
     let validation_result = match crate::validator::validate_outflow_fulfillment(&validator, request_intent, &tx_params, tx_success) {
         Ok(result) => result,
         Err(e) => {
@@ -154,13 +154,12 @@ pub async fn handle_outflow_fulfillment_validation(
     };
     
     // If validation passed, generate approval signature for hub chain fulfillment
+    // Note: Hub chain is always Aptos, so we always use Ed25519 signature
     let approval_signature = if validation_result.valid {
         let crypto = crypto_service.read().await;
         let intent_id = intent_id.clone();
         
-        // Generate signature based on chain type
-        // Note: The signature is for the hub chain, not the connected chain
-        // Hub chain uses Aptos (Ed25519) regardless of connected chain type
+        // Generate signature for hub chain (always Aptos/Ed25519 regardless of connected chain type)
         match crypto.create_aptos_approval_signature(&intent_id) {
             Ok(sig) => {
                 info!("Generated hub chain approval signature for outflow intent_id: {} (signature for hub chain fulfillment)", intent_id);

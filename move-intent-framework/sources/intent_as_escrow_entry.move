@@ -19,18 +19,22 @@ module mvmt_intent::intent_as_escrow_entry {
     /// - `requester_signer`: Signer creating the escrow (requester who created the request intent on hub chain)
     /// - `offered_metadata`: Metadata of the token type to lock in escrow
     /// - `offered_amount`: Amount of tokens to lock in escrow
+    /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)
     /// - `verifier_public_key`: Public key of authorized verifier (32 bytes as hex)
     /// - `expiry_time`: Unix timestamp when escrow expires
     /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
     /// - `reserved_solver`: Address of the solver who will receive funds when escrow is claimed
+    /// - `desired_chain_id`: Chain ID where desired tokens are located (hub chain for inflow intents)
     public entry fun create_escrow_from_fa(
         requester_signer: &signer,
         offered_metadata: Object<fungible_asset::Metadata>,
         offered_amount: u64,
+        offered_chain_id: u64,
         verifier_public_key: vector<u8>, // 32 bytes
         expiry_time: u64,
         intent_id: address,
         reserved_solver: address,
+        desired_chain_id: u64,
     ) {
         use mvmt_intent::intent_reservation;
         
@@ -45,7 +49,7 @@ module mvmt_intent::intent_as_escrow_entry {
         let reservation = intent_reservation::new_reservation(reserved_solver);
 
         // Call the general escrow creation function
-        intent_as_escrow::create_escrow(requester_signer, fa, oracle_pk, expiry_time, intent_id, reservation);
+        intent_as_escrow::create_escrow(requester_signer, fa, offered_chain_id, oracle_pk, expiry_time, intent_id, reservation, desired_chain_id);
     }
 
     /// CLI-friendly wrapper for completing escrow with any fungible asset.

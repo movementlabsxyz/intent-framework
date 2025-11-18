@@ -6,14 +6,14 @@ use trusted_verifier::crypto::CryptoService;
 
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config, create_base_fulfillment};
+use test_helpers::{build_test_config_with_mvm, create_base_fulfillment};
 
 /// Test that crypto service creates different key pairs for each instance
 /// Why: Ensure each verifier instance has a unique cryptographic identity to prevent key collisions
 #[test]
 fn test_unique_key_generation() {
-    let config1 = build_test_config();
-    let config2 = build_test_config();
+    let config1 = build_test_config_with_mvm();
+    let config2 = build_test_config_with_mvm();
     let service1 = CryptoService::new(&config1).unwrap();
     let service2 = CryptoService::new(&config2).unwrap();
     
@@ -28,7 +28,7 @@ fn test_unique_key_generation() {
 /// Why: Cryptographic signatures are the core security mechanism - must work correctly
 #[test]
 fn test_signature_creation_and_verification() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     // Create an approval signature (signs intent_id)
@@ -50,7 +50,7 @@ fn test_signature_creation_and_verification() {
 /// Why: Prevent signature replay attacks - signatures must be tied to specific intent_ids
 #[test]
 fn test_signature_verification_fails_for_wrong_message() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     // Create signature for intent_id
@@ -73,7 +73,7 @@ fn test_signature_verification_fails_for_wrong_message() {
 /// Why: Each intent_id must have a unique signature to prevent replay attacks
 #[test]
 fn test_signatures_differ_for_different_intent_ids() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id1 = "0x01";
@@ -89,7 +89,7 @@ fn test_signatures_differ_for_different_intent_ids() {
 /// Why: Escrow operations require cryptographic authorization - signatures must be valid
 #[test]
 fn test_escrow_approval_signature() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     // Create escrow approval signature (signs intent_id)
@@ -111,7 +111,7 @@ fn test_escrow_approval_signature() {
 /// Why: Public key must remain constant for the same instance for external verification
 #[test]
 fn test_public_key_consistency() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let public_key1 = service.get_public_key();
@@ -125,7 +125,7 @@ fn test_public_key_consistency() {
 /// Why: Timestamps enable replay attack prevention and audit trail for approval decisions
 #[test]
 fn test_signature_contains_timestamp() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x01";
@@ -143,7 +143,7 @@ fn test_signature_contains_timestamp() {
 /// Why: Valid intent IDs should succeed, invalid intent IDs should be rejected with clear error messages
 #[test]
 fn test_mvm_signature_intent_id_validation() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     // Test with valid intent ID from base helper (should succeed)

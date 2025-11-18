@@ -3,11 +3,75 @@
 //! This module contains shared validation structures and the CrossChainValidator struct definition
 //! that are used across all flow types (inflow/outflow) and chain types (Move VM/EVM).
 
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::config::Config;
-use crate::monitor::{RequestIntentEvent, FulfillmentEvent};
+use crate::monitor::{RequestIntentEvent, FulfillmentEvent, ChainType};
+
+// ============================================================================
+// ADDRESS VALIDATION UTILITIES
+// ============================================================================
+
+/// Validates that an address string matches the required format for the chain type.
+/// 
+/// EVM addresses must be exactly 20 bytes (40 hex chars after removing 0x prefix).
+/// Move VM addresses must be exactly 32 bytes (64 hex chars after removing 0x prefix).
+/// 
+/// # Arguments
+/// 
+/// * `address` - Address string to validate (with or without 0x prefix)
+/// * `chain_type` - The chain type (EVM or Move VM)
+/// 
+/// # Returns
+/// 
+/// * `Ok(())` - Address format is valid
+/// * `Err(anyhow::Error)` - Address format is invalid
+pub fn validate_address_format(address: &str, chain_type: ChainType) -> Result<()> {
+    let address_no_prefix = address.strip_prefix("0x").unwrap_or(address);
+    let address_len = address_no_prefix.len();
+    
+    match chain_type {
+        ChainType::Evm => {
+            // EVM addresses must be exactly 20 bytes (40 hex chars)
+            if address_len != 40 {
+                return Err(anyhow::anyhow!(
+                    "Invalid EVM address format: expected 20 bytes (40 hex chars), got {} chars. Address: '{}'",
+                    address_len, address
+                ));
+            }
+        }
+        ChainType::Mvm => {
+            // Move VM addresses must be exactly 32 bytes (64 hex chars)
+            if address_len != 64 {
+                return Err(anyhow::anyhow!(
+                    "Invalid Move VM address format: expected 32 bytes (64 hex chars), got {} chars. Address: '{}'",
+                    address_len, address
+                ));
+            }
+        }
+        ChainType::Svm => {
+            // Solana addresses are 32 bytes (64 hex chars), same as Move VM
+            if address_len != 64 {
+                return Err(anyhow::anyhow!(
+                    "Invalid Solana address format: expected 32 bytes (64 hex chars), got {} chars. Address: '{}'",
+                    address_len, address
+                ));
+            }
+        }
+    }
+    
+    // Validate that the address contains only valid hex characters
+    if !address_no_prefix.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err(anyhow::anyhow!(
+            "Invalid address format: contains non-hexadecimal characters. Address: '{}'",
+            address
+        ));
+    }
+    
+    Ok(())
+}
 
 // ============================================================================
 // VALIDATION DATA STRUCTURES

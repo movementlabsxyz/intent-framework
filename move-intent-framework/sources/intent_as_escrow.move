@@ -41,10 +41,12 @@ module mvmt_intent::intent_as_escrow {
     /// # Arguments
     /// - `requester_signer`: Signer of the escrow creator (requester who created the request intent on hub chain)
     /// - `offered_asset`: Asset to be escrowed
+    /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)
     /// - `verifier_public_key`: Public key of authorized verifier
     /// - `expiry_time`: Unix timestamp when escrow expires
     /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
     /// - `reservation`: Required reservation specifying which solver can claim the escrow
+    /// - `desired_chain_id`: Chain ID where desired tokens are located (hub chain for inflow intents)
     /// 
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created escrow
@@ -54,10 +56,12 @@ module mvmt_intent::intent_as_escrow {
     public fun create_escrow(
         requester_signer: &signer,
         offered_asset: FungibleAsset,
+        offered_chain_id: u64,
         verifier_public_key: ed25519::UnvalidatedPublicKey,
         expiry_time: u64,
         intent_id: address,
         reservation: IntentReserved,
+        desired_chain_id: u64,
     ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
         // Create verifier requirement: signature itself is the approval, min_reported_value is 0
         // (the signature verification is what matters, not the reported_value)
@@ -73,8 +77,10 @@ module mvmt_intent::intent_as_escrow {
         
         fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
             offered_asset,
+            offered_chain_id,  // Chain ID where escrow is created (connected chain)
             placeholder_metadata,
-            placeholder_amount,
+            placeholder_amount, // desired_amount: use placeholder_amount (payment validation will check chain IDs)
+            desired_chain_id,   // Chain ID where desired tokens are located (hub chain for inflow)
             expiry_time,
             signer::address_of(requester_signer),
             requirement,

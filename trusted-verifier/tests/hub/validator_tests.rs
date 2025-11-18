@@ -7,7 +7,7 @@ use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::monitor::{RequestIntentEvent, FulfillmentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config, create_base_request_intent, create_base_fulfillment};
+use test_helpers::{build_test_config_with_mvm, create_base_request_intent_mvm, create_base_fulfillment};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -23,7 +23,7 @@ use test_helpers::{build_test_config, create_base_request_intent, create_base_fu
 #[tokio::test]
 async fn test_expired_request_intent_rejection_in_validate_request_intent_safety() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with expiry_time in the past
@@ -31,7 +31,7 @@ async fn test_expired_request_intent_rejection_in_validate_request_intent_safety
     let past_expiry = current_time - 1000; // Expired 1000 seconds ago
     let request_intent = RequestIntentEvent {
         expiry_time: past_expiry,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     let result = validator.validate_request_intent_safety(&request_intent).await;
@@ -49,7 +49,7 @@ async fn test_expired_request_intent_rejection_in_validate_request_intent_safety
 #[tokio::test]
 async fn test_non_expired_request_intent_acceptance_in_validate_request_intent_safety() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with expiry_time in the future
@@ -57,7 +57,7 @@ async fn test_non_expired_request_intent_acceptance_in_validate_request_intent_s
     let future_expiry = current_time + 1000; // Expires in 1000 seconds
     let request_intent = RequestIntentEvent {
         expiry_time: future_expiry,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     let result = validator.validate_request_intent_safety(&request_intent).await;
@@ -75,14 +75,14 @@ async fn test_non_expired_request_intent_acceptance_in_validate_request_intent_s
 #[tokio::test]
 async fn test_request_intent_expires_exactly_at_current_time() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with expiry_time exactly at current time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let request_intent = RequestIntentEvent {
         expiry_time: current_time,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     let result = validator.validate_request_intent_safety(&request_intent).await;
@@ -113,7 +113,7 @@ async fn test_request_intent_expires_exactly_at_current_time() {
 #[tokio::test]
 async fn test_fulfillment_timestamp_validation_after_expiry() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with expiry_time
@@ -121,7 +121,7 @@ async fn test_fulfillment_timestamp_validation_after_expiry() {
     let expiry_time = current_time + 100; // Expires in 100 seconds
     let request_intent = RequestIntentEvent {
         expiry_time,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create a fulfillment with timestamp after expiry
@@ -149,7 +149,7 @@ async fn test_fulfillment_timestamp_validation_after_expiry() {
 #[tokio::test]
 async fn test_fulfillment_timestamp_validation_before_expiry() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with expiry_time
@@ -157,7 +157,7 @@ async fn test_fulfillment_timestamp_validation_before_expiry() {
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
     let request_intent = RequestIntentEvent {
         expiry_time,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create a fulfillment with timestamp before expiry
@@ -184,7 +184,7 @@ async fn test_fulfillment_timestamp_validation_before_expiry() {
 #[tokio::test]
 async fn test_fulfillment_timestamp_validation_at_expiry() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with expiry_time
@@ -192,7 +192,7 @@ async fn test_fulfillment_timestamp_validation_at_expiry() {
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
     let request_intent = RequestIntentEvent {
         expiry_time,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create a fulfillment with timestamp exactly at expiry
@@ -221,7 +221,7 @@ async fn test_fulfillment_timestamp_validation_at_expiry() {
 async fn test_fulfillment_validation_success() {
     // Initialize tracing subscriber to capture log output during tests (ignored if already initialized)
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with future expiry and custom desired fields
@@ -231,7 +231,7 @@ async fn test_fulfillment_validation_success() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create a fulfillment that matches all requirements
@@ -258,7 +258,7 @@ async fn test_fulfillment_validation_success() {
 #[tokio::test]
 async fn test_fulfillment_amount_mismatch_rejection() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with desired_amount
@@ -268,7 +268,7 @@ async fn test_fulfillment_amount_mismatch_rejection() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create a fulfillment with different provided_amount
@@ -295,7 +295,7 @@ async fn test_fulfillment_amount_mismatch_rejection() {
 #[tokio::test]
 async fn test_fulfillment_metadata_mismatch_rejection() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent with desired_metadata
@@ -305,7 +305,7 @@ async fn test_fulfillment_metadata_mismatch_rejection() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create a fulfillment with different provided_metadata
@@ -332,7 +332,7 @@ async fn test_fulfillment_metadata_mismatch_rejection() {
 #[tokio::test]
 async fn test_fulfillment_intent_id_mismatch_rejection() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a request intent
@@ -342,7 +342,7 @@ async fn test_fulfillment_intent_id_mismatch_rejection() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create a fulfillment with different intent_id

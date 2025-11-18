@@ -45,10 +45,12 @@ module mvmt_intent::intent_as_escrow_tests {
         let escrow_intent = intent_as_escrow::create_escrow(
             user,
             offered_asset,
+            2, // offered_chain_id: connected chain where escrow is created
             verifier_public_key,
             timestamp::now_seconds() + 3600, // 1 hour expiry
             @0x1, // dummy intent_id for testing
             reservation, // Escrow must be reserved for a specific solver
+            1, // desired_chain_id: hub chain where tokens are desired
         );
         
         // Solver starts escrow session
@@ -105,10 +107,12 @@ module mvmt_intent::intent_as_escrow_tests {
         let escrow_intent = intent_as_escrow::create_escrow(
             user,
             offered_asset,
+            2, // offered_chain_id: connected chain where escrow is created
             verifier_public_key,
             timestamp::now_seconds() + 3600,
             @0x1, // Escrow created with intent_id = @0x1
             reservation,
+            1, // desired_chain_id: hub chain where tokens are desired
         );
         
         let (escrowed_asset, session) = intent_as_escrow::start_escrow_session(solver, escrow_intent);
@@ -161,10 +165,12 @@ module mvmt_intent::intent_as_escrow_tests {
         let _escrow_intent_a = intent_as_escrow::create_escrow(
             user,
             offered_asset_a,
+            2, // offered_chain_id: connected chain where escrow is created
             verifier_public_key,
             timestamp::now_seconds() + 3600,
             @0x1, // Escrow A with intent_id = @0x1
             reservation_a,
+            1, // desired_chain_id: hub chain where tokens are desired
         );
         
         // Create escrow B with intent_id = @0x2
@@ -173,10 +179,12 @@ module mvmt_intent::intent_as_escrow_tests {
         let escrow_intent_b = intent_as_escrow::create_escrow(
             user,
             offered_asset_b,
+            2, // offered_chain_id: connected chain where escrow is created
             verifier_public_key,
             timestamp::now_seconds() + 3600,
             @0x2, // Escrow B with intent_id = @0x2
             reservation_b,
+            1, // desired_chain_id: hub chain where tokens are desired
         );
         
         // Start escrow session for escrow B
@@ -223,10 +231,12 @@ module mvmt_intent::intent_as_escrow_tests {
         let escrow_intent = intent_as_escrow::create_escrow(
             user,
             offered_asset,
+            2, // offered_chain_id: connected chain where escrow is created
             verifier_public_key,
             timestamp::now_seconds() + 3600,
             @0x1, // dummy intent_id for testing
             reservation, // Escrow must be reserved for a specific solver
+            1, // desired_chain_id: hub chain where tokens are desired
         );
         
         // Requester tries to revoke the escrow directly - this should fail because escrow is non-revocable
@@ -261,10 +271,12 @@ module mvmt_intent::intent_as_escrow_tests {
             user,
             fa_metadata,
             50,
+            2, // offered_chain_id: connected chain where escrow is created
             verifier_public_key_bytes,
             timestamp::now_seconds() + 3600,
             @0x1, // dummy intent_id for testing
             signer::address_of(solver), // Reserved solver address
+            1, // desired_chain_id: hub chain where tokens are desired
         );
         
         // Verify requester's balance decreased by 50

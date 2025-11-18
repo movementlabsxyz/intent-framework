@@ -14,7 +14,7 @@ use trusted_verifier::evm_client::EvmTransaction;
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
 /// Keys are encoded using standard Base64 to satisfy CryptoService requirements.
 #[allow(dead_code)]
-pub fn build_test_config() -> Config {
+pub fn build_test_config_with_mvm() -> Config {
     let mut rng = rand::thread_rng();
     let mut sk_bytes = [0u8; 32];
     rng.fill_bytes(&mut sk_bytes);
@@ -57,10 +57,10 @@ pub fn build_test_config() -> Config {
 }
 
 /// Build a test configuration with EVM chain configuration.
-/// Extends build_test_config() to include a populated connected_chain_evm field.
+/// Extends build_test_config_with_mvm() to include a populated connected_chain_evm field.
 #[allow(dead_code)]
 pub fn build_test_config_with_evm() -> Config {
-    let mut config = build_test_config();
+    let mut config = build_test_config_with_mvm();
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
@@ -71,10 +71,10 @@ pub fn build_test_config_with_evm() -> Config {
     config
 }
 
-/// Create a base request intent event with default test values.
+/// Create a base request intent event with default test values for Move VM connected chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let request_intent = create_base_request_intent();
+/// let request_intent = create_base_request_intent_mvm();
 /// let custom_request_intent = RequestIntentEvent {
 ///     desired_amount: 500,
 ///     expiry_time: 1000000,
@@ -82,20 +82,41 @@ pub fn build_test_config_with_evm() -> Config {
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_request_intent() -> RequestIntentEvent {
+pub fn create_base_request_intent_mvm() -> RequestIntentEvent {
     RequestIntentEvent {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        requester: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        requester: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // Hub chain requester (Move VM format, 32 bytes)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0,
         expiry_time: 0, // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
+        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // Move VM address format (32 bytes)
         connected_chain_id: Some(2),
-        requester_address_connected_chain: None, // Can be set explicitly in tests for outflow intents
+        requester_address_connected_chain: Some("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
         timestamp: 0,
+    }
+}
+
+/// Create a base request intent event with default test values for EVM connected chain.
+/// This uses `create_base_request_intent_mvm()` as a base and overrides EVM-specific fields.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let request_intent = create_base_request_intent_evm();
+/// let custom_request_intent = RequestIntentEvent {
+///     desired_amount: 500,
+///     expiry_time: 1000000,
+///     ..request_intent
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_request_intent_evm() -> RequestIntentEvent {
+    RequestIntentEvent {
+        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes)
+        connected_chain_id: Some(3), // EVM chain ID
+        requester_address_connected_chain: Some("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string()), // EVM address format (20 bytes)
+        ..create_base_request_intent_mvm()
     }
 }
 
@@ -152,10 +173,10 @@ pub fn create_base_escrow_event() -> EscrowEvent {
     }
 }
 
-/// Create a base fulfillment transaction params with default test values.
+/// Create a base fulfillment transaction params with default test values for Move VM connected chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let base = create_base_fulfillment_transaction_params();
+/// let base = create_base_fulfillment_transaction_params_mvm();
 /// let custom = FulfillmentTransactionParams {
 ///     intent_id: "0xcustom".to_string(),
 ///     amount: 5000,
@@ -163,13 +184,33 @@ pub fn create_base_escrow_event() -> EscrowEvent {
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_fulfillment_transaction_params() -> FulfillmentTransactionParams {
+pub fn create_base_fulfillment_transaction_params_mvm() -> FulfillmentTransactionParams {
     FulfillmentTransactionParams {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // Requester who receives tokens on connected chain
+        recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // Requester who receives tokens on connected chain (Move VM format - 32 bytes)
         amount: 0, // Should be set explicitly in tests
-        solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(), // Move VM address format (32 bytes)
         token_metadata: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(), // Token contract address (EVM) or metadata object (Move VM)
+    }
+}
+
+/// Create a base fulfillment transaction params with default test values for EVM connected chain.
+/// This uses `create_base_fulfillment_transaction_params_mvm()` as a base and overrides EVM-specific fields.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let base = create_base_fulfillment_transaction_params_evm();
+/// let custom = FulfillmentTransactionParams {
+///     intent_id: "0xcustom".to_string(),
+///     amount: 5000,
+///     ..base
+/// };
+/// ```
+#[allow(dead_code)]
+pub fn create_base_fulfillment_transaction_params_evm() -> FulfillmentTransactionParams {
+    FulfillmentTransactionParams {
+        recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // EVM address format (20 bytes)
+        solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(), // EVM address format (20 bytes)
+        ..create_base_fulfillment_transaction_params_mvm()
     }
 }
 

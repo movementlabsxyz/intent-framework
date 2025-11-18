@@ -185,16 +185,17 @@ module mvmt_intent::fa_intent_outflow {
 
         // For outflow intents on hub chain:
         // - offered_amount = actual amount locked (tokens locked on hub)
-        // - desired_amount = 0 (nothing desired on hub, tokens desired on connected chain)
+        // - desired_amount = original desired_amount (for the connected chain specified by desired_chain_id)
         // - desired_metadata = placeholder (use same as offered_metadata for payment check)
-        // The actual desired tokens are on the connected chain, communicated off-chain
+        // The payment validation will check if desired_chain_id != offered_chain_id and use 0 for payment on hub
         let placeholder_metadata = fungible_asset::asset_metadata(&fa);
-        let hub_desired_amount = 0u64; // Nothing desired on hub for outflow
 
         fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
             fa,
+            offered_chain_id,  // Chain ID where offered tokens are located (hub chain)
             placeholder_metadata, // Use same metadata as locked tokens (placeholder for payment check)
-            hub_desired_amount,    // 0 - nothing desired on hub, desired on connected chain
+            desired_amount,    // Original desired_amount (for the connected chain) - payment validation will use 0 on hub
+            desired_chain_id,  // Chain ID where desired tokens are located (connected chain)
             expiry_time,
             signer::address_of(requester_signer),
             requirement,

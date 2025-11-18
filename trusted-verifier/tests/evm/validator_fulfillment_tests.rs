@@ -9,7 +9,7 @@ use trusted_verifier::evm_client::EvmTransaction;
 use trusted_verifier::monitor::RequestIntentEvent;
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config, create_base_request_intent, create_base_fulfillment_transaction_params, create_base_evm_transaction};
+use test_helpers::{build_test_config_with_evm, create_base_request_intent_evm, create_base_fulfillment_transaction_params_evm, create_base_evm_transaction};
 
 // ============================================================================
 // EVM TRANSACTION EXTRACTION TESTS
@@ -41,9 +41,7 @@ fn test_extract_evm_fulfillment_params_success() {
 
     assert!(result.is_ok(), "Extraction should succeed for valid transaction");
     let params = result.unwrap();
-    // EVM addresses are 20 bytes, but stored as 32 bytes in calldata (padded with zeros at the start)
-    // The extraction gets the full 32-byte value: 0x + 64 hex chars
-    assert_eq!(params.recipient, "0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    assert_eq!(params.recipient, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     assert_eq!(params.amount, 25000000u64); // 0x17d7840 in decimal
     assert_eq!(params.intent_id, "0x1111111111111111111111111111111111111111111111111111111111111111");
     assert_eq!(params.solver, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
@@ -110,25 +108,26 @@ fn test_extract_evm_fulfillment_params_insufficient_calldata() {
 /// outflow fulfillment.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_success() {
-    let config = build_test_config();
+    let config = build_test_config_with_evm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     let request_intent = RequestIntentEvent {
-        desired_amount: 25000000,
-        requester_address_connected_chain: Some("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string()),
-        ..create_base_request_intent()
+        desired_amount: 25000000, // For outflow request intents, validation uses desired_amount (amount desired on connected chain)
+        ..create_base_request_intent_evm()
     };
     
     let tx_params = FulfillmentTransactionParams {
-        recipient: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         amount: 25000000,
-        ..create_base_fulfillment_transaction_params()
+        ..create_base_fulfillment_transaction_params_evm()
     };
     
     let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true);
     
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
+    if !validation_result.valid {
+        panic!("Validation failed: {}", validation_result.message);
+    }
     assert!(validation_result.valid, "Validation should pass when all parameters match");
 }
 
@@ -140,14 +139,14 @@ async fn test_validate_outflow_fulfillment_success() {
 /// Why: Verify that only successful transactions can fulfill intents.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_unsuccessful_tx() {
-    let config = build_test_config();
+    let config = build_test_config_with_evm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
-    let request_intent = create_base_request_intent();
+    let request_intent = create_base_request_intent_evm();
     let tx_params = FulfillmentTransactionParams {
         intent_id: request_intent.intent_id.clone(),
         amount: request_intent.desired_amount,
-        ..create_base_fulfillment_transaction_params()
+        ..create_base_fulfillment_transaction_params_evm()
     };
     
     let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, false);
@@ -167,14 +166,14 @@ async fn test_validate_outflow_fulfillment_fails_on_unsuccessful_tx() {
 /// Why: Verify that transactions can only fulfill the specific intent they reference.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
-    let config = build_test_config();
+    let config = build_test_config_with_evm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
-    let request_intent = create_base_request_intent();
+    let request_intent = create_base_request_intent_evm();
     let tx_params = FulfillmentTransactionParams {
         intent_id: "0xwrong_intent_id".to_string(), // Different intent_id
         amount: request_intent.desired_amount,
-        ..create_base_fulfillment_transaction_params()
+        ..create_base_fulfillment_transaction_params_evm()
     };
     
     let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true);
@@ -193,18 +192,17 @@ async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
 /// Why: Verify that tokens are sent to the correct recipient address on the connected chain.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
-    let config = build_test_config();
+    let config = build_test_config_with_evm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     let request_intent = RequestIntentEvent {
-        requester_address_connected_chain: Some("0xcorrect_recipient".to_string()),
-        ..create_base_request_intent()
+        ..create_base_request_intent_evm()
     };
     
     let tx_params = FulfillmentTransactionParams {
-        recipient: "0xwrong_recipient".to_string(), // Different recipient
+        recipient: "0xdddddddddddddddddddddddddddddddddddddddd".to_string(), // Different recipient (EVM address format)
         amount: request_intent.desired_amount,
-        ..create_base_fulfillment_transaction_params()
+        ..create_base_fulfillment_transaction_params_evm()
     };
     
     let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true);
@@ -223,18 +221,17 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
 /// Why: Verify that the correct amount of tokens is transferred.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
-    let config = build_test_config();
+    let config = build_test_config_with_evm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     let request_intent = RequestIntentEvent {
         desired_amount: 1000,
-        requester_address_connected_chain: Some("0xrecipient".to_string()), // Required for outflow validation
-        ..create_base_request_intent()
+        ..create_base_request_intent_evm()
     };
     
     let tx_params = FulfillmentTransactionParams {
         amount: 500, // Different amount
-        ..create_base_fulfillment_transaction_params()
+        ..create_base_fulfillment_transaction_params_evm()
     };
     
     let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true);
@@ -257,30 +254,34 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 /// Why: Verify that only the authorized solver can fulfill the intent.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_solver_mismatch() {
-    let config = build_test_config();
+    let config = build_test_config_with_evm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     let request_intent = RequestIntentEvent {
-        reserved_solver: Some("0xauthorized_solver".to_string()),
-        requester_address_connected_chain: Some("0xrecipient".to_string()), // Required for outflow validation
-        ..create_base_request_intent()
+        desired_amount: 1000, // Set desired_amount to avoid validation failure on amount check
+        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes) - solver on connected EVM chain
+        ..create_base_request_intent_evm()
     };
     
     let tx_params = FulfillmentTransactionParams {
         amount: request_intent.desired_amount,
-        solver: "0xunauthorized_solver".to_string(), // Different solver
-        ..create_base_fulfillment_transaction_params()
+        solver: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(), // Different solver (EVM address format)
+        ..create_base_fulfillment_transaction_params_evm()
     };
     
     let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true);
     
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
+    if validation_result.valid {
+        panic!("Validation should fail when solver doesn't match. Message: {}", validation_result.message);
+    }
     assert!(!validation_result.valid, "Validation should fail when solver doesn't match");
     assert!(validation_result.message.contains("solver") || 
             validation_result.message.contains("Solver") ||
             validation_result.message.contains("Transaction solver") ||
             validation_result.message.contains("does not match") ||
-            validation_result.message.contains("reserved solver"));
+            validation_result.message.contains("reserved solver"),
+            "Validation message should mention solver mismatch. Got: {}", validation_result.message);
 }
 

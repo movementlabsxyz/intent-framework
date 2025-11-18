@@ -6,14 +6,14 @@
 use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{create_base_request_intent, create_base_escrow_event};
+use test_helpers::{create_base_request_intent_evm, create_base_escrow_event};
 
 /// Test that EVM escrow can be matched to hub intent by intent_id
 /// Why: Verify cross-chain matching logic correctly links EVM escrow to hub intent
 #[test]
 fn test_evm_escrow_cross_chain_matching() {
     // Step 1: Create hub intent
-    let hub_intent = create_base_request_intent();
+    let hub_intent = create_base_request_intent_evm();
     
     // Step 2: Create EVM escrow with matching intent_id
     // For EVM, the intent_id from Move VM is used directly (after conversion to uint256 on-chain)
@@ -93,7 +93,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
     // Step 1: Create  hub intent
     let hub_intent = RequestIntentEvent {
         expiry_time: 2000000,
-        ..create_base_request_intent()
+        ..create_base_request_intent_evm()
     };
 
     // Step 2: Create EVM escrow on connected chain with matching intent_id

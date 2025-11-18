@@ -5,7 +5,7 @@
 
 use anyhow::{Result, Context};
 use crate::evm_client::EvmTransaction;
-use crate::validator::generic::FulfillmentTransactionParams;
+use crate::validator::generic::{FulfillmentTransactionParams, validate_address_format};
 
 /// Extracts intent_id and transaction parameters from an EVM transaction
 /// 
@@ -37,8 +37,23 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
     }
 
     // Extract recipient address (bytes 4-35, skip selector)
+    // EVM addresses are 20 bytes, but calldata pads them to 32 bytes (first 12 bytes should be zeros)
     let recipient_hex = &input[8..72]; // 32 bytes = 64 hex chars, starting after 4-byte selector
-    let recipient = format!("0x{}", recipient_hex);
+    
+    // Validate calldata padding: first 12 bytes (24 hex chars) must be zeros
+    let padding = &recipient_hex[0..24];
+    if padding != "000000000000000000000000" {
+        return Err(anyhow::anyhow!(
+            "Invalid EVM address format in calldata: padding bytes are not zero. Expected 12 zero bytes, got: {}",
+            padding
+        ));
+    }
+    
+    // Extract and validate the 20-byte address
+    let address_part = &recipient_hex[24..64]; // Last 20 bytes (40 hex chars)
+    let recipient = format!("0x{}", address_part);
+    validate_address_format(&recipient, crate::monitor::ChainType::Evm)
+        .context("Invalid EVM address format in calldata")?;
 
     // Extract amount (bytes 36-67)
     let amount_hex = &input[72..136]; // Next 32 bytes = 64 hex chars

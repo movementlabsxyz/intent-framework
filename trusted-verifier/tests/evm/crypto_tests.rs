@@ -6,13 +6,13 @@ use trusted_verifier::crypto::CryptoService;
 
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config;
+use test_helpers::build_test_config_with_mvm;
 
 /// Test that ECDSA signature creation succeeds for EVM escrow release
 /// Why: ECDSA signatures are required for EVM chain compatibility - must work correctly
 #[test]
 fn test_create_evm_approval_signature_success() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -27,7 +27,7 @@ fn test_create_evm_approval_signature_success() {
 /// Why: EVM requires 65-byte signatures (32 r + 32 s + 1 v) for ecrecover
 #[test]
 fn test_create_evm_approval_signature_format_65_bytes() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -46,7 +46,7 @@ fn test_create_evm_approval_signature_format_65_bytes() {
 /// Why: Signatures must be verifiable on EVM chains using ecrecover
 #[test]
 fn test_create_evm_approval_signature_verification() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -74,7 +74,7 @@ fn test_create_evm_approval_signature_verification() {
 /// Why: Ethereum address is needed for EVM contract interactions - must be derived correctly
 #[test]
 fn test_get_ethereum_address_derivation() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let address = service.get_ethereum_address().unwrap();
@@ -92,7 +92,7 @@ fn test_get_ethereum_address_derivation() {
 /// Why: Recovery ID determines which public key can recover from signature - must be correct
 #[test]
 fn test_evm_signature_recovery_id_calculation() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -109,7 +109,7 @@ fn test_evm_signature_recovery_id_calculation() {
 /// Why: EVM uses keccak256 for message hashing - must match on-chain behavior
 #[test]
 fn test_evm_signature_keccak256_hashing() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -128,7 +128,7 @@ fn test_evm_signature_keccak256_hashing() {
 /// Why: Ethereum requires "\x19Ethereum Signed Message:\n32" prefix for ecrecover compatibility
 #[test]
 fn test_evm_signature_ethereum_message_prefix() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -149,7 +149,7 @@ fn test_evm_signature_ethereum_message_prefix() {
 /// Why: Intent IDs must be padded to 32 bytes for EVM abi.encodePacked compatibility
 #[test]
 fn test_evm_intent_id_padding() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     // Test with short intent ID (should be left-padded with zeros)
@@ -173,7 +173,7 @@ fn test_evm_intent_id_padding() {
 /// Why: Invalid intent IDs should be rejected with clear error messages
 #[test]
 fn test_evm_signature_invalid_intent_id() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
     
     // Test with intent ID that's too long (> 32 bytes)

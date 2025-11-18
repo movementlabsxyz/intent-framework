@@ -11,7 +11,7 @@ use wiremock::matchers::{method, path, body_json};
 use serde_json::json;
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config, create_base_request_intent};
+use test_helpers::{build_test_config_with_mvm, create_base_request_intent_evm};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -19,7 +19,7 @@ use test_helpers::{build_test_config, create_base_request_intent};
 
 /// Build a test config with a mock server URL
 fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
-    let mut config = build_test_config();
+    let mut config = build_test_config_with_mvm();
     config.hub_chain.rpc_url = mock_server_url.to_string();
     config
 }
@@ -91,7 +91,7 @@ fn create_test_request_intent(solver: Option<String>) -> RequestIntentEvent {
         expiry_time: 1000000,
         reserved_solver: solver,
         connected_chain_id: Some(31337),
-        ..create_base_request_intent()
+        ..create_base_request_intent_evm()
     }
 }
 

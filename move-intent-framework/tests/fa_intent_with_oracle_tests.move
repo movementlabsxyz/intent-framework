@@ -139,8 +139,10 @@ module mvmt_intent::fa_intent_with_oracle_tests {
 
         let intent = fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
             primary_fungible_store::withdraw(offerer, offered_fa_type, OFFER_AMOUNT),
+            1, // offered_chain_id: same chain for regular intents
             desired_fa_type,
             DESIRED_AMOUNT,
+            1, // desired_chain_id: same chain for regular intents
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
             requirement,

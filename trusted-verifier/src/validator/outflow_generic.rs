@@ -7,7 +7,7 @@ use anyhow::Result;
 use tracing::info;
 
 use crate::monitor::RequestIntentEvent;
-use super::generic::{CrossChainValidator, FulfillmentTransactionParams, ValidationResult};
+use super::generic::{CrossChainValidator, FulfillmentTransactionParams, ValidationResult, validate_address_format};
 
 /// Validates an outflow fulfillment transaction against a request intent
 /// 
@@ -71,6 +71,36 @@ pub fn validate_outflow_fulfillment(
 
     // Validate recipient matches requester_address_connected_chain (for outflow intents)
     if let Some(ref requester_address) = request_intent.requester_address_connected_chain {
+        // Determine chain type for address validation based on configured connected chain
+        let chain_type = if _validator.config().connected_chain_evm.is_some() {
+            crate::monitor::ChainType::Evm
+        } else if _validator.config().connected_chain_mvm.is_some() {
+            crate::monitor::ChainType::Mvm
+        } else {
+            return Ok(ValidationResult {
+                valid: false,
+                message: "No connected chain configured (neither EVM nor Move VM)".to_string(),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        };
+        
+        // Validate address formats match chain type
+        if let Err(e) = validate_address_format(&tx_params.recipient, chain_type) {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!("Transaction recipient address format validation failed: {}", e),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
+        if let Err(e) = validate_address_format(requester_address, chain_type) {
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!("Request intent requester_address_connected_chain format validation failed: {}", e),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
+        }
+        
         // Normalize addresses for comparison (remove 0x prefix, lowercase)
         let tx_recipient = tx_params.recipient.strip_prefix("0x").unwrap_or(&tx_params.recipient).to_lowercase();
         let requester = requester_address.strip_prefix("0x").unwrap_or(requester_address).to_lowercase();
@@ -103,16 +133,26 @@ pub fn validate_outflow_fulfillment(
     }
 
     // Validate amount matches expected amount
-    // For outflow intents: desired_amount on hub is 0 (nothing desired on hub), but the actual
-    // desired amount on connected chain should match offered_amount (tokens locked on hub)
-    // This function is specifically for outflow validation, so we use offered_amount
-    let expected_amount = request_intent.offered_amount;
+    // For outflow request intents: desired_amount specifies the amount desired on the connected chain
+    // The event contains the original desired_amount for the connected chain
+    // If desired_amount is 0, this indicates a bug in the Move code
+    let expected_amount = request_intent.desired_amount;
+    
+    if expected_amount == 0 {
+        return Ok(ValidationResult {
+            valid: false,
+            message: format!(
+                "Request intent desired_amount is 0 - this indicates a bug in the Move code. The event should contain the original desired_amount for the connected chain"
+            ),
+            timestamp: chrono::Utc::now().timestamp() as u64,
+        });
+    }
     
     if tx_params.amount != expected_amount {
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Transaction amount {} does not match request intent offered amount {} (tokens locked on hub)",
+                "Transaction amount {} does not match request intent desired amount {} (amount desired on connected chain)",
                 tx_params.amount, expected_amount
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,

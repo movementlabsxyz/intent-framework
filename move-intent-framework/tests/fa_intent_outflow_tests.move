@@ -251,8 +251,10 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         let intent_obj = fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
             fa,
+            1, // offered_chain_id: hub chain where tokens are locked
             desired_metadata,
             25,
+            2, // desired_chain_id: connected chain where tokens are desired
             expiry_time,
             signer::address_of(requester_signer),
             requirement,

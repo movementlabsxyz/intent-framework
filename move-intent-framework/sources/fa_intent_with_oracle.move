@@ -55,7 +55,9 @@ module mvmt_intent::fa_intent_with_oracle {
     /// Trading conditions for an oracle-guarded limit order.
     struct OracleGuardedLimitOrder has store, drop {
         desired_metadata: Object<Metadata>,
-        desired_amount: u64,
+        desired_amount: u64, // Original desired amount (for the chain specified by desired_chain_id)
+        desired_chain_id: u64, // Chain ID where desired tokens are located
+        offered_chain_id: u64, // Chain ID where offered tokens are located (used to determine if payment is required on current chain)
         requester: address,
         requirement: OracleSignatureRequirement,
         intent_id: address, // Intent ID from hub chain (for escrows) - used for signature verification
@@ -80,8 +82,10 @@ module mvmt_intent::fa_intent_with_oracle {
         intent_id: address,      // The original intent ID (from hub chain) - links escrow to hub intent
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
+        offered_chain_id: u64,  // Chain ID where offered tokens are located
         desired_metadata: Object<Metadata>,
-        desired_amount: u64,
+        desired_amount: u64,    // Original desired amount (for the chain specified by desired_chain_id)
+        desired_chain_id: u64,  // Chain ID where desired tokens are located
         requester: address,
         expiry_time: u64,
         min_reported_value: u64,
@@ -120,9 +124,11 @@ module mvmt_intent::fa_intent_with_oracle {
     /// oracle threshold) are captured in the intent arguments.
     ///
     /// # Arguments
-    /// - `offered_fungible_asset`: The asset being offered by the requester
+    /// - `offered_fa`: The asset being offered by the requester
+    /// - `offered_chain_id`: Chain ID where offered tokens are located
     /// - `desired_metadata`: Metadata handle of the asset the requester wants to receive
     /// - `desired_amount`: Minimum amount of the desired asset that must be paid
+    /// - `desired_chain_id`: Chain ID where desired tokens are located
     /// - `expiry_time`: Unix timestamp after which the intent can no longer be filled
     /// - `requester`: Address of the intent creator
     /// - `requirement`: Oracle public key and minimum reported value used for verification
@@ -134,9 +140,11 @@ module mvmt_intent::fa_intent_with_oracle {
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created oracle-guarded intent
     public fun create_fa_to_fa_intent_with_oracle_requirement(
-        offered_fungible_asset: FungibleAsset,
+        offered_fa: FungibleAsset,
+        offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain_id: u64,
         expiry_time: u64,
         requester: address,
         requirement: OracleSignatureRequirement,
@@ -146,8 +154,8 @@ module mvmt_intent::fa_intent_with_oracle {
         reservation: Option<IntentReserved>,
     ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         // Capture metadata and amount before depositing
-        let offered_metadata = fungible_asset::asset_metadata(&offered_fungible_asset);
-        let offered_amount = fungible_asset::amount(&offered_fungible_asset);
+        let offered_metadata = fungible_asset::asset_metadata(&offered_fa);
+        let offered_amount = fungible_asset::amount(&offered_fa);
         
         let coin_store_ref = object::create_object(requester);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
@@ -156,14 +164,14 @@ module mvmt_intent::fa_intent_with_oracle {
         let linear_ref = object::generate_linear_transfer_ref(&transfer_ref);
         object::transfer_with_ref(linear_ref, object::address_from_constructor_ref(&coin_store_ref));
 
-        fungible_asset::create_store(&coin_store_ref, fungible_asset::metadata_from_asset(&offered_fungible_asset));
+        fungible_asset::create_store(&coin_store_ref, fungible_asset::metadata_from_asset(&offered_fa));
         fungible_asset::deposit(
             object::object_from_constructor_ref<FungibleStore>(&coin_store_ref),
-            offered_fungible_asset
+            offered_fa
         );
         let intent_obj = intent::create_intent<FungibleStoreManager, OracleGuardedLimitOrder, OracleGuardedWitness>(
             FungibleStoreManager { extend_ref, delete_ref },
-            OracleGuardedLimitOrder { desired_metadata, desired_amount, requester, requirement, intent_id, requester_address_connected_chain },
+            OracleGuardedLimitOrder { desired_metadata, desired_amount, desired_chain_id, offered_chain_id, requester, requirement, intent_id, requester_address_connected_chain },
             expiry_time,
             requester,
             OracleGuardedWitness {},
@@ -172,13 +180,16 @@ module mvmt_intent::fa_intent_with_oracle {
         );
 
         // Emit event after creating intent so we have the intent address
+        // Use desired_amount directly (which should be the original value for the chain specified by desired_chain_id)
         event::emit(OracleLimitOrderEvent {
             intent_address: object::object_address(&intent_obj),
             intent_id,  // Pass the intent ID from requester (hub chain intent ID for escrows)
             offered_metadata,
             offered_amount,
+            offered_chain_id,
             desired_metadata,
             desired_amount,
+            desired_chain_id,
             requester,
             expiry_time,
             min_reported_value: requirement.min_reported_value,
@@ -240,8 +251,16 @@ module mvmt_intent::fa_intent_with_oracle {
             fungible_asset::metadata_from_asset(&received_fa) == argument.desired_metadata,
             error::invalid_argument(ENOT_DESIRED_TOKEN)
         );
+        // Payment validation: if desired_chain_id != offered_chain_id, we're on the offered chain
+        // and nothing is desired on this chain, so payment should be 0
+        // Otherwise, use the desired_amount for the chain specified by desired_chain_id
+        let required_payment_amount = if (argument.desired_chain_id == argument.offered_chain_id) {
+            argument.desired_amount // Same chain - payment required
+        } else {
+            0 // Cross-chain - nothing desired on the offered chain
+        };
         assert!(
-            fungible_asset::amount(&received_fa) >= argument.desired_amount,
+            fungible_asset::amount(&received_fa) >= required_payment_amount,
             error::invalid_argument(EAMOUNT_NOT_MEET),
         );
 

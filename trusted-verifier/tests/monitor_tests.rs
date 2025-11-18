@@ -7,7 +7,7 @@ use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent, FulfillmentEven
 use futures::future;
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config, create_base_request_intent, create_base_escrow_event, create_base_fulfillment};
+use test_helpers::{build_test_config_with_mvm, create_base_request_intent_mvm, create_base_escrow_event, create_base_fulfillment};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -74,7 +74,7 @@ fn test_revocable_intent_rejection() {
     let revocable_intent = RequestIntentEvent {
         intent_id: "0xrevocable".to_string(),
         revocable: true, // NOT safe for escrow
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Simulate validation: revocable intents should be rejected
@@ -83,7 +83,7 @@ fn test_revocable_intent_rejection() {
     
     let non_revocable_intent = RequestIntentEvent {
         intent_id: "0xsafe".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     let result = is_safe_for_escrow(&non_revocable_intent);
@@ -94,7 +94,7 @@ fn test_revocable_intent_rejection() {
 #[tokio::test]
 async fn test_generates_approval_when_fulfillment_and_escrow_present() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
 
     // Arrange: insert escrow with intent_id (valid hex address - even number of hex digits)
@@ -126,7 +126,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
 #[tokio::test]
 async fn test_returns_error_when_no_matching_escrow() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
 
     let fulfillment = FulfillmentEvent {
@@ -153,7 +153,7 @@ async fn test_returns_error_when_no_matching_escrow() {
 #[tokio::test]
 async fn test_multiple_concurrent_intents() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
 
     // Arrange: create multiple escrows with different intent_ids simultaneously (valid hex addresses)
@@ -242,7 +242,7 @@ async fn test_multiple_concurrent_intents() {
 #[tokio::test]
 async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
     // Create an expired request intent
@@ -255,7 +255,7 @@ async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillmen
     let expired_request_intent = RequestIntentEvent {
         intent_id: "0xexpired_intent".to_string(),
         expiry_time: past_expiry,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Add expired request intent to cache
@@ -287,7 +287,7 @@ async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillmen
 #[tokio::test]
 async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
     // Create a non-expired request intent
@@ -300,7 +300,7 @@ async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillmen
     let non_expired_request_intent = RequestIntentEvent {
         intent_id: "0xvalid_intent".to_string(),
         expiry_time: future_expiry,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Add non-expired request intent to cache
@@ -330,7 +330,7 @@ async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillmen
 #[tokio::test]
 async fn test_duplicate_escrow_event_rejection() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
     let escrow = create_base_escrow_event();
@@ -370,10 +370,10 @@ async fn test_duplicate_escrow_event_rejection() {
 #[tokio::test]
 async fn test_duplicate_intent_event_rejection() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
-    let intent = create_base_request_intent();
+    let intent = create_base_request_intent_mvm();
     
     // Add intent to cache (first time)
     {
@@ -410,7 +410,7 @@ async fn test_duplicate_intent_event_rejection() {
 #[tokio::test]
 async fn test_duplicate_fulfillment_event_handling() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
     // Add matching escrow to cache (required for approval generation)
@@ -465,7 +465,7 @@ async fn test_duplicate_fulfillment_event_handling() {
 #[tokio::test]
 async fn test_base_helpers_work_with_signature_generation() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
     // Add escrow using base helper (should have valid hex intent_id)
@@ -491,7 +491,7 @@ async fn test_base_helpers_work_with_signature_generation() {
 #[tokio::test]
 async fn test_approval_fails_when_intent_id_mismatch() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
     // Add escrow with one intent_id
@@ -527,7 +527,7 @@ async fn test_approval_fails_when_intent_id_mismatch() {
 #[tokio::test]
 async fn test_approval_fails_when_no_escrow_exists() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
     
     // Ensure escrow cache is empty (no escrow added)

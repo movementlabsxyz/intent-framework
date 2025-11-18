@@ -6,7 +6,7 @@
 use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent};
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::{create_base_request_intent, create_base_escrow_event};
+use test_helpers::{create_base_request_intent_mvm, create_base_escrow_event};
 
 
 // ============================================================================
@@ -42,7 +42,7 @@ use test_helpers::{create_base_request_intent, create_base_escrow_event};
 #[test]
 fn test_cross_chain_intent_matching() {
     // Step 1: User creates intent on hub chain (requests 1000 tokens to be provided by solver)
-    let hub_intent = create_base_request_intent();
+    let hub_intent = create_base_request_intent_mvm();
     
     // Step 2: User creates escrow on connected chain WITH tokens locked in it
     // The user must manually provide the hub_intent_id when creating the escrow
@@ -76,13 +76,13 @@ fn test_cross_chain_intent_matching() {
 #[tokio::test]
 async fn test_escrow_chain_id_validation() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Test that escrow chain_id must match intent's offered_chain_id when provided
-    let valid_intent = create_base_request_intent();
+    let valid_intent = create_base_request_intent_mvm();
     let valid_escrow = create_base_escrow_event();
     
     // This should pass the connected_chain_id check (may fail other validations, but not this one)
@@ -106,13 +106,13 @@ async fn test_escrow_chain_id_validation() {
 #[tokio::test]
 async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent with offered_amount = 1000
-    let hub_intent = create_base_request_intent();
+    let hub_intent = create_base_request_intent_mvm();
     
     // Create an escrow with mismatched offered_amount (500 != 1000)
     let escrow_mismatch = EscrowEvent {
@@ -149,13 +149,13 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
 #[tokio::test]
 async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_success() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent with specific offered_metadata
-    let hub_intent = create_base_request_intent();
+    let hub_intent = create_base_request_intent_mvm();
     
     // Create an escrow with matching offered_metadata
     let escrow_match = create_base_escrow_event();
@@ -173,13 +173,13 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_suc
 #[tokio::test]
 async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_rejection() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent with specific offered_metadata
-    let hub_intent = create_base_request_intent();
+    let hub_intent = create_base_request_intent_mvm();
     
     // Create an escrow with mismatched offered_metadata
     let escrow_mismatch = EscrowEvent {
@@ -202,15 +202,15 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_rej
 #[tokio::test]
 async fn test_escrow_offered_metadata_empty_strings() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Test case 1: Both empty - should pass
     let hub_intent_empty = RequestIntentEvent {
         offered_metadata: "".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     let escrow_empty = EscrowEvent {
         offered_metadata: "".to_string(),
@@ -225,7 +225,7 @@ async fn test_escrow_offered_metadata_empty_strings() {
     // Test case 2: Hub intent has metadata, escrow is empty - should fail
     let hub_intent_with_meta = RequestIntentEvent {
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     let escrow_empty_2 = EscrowEvent {
         offered_metadata: "".to_string(),
@@ -242,7 +242,7 @@ async fn test_escrow_offered_metadata_empty_strings() {
     // Test case 3: Hub intent is empty, escrow has metadata - should fail
     let hub_intent_empty_3 = RequestIntentEvent {
         offered_metadata: "".to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     let escrow_with_meta = EscrowEvent {
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
@@ -262,9 +262,9 @@ async fn test_escrow_offered_metadata_empty_strings() {
 #[tokio::test]
 async fn test_escrow_offered_metadata_complex_json() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Test case 1: Complex nested JSON - should pass when exact match
@@ -272,7 +272,7 @@ async fn test_escrow_offered_metadata_complex_json() {
     
     let hub_intent_complex = RequestIntentEvent {
         offered_metadata: complex_metadata.to_string(),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     let escrow_complex_match = EscrowEvent {
         offered_metadata: complex_metadata.to_string(),
@@ -325,13 +325,13 @@ async fn test_escrow_offered_metadata_complex_json() {
 #[tokio::test]
 async fn test_escrow_desired_amount_must_be_zero_success() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent
-    let hub_intent = create_base_request_intent();
+    let hub_intent = create_base_request_intent_mvm();
     
     // Validation passes when desired_amount is 0
     let escrow_valid = create_base_escrow_event();
@@ -349,13 +349,13 @@ async fn test_escrow_desired_amount_must_be_zero_success() {
 #[tokio::test]
 async fn test_escrow_desired_amount_must_be_zero_rejection() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent
-    let hub_intent = create_base_request_intent();
+    let hub_intent = create_base_request_intent_mvm();
     
     // Validation fails when desired_amount is non-zero
     let escrow_invalid = EscrowEvent {
@@ -376,15 +376,15 @@ async fn test_escrow_desired_amount_must_be_zero_rejection() {
 #[tokio::test]
 async fn test_escrow_rejection_when_connected_chain_id_is_none() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent without connected_chain_id
     let hub_intent = RequestIntentEvent {
         connected_chain_id: None,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create an escrow with a chain_id
@@ -406,15 +406,15 @@ async fn test_escrow_rejection_when_connected_chain_id_is_none() {
 #[tokio::test]
 async fn test_escrow_chain_id_mismatch_rejection() {
     use trusted_verifier::validator::CrossChainValidator;
-    use test_helpers::build_test_config;
+    use test_helpers::build_test_config_with_mvm;
     
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent with connected_chain_id
     let hub_intent = RequestIntentEvent {
         connected_chain_id: Some(31337),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create an escrow with mismatched chain_id

@@ -7,7 +7,7 @@ use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::monitor::{RequestIntentEvent, EscrowEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config, create_base_request_intent, create_base_escrow_event};
+use test_helpers::{build_test_config_with_mvm, create_base_request_intent_mvm, create_base_escrow_event};
 
 // ============================================================================
 // MOVE VM ESCROW SOLVER VALIDATION TESTS
@@ -17,13 +17,13 @@ use test_helpers::{build_test_config, create_base_request_intent, create_base_es
 /// Why: Verify that solver address matching validation works correctly for successful cases
 #[tokio::test]
 async fn test_escrow_solver_address_matching_success() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent with a solver
     let hub_intent = RequestIntentEvent {
         reserved_solver: Some("0xsolver_mvm".to_string()),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create an escrow with matching solver address (Move VM escrow)
@@ -44,13 +44,13 @@ async fn test_escrow_solver_address_matching_success() {
 /// Why: Verify that solver address mismatch validation works correctly
 #[tokio::test]
 async fn test_escrow_solver_address_mismatch_rejection() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Create a hub intent with a solver
     let hub_intent = RequestIntentEvent {
         reserved_solver: Some("0xsolver_mvm".to_string()),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     // Create an escrow with different solver address (Move VM escrow)
@@ -71,13 +71,13 @@ async fn test_escrow_solver_address_mismatch_rejection() {
 /// Why: Verify that reservation mismatch validation works correctly
 #[tokio::test]
 async fn test_escrow_solver_reservation_mismatch_rejection() {
-    let config = build_test_config();
+    let config = build_test_config_with_mvm();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     // Test case 1: Hub intent has solver, escrow doesn't
     let hub_intent_with_solver = RequestIntentEvent {
         reserved_solver: Some("0xsolver_mvm".to_string()),
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     let escrow_without_solver = EscrowEvent {
@@ -95,7 +95,7 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
     // Test case 2: Escrow has solver, hub intent doesn't
     let hub_intent_without_solver = RequestIntentEvent {
         reserved_solver: None,
-        ..create_base_request_intent()
+        ..create_base_request_intent_mvm()
     };
     
     let escrow_with_solver = EscrowEvent {

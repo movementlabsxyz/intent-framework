@@ -1,4 +1,4 @@
-//! EVM-specific monitoring functions
+//! Inflow EVM-specific monitoring functions
 //!
 //! This module contains EVM-specific event polling logic
 //! for escrow events on connected EVM chains.
@@ -6,7 +6,7 @@
 use anyhow::{Result, Context};
 use crate::config::Config;
 use crate::evm_client::EvmClient;
-use crate::monitor::{EscrowEvent, ChainType};
+use crate::monitor::generic::{EscrowEvent, ChainType};
 
 /// Polls the EVM connected chain for new escrow initialization events.
 /// 

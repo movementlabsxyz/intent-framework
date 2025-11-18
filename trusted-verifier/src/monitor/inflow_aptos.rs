@@ -1,4 +1,4 @@
-//! Aptos-specific monitoring functions
+//! Inflow Aptos-specific monitoring functions
 //!
 //! This module contains Aptos-specific event polling logic
 //! for escrow events on connected Aptos chains.
@@ -6,7 +6,7 @@
 use anyhow::{Result, Context};
 use crate::config::Config;
 use crate::aptos_client::{AptosClient, OracleLimitOrderEvent as AptosOracleLimitOrderEvent};
-use crate::monitor::{EscrowEvent, ChainType};
+use crate::monitor::generic::{EscrowEvent, ChainType};
 
 /// Polls the connected Aptos chain for new escrow initialization events.
 /// 

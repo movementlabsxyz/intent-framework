@@ -1,4 +1,4 @@
-//! Inflow-specific monitor helpers
+//! Inflow-specific monitor helpers (chain-agnostic)
 //!
 //! This module handles connected-chain escrow monitoring, validation, and approval generation
 //! for inflow intents. Inflow intents have tokens locked on the connected chain (in escrow)
@@ -25,7 +25,9 @@ use anyhow::Result;
 use base64::{engine::general_purpose, Engine as _};
 use tracing::{error, info};
 
-use super::{aptos, evm, EscrowApproval, EscrowEvent, EventMonitor, FulfillmentEvent};
+use super::generic::{EscrowApproval, EscrowEvent, EventMonitor, FulfillmentEvent};
+use super::inflow_aptos;
+use super::inflow_evm;
 
 // ============================================================================
 // CONNECTED CHAIN MONITORING
@@ -70,7 +72,7 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
     );
 
     loop {
-        match aptos::poll_aptos_escrow_events(&monitor.config).await {
+        match inflow_aptos::poll_aptos_escrow_events(&monitor.config).await {
             Ok(events) => {
                 for event in events {
                     info!("Received escrow event: {:?}", event);
@@ -143,7 +145,7 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
     );
 
     loop {
-        match evm::poll_evm_escrow_events(&monitor.config).await {
+        match inflow_evm::poll_evm_escrow_events(&monitor.config).await {
             Ok(events) => {
                 for event in events {
                     info!("Received EVM escrow event: {:?}", event);
@@ -207,7 +209,7 @@ pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowE
     let mut escrow_events = Vec::new();
 
     if let Some(_) = &monitor.config.connected_chain_apt {
-        match aptos::poll_aptos_escrow_events(&monitor.config).await {
+        match inflow_aptos::poll_aptos_escrow_events(&monitor.config).await {
             Ok(mut events) => {
                 escrow_events.append(&mut events);
             }
@@ -218,7 +220,7 @@ pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowE
     }
 
     if let Some(_) = &monitor.config.connected_chain_evm {
-        match evm::poll_evm_escrow_events(&monitor.config).await {
+        match inflow_evm::poll_evm_escrow_events(&monitor.config).await {
             Ok(mut events) => {
                 escrow_events.append(&mut events);
             }
@@ -500,3 +502,4 @@ pub async fn get_approval_for_escrow(monitor: &EventMonitor, escrow_id: &str) ->
     let approvals = monitor.approval_cache.read().await;
     approvals.iter().find(|approval| approval.escrow_id == escrow_id).cloned()
 }
+

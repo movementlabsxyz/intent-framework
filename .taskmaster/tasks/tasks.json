@@ -2,145 +2,90 @@
   "master": {
     "tasks": [
       {
-        "id": "1",
-        "title": "Design outflow request intent structure and generalize hub intent creation",
-        "description": "Analyze and design the generalized hub request intent structure to support both inflow and outflow request intents",
-        "details": "Create wrapper functions for inflow (current) and outflow (new) request intents. For inflow: create_inflow_request_intent() wrapper around existing create_cross_chain_request_intent_entry() using FungibleAssetLimitOrder (no signature required). For outflow: create_outflow_request_intent() using OracleGuardedLimitOrder (requires verifier signature). Extend OracleGuardedLimitOrder struct to add requester_address_connected_chain: Option<address> field to store where solver should send tokens on connected chain. Design ensures tokens are locked on hub for outflow vs connected chain for inflow.",
-        "testStrategy": "Create unit tests validating both inflow and outflow intent creation with correct token locking behavior and struct field validation",
+        "id": "11",
+        "title": "Add outflow intent E2E tests",
+        "description": "Add E2E test flow for outflow intents after inflow tests are finalized",
+        "details": "Extend E2E test suite to include outflow intent flow. After inflow tests complete, add outflow test where Alice creates an outflow intent on Chain 1 (hub) to send tokens to the connected chain. Test flow: 1) Alice creates outflow request intent on hub chain (tokens locked on hub), 2) Solver transfers tokens on connected chain to Alice's connected chain address, 3) Solver submits transaction hash to verifier for validation, 4) Verifier validates and generates approval signature, 5) Solver uses signature to fulfill hub intent and receive locked tokens as reward. Update E2E test scripts to include this flow after inflow tests.",
+        "testStrategy": "Create E2E test script that runs outflow flow after inflow, verify tokens are locked on hub, verify solver transfer on connected chain, verify verifier validation and signature generation, verify hub intent fulfillment with signature, verify token balances match expected outcomes",
         "priority": "high",
         "dependencies": [],
         "status": "done",
-        "subtasks": [],
-        "updatedAt": "2025-11-14T12:46:20.559Z"
-      },
-      {
-        "id": "2",
-        "title": "Define connected_chain_fulfill transaction format for Move VM",
-        "description": "Design and document the transaction format for immediate solver transfers on Move VM connected chains",
-        "details": "Created on-chain helper function utils::transfer_with_intent_id() that accepts recipient, metadata, amount, and intent_id as parameters. This function performs the transfer and includes intent_id in the transaction payload so the verifier can extract it when querying by transaction hash. Created solver CLI tool (connected_chain_tx_template) that generates the aptos move run command to call this function directly. Documented the transaction format specification in protocol.md. Added comprehensive unit tests: Move tests (utils_tests.move) verify transfer_with_intent_id function behavior including successful transfers, balance verification, and error cases. Rust tests (connected_chain_tx_template_test.rs) verify address normalization, command generation, and error handling for both Move VM and EVM paths. Transaction immediately transfers tokens to requester address with no escrow or verifier involvement. The on-chain function approach is simpler than requiring script compilation.",
-        "testStrategy": "Document transaction format specification, verify on-chain function includes intent_id in transaction payload, test solver CLI tool generates correct commands",
-        "priority": "medium",
-        "dependencies": [
-          "1"
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create outflow hub intent creation test script",
+            "description": "Create bash script to set up and test Alice creating outflow intent on hub chain (Chain 1), where tokens are locked on the hub",
+            "dependencies": [],
+            "details": "Implement submit-outflow-hub-intent.sh script in testing-infra/e2e-tests-mvm/ that: 1) Generates random intent_id, 2) Gets APT metadata addresses for both chains, 3) Generates solver signature for outflow intent (offered tokens on hub, desired tokens on connected chain), 4) Registers solver in registry if needed, 5) Calls create_outflow_request_intent_entry on hub chain to lock tokens and create intent with requester_address_connected_chain parameter, 6) Verifies intent creation via LimitOrderEvent or OracleLimitOrderEvent, 7) Saves intent info for subsequent scripts. Use existing inflow scripts as reference pattern.\n<info added on 2025-11-18T14:00:56.617Z>\nI'll analyze the codebase to understand the project structure and verify the implementation details before generating the subtask update.Based on my analysis of the codebase, I can confirm the implementation is complete and correctly follows the established patterns. Here's the update text:\n\nScript successfully implemented at testing-infra/e2e-tests-mvm/submit-outflow-hub-intent.sh (237 lines). Verified implementation includes: Random intent_id generation via openssl (line 14), verifier public key loaded from verifier_testing.toml config with base64-to-hex conversion (lines 40-72), APT metadata extraction for both chains using extract_apt_metadata utility (lines 100-108), solver signature generation with correct outflow parameters (offered_amount on chain 1/hub, desired_amount on chain 2/connected) via generate_solver_signature utility (lines 133-146), solver registration in registry using register_solver utility (line 167), create_outflow_request_intent_entry call with all 12 required parameters including requester_address_connected_chain and verifier_public_key (lines 178-180), intent verification via LimitOrderEvent/OracleLimitOrderEvent in transaction events (lines 188-196), and intent info persistence using save_intent_info utility function (line 221). Script follows same structure as submit-hub-intent.sh inflow script and integrates with existing utility functions from util.sh and util_mvm.sh.\n</info added on 2025-11-18T14:00:56.617Z>",
+            "status": "done",
+            "testStrategy": "Run script standalone, verify intent created on hub chain via transaction events, verify tokens locked in hub intent object, verify intent includes requester_address_connected_chain field",
+            "updatedAt": "2025-11-18T14:01:09.395Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Create outflow solver transfer test script",
+            "description": "Create bash script to test solver (Bob) transferring tokens directly to Alice's connected chain address without escrow",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement submit-outflow-solver-transfer.sh script in testing-infra/e2e-tests-mvm/ that: 1) Loads intent_id from previous step, 2) Gets Alice's Chain 2 address from intent (requester_address_connected_chain), 3) Calls utils::transfer_fa_with_metadata function on Chain 2 as Bob to transfer tokens directly to Alice with intent_id embedded as metadata, 4) Verifies transfer completed by checking Alice's balance increased, 5) Saves transaction hash for verifier validation. This is a direct transfer, NOT an escrow - Alice receives tokens immediately.\n<info added on 2025-11-18T14:04:34.002Z>\nScript fully implemented with 159 lines. Direct transfer mechanism confirmed (NO escrow). Alice receives tokens immediately on Chain 2. Transfer executes via utils::transfer_with_intent_id function at lines 73-75. Transaction hash extracted from Chain 2 REST API (lines 85-86). Balance verification logic implemented (lines 92-118) confirming Alice +transfer_amount, Bob -transfer_amount-gas. Output saved to .test-data/outflow-transfer-info.txt (lines 121-124) containing transaction_hash and intent_id for next step's verifier validation. Script location: testing-infra/e2e-tests-mvm/submit-outflow-solver-transfer.sh\n</info added on 2025-11-18T14:04:34.002Z>",
+            "status": "done",
+            "testStrategy": "Run script after hub intent creation, verify Bob's balance decreased on Chain 2, verify Alice's balance increased on Chain 2 by desired_amount, verify transaction includes intent_id metadata, capture transaction hash for verifier",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-18T14:04:46.902Z"
+          },
+          {
+            "id": 3,
+            "title": "Create outflow verifier validation test script",
+            "description": "Create bash script to test verifier validating solver's connected chain transfer and generating approval signature for hub fulfillment",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement validate-outflow-transfer.sh script in testing-infra/e2e-tests-mvm/ that: 1) Loads transaction_hash and intent_id from previous step, 2) Calls verifier's validate-outflow-fulfillment endpoint with transaction hash and connected chain info, 3) Verifies response contains valid=true, 4) Extracts approval signature from response, 5) Saves signature for hub intent fulfillment. The verifier should query the connected chain transaction, extract intent_id and transfer parameters, validate they match the hub intent requirements, and return approval signature.\n<info added on 2025-11-18T14:06:55.157Z>\nBased on the comprehensive implementation details provided in the user request, here is the new text to append to the subtask details:\n\nIMPLEMENTATION COMPLETE: Script fully implemented (138 lines) with all required functionality. Validates data flow from previous step via .test-data/outflow-transfer-info.txt (lines 18-37), includes verifier service health check (lines 45-52), constructs proper JSON payload with transaction_hash, chain_type='mvm', and intent_id (lines 55-62), successfully calls POST /validate-outflow-fulfillment endpoint (lines 68-71), validates response structure with success=true check (lines 78-85), verifies validation.valid=true field (lines 88-101), extracts approval_signature (lines 104-115), and persists approval signature, signature_type, intent_id, and transaction_hash to .test-data/outflow-approval-info.txt for hub fulfillment step (lines 118-123). Verifier backend properly queries connected chain transaction, validates parameters against intent requirements, and generates Ed25519 approval signature. Comprehensive error handling and logging included throughout.\n</info added on 2025-11-18T14:06:55.157Z>",
+            "status": "done",
+            "testStrategy": "Run script after solver transfer, verify verifier endpoint returns success response, verify approval signature is present and valid format (hex string), verify verifier logs show transaction was queried and validated",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-18T14:07:07.229Z"
+          },
+          {
+            "id": 4,
+            "title": "Create outflow hub fulfillment test script",
+            "description": "Create bash script to test solver (Bob) fulfilling the hub intent using verifier signature to claim locked tokens as reward",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement fulfill-outflow-hub-intent.sh script in testing-infra/e2e-tests-mvm/ that: 1) Loads hub_intent_address and verifier_signature from previous steps, 2) Calls fulfill_outflow_request_intent on hub chain as Bob with verifier signature, 3) Verifies hub intent is fulfilled and tokens are released to Bob, 4) Checks Bob's balance increased on hub chain by offered_amount. This uses the oracle-guarded intent mechanism where verifier signature authorizes the release of locked tokens to the reserved solver.\n<info added on 2025-11-18T14:10:18.720Z>\nBased on the user request, here is the new text that should be appended to the subtask's details:\n\nScript successfully implemented as outflow-fulfill-hub-intent.sh (148 lines). Loads intent_id and hub_intent_address from intent info file, loads approval_signature from .test-data/outflow-approval-info.txt (saved by validation step), retrieves Bob's initial balance on Chain 1, converts signature to hex format, calls fulfill_outflow_request_intent as Bob with intent object address and verifier signature bytes, verifies Bob's balance increased by approximately offered_amount (100000000 minus gas fees) confirming locked tokens were released as reward, and displays comprehensive summary of the complete outflow flow. All outflow scripts renamed with 'outflow-' prefix (outflow-submit-hub-intent.sh, outflow-solver-transfer.sh, outflow-validate-transfer.sh, outflow-fulfill-hub-intent.sh) and inflow scripts renamed with 'inflow-' prefix for consistency. run-tests.sh updated to reference new inflow file names.\n</info added on 2025-11-18T14:10:18.720Z>",
+            "status": "done",
+            "testStrategy": "Run script after verifier validation, verify Bob's balance increased on Chain 1 by offered_amount, verify hub intent object shows fulfilled status, verify transaction succeeded with verifier signature validation",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-18T14:10:30.998Z"
+          },
+          {
+            "id": 5,
+            "title": "Integrate outflow tests into run-tests.sh",
+            "description": "Update the main E2E test runner to execute outflow test flow after inflow tests complete, and verify end-to-end token balance changes",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Modify testing-infra/e2e-tests-mvm/run-tests.sh to: 1) Add execution of outflow test scripts in sequence after inflow tests complete (submit-outflow-hub-intent.sh, submit-outflow-solver-transfer.sh, validate-outflow-transfer.sh, fulfill-outflow-hub-intent.sh), 2) Add balance verification showing Alice received tokens on connected chain and Bob received tokens on hub chain, 3) Add cleanup of outflow test artifacts, 4) Update test output to distinguish between inflow and outflow test phases. Ensure tests run sequentially with proper dependency ordering.\n<info added on 2025-11-18T14:11:46.449Z>\nI need to analyze the codebase to understand the implementation and provide accurate details about what was actually implemented.Now let me check the outflow test scripts to understand what they do:Based on my analysis of the run-tests.sh file, I can now generate the implementation completion update:\n\nImplementation completed in testing-infra/e2e-tests-mvm/run-tests.sh:32-71. Step 3 (lines 32-40) executes INFLOW tests with descriptive header showing connected→hub flow direction. Step 4 (lines 42-48) executes OUTFLOW tests sequentially: outflow-submit-hub-intent.sh, outflow-solver-transfer.sh, outflow-validate-transfer.sh, outflow-fulfill-hub-intent.sh showing hub→connected flow direction. Steps renumbered: Rust integration tests moved to Step 5 (line 51), verifier service to Step 6 (line 56), cleanup to Step 7 (line 68). Test summary section (lines 63-65) displays completion status for both inflow and outflow test phases. Both flows share verifier configuration from Step 3. Sequential execution ensures proper dependency ordering - inflow completes before outflow begins. Cleanup phase handles artifacts from both test flows.\n</info added on 2025-11-18T14:11:46.449Z>",
+            "status": "done",
+            "testStrategy": "Run full E2E test suite including both inflow and outflow tests, verify all steps complete successfully, verify final token balances reflect both inflow and outflow operations completed correctly, verify test output clearly shows outflow test phase results",
+            "parentId": "undefined",
+            "updatedAt": "2025-11-18T14:12:00.614Z"
+          }
         ],
-        "status": "done",
-        "subtasks": []
-      },
-      {
-        "id": "3",
-        "title": "Define connected_chain_fulfill transaction format for EVM",
-        "description": "Design and document the transaction format for immediate solver transfers on EVM connected chains",
-        "details": "Defined transaction format using standard ERC20 transfer(to, amount) with intent_id appended as metadata in transaction data field (32 bytes after function parameters). Data format: 0xa9059cbb (transfer selector) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes). ERC20 contract ignores extra intent_id bytes, but they remain verifiable on-chain. Created solver CLI tool (connected_chain_tx_template) that generates the ERC20 calldata payload with intent_id appended. Documented the transaction format specification in protocol.md. Added comprehensive Rust tests (connected_chain_tx_template_test.rs) that verify EVM calldata generation, padding, selector correctness, and error handling. No contract changes needed for transfers - uses existing ERC20 standard. On-chain validation function was not implemented (same rationale as Aptos - validation responsibility shifted to solver tooling and verifier).",
-        "testStrategy": "Test transaction data field parsing, metadata extraction, verify ERC20 transfer ignores extra bytes, and validate transaction format checking",
-        "priority": "medium",
-        "dependencies": [
-          "1"
-        ],
-        "status": "done",
-        "subtasks": [],
-        "updatedAt": "2025-11-17T11:18:44.140Z"
-      },
-      {
-        "id": "4",
-        "title": "Split cross-chain module and implement outflow request intent creation",
-        "description": "Split fa_intent_cross_chain.move into separate inflow and outflow modules, and implement create_outflow_request_intent() function in fa_intent_outflow.move",
-        "details": "Refactored architecture by splitting fa_intent_cross_chain.move into fa_intent_inflow.move and fa_intent_outflow.move for better organization. Created create_outflow_request_intent() as a public function in fa_intent_outflow.move that uses fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement() to create OracleGuardedLimitOrder intent. Function withdraws actual tokens from requester (locked on hub), stores requester_address_connected_chain, sets revocable=false for cross-chain safety, and requires verifier_public_key parameter. Function returns Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>. Created entry wrapper create_outflow_request_intent_entry() for transaction calls. Added comprehensive tests including creation, fulfillment, and type safety tests.",
-        "testStrategy": "Unit tests for outflow intent creation, token withdrawal verification, oracle requirement setup, requester address storage, end-to-end fulfillment flow, and type safety (cannot fulfill outflow with inflow function)",
-        "priority": "high",
-        "dependencies": [
-          "1"
-        ],
-        "status": "done",
-        "subtasks": []
-      },
-      {
-        "id": "5",
-        "title": "Extend OracleGuardedLimitOrder struct with requester address field",
-        "description": "Add requester_address_connected_chain field to OracleGuardedLimitOrder struct in fa_intent_with_oracle.move",
-        "details": "Modify OracleGuardedLimitOrder struct to include requester_address_connected_chain: Option<address> field. This field stores the connected chain address where solver should send tokens for outflow intents. Update create_fa_to_fa_intent_with_oracle_requirement() function to accept and store this field. Field is Some(address) for outflow intents, None for regular oracle intents. Update all related functions to handle the new field appropriately.",
-        "testStrategy": "Test struct modification, field storage and retrieval, ensure backward compatibility with existing oracle intents, validate outflow intent requires non-None address",
-        "priority": "medium",
-        "dependencies": [
-          "4"
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": "6",
-        "title": "Refactor inflow request intent into separate module",
-        "description": "Refactor inflow intent creation into fa_intent_inflow.move module with create_inflow_request_intent() public function",
-        "details": "As part of module split, refactored inflow intent creation into fa_intent_inflow.move. Created create_inflow_request_intent() as a public function (not just a wrapper) that returns Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>. Function maintains current inflow behavior (FungibleAssetLimitOrder, withdraws 0 tokens, no signature required) while providing clear distinction from outflow intents. Created entry wrapper create_inflow_request_intent_entry() for transaction calls. Added comprehensive tests including creation (verifying 0 tokens locked), fulfillment, and type safety tests.",
-        "testStrategy": "Test creation function verifies 0 tokens locked, end-to-end fulfillment flow, type safety (cannot fulfill inflow with outflow function), and parameter passing matches expected behavior",
-        "priority": "low",
-        "dependencies": [
-          "4"
-        ],
-        "status": "done",
-        "subtasks": []
-      },
-      {
-        "id": "7",
-        "title": "Add Move transaction format validation functions",
-        "description": "Implement validation functions for connected_chain_fulfill transaction format in Move contracts",
-        "details": "Add validate_connected_chain_fulfill() view function that validates transaction format for Move VM connected chains. Function should verify transaction includes intent_id in metadata, transaction format matches expected structure (standard transfer with metadata), and all required fields are present. Note: validates format only, not values (contract doesn't know correct values - only verifier does). Can be called off-chain by solver before submitting transaction for pre-flight validation.",
-        "testStrategy": "Test format validation logic, verify function correctly identifies valid/invalid transaction formats, test off-chain callable behavior",
-        "priority": "low",
-        "dependencies": [
-          "2",
-          "4"
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": "8",
-        "title": "Add EVM transaction format validation functions",
-        "description": "Implement validation functions for connected_chain_fulfill transaction format in EVM contracts",
-        "details": "Add validateConnectedChainFulfill() view function to IntentEscrow contract that validates transaction format for EVM connected chains. Function should verify transaction data field includes intent_id metadata (32 bytes after function parameters), transaction format matches expected structure (transfer selector + to + amount + intent_id), and all required fields are present and properly formatted. Returns format validation result for off-chain solver usage.",
-        "testStrategy": "Test transaction data field validation, verify correct format detection for valid/invalid transactions, ensure proper byte layout verification",
-        "priority": "low",
-        "dependencies": [
-          "3"
-        ],
-        "status": "pending",
-        "subtasks": []
-      },
-      {
-        "id": "9",
-        "title": "Design verifier transaction validation logic",
-        "description": "Design comprehensive verifier validation logic for both Move VM and EVM connected chains",
-        "details": "Design verifier system to receive transaction hash from solver (via API), query transaction by hash on connected chain, extract intent_id and transaction parameters from transaction data. For EVM: use eth_getTransactionByHash and decode data field to extract intent_id from appended calldata (32 bytes after ERC20 transfer parameters). For Move VM: use Move VM RPC get_transaction_by_hash and extract intent_id from function arguments (utils::transfer_with_intent_id() explicitly includes intent_id as a parameter). Validate all parameters match intent requirements: intent_id matches hub request intent, to/requester address matches intent's requester_address_connected_chain, amount matches desired amount, solver address matches reserved solver. Verify transaction confirmed and transfer completed successfully. Note: Intent IDs are normalized (leading zeros removed, case normalized) when matching across chains to handle hex formatting differences.",
-        "testStrategy": "Test transaction hash querying, parameter extraction for both chains, validation logic against intent requirements, and transaction confirmation verification",
-        "priority": "high",
-        "dependencies": [
-          "2",
-          "3"
-        ],
-        "status": "done",
-        "subtasks": [],
-        "updatedAt": "2025-11-17T17:37:58.684Z"
-      },
-      {
-        "id": "10",
-        "title": "Implement verifier approval signature generation",
-        "description": "Implement verifier approval signature generation after successful transaction validation",
-        "details": "After successful validation of connected_chain_fulfill transaction, implement verifier signing of intent_id to generate approval signature. Signature follows same pattern as existing oracle-guarded intents - verifier signs BCS-encoded intent_id. Solver uses this signature to fulfill hub intent via existing oracle-guarded intent mechanism (finish_fa_receiving_session_with_oracle()). Funds always go to reserved solver address regardless of who calls fulfillment function. Integrate with existing verifier infrastructure and approval workflows.",
-        "testStrategy": "Test signature generation process, verify signature compatibility with existing oracle-guarded intent verification, test hub intent fulfillment with generated signature",
-        "priority": "high",
-        "dependencies": [
-          "9"
-        ],
-        "status": "in-progress",
-        "subtasks": [],
-        "updatedAt": "2025-11-17T17:38:23.109Z"
+        "updatedAt": "2025-11-18T14:12:00.614Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-17T17:38:23.113Z",
-      "taskCount": 10,
-      "completedCount": 6,
+      "lastModified": "2025-11-18T14:12:00.615Z",
+      "taskCount": 1,
+      "completedCount": 1,
       "tags": [
         "master"
       ]

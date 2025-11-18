@@ -19,7 +19,7 @@ log "This script will:"
 log "  1. Start the trusted verifier service"
 log "  2. Monitor events on Chain 1 (hub) and Chain 2 (connected)"
 log "  3. Validate cross-chain conditions match"
-log "  4. Wait for hub intent to be fulfilled by solver"
+log "  4. Wait for hub request intent to be fulfilled by solver"
 log "  5. Provide approval signatures for escrow release after hub fulfillment"
 log ""
 
@@ -61,7 +61,7 @@ sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|intent_module_address = .*|in
 # Update connected_chain_mvm escrow_module_address (same as intent_module_address)
 sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
-# Update hub_chain known_accounts (include both Alice and Bob - Bob fulfills intents)
+# Update hub_chain known_accounts (include both requester (Alice) and solver (Bob) - solver (Bob) fulfills intents)
 sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 
 # Update connected_chain_mvm known_accounts
@@ -308,15 +308,15 @@ else
             log "   📦 New approval found for escrow: $ESCROW_ID"
             log "   🔓 Releasing escrow..."
             
-            # Get Bob's balance before release (to verify funds were received)
-            log "   - Getting Bob's balance before release..."
+            # Get solver (Bob)'s balance before release (to verify funds were received)
+            log "   - Getting solver (Bob)'s balance before release..."
             BOB_BALANCE_BEFORE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
             if [ -z "$BOB_BALANCE_BEFORE" ] || [ "$BOB_BALANCE_BEFORE" = "null" ]; then
                 BOB_BALANCE_BEFORE="0"
             fi
             # Remove commas from balance if present
             BOB_BALANCE_BEFORE=$(echo "$BOB_BALANCE_BEFORE" | tr -d ',')
-            log "   - Bob's balance before release: $BOB_BALANCE_BEFORE Octas"
+            log "   - Solver (Bob)'s balance before release: $BOB_BALANCE_BEFORE Octas"
             
             # Decode base64 signature to hex
             SIGNATURE_HEX=$(echo "$SIGNATURE_BASE64" | base64 -d 2>/dev/null | xxd -p -c 1000 | tr -d '\n')
@@ -342,7 +342,7 @@ else
             log "   - Payment amount: $PAYMENT_AMOUNT (from escrow desired_amount)"
             
             # Submit escrow release transaction
-            # Using bob-chain2 as solver (needs to have APT for payment)
+            # Using bob-chain2 as solver (Bob) (needs to have APT for payment)
             # Note: Signature itself is the approval - no approval_value parameter needed
             
             aptos move run --profile bob-chain2 --assume-yes \
@@ -354,15 +354,15 @@ else
             # Wait a bit for transaction to be processed
             sleep 2
             
-            # Get Bob's balance after release
-            log "   - Getting Bob's balance after release..."
+            # Get solver (Bob)'s balance after release
+            log "   - Getting solver (Bob)'s balance after release..."
             BOB_BALANCE_AFTER=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
             if [ -z "$BOB_BALANCE_AFTER" ] || [ "$BOB_BALANCE_AFTER" = "null" ]; then
                 BOB_BALANCE_AFTER="0"
             fi
             # Remove commas from balance if present
             BOB_BALANCE_AFTER=$(echo "$BOB_BALANCE_AFTER" | tr -d ',')
-            log "   - Bob's balance after release: $BOB_BALANCE_AFTER Octas"
+            log "   - Solver (Bob)'s balance after release: $BOB_BALANCE_AFTER Octas"
             
             # Calculate balance increase
             BALANCE_INCREASE=$((BOB_BALANCE_AFTER - BOB_BALANCE_BEFORE))
@@ -374,43 +374,43 @@ else
             if [ $TX_EXIT_CODE -eq 0 ]; then
                 log "   ✅ Escrow release transaction succeeded!"
                 
-                # Verify Bob received the funds
+                # Verify solver (Bob) received the funds
                 if [ "$BALANCE_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
-                    log_and_echo "   ❌ ERROR: Bob did not receive escrow funds!"
+                    log_and_echo "   ❌ ERROR: Solver (Bob) did not receive escrow funds!"
                     log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
                     log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (100000000 minus gas)"
-                    log_and_echo "      Bob balance before: $BOB_BALANCE_BEFORE Octas"
-                    log_and_echo "      Bob balance after: $BOB_BALANCE_AFTER Octas"
+                    log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_BEFORE Octas"
+                    log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_AFTER Octas"
                     log_and_echo "      Escrow ID: $ESCROW_ID"
                     exit 1
                 fi
                 
-                log "   ✅ Bob received $BALANCE_INCREASE Octas (expected ~100000000 minus gas)"
+                log "   ✅ Solver (Bob) received $BALANCE_INCREASE Octas (expected ~100000000 minus gas)"
                 RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
             else
                 # Check the log file for error messages
                 ERROR_MSG=$(tail -100 "$LOG_FILE" | grep -oE "EOBJECT_DOES_NOT_EXIST|OBJECT_DOES_NOT_EXIST" || echo "")
                 if [ -n "$ERROR_MSG" ]; then
-                    # Escrow already released (object doesn't exist), verify Bob got the funds
+                    # Escrow already released (object doesn't exist), verify solver (Bob) got the funds
                     log "   ℹ️  Escrow object no longer exists (may already be released)"
                     
-                    # Verify Bob received the funds even though the object doesn't exist
+                    # Verify solver (Bob) received the funds even though the object doesn't exist
                     if [ "$BALANCE_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
-                        log_and_echo "   ❌ ERROR: Escrow object doesn't exist but Bob did NOT receive funds!"
+                        log_and_echo "   ❌ ERROR: Escrow object doesn't exist but solver (Bob) did NOT receive funds!"
                         log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
                         log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (100000000 minus gas)"
-                        log_and_echo "      Bob balance before: $BOB_BALANCE_BEFORE Octas"
-                        log_and_echo "      Bob balance after: $BOB_BALANCE_AFTER Octas"
+                        log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_BEFORE Octas"
+                        log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_AFTER Octas"
                         log_and_echo "      Escrow ID: $ESCROW_ID"
                         log_and_echo "      This indicates the escrow was released but funds went to wrong address or were lost"
                         exit 1
                     fi
                     
-                    log "   ✅ Verified: Bob received $BALANCE_INCREASE Octas (escrow was already released)"
+                    log "   ✅ Verified: Solver (Bob) received $BALANCE_INCREASE Octas (escrow was already released)"
                     RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
                 else
                     log "   ❌ Failed to release escrow"
-                    log_and_echo "   ❌ ERROR: Escrow release failed and Bob did not receive funds"
+                    log_and_echo "   ❌ ERROR: Escrow release failed and solver (Bob) did not receive funds"
                     log_and_echo "   Log file contents:"
                     cat "$LOG_FILE"
                     log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"

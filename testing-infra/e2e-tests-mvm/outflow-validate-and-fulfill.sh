@@ -45,7 +45,7 @@ log "📋 Chain Information:"
 log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Intent ID:                $INTENT_ID"
-log "   Hub Intent Address:       $HUB_INTENT_ADDRESS"
+log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash:         $CONNECTED_CHAIN_TX_HASH"
 log "   Chain Type:               mvm (Move VM)"
 log ""
@@ -143,8 +143,8 @@ log "   Signature type: $SIGNATURE_TYPE"
 log "   Signature (first 20 chars): ${APPROVAL_SIGNATURE:0:20}..."
 
 log ""
-log "🔓 Fulfilling hub intent with verifier signature..."
-log "=================================================="
+log "🔓 Fulfilling hub request intent with verifier signature..."
+log "========================================================="
 
 # Check and display initial balances
 log ""
@@ -157,9 +157,9 @@ BOB_INITIAL_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | j
 log "   Bob Chain 1 initial balance: $BOB_INITIAL_BALANCE Octas"
 
 log ""
-log "   - Bob fulfills the hub intent using verifier signature"
+log "   - Solver (Bob) fulfills the hub request intent using verifier signature"
 log "   - Intent ID: $INTENT_ID"
-log "   - Hub Intent Address: $HUB_INTENT_ADDRESS"
+log "   - Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 log "   - Verifier signature (first 20 chars): ${APPROVAL_SIGNATURE:0:20}..."
 
 # Get the intent object address
@@ -176,44 +176,44 @@ SIGNATURE_HEX="${APPROVAL_SIGNATURE#0x}"
 log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
 log "   - Calling fulfill_outflow_request_intent with verifier signature"
 
-# Bob fulfills the outflow intent by providing the verifier signature
+# Solver (Bob) fulfills the outflow intent by providing the verifier signature
 # The verifier signature proves that tokens were transferred on the connected chain
-# Bob receives the locked tokens from the hub as reward (offered_amount)
+# Solver (Bob) receives the locked tokens from the hub as reward (offered_amount)
 aptos move run --profile bob-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_outflow::fulfill_outflow_request_intent" \
     --args "address:$INTENT_OBJECT_ADDRESS" "hex:$SIGNATURE_HEX" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "     ✅ Bob successfully fulfilled the outflow intent!"
+    log "     ✅ Solver (Bob) successfully fulfilled the outflow request intent!"
 
     # Wait for transaction to be processed
     sleep 2
 
-    # Verify Bob's balance increased
-    log "     - Verifying Bob received locked tokens..."
+    # Verify solver (Bob)'s balance increased
+    log "     - Verifying solver (Bob) received locked tokens..."
     BOB_FINAL_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
     log "     Bob Chain 1 final balance: $BOB_FINAL_BALANCE Octas"
 
     # Calculate balance increase (accounting for gas)
     BALANCE_INCREASE=$((BOB_FINAL_BALANCE - BOB_INITIAL_BALANCE))
 
-    # Expected amount: 100000000 tokens (locked in hub intent) minus gas fees
-    # We expect Bob's balance to increase by approximately 100000000 (allowing for gas)
+    # Expected amount: 100000000 tokens (locked in hub request intent) minus gas fees
+    # We expect solver (Bob)'s balance to increase by approximately 100000000 (allowing for gas)
     OFFERED_AMOUNT=100000000
     EXPECTED_MIN_AMOUNT=$((OFFERED_AMOUNT - 1000000)) # Allow for gas fees
 
     if [ "$BALANCE_INCREASE" -ge "$EXPECTED_MIN_AMOUNT" ]; then
-        log "     ✅ Bob received locked tokens: +$BALANCE_INCREASE Octas (expected ~$OFFERED_AMOUNT minus gas)"
+        log "     ✅ Solver (Bob) received locked tokens: +$BALANCE_INCREASE Octas (expected ~$OFFERED_AMOUNT minus gas)"
     else
-        log_and_echo "     ⚠️  WARNING: Bob's balance increase is less than expected"
+        log_and_echo "     ⚠️  WARNING: Solver (Bob)'s balance increase is less than expected"
         log_and_echo "        Balance increase: $BALANCE_INCREASE Octas"
         log_and_echo "        Expected minimum: $EXPECTED_MIN_AMOUNT Octas"
         log_and_echo "        Note: This may be due to higher gas costs"
     fi
 
-    log_and_echo "✅ Outflow intent fulfilled"
+    log_and_echo "✅ Outflow request intent fulfilled"
 else
-    log_and_echo "     ❌ Outflow intent fulfillment failed!"
+    log_and_echo "     ❌ Outflow request intent fulfillment failed!"
     log_and_echo "   Log file contents:"
     cat "$LOG_FILE"
     exit 1
@@ -227,23 +227,23 @@ log "✅ Steps completed successfully:"
 log "   1. Verifier queried connected chain transaction"
 log "   2. Transaction validated against intent requirements"
 log "   3. Approval signature generated for hub fulfillment"
-log "   4. Solver (Bob) fulfilled hub intent with verifier signature"
-log "   5. Locked tokens released to Bob on hub chain"
+log "   4. Solver (Bob) fulfilled hub request intent with verifier signature"
+log "   5. Locked tokens released to solver (Bob) on hub chain"
 log ""
 log "📋 Details:"
 log "   Intent ID: $INTENT_ID"
-log "   Hub Intent Address: $HUB_INTENT_ADDRESS"
+log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
-log "   Bob's balance increase: $BALANCE_INCREASE Octas"
+log "   Solver (Bob)'s balance increase: $BALANCE_INCREASE Octas"
 log ""
-log "📖 Outflow Intent Summary:"
-log "   1. Alice created outflow intent on hub chain (locked 100000000 tokens)"
-log "   2. Solver (Bob) transferred 100000000 tokens to Alice on connected chain"
+log "📖 Outflow Request Intent Summary:"
+log "   1. Requester (Alice) created outflow request intent on hub chain (locked 100000000 tokens)"
+log "   2. Solver (Bob) transferred 100000000 tokens to requester (Alice) on connected chain"
 log "   3. Verifier validated the connected chain transfer"
-log "   4. Solver (Bob) fulfilled hub intent with verifier signature"
-log "   5. Bob received locked tokens as reward on hub chain"
+log "   4. Solver (Bob) fulfilled hub request intent with verifier signature"
+log "   5. Solver (Bob) received locked tokens as reward on hub chain"
 
 # Check final balances using common function
 log ""

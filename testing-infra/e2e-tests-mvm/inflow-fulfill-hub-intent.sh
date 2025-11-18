@@ -25,12 +25,12 @@ log "📋 Chain Information:"
 log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Intent ID:               $INTENT_ID"
-log "   Hub Intent Address:      $HUB_INTENT_ADDRESS"
+log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 
 log ""
-log "   Fulfilling intent on hub chain..."
-log "   - Bob sees intent with ID: $INTENT_ID"
-log "   - Bob provides 100000000 tokens on hub chain to fulfill the intent"
+log "   Fulfilling request intent on hub chain..."
+log "   - Solver (Bob) sees request intent with ID: $INTENT_ID"
+log "   - Solver (Bob) provides 100000000 tokens on hub chain to fulfill the request intent"
 
 # Get the intent object address
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
@@ -38,16 +38,16 @@ INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
 if [ -n "$INTENT_OBJECT_ADDRESS" ] && [ "$INTENT_OBJECT_ADDRESS" != "null" ]; then
     log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
     
-    # Bob fulfills the intent by providing tokens
+    # Solver (Bob) fulfills the intent by providing tokens
     aptos move run --profile bob-chain1 --assume-yes \
         --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::fulfill_inflow_request_intent" \
         --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
     
     if [ $? -eq 0 ]; then
-        log "     ✅ Bob successfully fulfilled the intent!"
-        log_and_echo "✅ Intent fulfilled"
+        log "     ✅ Solver (Bob) successfully fulfilled the request intent!"
+        log_and_echo "✅ Request intent fulfilled"
     else
-        log_and_echo "     ❌ Intent fulfillment failed!"
+        log_and_echo "     ❌ Request intent fulfillment failed!"
         exit 1
     fi
 else
@@ -60,11 +60,11 @@ log "🎉 HUB CHAIN INTENT FULFILLMENT COMPLETE!"
 log "=========================================="
 log ""
 log "✅ Step completed successfully:"
-log "   1. Intent fulfilled on Chain 1 by Bob"
+log "   1. Request intent fulfilled on Chain 1 by solver (Bob)"
 log ""
-log "📋 Intent Details:"
+log "📋 Request Intent Details:"
 log "   Intent ID: $INTENT_ID"
-log "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
+log "   Chain 1 Hub Request Intent: $HUB_INTENT_ADDRESS"
 
 # Check final balances using common function
 display_balances_hub

@@ -86,10 +86,10 @@ display_balances_connected_apt
 log_and_echo ""
 
 log ""
-log "   Creating outflow intent on hub chain..."
-log "   - Alice creates outflow intent on Chain 1 (hub chain)"
-log "   - Alice locks 100000000 tokens on hub chain"
-log "   - Alice wants 100000000 tokens on connected chain (Chain 2)"
+log "   Creating outflow request intent on hub chain..."
+log "   - Requester (Alice) creates outflow request intent on Chain 1 (hub chain)"
+log "   - Requester (Alice) locks 100000000 tokens on hub chain"
+log "   - Requester (Alice) wants 100000000 tokens on connected chain (Chain 2)"
 log "   - Using intent_id: $INTENT_ID"
 
 # Get APT metadata addresses for both chains using helper function
@@ -174,23 +174,76 @@ aptos move run --profile alice-chain1 --assume-yes \
     --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN2}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${ALICE_CHAIN2_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "     ✅ Outflow intent created on Chain 1!"
+    log "     ✅ Outflow request intent created on Chain 1!"
 
-    # Verify intent was stored on-chain by checking Alice's latest transaction
+    # Verify request intent was stored on-chain by checking requester (Alice)'s latest transaction
     sleep 2
-    log "     - Verifying intent stored on-chain..."
-    HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" | \
-        jq -r '.[0].events[] | select(.type | contains("LimitOrderEvent") or .type | contains("OracleLimitOrderEvent")) | .data.intent_address' | head -n 1)
+    log "     - Verifying request intent stored on-chain..."
+    
+    # Get the API response for debugging
+    API_RESPONSE=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" 2>&1)
+    CURL_EXIT_CODE=$?
+    
+    if [ $CURL_EXIT_CODE -ne 0 ]; then
+        log_and_echo "     ❌ ERROR: Failed to fetch transactions from API"
+        log_and_echo "     Curl exit code: $CURL_EXIT_CODE"
+        log_and_echo "     Response: $API_RESPONSE"
+        exit 1
+    fi
+    
+    # Log the raw response structure for debugging
+    log "     - API Response structure:"
+    echo "$API_RESPONSE" | jq 'if type == "array" then "Array with \(length) items" else "Not an array: \(type)" end' 2>&1 | while IFS= read -r line; do
+        log "       $line"
+    done
+    
+    # Check if we have transactions
+    TX_COUNT=$(echo "$API_RESPONSE" | jq -r 'if type == "array" then length else 0 end' 2>/dev/null || echo "0")
+    log "     - Transaction count: $TX_COUNT"
+    
+    if [ "$TX_COUNT" = "0" ]; then
+        log_and_echo "     ❌ ERROR: No transactions found in API response"
+        log_and_echo "     Full API response saved to log file"
+        echo "$API_RESPONSE" | jq '.' >> "$LOG_FILE" 2>&1 || echo "$API_RESPONSE" >> "$LOG_FILE"
+        exit 1
+    fi
+    
+    # Check events structure
+    EVENTS_COUNT=$(echo "$API_RESPONSE" | jq -r '.[0].events // [] | if type == "array" then length else "not_array" end' 2>/dev/null || echo "error")
+    log "     - Events count in first transaction: $EVENTS_COUNT"
+    
+    # Log all event types for debugging
+    log "     - Event types found:"
+    echo "$API_RESPONSE" | jq -r '.[0].events // [] | .[]? | if type == "object" and has("type") then .type else "no_type_field" end' 2>/dev/null | while IFS= read -r event_type; do
+        log "       - $event_type"
+    done
+    
+    # Try to extract intent address
+    HUB_INTENT_ADDRESS=$(echo "$API_RESPONSE" | \
+        jq -r '.[0].events // [] | .[]? | select(type == "object" and has("type") and (.type | type == "string") and ((.type | contains("LimitOrderEvent")) or (.type | contains("OracleLimitOrderEvent")))) | .data.intent_address? // empty' 2>&1 | head -n 1)
+    
+    JQ_EXIT_CODE=${PIPESTATUS[1]}
+    
+    if [ $JQ_EXIT_CODE -ne 0 ]; then
+        log_and_echo "     ❌ ERROR: jq command failed with exit code $JQ_EXIT_CODE"
+        log_and_echo "     jq output: $HUB_INTENT_ADDRESS"
+        log_and_echo "     Full API response saved to log file for debugging"
+        echo "$API_RESPONSE" | jq '.' >> "$LOG_FILE" 2>&1 || echo "$API_RESPONSE" >> "$LOG_FILE"
+        exit 1
+    fi
 
-    if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-        log "     ✅ Hub outflow intent stored at: $HUB_INTENT_ADDRESS"
-        log_and_echo "✅ Outflow intent created"
+    if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ] && [ "$HUB_INTENT_ADDRESS" != "empty" ]; then
+        log "     ✅ Hub outflow request intent stored at: $HUB_INTENT_ADDRESS"
+        log_and_echo "✅ Outflow request intent created"
     else
-        log_and_echo "     ❌ ERROR: Could not verify hub outflow intent address"
+        log_and_echo "     ❌ ERROR: Could not verify hub outflow request intent address"
+        log_and_echo "     Extracted address: '$HUB_INTENT_ADDRESS'"
+        log_and_echo "     Full API response saved to log file for debugging"
+        echo "$API_RESPONSE" | jq '.' >> "$LOG_FILE" 2>&1 || echo "$API_RESPONSE" >> "$LOG_FILE"
         exit 1
     fi
 else
-    log_and_echo "     ❌ Outflow intent creation failed on Chain 1!"
+    log_and_echo "     ❌ Outflow request intent creation failed on Chain 1!"
     log_and_echo "   Log file contents:"
     cat "$LOG_FILE"
     exit 1
@@ -201,13 +254,13 @@ log "🎉 HUB CHAIN OUTFLOW INTENT CREATION COMPLETE!"
 log "==============================================="
 log ""
 log "✅ Step completed successfully:"
-log "   1. Outflow intent created on Chain 1 (hub chain)"
+log "   1. Outflow request intent created on Chain 1 (hub chain)"
 log "   2. Tokens locked on hub chain"
 log ""
-log "📋 Intent Details:"
+log "📋 Request Intent Details:"
 log "   Intent ID: $INTENT_ID"
 if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-    log "   Chain 1 Hub Outflow Intent: $HUB_INTENT_ADDRESS"
+    log "   Chain 1 Hub Outflow Request Intent: $HUB_INTENT_ADDRESS"
 fi
 log "   Requester address on connected chain: $ALICE_CHAIN2_ADDRESS"
 

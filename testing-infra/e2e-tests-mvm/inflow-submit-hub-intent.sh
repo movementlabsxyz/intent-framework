@@ -49,9 +49,9 @@ display_balances_connected_apt
 log_and_echo ""
 
 log ""
-log "   Creating intent on hub chain..."
-log "   - Alice creates intent on Chain 1 (hub chain)"
-log "   - Intent requests 100000000 tokens to be provided by solver"
+log "   Creating request intent on hub chain..."
+log "   - Requester (Alice) creates request intent on Chain 1 (hub chain)"
+log "   - Request intent requests 100000000 tokens to be provided by solver (Bob)"
 log "   - Using intent_id: $INTENT_ID"
 
 # Get APT metadata addresses for both chains using helper function
@@ -138,23 +138,23 @@ aptos move run --profile alice-chain1 --assume-yes \
     --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:100000000" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "     ✅ Intent created on Chain 1!"
+    log "     ✅ Request intent created on Chain 1!"
     
-    # Verify intent was stored on-chain by checking Alice's latest transaction
+    # Verify request intent was stored on-chain by checking requester (Alice)'s latest transaction
     sleep 2
-    log "     - Verifying intent stored on-chain..."
+    log "     - Verifying request intent stored on-chain..."
     HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("LimitOrderEvent")) | .data.intent_address' | head -n 1)
     
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-        log "     ✅ Hub intent stored at: $HUB_INTENT_ADDRESS"
-        log_and_echo "✅ Intent created"
+        log "     ✅ Hub request intent stored at: $HUB_INTENT_ADDRESS"
+        log_and_echo "✅ Request intent created"
     else
-        log_and_echo "     ❌ ERROR: Could not verify hub intent address"
+        log_and_echo "     ❌ ERROR: Could not verify hub request intent address"
         exit 1
     fi
 else
-    log_and_echo "     ❌ Intent creation failed on Chain 1!"
+    log_and_echo "     ❌ Request intent creation failed on Chain 1!"
     log_and_echo "   Log file contents:"
     cat "$LOG_FILE"
     exit 1
@@ -165,12 +165,12 @@ log "🎉 HUB CHAIN INTENT CREATION COMPLETE!"
 log "======================================="
 log ""
 log "✅ Step completed successfully:"
-log "   1. Intent created on Chain 1 (hub chain)"
+log "   1. Request intent created on Chain 1 (hub chain)"
 log ""
-log "📋 Intent Details:"
+log "📋 Request Intent Details:"
 log "   Intent ID: $INTENT_ID"
 if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-    log "   Chain 1 Hub Intent: $HUB_INTENT_ADDRESS"
+    log "   Chain 1 Hub Request Intent: $HUB_INTENT_ADDRESS"
 fi
 
 # Export values for use by other scripts

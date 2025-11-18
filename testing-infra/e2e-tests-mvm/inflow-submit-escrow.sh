@@ -87,7 +87,7 @@ log_and_echo ""
 
 log ""
 log "   Creating escrow on connected chain..."
-log "   - Alice locks 100000000 tokens in escrow on Chain 2 (connected chain)"
+log "   - Requester (Alice) locks 100000000 tokens in escrow on Chain 2 (connected chain)"
 log "   - Using intent_id from hub chain: $INTENT_ID"
 
 # Get APT metadata on Chain 2
@@ -97,10 +97,10 @@ log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
 OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 
 # Submit escrow intent using Alice's account on Chain 2 (connected chain)
-# Reserved solver: Bob on Chain 2 - funds will go to Bob when escrow is claimed
+# Reserved solver (Bob) on Chain 2 - funds will go to solver (Bob) when escrow is claimed
 log "   - Creating escrow intent on Chain 2..."
 log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN2"
-log "     Reserved solver: $BOB_CHAIN2_ADDRESS (Bob on Chain 2)"
+log "     Reserved solver (Bob): $BOB_CHAIN2_ADDRESS"
 aptos move run --profile alice-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
     --args "address:${OFFERED_FA_METADATA_CHAIN2}" "u64:100000000" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" >> "$LOG_FILE" 2>&1

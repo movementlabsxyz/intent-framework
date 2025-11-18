@@ -62,14 +62,14 @@ TRANSFER_AMOUNT="100000000"
 
 log ""
 log "   Executing solver transfer on connected chain..."
-log "   - Solver (Bob) transfers tokens directly to Alice on Chain 2"
+log "   - Solver (Bob) transfers tokens directly to requester (Alice) on Chain 2"
 log "   - This is a DIRECT TRANSFER, not an escrow"
-log "   - Alice receives tokens immediately"
+log "   - Requester (Alice) receives tokens immediately"
 log "   - Amount: $TRANSFER_AMOUNT Octas"
 log "   - Intent ID included in transaction for verifier tracking"
 
 # Call utils::transfer_with_intent_id on Chain 2
-# Parameters: sender (Bob), recipient (Alice), metadata, amount, intent_id
+# Parameters: sender (solver/Bob), recipient (requester/Alice), metadata, amount, intent_id
 aptos move run --profile bob-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::utils::transfer_with_intent_id" \
     --args "address:${ALICE_CHAIN2_ADDRESS}" "address:${APT_METADATA_CHAIN2}" "u64:${TRANSFER_AMOUNT}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
@@ -96,24 +96,24 @@ if [ $? -eq 0 ]; then
         log "     Alice Chain 2 final balance: $ALICE_FINAL_BALANCE Octas"
         log "     Bob Chain 2 final balance: $BOB_FINAL_BALANCE Octas"
 
-        # Calculate expected balances (account for gas fees on Bob's side)
+        # Calculate expected balances (account for gas fees on solver (Bob)'s side)
         ALICE_EXPECTED=$((ALICE_INITIAL_BALANCE + TRANSFER_AMOUNT))
 
-        # Verify Alice received the tokens
+        # Verify requester (Alice) received the tokens
         if [ "$ALICE_FINAL_BALANCE" -eq "$ALICE_EXPECTED" ]; then
-            log "     ✅ Alice balance increased by $TRANSFER_AMOUNT as expected"
+            log "     ✅ Requester (Alice) balance increased by $TRANSFER_AMOUNT as expected"
         else
-            log_and_echo "     ⚠️  WARNING: Alice balance mismatch"
+            log_and_echo "     ⚠️  WARNING: Requester (Alice) balance mismatch"
             log_and_echo "        Expected: $ALICE_EXPECTED Octas"
             log_and_echo "        Got: $ALICE_FINAL_BALANCE Octas"
         fi
 
-        # Verify Bob's balance decreased (should be less than or equal to initial - transfer_amount due to gas)
+        # Verify solver (Bob)'s balance decreased (should be less than or equal to initial - transfer_amount due to gas)
         if [ "$BOB_FINAL_BALANCE" -le "$((BOB_INITIAL_BALANCE - TRANSFER_AMOUNT))" ]; then
             BOB_DECREASE=$((BOB_INITIAL_BALANCE - BOB_FINAL_BALANCE))
-            log "     ✅ Bob balance decreased by $BOB_DECREASE Octas (transfer + gas)"
+            log "     ✅ Solver (Bob) balance decreased by $BOB_DECREASE Octas (transfer + gas)"
         else
-            log_and_echo "     ⚠️  WARNING: Bob balance did not decrease as expected"
+            log_and_echo "     ⚠️  WARNING: Solver (Bob) balance did not decrease as expected"
             log_and_echo "        Initial: $BOB_INITIAL_BALANCE Octas"
             log_and_echo "        Final: $BOB_FINAL_BALANCE Octas"
         fi
@@ -142,7 +142,7 @@ log "🎉 SOLVER TRANSFER COMPLETE!"
 log "============================"
 log ""
 log "✅ Step completed successfully:"
-log "   1. Solver (Bob) transferred tokens to Alice on Chain 2"
+log "   1. Solver (Bob) transferred tokens to requester (Alice) on Chain 2"
 log "   2. Transfer verified by balance checks"
 log "   3. Transaction hash captured for verifier"
 log ""

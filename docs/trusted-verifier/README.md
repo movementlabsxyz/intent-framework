@@ -53,20 +53,35 @@ trusted-verifier/
     ├── main.rs                 # Application entry point and initialization
     ├── config/mod.rs           # Configuration management with TOML support
     ├── monitor/                # Event monitoring for hub and connected chains
-    │   ├── mod.rs              # Main monitor module (EventMonitor struct, shared types)
-    │   ├── aptos.rs            # Aptos-specific escrow event polling
-    │   └── evm.rs              # EVM-specific escrow event polling
+    │   ├── mod.rs              # Module declarations and re-exports
+    │   ├── generic.rs          # Shared event structures and EventMonitor implementation
+    │   ├── inflow_generic.rs  # Chain-agnostic inflow monitoring and validation
+    │   ├── outflow_generic.rs # Chain-agnostic outflow monitoring
+    │   ├── inflow_aptos.rs     # Aptos-specific escrow event polling for connected chains
+    │   ├── inflow_evm.rs       # EVM-specific escrow event polling for connected chains
+    │   ├── outflow_aptos.rs    # Aptos-specific hub chain request intent event polling
+    │   └── outflow_evm.rs      # EVM-specific hub chain monitoring (reserved for future)
     ├── validator/               # Cross-chain validation logic
-    │   ├── mod.rs              # Main validator module (CrossChainValidator struct, shared types)
-    │   ├── aptos.rs            # Aptos-specific transaction parameter extraction
-    │   └── evm.rs              # EVM-specific transaction parameter extraction and escrow solver validation
+    │   ├── mod.rs              # Module declarations and re-exports
+    │   ├── generic.rs          # Shared structures and CrossChainValidator implementation
+    │   ├── inflow_generic.rs   # Chain-agnostic inflow validation logic
+    │   ├── outflow_generic.rs  # Chain-agnostic outflow validation logic
+    │   ├── inflow_aptos.rs     # Aptos-specific inflow validation (reserved for future)
+    │   ├── inflow_evm.rs       # EVM-specific inflow validation (escrow solver validation)
+    │   ├── outflow_aptos.rs    # Aptos-specific outflow transaction parameter extraction
+    │   └── outflow_evm.rs      # EVM-specific outflow transaction parameter extraction
     ├── crypto/mod.rs           # Cryptographic operations (Ed25519 for Aptos, ECDSA for EVM)
     ├── aptos_client.rs        # Aptos blockchain client for event querying
     ├── evm_client.rs          # EVM blockchain client for event querying
     ├── api/                    # REST API server with warp framework
-    │   ├── mod.rs              # Main API module (route definitions, shared handlers)
-    │   ├── aptos.rs            # Aptos-specific transaction querying
-    │   └── evm.rs              # EVM-specific transaction querying
+    │   ├── mod.rs              # Module declarations and re-exports
+    │   ├── generic.rs          # Shared API structures and ApiServer implementation
+    │   ├── inflow_generic.rs   # Chain-agnostic inflow escrow validation handlers
+    │   ├── outflow_generic.rs  # Chain-agnostic outflow fulfillment validation handlers
+    │   ├── inflow_aptos.rs     # Aptos-specific inflow handlers (reserved for future)
+    │   ├── inflow_evm.rs       # EVM-specific inflow handlers (reserved for future)
+    │   ├── outflow_aptos.rs    # Aptos-specific outflow transaction querying
+    │   └── outflow_evm.rs      # EVM-specific outflow transaction querying
     └── bin/                    # Utility binaries
         ├── generate_keys.rs   # Key generation utility for Ed25519 key pairs
         └── get_verifier_eth_address.rs  # Derive Ethereum address from Ed25519 key

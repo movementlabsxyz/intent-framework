@@ -1,11 +1,11 @@
-//! Aptos-specific validation functions
+//! Outflow Aptos-specific validation functions
 //!
 //! This module contains Aptos-specific transaction parsing and parameter extraction
-//! for fulfillment validation.
+//! for outflow fulfillment validation.
 
 use anyhow::{Result, Context};
 use crate::aptos_client::AptosTransaction;
-use crate::validator::FulfillmentTransactionParams;
+use crate::validator::generic::FulfillmentTransactionParams;
 
 /// Extracts intent_id and transaction parameters from an Aptos transaction
 /// 

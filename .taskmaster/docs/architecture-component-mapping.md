@@ -277,12 +277,17 @@ graph TB
 #### Cross-Chain Validation
 
 - **`trusted-verifier/src/validator/`**
-  - **`mod.rs`**: Main validator module with `CrossChainValidator` struct, shared types, and generic validation logic
-  - **`aptos.rs`**: Aptos-specific transaction parameter extraction (`extract_aptos_fulfillment_params()`)
-  - **`evm.rs`**: EVM-specific transaction parameter extraction and escrow solver validation (`extract_evm_fulfillment_params()`, `validate_evm_escrow_solver()`)
+  - **`mod.rs`**: Module declarations and re-exports of public types and functions
+  - **`generic.rs`**: Shared structures (`ValidationResult`, `FulfillmentTransactionParams`) and `CrossChainValidator` struct definition and implementation
+  - **`inflow_generic.rs`**: Chain-agnostic inflow validation logic (`validate_request_intent_fulfillment()`)
+  - **`outflow_generic.rs`**: Chain-agnostic outflow validation logic (`validate_outflow_fulfillment()`)
+  - **`inflow_aptos.rs`**: Aptos-specific inflow validation (reserved for future)
+  - **`inflow_evm.rs`**: EVM-specific inflow validation (`validate_evm_escrow_solver()`)
+  - **`outflow_aptos.rs`**: Aptos-specific outflow transaction parameter extraction (`extract_aptos_fulfillment_params()`)
+  - **`outflow_evm.rs`**: EVM-specific outflow transaction parameter extraction (`extract_evm_fulfillment_params()`)
   - **Purpose**: Validates cross-chain state consistency and escrow safety
   - **Key Structures**: `ValidationResult`, `CrossChainValidator`, `FulfillmentTransactionParams`
-  - **Key Functions**: `validate_intent_safety()`, `validate_fulfillment()`, `validate_escrow_safety()`, `validate_outflow_fulfillment()`
+  - **Key Functions**: `validate_intent_safety()`, `validate_fulfillment()`, `validate_request_intent_fulfillment()`, `validate_outflow_fulfillment()`
   - **Security**: **CRITICAL** - Validates `revocable = false` requirement
   - **Responsibilities**: Intent safety checks, fulfillment validation, approval decision logic
 

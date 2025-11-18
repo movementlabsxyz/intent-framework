@@ -301,10 +301,12 @@ pub async fn validate_request_intent_fulfillment(monitor: &EventMonitor, escrow_
                 ));
             }
 
-            let validation_result = monitor
-                .validator
-                .validate_request_intent_fulfillment(request_intent, escrow_event)
-                .await?;
+            let validation_result = crate::validator::inflow_generic::validate_request_intent_fulfillment(
+                &monitor.validator,
+                request_intent,
+                escrow_event,
+            )
+            .await?;
             if !validation_result.valid {
                 return Err(anyhow::anyhow!("Solver validation failed: {}", validation_result.message));
             }

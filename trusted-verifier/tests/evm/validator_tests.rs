@@ -116,7 +116,7 @@ async fn test_successful_evm_solver_validation() {
     
     // Test with matching address
     let escrow_reserved_solver = registered_evm_address;
-    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
@@ -145,7 +145,7 @@ async fn test_rejection_when_solver_not_registered() {
     let request_intent = create_test_request_intent(Some(solver_address.to_string()));
     
     let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
@@ -177,7 +177,7 @@ async fn test_rejection_when_evm_addresses_dont_match() {
     
     // Escrow has a different address
     let escrow_reserved_solver = "0x2222222222222222222222222222222222222222";
-    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
@@ -216,7 +216,7 @@ async fn test_evm_address_normalization() {
         
         let request_intent = create_test_request_intent(Some(solver_address.to_string()));
         
-        let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
+        let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
             &request_intent,
             escrow_addr,
             &config.hub_chain.rpc_url,
@@ -245,7 +245,7 @@ async fn test_error_handling_for_registry_query_failures() {
     let request_intent = create_test_request_intent(Some("0xsolver_aptos".to_string()));
     
     let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let result = trusted_verifier::validator::evm::validate_evm_escrow_solver(
+    let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &request_intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,

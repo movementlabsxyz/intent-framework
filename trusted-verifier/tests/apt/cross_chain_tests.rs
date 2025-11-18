@@ -32,7 +32,7 @@ async fn test_escrow_solver_address_matching_success() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_match).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_match).await
         .expect("Validation should complete without error");
     
     assert!(validation_result.valid, "Validation should pass when solver addresses match");
@@ -59,7 +59,7 @@ async fn test_escrow_solver_address_mismatch_rejection() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_mismatch).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_mismatch).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when solver addresses don't match");
@@ -85,7 +85,7 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_with_solver, &escrow_without_solver).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_with_solver, &escrow_without_solver).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when hub intent has solver but escrow doesn't");
@@ -103,7 +103,7 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_without_solver, &escrow_with_solver).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_without_solver, &escrow_with_solver).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when escrow has solver but hub intent doesn't");

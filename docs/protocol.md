@@ -236,8 +236,8 @@ For detailed validation logic, see [Trusted Verifier](trusted-verifier/README.md
 
 **Enforcement**:
 
-- Move escrow creation enforces non-revocable: `intent_as_escrow.move:109`
-- Verifier validates before approval: `trusted-verifier/src/validator/mod.rs:99-105`
+- Move escrow creation enforces non-revocable: `move-intent-framework/sources/intent_as_escrow.move` (escrow creation functions validate `revocable = false`)
+- Verifier validates before approval: `trusted-verifier/src/validator/generic.rs` (`CrossChainValidator::validate_request_intent_safety()`)
 - EVM escrows use contract-defined expiry instead of revocation
 
 ### Reserved Solver Address

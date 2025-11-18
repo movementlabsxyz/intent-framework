@@ -86,7 +86,7 @@ async fn test_escrow_chain_id_validation() {
     let valid_escrow = create_base_escrow_event();
     
     // This should pass the connected_chain_id check (may fail other validations, but not this one)
-    let result = validator.validate_request_intent_fulfillment(&valid_intent, &valid_escrow).await;
+    let result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &valid_intent, &valid_escrow).await;
     assert!(result.is_ok(), "Validation should complete");
     
     let validation_result = result.unwrap();
@@ -120,7 +120,7 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_mismatch).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_mismatch).await
         .expect("Validation should complete without error");
     
     assert!(
@@ -133,7 +133,7 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
     // Now test with matching amounts
     let escrow_match = create_base_escrow_event();
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_match).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_match).await
         .expect("Validation should complete without error");
     
     // Verify that validation doesn't fail due to amount mismatch (amount check passes)
@@ -160,7 +160,7 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_suc
     // Create an escrow with matching offered_metadata
     let escrow_match = create_base_escrow_event();
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_match).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_match).await
         .expect("Validation should complete without error");
     
     assert!(validation_result.valid, "Validation should pass when offered_metadata matches");
@@ -188,7 +188,7 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_rej
     };
     
     // The validation function should complete successfully (return Ok, not Err)
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_mismatch).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_mismatch).await
         .expect("Validation should complete without error");
     
     // But the validation result should indicate failure (valid = false) because metadata doesn't match
@@ -217,7 +217,7 @@ async fn test_escrow_offered_metadata_empty_strings() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_empty, &escrow_empty).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_empty, &escrow_empty).await
         .expect("Validation should complete without error");
     
     assert!(validation_result.valid, "Validation should pass when both metadata strings are empty");
@@ -232,7 +232,7 @@ async fn test_escrow_offered_metadata_empty_strings() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_with_meta, &escrow_empty_2).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_with_meta, &escrow_empty_2).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when hub intent has metadata but escrow is empty");
@@ -249,7 +249,7 @@ async fn test_escrow_offered_metadata_empty_strings() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_empty_3, &escrow_with_meta).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_empty_3, &escrow_with_meta).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when hub intent is empty but escrow has metadata");
@@ -279,7 +279,7 @@ async fn test_escrow_offered_metadata_complex_json() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_complex, &escrow_complex_match).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_complex, &escrow_complex_match).await
         .expect("Validation should complete without error");
     
     assert!(validation_result.valid, "Validation should pass when complex JSON metadata matches exactly");
@@ -294,7 +294,7 @@ async fn test_escrow_offered_metadata_complex_json() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_complex, &escrow_complex_mismatch).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_complex, &escrow_complex_mismatch).await
         .expect("Validation should complete without error");
     
     assert!(
@@ -312,7 +312,7 @@ async fn test_escrow_offered_metadata_complex_json() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent_complex, &escrow_complex_mismatch_2).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent_complex, &escrow_complex_mismatch_2).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when nested values differ");
@@ -338,7 +338,7 @@ async fn test_escrow_desired_amount_must_be_zero_success() {
     // Ensure desired_amount is 0 (it's already set to 0 in the helper)
     assert_eq!(escrow_valid.desired_amount, 0, "Escrow should have desired_amount = 0");
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_valid).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_valid).await
         .expect("Validation should complete without error");
     
     assert!(validation_result.valid, "Validation should pass when desired_amount is 0");
@@ -363,7 +363,7 @@ async fn test_escrow_desired_amount_must_be_zero_rejection() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_invalid).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_invalid).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when desired_amount is non-zero");
@@ -393,7 +393,7 @@ async fn test_escrow_rejection_when_connected_chain_id_is_none() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when request intent has no connected_chain_id");
@@ -423,7 +423,7 @@ async fn test_escrow_chain_id_mismatch_rejection() {
         ..create_base_escrow_event()
     };
     
-    let validation_result = validator.validate_request_intent_fulfillment(&hub_intent, &escrow_mismatch).await
+    let validation_result = trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(&validator, &hub_intent, &escrow_mismatch).await
         .expect("Validation should complete without error");
     
     assert!(!validation_result.valid, "Validation should fail when chain_id doesn't match connected_chain_id");

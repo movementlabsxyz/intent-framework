@@ -50,9 +50,19 @@ pub fn extract_mvm_fulfillment_params(tx: &MvmTransaction) -> Result<Fulfillment
         .ok_or_else(|| anyhow::anyhow!("Invalid recipient address"))?
         .to_string();
     
-    let metadata = args[1].as_str()
-        .ok_or_else(|| anyhow::anyhow!("Invalid metadata"))?
-        .to_string();
+    // Metadata is Object<Metadata> which is serialized as {"inner": "0x..."} in Aptos
+    let metadata = if let Some(metadata_obj) = args[1].as_object() {
+        // Extract inner address from Object<Metadata>
+        metadata_obj.get("inner")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Invalid metadata: missing 'inner' field"))?
+            .to_string()
+    } else if let Some(metadata_str) = args[1].as_str() {
+        // Fallback: if it's already a string, use it directly
+        metadata_str.to_string()
+    } else {
+        return Err(anyhow::anyhow!("Invalid metadata: expected object with 'inner' field or string"));
+    };
     
     let amount_str = args[2].as_str()
         .ok_or_else(|| anyhow::anyhow!("Invalid amount"))?;

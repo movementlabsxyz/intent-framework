@@ -515,6 +515,12 @@ register_solver() {
         log "     ✅ Solver registered successfully"
     else
         log_and_echo "     ❌ Failed to register solver"
+        if [ -n "$log_file" ]; then
+            log_and_echo "     Full error details in: $log_file"
+            tail -30 "$log_file" | while IFS= read -r line; do
+                log_and_echo "       $line"
+            done
+        fi
         exit 1
     fi
 }

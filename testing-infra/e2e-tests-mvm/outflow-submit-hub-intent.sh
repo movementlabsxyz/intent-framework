@@ -160,12 +160,6 @@ if [ -z "$SOLVER_PUBLIC_KEY" ]; then
 fi
 log "     ✅ Solver public key extracted: ${SOLVER_PUBLIC_KEY:0:20}..."
 
-# Register solver in the solver registry before creating intent
-# Use a simple test EVM address (20 bytes: 0x0000...0001)
-EVM_ADDRESS="0x0000000000000000000000000000000000000001"
-log "     Registering solver (Bob) in solver registry..."
-register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$LOG_FILE"
-
 # Remove 0x prefix from signature and verifier public key for hex format
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
 VERIFIER_PUBLIC_KEY_HEX="${VERIFIER_PUBLIC_KEY#0x}"

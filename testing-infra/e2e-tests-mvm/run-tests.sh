@@ -46,8 +46,7 @@ echo "   Submitting outflow cross-chain intents..."
 echo "   (Note: Verifier must be running from Step 3 for validation)"
 ./testing-infra/e2e-tests-mvm/outflow-submit-hub-intent.sh
 ./testing-infra/e2e-tests-mvm/outflow-solver-transfer.sh
-./testing-infra/e2e-tests-mvm/outflow-validate-transfer.sh
-./testing-infra/e2e-tests-mvm/outflow-fulfill-hub-intent.sh
+./testing-infra/e2e-tests-mvm/outflow-validate-and-fulfill.sh
 
 echo ""
 echo "🚀 Step 5: Running Rust integration tests..."

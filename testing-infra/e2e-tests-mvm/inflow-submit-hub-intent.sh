@@ -13,7 +13,7 @@ cd "$PROJECT_ROOT"
 # Generate a random intent_id that will be used for both hub and escrow
 INTENT_ID="0x$(openssl rand -hex 32)"
 
-# Aptos mode: CONNECTED_CHAIN_ID=2
+# Move VM mode: CONNECTED_CHAIN_ID=2
 CONNECTED_CHAIN_ID=2
 
 # Get addresses

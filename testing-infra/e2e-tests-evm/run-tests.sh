@@ -45,10 +45,6 @@ log_and_echo "==============================================================="
 ./testing-infra/e2e-tests-mvm/inflow-fulfill-hub-intent.sh
 ./testing-infra/chain-hub/configure-verifier.sh
 ./testing-infra/chain-connected-evm/configure-verifier.sh
-
-log_and_echo ""
-log_and_echo "🔓 Step 4: Starting verifier and releasing EVM escrow..."
-log_and_echo "========================================================"
 ./testing-infra/e2e-tests-evm/release-escrow.sh
 
 log_and_echo ""
@@ -57,6 +53,6 @@ display_balances_connected_evm
 log_and_echo ""
 log_and_echo "✅ E2E test flow completed!"
 
-log_and_echo "🧹 Step 5: Cleaning up chains, accounts and processes..."
-log_and_echo "======================================================="
+log_and_echo "🧹 Step 4: Cleaning up chains, accounts and processes..."
+log_and_echo "========================================================"
 ./testing-infra/chain-connected-evm/cleanup.sh

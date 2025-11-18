@@ -37,11 +37,13 @@ echo "   Submitting inflow cross-chain intents..."
 ./testing-infra/e2e-tests-mvm/inflow-fulfill-hub-intent.sh
 ./testing-infra/chain-hub/configure-verifier.sh
 ./testing-infra/chain-connected-mvm/configure-verifier.sh
+./testing-infra/e2e-tests-mvm/release-escrow.sh
 
 echo ""
 echo "🚀 Step 4: Testing OUTFLOW intents (hub chain → connected chain)..."
 echo "===================================================================="
 echo "   Submitting outflow cross-chain intents..."
+echo "   (Note: Verifier must be running from Step 3 for validation)"
 ./testing-infra/e2e-tests-mvm/outflow-submit-hub-intent.sh
 ./testing-infra/e2e-tests-mvm/outflow-solver-transfer.sh
 ./testing-infra/e2e-tests-mvm/outflow-validate-transfer.sh
@@ -53,11 +55,6 @@ echo "======================================================="
 ./testing-infra/e2e-tests-mvm/verifier-rust-integration-tests.sh
 
 echo ""
-echo "🚀 Step 6: Running verifier service to release escrow..."
-echo "========================================================="
-./testing-infra/e2e-tests-mvm/release-escrow.sh
-
-echo ""
 echo "✅ E2E test flow completed!"
 echo ""
 echo "📊 Test Summary:"
@@ -65,6 +62,6 @@ echo "   ✅ Inflow tests: Tokens transferred from connected chain to hub chain"
 echo "   ✅ Outflow tests: Tokens transferred from hub chain to connected chain"
 echo ""
 
-echo "🧹 Step 7: Cleaning up chains, accounts and processes..."
-echo "======================================="
+echo "🧹 Step 6: Cleaning up chains, accounts and processes..."
+echo "========================================================"
 ./testing-infra/chain-connected-mvm/cleanup.sh

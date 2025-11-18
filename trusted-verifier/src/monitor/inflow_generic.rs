@@ -205,6 +205,7 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
 /// If polling fails for one chain, the function continues to poll other chains
 /// and returns events from successfully polled chains. Errors are logged but
 /// do not cause the function to fail.
+#[allow(dead_code)]
 pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowEvent>> {
     let mut escrow_events = Vec::new();
 

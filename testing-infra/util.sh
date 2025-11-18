@@ -316,7 +316,7 @@ start_verifier() {
     # Wait for verifier to be ready
     log "   - Waiting for verifier to initialize..."
     RETRY_COUNT=0
-    MAX_RETRIES=90
+    MAX_RETRIES=180
     
     while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         # Check if process is still running

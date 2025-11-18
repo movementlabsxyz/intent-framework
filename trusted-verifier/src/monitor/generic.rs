@@ -313,6 +313,7 @@ impl EventMonitor {
     /// 
     /// * `Ok(Vec<RequestIntentEvent>)` - List of new request intent events
     /// * `Err(anyhow::Error)` - Failed to poll events
+    #[allow(dead_code)]
     pub async fn poll_hub_events(&self) -> anyhow::Result<Vec<RequestIntentEvent>> {
         use super::outflow_generic;
         outflow_generic::poll_hub_events(self).await
@@ -327,6 +328,7 @@ impl EventMonitor {
     /// 
     /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events from all connected chains
     /// * `Err(anyhow::Error)` - Failed to poll events
+    #[allow(dead_code)]
     pub async fn poll_connected_events(&self) -> anyhow::Result<Vec<EscrowEvent>> {
         use super::inflow_generic;
         inflow_generic::poll_connected_events(self).await
@@ -414,6 +416,7 @@ impl EventMonitor {
     /// 
     /// Note: Public for testing purposes
     #[doc(hidden)]
+    #[allow(dead_code)]
     pub async fn validate_and_approve_fulfillment(&self, fulfillment: &FulfillmentEvent) -> anyhow::Result<()> {
         use super::inflow_generic;
         inflow_generic::validate_and_approve_fulfillment(self, fulfillment).await

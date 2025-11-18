@@ -35,7 +35,7 @@ log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 # ============================================================================
 log ""
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 # ============================================================================
@@ -77,7 +77,7 @@ fi
 # ============================================================================
 log ""
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 log ""

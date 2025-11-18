@@ -26,3 +26,8 @@ mod outflow_evm;
 pub use generic::{
     ChainType, EscrowApproval, EscrowEvent, EventMonitor, FulfillmentEvent, RequestIntentEvent,
 };
+
+// Re-export test utilities (used in integration tests)
+#[doc(hidden)]
+#[allow(unused_imports)] // Only used in tests, not in library code
+pub use generic::normalize_intent_id;

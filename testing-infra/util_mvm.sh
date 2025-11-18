@@ -480,6 +480,38 @@ initialize_solver_registry() {
     fi
 }
 
+# Display balances for Chain 1 (Hub)
+# Usage: display_balances_hub
+# Fetches and displays Alice and Bob balances on the Hub chain
+# Note: Hub chain is always a Move VM chain, so this uses aptos commands
+display_balances_hub() {
+    local alice1=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+    local bob1=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+    
+    log_and_echo ""
+    log_and_echo "   Chain 1 (Hub):"
+    log_and_echo "      Alice: $alice1 Octas"
+    log_and_echo "      Bob:   $bob1 Octas"
+}
+
+# Display balances for Chain 2 (Connected Move VM)
+# Usage: display_balances_connected_mvm
+# Fetches and displays Alice and Bob balances on the Connected Move VM chain
+# Only displays if Chain 2 profiles exist (skips silently if they don't)
+display_balances_connected_mvm() {
+    # Check if Chain 2 profiles exist
+    if ! aptos config show-profiles 2>/dev/null | jq -r ".[\"Result\"][\"alice-chain2\"]" 2>/dev/null | grep -q "."; then
+        return 0  # Silently skip if profiles don't exist
+    fi
+    
+    local alice2=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+    local bob2=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+    
+    log_and_echo "   Chain 2 (Connected MVM):"
+    log_and_echo "      Alice: $alice2 Octas"
+    log_and_echo "      Bob:   $bob2 Octas"
+}
+
 # Register solver in the solver registry
 # Usage: register_solver <profile> <chain_address> <public_key_hex> <evm_address_hex> [log_file]
 # Example: register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY_HEX" "0x0000000000000000000000000000000000000001"

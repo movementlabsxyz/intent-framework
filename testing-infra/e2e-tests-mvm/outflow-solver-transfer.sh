@@ -52,7 +52,7 @@ log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 log ""
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 ALICE_INITIAL_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
@@ -141,7 +141,7 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 log ""

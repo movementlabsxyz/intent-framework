@@ -69,7 +69,7 @@ log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
 # Check and display initial balances using common function
 log ""
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 # ============================================================================
@@ -154,7 +154,7 @@ fi
 # ============================================================================
 log ""
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 log ""

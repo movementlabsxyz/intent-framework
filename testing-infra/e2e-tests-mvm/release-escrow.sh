@@ -54,7 +54,7 @@ log "   Chain 2 Deployer: $CHAIN2_DEPLOY_ADDRESS"
 log ""
 log "   - Checking initial balances..."
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 log ""
@@ -452,7 +452,7 @@ fi
 # ============================================================================
 log ""
 display_balances_hub
-display_balances_connected_apt
+display_balances_connected_mvm
 log_and_echo ""
 
 log ""

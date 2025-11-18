@@ -10,7 +10,8 @@ setup_project_root
 setup_logging "verifier_and_escrow_release"
 cd "$PROJECT_ROOT"
 
-echo "🔍 CROSS-CHAIN VERIFIER - STARTING MONITORING"
+log ""
+log "🔍 CROSS-CHAIN VERIFIER - STARTING MONITORING"
 log "=============================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 log ""
@@ -23,8 +24,14 @@ log "  4. Wait for hub request intent to be fulfilled by solver"
 log "  5. Provide approval signatures for escrow release after hub fulfillment"
 log ""
 
-# Get Alice and Bob addresses
-log "   - Getting Alice and Bob account addresses..."
+# ============================================================================
+# SECTION 1: LOAD DEPENDENCIES
+# ============================================================================
+# No dependencies to load for this script
+
+# ============================================================================
+# SECTION 2: GET ADDRESSES AND CONFIGURATION
+# ============================================================================
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
 ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
@@ -32,24 +39,26 @@ BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
 CHAIN1_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain1")
 CHAIN2_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain2")
 
-log "   ✅ Alice Chain 1: $ALICE_CHAIN1_ADDRESS"
-log "   ✅ Alice Chain 2: $ALICE_CHAIN2_ADDRESS"
-log "   ✅ Bob Chain 1: $BOB_CHAIN1_ADDRESS"
-log "   ✅ Bob Chain 2: $BOB_CHAIN2_ADDRESS"
-log "   ✅ Chain 1 Deployer: $CHAIN1_DEPLOY_ADDRESS"
-log "   ✅ Chain 2 Deployer: $CHAIN2_DEPLOY_ADDRESS"
 log ""
+log "📋 Chain Information:"
+log "   Alice Chain 1: $ALICE_CHAIN1_ADDRESS"
+log "   Alice Chain 2: $ALICE_CHAIN2_ADDRESS"
+log "   Bob Chain 1: $BOB_CHAIN1_ADDRESS"
+log "   Bob Chain 2: $BOB_CHAIN2_ADDRESS"
+log "   Chain 1 Deployer: $CHAIN1_DEPLOY_ADDRESS"
+log "   Chain 2 Deployer: $CHAIN2_DEPLOY_ADDRESS"
 
-# Check and display initial balances using common function
+# ============================================================================
+# SECTION 3: DISPLAY INITIAL STATE
+# ============================================================================
+log ""
 log "   - Checking initial balances..."
 display_balances_hub
 display_balances_connected_apt
 log_and_echo ""
 
-# Update verifier config with current deployed addresses and account addresses
+log ""
 log "   - Updating verifier configuration..."
-
-# Setup verifier config
 setup_verifier_config
 
 # Update hub_chain intent_module_address
@@ -73,17 +82,16 @@ log "      Chain 2 intent_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
 log "      Chain 2 escrow_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
 log "      Chain 1 known_accounts: [$ALICE_CHAIN1_ADDRESS, $BOB_CHAIN1_ADDRESS]"
 log "      Chain 2 known_accounts: $ALICE_CHAIN2_ADDRESS"
-log ""
 
+# ============================================================================
+# SECTION 4: EXECUTE MAIN OPERATION
+# ============================================================================
 log ""
 log "🚀 Starting Trusted Verifier Service..."
 log "========================================"
 
-# Start verifier (function handles stopping existing, starting, health checks, and initial polling wait)
 start_verifier "$LOG_DIR/verifier.log" "info"
 
-
-# Query verifier events
 log ""
 log "📋 Verifier Status:"
 log "========================================"
@@ -207,9 +215,8 @@ log "🔍 Verifier is now monitoring:"
 log "   - Chain 1 (hub) at http://127.0.0.1:8080"
 log "   - Chain 2 (connected) at http://127.0.0.1:8082"
 log "   - API available at http://127.0.0.1:3333"
-log ""
 
-# Start automatic escrow release monitoring
+log ""
 log "🔓 Starting automatic escrow release monitoring..."
 log "=================================================="
 
@@ -435,19 +442,20 @@ else
     log "      curl -s http://127.0.0.1:3333/approvals | jq"
 fi
 
-# Check final balances using common function
+# ============================================================================
+# SECTION 5: VERIFY RESULTS
+# ============================================================================
+# Verification is done inline during escrow release operations
+
+# ============================================================================
+# SECTION 6: FINAL SUMMARY
+# ============================================================================
+log ""
 display_balances_hub
 display_balances_connected_apt
 log_and_echo ""
 
-log_and_echo ""
-log_and_echo "📝 Useful commands:"
-log_and_echo "   View events:      curl -s http://127.0.0.1:3333/events | jq"
-log_and_echo "   View approvals:  curl -s http://127.0.0.1:3333/approvals | jq"
-log_and_echo "   Health check:     curl -s http://127.0.0.1:3333/health"
-log_and_echo "   View logs:        tail -f $VERIFIER_LOG"
-log_and_echo "   Stop verifier:    kill $VERIFIER_PID"
-log_and_echo ""
+log ""
 log_and_echo "ℹ️  Verifier is running in the background"
 log_and_echo "   Verifier PID: $VERIFIER_PID"
 log_and_echo ""

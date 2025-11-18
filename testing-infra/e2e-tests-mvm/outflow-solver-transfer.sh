@@ -37,11 +37,13 @@ log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
 TRANSFER_AMOUNT="100000000"
+# Convert to hex format for aptos CLI (Aptos expects hex strings for u64 in transaction payloads)
+TRANSFER_AMOUNT_HEX=$(printf "0x%x" "$TRANSFER_AMOUNT")
 
 log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
-log "   Transfer Amount: $TRANSFER_AMOUNT Octas"
+log "   Transfer Amount: $TRANSFER_AMOUNT Octas (hex: $TRANSFER_AMOUNT_HEX)"
 
 log ""
 log "   - Getting APT metadata on Chain 2..."
@@ -74,7 +76,7 @@ log "   - Intent ID included in transaction for verifier tracking"
 
 aptos move run --profile bob-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::utils::transfer_with_intent_id" \
-    --args "address:${ALICE_CHAIN2_ADDRESS}" "address:${APT_METADATA_CHAIN2}" "u64:${TRANSFER_AMOUNT}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${ALICE_CHAIN2_ADDRESS}" "address:${APT_METADATA_CHAIN2}" "u64:${TRANSFER_AMOUNT_HEX}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS

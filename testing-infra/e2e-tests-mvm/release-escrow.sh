@@ -11,86 +11,40 @@ setup_logging "verifier_and_escrow_release"
 cd "$PROJECT_ROOT"
 
 log ""
-log "🔍 CROSS-CHAIN VERIFIER - STARTING MONITORING"
-log "=============================================="
+log "🔍 CROSS-CHAIN VERIFIER - ESCROW RELEASE MONITORING"
+log "===================================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 log ""
 
 log "This script will:"
-log "  1. Start the trusted verifier service"
-log "  2. Monitor events on Chain 1 (hub) and Chain 2 (connected)"
-log "  3. Validate cross-chain conditions match"
-log "  4. Wait for hub request intent to be fulfilled by solver"
-log "  5. Provide approval signatures for escrow release after hub fulfillment"
+log "  1. Check verifier status and monitored events"
+log "  2. Monitor for escrow approvals"
+log "  3. Automatically release escrows when approvals are available"
 log ""
 
 # ============================================================================
-# SECTION 1: LOAD DEPENDENCIES
-# ============================================================================
-# No dependencies to load for this script
-
-# ============================================================================
-# SECTION 2: GET ADDRESSES AND CONFIGURATION
-# ============================================================================
-ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
-BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
-CHAIN1_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain1")
-CHAIN2_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain2")
-
-log ""
-log "📋 Chain Information:"
-log "   Alice Chain 1: $ALICE_CHAIN1_ADDRESS"
-log "   Alice Chain 2: $ALICE_CHAIN2_ADDRESS"
-log "   Bob Chain 1: $BOB_CHAIN1_ADDRESS"
-log "   Bob Chain 2: $BOB_CHAIN2_ADDRESS"
-log "   Chain 1 Deployer: $CHAIN1_DEPLOY_ADDRESS"
-log "   Chain 2 Deployer: $CHAIN2_DEPLOY_ADDRESS"
-
-# ============================================================================
-# SECTION 3: DISPLAY INITIAL STATE
+# SECTION 1: CHECK VERIFIER STATUS
 # ============================================================================
 log ""
-log "   - Checking initial balances..."
-display_balances_hub
-display_balances_connected_mvm
-log_and_echo ""
+log "   - Checking if verifier is running..."
+if ! curl -s "http://127.0.0.1:3333/health" > /dev/null 2>&1; then
+    log_and_echo "❌ ERROR: Verifier is not running"
+    log_and_echo "   Please start the verifier service first"
+    log_and_echo "   The verifier should be started in run-tests.sh before this script"
+    exit 1
+fi
+log "   ✅ Verifier is running"
 
-log ""
-log "   - Updating verifier configuration..."
-setup_verifier_config
-
-# Update hub_chain intent_module_address
-sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
-
-# Update connected_chain_mvm intent_module_address
-sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
-
-# Update connected_chain_mvm escrow_module_address (same as intent_module_address)
-sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
-
-# Update hub_chain known_accounts (include both requester (Alice) and solver (Bob) - solver (Bob) fulfills intents)
-sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
-
-# Update connected_chain_mvm known_accounts
-sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
-
-log "   ✅ Updated verifier_testing.toml with:"
-log "      Chain 1 intent_module_address: 0x$CHAIN1_DEPLOY_ADDRESS"
-log "      Chain 2 intent_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
-log "      Chain 2 escrow_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
-log "      Chain 1 known_accounts: [$ALICE_CHAIN1_ADDRESS, $BOB_CHAIN1_ADDRESS]"
-log "      Chain 2 known_accounts: $ALICE_CHAIN2_ADDRESS"
-
-# ============================================================================
-# SECTION 4: EXECUTE MAIN OPERATION
-# ============================================================================
-log ""
-log "🚀 Starting Trusted Verifier Service..."
-log "========================================"
-
-start_verifier "$LOG_DIR/verifier.log" "info"
+# Set VERIFIER_LOG if not already set (from start_verifier)
+if [ -z "$VERIFIER_LOG" ]; then
+    VERIFIER_LOG="$LOG_DIR/verifier.log"
+    if [ ! -f "$VERIFIER_LOG" ]; then
+        # Try to find verifier log in common locations
+        if [ -f "$PROJECT_ROOT/tmp/intent-framework-logs/verifier.log" ]; then
+            VERIFIER_LOG="$PROJECT_ROOT/tmp/intent-framework-logs/verifier.log"
+        fi
+    fi
+fi
 
 log ""
 log "📋 Verifier Status:"
@@ -457,10 +411,24 @@ log_and_echo ""
 
 log ""
 log_and_echo "ℹ️  Verifier is running in the background"
-log_and_echo "   Verifier PID: $VERIFIER_PID"
+# Get VERIFIER_PID from environment or find it
+if [ -z "$VERIFIER_PID" ]; then
+    # Try to find verifier PID from process list
+    VERIFIER_PID=$(pgrep -f "cargo.*trusted-verifier" | head -1 || pgrep -f "target/debug/trusted-verifier" | head -1 || echo "")
+    if [ -z "$VERIFIER_PID" ]; then
+        # Try to read from pid file
+        if [ -f "$LOG_DIR/verifier.pid" ]; then
+            VERIFIER_PID=$(cat "$LOG_DIR/verifier.pid" 2>/dev/null || echo "")
+        fi
+    fi
+fi
+if [ -n "$VERIFIER_PID" ]; then
+    log_and_echo "   Verifier PID: $VERIFIER_PID"
+    # Store PID for cleanup
+    echo $VERIFIER_PID > "$LOG_DIR/verifier.pid"
+else
+    log_and_echo "   Verifier PID: (not found)"
+fi
 log_and_echo ""
 log_and_echo "✨ Script complete! Verifier is monitoring events in the background."
-
-# Store PID for cleanup
-echo $VERIFIER_PID > "$LOG_DIR/verifier.pid"
 

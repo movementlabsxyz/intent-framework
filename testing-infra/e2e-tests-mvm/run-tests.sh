@@ -37,6 +37,8 @@ echo "   Submitting inflow cross-chain intents..."
 ./testing-infra/e2e-tests-mvm/inflow-fulfill-hub-intent.sh
 ./testing-infra/chain-hub/configure-verifier.sh
 ./testing-infra/chain-connected-mvm/configure-verifier.sh
+./testing-infra/e2e-tests-mvm/configure-verifier.sh
+./testing-infra/e2e-tests-mvm/start-verifier.sh
 ./testing-infra/e2e-tests-mvm/release-escrow.sh
 
 echo ""

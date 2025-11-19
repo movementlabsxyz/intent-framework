@@ -539,6 +539,14 @@ register_solver() {
 
     log "     Registering solver in registry..."
     
+    # Debug: Log input parameters
+    log "     DEBUG: Input parameters:"
+    log "       profile: $profile"
+    log "       chain_address: $chain_address"
+    log "       public_key_hex (length): ${#public_key_hex} chars"
+    log "       evm_address_hex: $evm_address_hex (length: ${#evm_address_hex} chars)"
+    log "       connected_chain_mvm_address: ${connected_chain_mvm_address:-<empty>}"
+    
     # Build arguments: public_key, Option<evm_address>, Option<mvm_address>
     # Use placeholder values when not provided (Aptos CLI doesn't support "null" for Option types)
     # For EVM address: use 0x0000000000000000000000000000000000000000 (20 bytes) if not provided
@@ -558,6 +566,16 @@ register_solver() {
         # Use placeholder: zero address
         mvm_arg="address:0x0"
     fi
+    
+    # Debug: Log built arguments
+    log "     DEBUG: Built arguments:"
+    log "       public_key: hex:${public_key_hex:0:20}... (${#public_key_hex} chars)"
+    log "       evm_address: $evm_arg"
+    log "       mvm_address: $mvm_arg"
+    log "     DEBUG: Full command:"
+    log "       aptos move run --profile $profile --assume-yes \\"
+    log "         --function-id 0x${chain_address}::solver_registry::register_solver \\"
+    log "         --args \"hex:${public_key_hex}\" \"$evm_arg\" \"$mvm_arg\""
     
     if [ -n "$log_file" ]; then
         aptos move run --profile "$profile" --assume-yes \

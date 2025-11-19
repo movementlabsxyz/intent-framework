@@ -40,8 +40,8 @@ use super::generic::{CrossChainValidator, FulfillmentTransactionParams, Validati
 /// 
 /// * `Ok(ValidationResult)` - Validation result
 /// * `Err(anyhow::Error)` - Validation failed due to error
-pub fn validate_outflow_fulfillment(
-    _validator: &CrossChainValidator,
+pub async fn validate_outflow_fulfillment(
+    validator: &CrossChainValidator,
     request_intent: &RequestIntentEvent,
     tx_params: &FulfillmentTransactionParams,
     tx_success: bool,
@@ -72,9 +72,9 @@ pub fn validate_outflow_fulfillment(
     // Validate recipient matches requester_address_connected_chain (for outflow intents)
     if let Some(ref requester_address) = request_intent.requester_address_connected_chain {
         // Determine chain type for address validation based on configured connected chain
-        let chain_type = if _validator.config().connected_chain_evm.is_some() {
+        let chain_type = if validator.config().connected_chain_evm.is_some() {
             crate::monitor::ChainType::Evm
-        } else if _validator.config().connected_chain_mvm.is_some() {
+        } else if validator.config().connected_chain_mvm.is_some() {
             crate::monitor::ChainType::Mvm
         } else {
             return Ok(ValidationResult {
@@ -160,20 +160,81 @@ pub fn validate_outflow_fulfillment(
     }
 
     // Validate solver matches reserved solver
+    // reserved_solver in the event is always a Move VM address (from hub chain)
+    // Always look up the solver in the hub registry to get their connected chain address
     if let Some(ref reserved_solver) = request_intent.reserved_solver {
-        // Normalize addresses for comparison (remove 0x prefix, lowercase)
-        let tx_solver = tx_params.solver.strip_prefix("0x").unwrap_or(&tx_params.solver).to_lowercase();
-        let reserved = reserved_solver.strip_prefix("0x").unwrap_or(reserved_solver).to_lowercase();
+        use crate::mvm_client::MvmClient;
+        use anyhow::Context;
         
-        if tx_solver != reserved {
-            return Ok(ValidationResult {
-                valid: false,
-                message: format!(
-                    "Transaction solver '{}' does not match reserved solver '{}'",
-                    tx_params.solver, reserved_solver
-                ),
-                timestamp: chrono::Utc::now().timestamp() as u64,
-            });
+        let hub_rpc_url = &validator.config().hub_chain.rpc_url;
+        let hub_registry_address = &validator.config().hub_chain.intent_module_address;
+        let hub_client = MvmClient::new(hub_rpc_url)?;
+        
+        // Determine if this is a Move VM connected chain
+        let is_mvm_chain = validator.config().connected_chain_mvm.is_some();
+        
+        if is_mvm_chain {
+            // For Move VM chains: Look up connected chain Move VM address from hub registry and compare to transaction solver
+            let registered_mvm_address = hub_client.get_solver_connected_chain_mvm_address(reserved_solver, hub_registry_address)
+                .await
+                .context("Failed to query reserved solver connected chain Move VM address from hub chain registry")?;
+            
+            let registered_mvm_address = match registered_mvm_address {
+                Some(addr) => addr,
+                None => {
+                    return Ok(ValidationResult {
+                        valid: false,
+                        message: format!("Reserved solver '{}' is not registered in hub chain solver registry or has no connected chain Move VM address", reserved_solver),
+                        timestamp: chrono::Utc::now().timestamp() as u64,
+                    });
+                }
+            };
+            
+            // Compare transaction solver (Move VM address on connected chain) to registered connected chain address
+            let tx_solver = tx_params.solver.strip_prefix("0x").unwrap_or(&tx_params.solver).to_lowercase();
+            let registered_mvm = registered_mvm_address.strip_prefix("0x").unwrap_or(&registered_mvm_address).to_lowercase();
+            
+            if tx_solver != registered_mvm {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: format!(
+                        "Transaction solver '{}' does not match reserved solver's connected chain Move VM address '{}' (reserved solver hub chain address: '{}')",
+                        tx_params.solver, registered_mvm_address, reserved_solver
+                    ),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        } else {
+            // For EVM chains: Look up EVM address from hub registry and compare to transaction solver
+            let registered_evm_address = hub_client.get_solver_evm_address(reserved_solver, hub_registry_address)
+                .await
+                .context("Failed to query reserved solver EVM address from hub chain registry")?;
+            
+            let registered_evm_address = match registered_evm_address {
+                Some(addr) => addr,
+                None => {
+                    return Ok(ValidationResult {
+                        valid: false,
+                        message: format!("Reserved solver '{}' is not registered in hub chain solver registry", reserved_solver),
+                        timestamp: chrono::Utc::now().timestamp() as u64,
+                    });
+                }
+            };
+            
+            // Compare transaction solver (EVM address) to registered EVM address
+            let tx_solver = tx_params.solver.strip_prefix("0x").unwrap_or(&tx_params.solver).to_lowercase();
+            let registered_evm = registered_evm_address.strip_prefix("0x").unwrap_or(&registered_evm_address).to_lowercase();
+            
+            if tx_solver != registered_evm {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: format!(
+                        "Transaction solver '{}' does not match reserved solver's EVM address '{}' (reserved solver Move VM address: '{}')",
+                        tx_params.solver, registered_evm_address, reserved_solver
+                    ),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
         }
     } else {
         return Ok(ValidationResult {

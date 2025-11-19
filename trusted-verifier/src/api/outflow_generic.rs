@@ -142,7 +142,7 @@ pub async fn handle_outflow_fulfillment_validation(
     };
     
     // Validate transaction against intent (flow-agnostic logic)
-    let validation_result = match crate::validator::validate_outflow_fulfillment(&validator, request_intent, &tx_params, tx_success) {
+    let validation_result = match crate::validator::validate_outflow_fulfillment(&validator, request_intent, &tx_params, tx_success).await {
         Ok(result) => result,
         Err(e) => {
             return Ok(warp::reply::json(&ApiResponse::<OutflowFulfillmentValidationResponse> {

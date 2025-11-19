@@ -24,8 +24,8 @@ fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
     config
 }
 
-/// Helper to create a mock response for get_solver_evm_address
-/// Returns a vector of bytes representing the EVM address
+/// Helper to create a mock response for get_connected_chain_evm_address
+/// Returns an Option<vector<u8>>: {"vec": [bytes_array]} for Some, {"vec": []} for None
 fn create_evm_address_response(evm_address: Option<&str>) -> serde_json::Value {
     match evm_address {
         Some(addr) => {
@@ -35,9 +35,10 @@ fn create_evm_address_response(evm_address: Option<&str>) -> serde_json::Value {
                 .step_by(2)
                 .map(|i| u8::from_str_radix(&addr_clean[i..i+2], 16).unwrap())
                 .collect();
-            json!(bytes.iter().map(|b| *b as u64).collect::<Vec<u64>>())
+            // Return Option<vector<u8>> format: {"vec": [bytes_array]}
+            json!({"vec": [bytes.iter().map(|b| *b as u64).collect::<Vec<u64>>()]})
         }
-        None => json!([])
+        None => json!({"vec": []}) // Option::None format
     }
 }
 
@@ -52,7 +53,7 @@ async fn setup_mock_server_with_evm_address_response(
     Mock::given(method("POST"))
         .and(path("/v1/view"))
         .and(body_json(&json!({
-            "function": "0x1::solver_registry::get_evm_address",
+            "function": "0x1::solver_registry::get_connected_chain_evm_address",
             "type_arguments": [],
             "arguments": [solver_address]
         })))

@@ -49,7 +49,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver in registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_inflow::create_cross_chain_draft_intent(
@@ -131,7 +131,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver in registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_inflow::create_cross_chain_draft_intent(
@@ -220,7 +220,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver in registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_inflow::create_cross_chain_draft_intent(

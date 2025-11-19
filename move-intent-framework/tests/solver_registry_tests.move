@@ -2,6 +2,7 @@
 module mvmt_intent::solver_registry_tests {
     use std::signer;
     use std::vector;
+    use std::option;
     use aptos_std::ed25519;
     use aptos_framework::timestamp;
     use mvmt_intent::solver_registry;
@@ -43,7 +44,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         
         // Verify solver is registered
         assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
@@ -54,9 +55,11 @@ module mvmt_intent::solver_registry_tests {
         assert!(stored_public_key == solver_public_key_bytes, 3);
         
         // Verify EVM address matches
-        let stored_evm_address = solver_registry::get_evm_address(signer::address_of(solver));
-        assert!(vector::length(&stored_evm_address) == 20, 4);
-        assert!(stored_evm_address == evm_address, 5);
+        let stored_evm_address_opt = solver_registry::get_connected_chain_evm_address(signer::address_of(solver));
+        assert!(option::is_some(&stored_evm_address_opt), 4);
+        let stored_evm_address = *option::borrow(&stored_evm_address_opt);
+        assert!(vector::length(&stored_evm_address) == 20, 5);
+        assert!(stored_evm_address == evm_address, 6);
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -82,7 +85,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Should abort with E_PUBLIC_KEY_LENGTH_INVALID
-        solver_registry::register_solver(solver, invalid_public_key, evm_address);
+        solver_registry::register_solver(solver, invalid_public_key, option::some(evm_address), option::none());
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -109,7 +112,7 @@ module mvmt_intent::solver_registry_tests {
         };
         
         // Should abort with E_EVM_ADDRESS_LENGTH_INVALID
-        solver_registry::register_solver(solver, solver_public_key_bytes, invalid_evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(invalid_evm_address), option::none());
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -131,10 +134,10 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver first time
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         
         // Try to register again - should abort
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -156,7 +159,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address1 = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1);
+        solver_registry::register_solver(solver, solver_public_key_bytes1, option::some(evm_address1), option::none());
         
         // Generate new Ed25519 keys
         let (_solver_secret_key2, solver_public_key2) = ed25519::generate_keys();
@@ -166,14 +169,16 @@ module mvmt_intent::solver_registry_tests {
         let evm_address2 = test_utils::create_test_evm_address_reverse(20);
         
         // Update solver (solver updates their own info)
-        solver_registry::update_solver(solver, solver_public_key_bytes2, evm_address2);
+        solver_registry::update_solver(solver, solver_public_key_bytes2, option::some(evm_address2), option::none());
         
         // Verify updated values
         let stored_public_key = solver_registry::get_public_key(signer::address_of(solver));
         assert!(stored_public_key == solver_public_key_bytes2, 1);
         
-        let stored_evm_address = solver_registry::get_evm_address(signer::address_of(solver));
-        assert!(stored_evm_address == evm_address2, 2);
+        let stored_evm_address_opt = solver_registry::get_connected_chain_evm_address(signer::address_of(solver));
+        assert!(option::is_some(&stored_evm_address_opt), 2);
+        let stored_evm_address = *option::borrow(&stored_evm_address_opt);
+        assert!(stored_evm_address == evm_address2, 3);
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -194,15 +199,18 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         
         // Get solver info
-        let (is_registered, public_key, evm_addr, registered_at) = solver_registry::get_solver_info(signer::address_of(solver));
+        let (is_registered, public_key, evm_addr_opt, mvm_addr_opt, registered_at) = solver_registry::get_solver_info(signer::address_of(solver));
         
         assert!(is_registered, 1);
         assert!(public_key == solver_public_key_bytes, 2);
-        assert!(evm_addr == evm_address, 3);
-        assert!(registered_at >= 0, 4); // registered_at can be 0 if timestamp hasn't advanced
+        assert!(option::is_some(&evm_addr_opt), 3);
+        let evm_addr = *option::borrow(&evm_addr_opt);
+        assert!(evm_addr == evm_address, 4);
+        assert!(option::is_none(&mvm_addr_opt), 5);
+        assert!(registered_at >= 0, 6); // registered_at can be 0 if timestamp hasn't advanced
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -216,12 +224,13 @@ module mvmt_intent::solver_registry_tests {
         solver_registry::init_for_test(mvmt_intent);
         
         // Get solver info for unregistered solver
-        let (is_registered, public_key, evm_addr, registered_at) = solver_registry::get_solver_info(signer::address_of(solver));
+        let (is_registered, public_key, evm_addr_opt, mvm_addr_opt, registered_at) = solver_registry::get_solver_info(signer::address_of(solver));
         
         assert!(!is_registered, 1);
         assert!(vector::is_empty(&public_key), 2);
-        assert!(vector::is_empty(&evm_addr), 3);
-        assert!(registered_at == 0, 4);
+        assert!(option::is_none(&evm_addr_opt), 3);
+        assert!(option::is_none(&mvm_addr_opt), 4);
+        assert!(registered_at == 0, 5);
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -242,7 +251,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         
         // Get unvalidated public key
         let _public_key_opt = solver_registry::get_public_key_unvalidated(signer::address_of(solver));
@@ -268,7 +277,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
         
         // Deregister solver
@@ -281,8 +290,8 @@ module mvmt_intent::solver_registry_tests {
         let public_key = solver_registry::get_public_key(signer::address_of(solver));
         assert!(vector::is_empty(&public_key), 3);
         
-        let evm_addr = solver_registry::get_evm_address(signer::address_of(solver));
-        assert!(vector::is_empty(&evm_addr), 4);
+        let evm_addr_opt = solver_registry::get_connected_chain_evm_address(signer::address_of(solver));
+        assert!(option::is_none(&evm_addr_opt), 4);
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -318,7 +327,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address1 = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1);
+        solver_registry::register_solver(solver, solver_public_key_bytes1, option::some(evm_address1), option::none());
         assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
         
         // Deregister solver
@@ -333,15 +342,17 @@ module mvmt_intent::solver_registry_tests {
         let evm_address2 = test_utils::create_test_evm_address_reverse(20);
         
         // Re-register solver with new credentials
-        solver_registry::register_solver(solver, solver_public_key_bytes2, evm_address2);
+        solver_registry::register_solver(solver, solver_public_key_bytes2, option::some(evm_address2), option::none());
         assert!(solver_registry::is_registered(signer::address_of(solver)), 3);
         
         // Verify new credentials are stored
         let stored_public_key = solver_registry::get_public_key(signer::address_of(solver));
         assert!(stored_public_key == solver_public_key_bytes2, 4);
         
-        let stored_evm_address = solver_registry::get_evm_address(signer::address_of(solver));
-        assert!(stored_evm_address == evm_address2, 5);
+        let stored_evm_address_opt = solver_registry::get_connected_chain_evm_address(signer::address_of(solver));
+        assert!(option::is_some(&stored_evm_address_opt), 5);
+        let stored_evm_address = *option::borrow(&stored_evm_address_opt);
+        assert!(stored_evm_address == evm_address2, 6);
     }
 }
 

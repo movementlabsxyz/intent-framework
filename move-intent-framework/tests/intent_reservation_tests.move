@@ -256,7 +256,7 @@ module mvmt_intent::intent_reservation_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver in the registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address);
+        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
         assert!(solver_registry::is_registered(signer::address_of(solver)), 0);
         
         // Step 3: Offerer creates draft intent (without solver)

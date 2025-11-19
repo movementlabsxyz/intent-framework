@@ -561,6 +561,113 @@ impl MvmClient {
         Ok(None)
     }
 
+    /// Queries the solver registry to get a solver's connected chain Move VM address.
+    ///
+    /// # Arguments
+    ///
+    /// * `solver_address` - Move VM address of the solver (hub chain)
+    /// * `registry_address` - Address where the solver registry is deployed (usually @mvmt_intent)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<String>)` - Connected chain Move VM address if solver is registered and address is set, None otherwise
+    /// * `Err(anyhow::Error)` - Failed to query registry
+    pub async fn get_solver_connected_chain_mvm_address(&self, solver_address: &str, registry_address: &str) -> Result<Option<String>> {
+        // Use view function to call solver_registry::get_connected_chain_mvm_address
+        let result = self.call_view_function(
+            registry_address,
+            "solver_registry",
+            "get_connected_chain_mvm_address",
+            vec![],
+            vec![serde_json::json!(solver_address)],
+        ).await;
+        
+        match result {
+            Ok(value) => {
+                // The view function returns an Option<address>
+                // Move's Option is serialized as {"vec": [value]} for Some, {"vec": []} for None
+                if let Some(opt_obj) = value.as_object() {
+                    if let Some(vec_val) = opt_obj.get("vec") {
+                        if let Some(vec_array) = vec_val.as_array() {
+                            if vec_array.is_empty() {
+                                Ok(None)
+                            } else if let Some(addr_val) = vec_array.get(0) {
+                                if let Some(addr_str) = addr_val.as_str() {
+                                    Ok(Some(addr_str.to_string()))
+                                } else {
+                                    Ok(None)
+                                }
+                            } else {
+                                Ok(None)
+                            }
+                        } else {
+                            Ok(None)
+                        }
+                    } else {
+                        Ok(None)
+                    }
+                } else {
+                    Ok(None)
+                }
+            }
+            Err(e) => {
+                // If view function fails, solver might not be registered
+                // Log and return None
+                tracing::debug!("Failed to query solver connected chain Move VM address: {}", e);
+                Ok(None)
+            }
+        }
+    }
+
+    /// Queries the solver registry to get a solver's public key.
+    ///
+    /// # Arguments
+    ///
+    /// * `solver_address` - Move VM address of the solver
+    /// * `registry_address` - Address where the solver registry is deployed (usually @mvmt_intent)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<Vec<u8>>)` - Public key bytes if solver is registered, None otherwise
+    /// * `Err(anyhow::Error)` - Failed to query registry
+    pub async fn get_solver_public_key(&self, solver_address: &str, registry_address: &str) -> Result<Option<Vec<u8>>> {
+        // Use view function to call solver_registry::get_public_key
+        let result = self.call_view_function(
+            registry_address,
+            "solver_registry",
+            "get_public_key",
+            vec![],
+            vec![serde_json::json!(solver_address)],
+        ).await;
+        
+        match result {
+            Ok(value) => {
+                // The view function returns a vector<u8> (empty if not registered)
+                if let Some(pk_bytes) = value.as_array() {
+                    if pk_bytes.is_empty() {
+                        Ok(None)
+                    } else {
+                        let mut public_key = Vec::new();
+                        for byte_val in pk_bytes {
+                            if let Some(byte) = byte_val.as_u64() {
+                                public_key.push(byte as u8);
+                            }
+                        }
+                        Ok(Some(public_key))
+                    }
+                } else {
+                    Ok(None)
+                }
+            }
+            Err(e) => {
+                // If view function fails, solver might not be registered
+                // Log and return None
+                tracing::debug!("Failed to query solver public key: {}", e);
+                Ok(None)
+            }
+        }
+    }
+
     /// Queries the solver registry to get a solver's EVM address.
     ///
     /// # Arguments
@@ -573,30 +680,49 @@ impl MvmClient {
     /// * `Ok(Option<String>)` - EVM address if solver is registered, None otherwise
     /// * `Err(anyhow::Error)` - Failed to query registry
     pub async fn get_solver_evm_address(&self, solver_address: &str, registry_address: &str) -> Result<Option<String>> {
-        // Use view function to call solver_registry::get_evm_address
+        // Use view function to call solver_registry::get_connected_chain_evm_address
         let result = self.call_view_function(
             registry_address,
             "solver_registry",
-            "get_evm_address",
+            "get_connected_chain_evm_address",
             vec![],
             vec![serde_json::json!(solver_address)],
         ).await;
         
         match result {
             Ok(value) => {
-                // The view function returns a vector<u8> (empty if not registered)
-                if let Some(evm_bytes) = value.as_array() {
-                    if evm_bytes.is_empty() {
-                        Ok(None)
-                    } else {
-                        // Convert vector<u8> to hex string with 0x prefix
-                        let mut hex_string = String::from("0x");
-                        for byte_val in evm_bytes {
-                            if let Some(byte) = byte_val.as_u64() {
-                                hex_string.push_str(&format!("{:02x}", byte as u8));
+                // The view function returns an Option<vector<u8>>
+                // Move's Option is serialized as {"vec": [value]} for Some, {"vec": []} for None
+                if let Some(opt_obj) = value.as_object() {
+                    if let Some(vec_val) = opt_obj.get("vec") {
+                        if let Some(vec_array) = vec_val.as_array() {
+                            if vec_array.is_empty() {
+                                Ok(None)
+                            } else if let Some(evm_bytes) = vec_array.get(0) {
+                                if let Some(evm_array) = evm_bytes.as_array() {
+                                    if evm_array.is_empty() {
+                                        Ok(None)
+                                    } else {
+                                        // Convert vector<u8> to hex string with 0x prefix
+                                        let mut hex_string = String::from("0x");
+                                        for byte_val in evm_array {
+                                            if let Some(byte) = byte_val.as_u64() {
+                                                hex_string.push_str(&format!("{:02x}", byte as u8));
+                                            }
+                                        }
+                                        Ok(Some(hex_string))
+                                    }
+                                } else {
+                                    Ok(None)
+                                }
+                            } else {
+                                Ok(None)
                             }
+                        } else {
+                            Ok(None)
                         }
-                        Ok(Some(hex_string))
+                    } else {
+                        Ok(None)
                     }
                 } else {
                     Ok(None)

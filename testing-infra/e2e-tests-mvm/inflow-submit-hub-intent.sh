@@ -112,7 +112,8 @@ fi
 log "     ✅ Solver public key extracted: ${SOLVER_PUBLIC_KEY:0:20}..."
 
 log "   - Registering solver (Bob) in solver registry..."
-register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$LOG_FILE"
+# Register with EVM address and connected chain MVM address (Bob's Chain 2 address) for consistency
+register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$BOB_CHAIN2_ADDRESS" "$LOG_FILE"
 
 log "   - Creating cross-chain request intent on Chain 1..."
 log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN1"

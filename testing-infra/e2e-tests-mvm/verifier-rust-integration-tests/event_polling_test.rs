@@ -105,16 +105,16 @@ async fn test_poll_connected_events_api() {
 
 /// Test event polling with a real intent created on-chain
 /// Why: Verify that poll_hub_events() can parse real intent events from the blockchain
-/// Note: This test will FAIL if no intents exist on-chain, which is expected behavior
+/// Note: This test runs BEFORE intent fulfillment, so intents should always be found
 #[tokio::test]
 async fn test_poll_hub_events_with_real_intent() {
     // This test requires:
     // 1. Chains running (via deploy-contracts.sh)
     // 2. Contracts deployed (via deploy-contracts.sh)
     // 3. Alice funded (via deploy-contracts.sh)
-    // 4. An intent created (via submit-intents.sh or manual transaction)
+    // 4. An intent created (via inflow-submit-hub-intent.sh)
     //
-    // If no intents exist, this test will FAIL - which is correct behavior!
+    // This test runs BEFORE inflow-fulfill-hub-intent.sh, so the intent should still exist.
     
     let config = trusted_verifier::config::Config::load()
         .expect("Failed to load verifier config");
@@ -127,8 +127,7 @@ async fn test_poll_hub_events_with_real_intent() {
     let result = monitor.poll_hub_events().await
         .expect("Failed to poll hub events");
     
-    // CRITICAL: Should find at least one event if intent was created
-    // This test FAILS if no intents exist, which is the expected behavior
+    // Should find at least one event if intent was created (test runs before fulfillment)
     assert!(result.len() > 0, "Expected to find at least one intent event. No intents found on-chain - this means poll_hub_events() is working but there are no intents to monitor.");
     
     // Verify the event has correct structure

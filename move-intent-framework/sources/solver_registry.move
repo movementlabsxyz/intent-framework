@@ -345,6 +345,35 @@ module mvmt_intent::solver_registry {
         (true, solver_info.public_key, solver_info.connected_chain_evm_address, solver_info.connected_chain_mvm_address, solver_info.registered_at)
     }
     
+    /// Entry function to check if a solver is registered
+    /// Emits a SolverRegistered event if registered, or with empty data if not registered
+    /// The presence of non-empty public_key indicates the solver is registered
+    public entry fun check_solver_registered(
+        _account: &signer,
+        solver_addr: address,
+    ) acquires SolverRegistry {
+        let registered = is_registered(solver_addr);
+        if (registered) {
+            let registry = borrow_global<SolverRegistry>(@mvmt_intent);
+            let solver_info = simple_map::borrow(&registry.solvers, &solver_addr);
+            event::emit(SolverRegistered {
+                solver: solver_addr,
+                public_key: solver_info.public_key,
+                connected_chain_evm_address: solver_info.connected_chain_evm_address,
+                connected_chain_mvm_address: solver_info.connected_chain_mvm_address,
+                timestamp: solver_info.registered_at,
+            });
+        } else {
+            event::emit(SolverRegistered {
+                solver: solver_addr,
+                public_key: vector::empty(),
+                connected_chain_evm_address: option::none(),
+                connected_chain_mvm_address: option::none(),
+                timestamp: 0,
+            });
+        };
+    }
+    
     #[test_only]
     public fun init_for_test(account: &signer) {
         // In tests, initialize at the account's address (which should be @mvmt_intent)

@@ -619,44 +619,52 @@ verify_solver_registered() {
 
     log "     Verifying solver is registered in registry..."
     
-    # Query the contract directly using aptos move view
+    # Call the entry function to check registration status
+    # The function emits an event - we'll check the event to see if solver is registered
     local temp_file=$(mktemp)
-    local view_result
+    local rpc_url=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].rest_url" 2>/dev/null || echo "http://127.0.0.1:8080")
+    local solver_addr_hex="0x${solver_address}"
+    
     if [ -n "$log_file" ]; then
-        aptos move view \
-            --function-id "0x${chain_address}::solver_registry::is_registered" \
+        aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::check_solver_registered" \
             --args "address:0x${solver_address}" \
-            --profile "$profile" > "$temp_file" 2>&1
+            > "$temp_file" 2>&1
         local exit_code=$?
         cat "$temp_file" | tee -a "$log_file" > /dev/null
-        view_result=$(cat "$temp_file")
     else
-        aptos move view \
-            --function-id "0x${chain_address}::solver_registry::is_registered" \
+        aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::check_solver_registered" \
             --args "address:0x${solver_address}" \
-            --profile "$profile" > "$temp_file" 2>&1
+            > "$temp_file" 2>&1
         local exit_code=$?
-        view_result=$(cat "$temp_file")
     fi
-    rm -f "$temp_file"
     
     # Check if the command succeeded
     if [ $exit_code -ne 0 ]; then
         log_and_echo "❌ ERROR: Failed to query solver registry"
         log_and_echo "   Solver address: 0x${solver_address}"
         log_and_echo "   Registry address: 0x${chain_address}"
-        log_and_echo "   View function result:"
-        echo "$view_result" | while IFS= read -r line; do
+        log_and_echo "   Command result:"
+        cat "$temp_file" | while IFS= read -r line; do
             log_and_echo "     $line"
         done
+        rm -f "$temp_file"
         exit 1
     fi
     
-    # Extract the boolean result from the JSON output
-    # Aptos view function returns: {"Result": [true]} or {"Result": [false]}
-    local is_registered=$(echo "$view_result" | jq -r '.Result[0] // false' 2>/dev/null)
+    # Wait a moment for transaction to be processed
+    sleep 2
     
-    if [ "$is_registered" = "true" ]; then
+    # Query the event from the transaction to check if solver is registered
+    # Get the latest transaction from the account that called the function
+    local tx_result=$(curl -s "${rpc_url}/v1/accounts/${solver_addr_hex}/transactions?limit=1" 2>/dev/null)
+    local public_key_length=$(echo "$tx_result" | jq -r '.[0].events[]? | select(.type | contains("SolverRegistered")) | .data.public_key | length' 2>/dev/null)
+    
+    rm -f "$temp_file"
+    
+    # If public_key has length > 0, solver is registered
+    if [ -n "$public_key_length" ] && [ "$public_key_length" != "null" ] && [ "$public_key_length" -gt 0 ]; then
         log "     ✅ Solver is registered in registry"
     else
         log_and_echo "❌ ERROR: Solver is not registered in registry"

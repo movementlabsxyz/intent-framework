@@ -162,61 +162,14 @@ if [ $? -eq 0 ]; then
 
     sleep 2
     log "     - Verifying request intent stored on-chain..."
+    HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" | \
+        jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_address' | head -n 1)
 
-    API_RESPONSE=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" 2>&1)
-    CURL_EXIT_CODE=$?
-
-    if [ $CURL_EXIT_CODE -ne 0 ]; then
-        log_and_echo "❌ ERROR: Failed to fetch transactions from API"
-        log_and_echo "   Curl exit code: $CURL_EXIT_CODE"
-        log_and_echo "   Response: $API_RESPONSE"
-        exit 1
-    fi
-
-    log "     - API Response structure:"
-    echo "$API_RESPONSE" | jq 'if type == "array" then "Array with \(length) items" else "Not an array: \(type)" end' 2>&1 | while IFS= read -r line; do
-        log "       $line"
-    done
-
-    TX_COUNT=$(echo "$API_RESPONSE" | jq -r 'if type == "array" then length else 0 end' 2>/dev/null || echo "0")
-    log "     - Transaction count: $TX_COUNT"
-
-    if [ "$TX_COUNT" = "0" ]; then
-        log_and_echo "❌ ERROR: No transactions found in API response"
-        log_and_echo "   Full API response saved to log file"
-        echo "$API_RESPONSE" | jq '.' >> "$LOG_FILE" 2>&1 || echo "$API_RESPONSE" >> "$LOG_FILE"
-        exit 1
-    fi
-
-    EVENTS_COUNT=$(echo "$API_RESPONSE" | jq -r '.[0].events // [] | if type == "array" then length else "not_array" end' 2>/dev/null || echo "error")
-    log "     - Events count in first transaction: $EVENTS_COUNT"
-
-    log "     - Event types found:"
-    echo "$API_RESPONSE" | jq -r '.[0].events // [] | .[]? | if type == "object" and has("type") then .type else "no_type_field" end' 2>/dev/null | while IFS= read -r event_type; do
-        log "       - $event_type"
-    done
-
-    HUB_INTENT_ADDRESS=$(echo "$API_RESPONSE" | \
-        jq -r '.[0].events // [] | .[]? | select(type == "object" and has("type") and (.type | type == "string") and ((.type | contains("LimitOrderEvent")) or (.type | contains("OracleLimitOrderEvent")))) | .data.intent_address? // empty' 2>&1 | head -n 1)
-
-    JQ_EXIT_CODE=${PIPESTATUS[1]}
-
-    if [ $JQ_EXIT_CODE -ne 0 ]; then
-        log_and_echo "❌ ERROR: jq command failed with exit code $JQ_EXIT_CODE"
-        log_and_echo "   jq output: $HUB_INTENT_ADDRESS"
-        log_and_echo "   Full API response saved to log file for debugging"
-        echo "$API_RESPONSE" | jq '.' >> "$LOG_FILE" 2>&1 || echo "$API_RESPONSE" >> "$LOG_FILE"
-        exit 1
-    fi
-
-    if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ] && [ "$HUB_INTENT_ADDRESS" != "empty" ]; then
+    if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
         log "     ✅ Hub outflow request intent stored at: $HUB_INTENT_ADDRESS"
         log_and_echo "✅ Outflow request intent created"
     else
         log_and_echo "❌ ERROR: Could not verify hub outflow request intent address"
-        log_and_echo "   Extracted address: '$HUB_INTENT_ADDRESS'"
-        log_and_echo "   Full API response saved to log file for debugging"
-        echo "$API_RESPONSE" | jq '.' >> "$LOG_FILE" 2>&1 || echo "$API_RESPONSE" >> "$LOG_FILE"
         exit 1
     fi
 else

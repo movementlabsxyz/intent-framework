@@ -89,8 +89,15 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
                         }
                     }
 
+                    // Validate that this escrow fulfills an existing request intent
+                    // Note: It's normal for escrow to exist before request intent (escrow created first)
                     if let Err(e) = validate_request_intent_fulfillment(monitor, &event).await {
-                        error!("Intent fulfillment validation failed: {}", e);
+                        // If no matching request intent found, just log info (request intent may be created later)
+                        if e.to_string().contains("No matching request intent found") {
+                            info!("Registered escrow {} for intent_id {} (request intent not yet created on hub chain)", event.escrow_id, event.intent_id);
+                        } else {
+                            error!("Intent fulfillment validation failed: {}", e);
+                        }
                     }
                 }
             }
@@ -164,8 +171,14 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
                     }
 
                     // Validate that this escrow fulfills an existing request intent
+                    // Note: It's normal for escrow to exist before request intent (escrow created first)
                     if let Err(e) = validate_request_intent_fulfillment(monitor, &event).await {
-                        error!("Intent fulfillment validation failed for EVM escrow: {}", e);
+                        // If no matching request intent found, just log info (request intent may be created later)
+                        if e.to_string().contains("No matching request intent found") {
+                            info!("Registered escrow {} for intent_id {} (request intent not yet created on hub chain)", event.escrow_id, event.intent_id);
+                        } else {
+                            error!("Intent fulfillment validation failed for EVM escrow: {}", e);
+                        }
                     }
                 }
             }

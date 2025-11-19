@@ -62,7 +62,15 @@ sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|escrow_module_address = .*|es
 sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 
 # Update connected_chain_mvm known_accounts
-sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+sed -i "/\[connected_chain_mvm\]/,/\[connected_chain_evm\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+
+# Comment out EVM chain configuration for MVM-only tests
+# This prevents the verifier from trying to connect to EVM chain
+# Note: TOML parser will ignore commented sections, so connected_chain_evm will be None
+sed -i '/^\[connected_chain_evm\]/,/^\[verifier\]/ {
+    /^\[connected_chain_evm\]/ s/^/# MVM-only test: /
+    /^\[verifier\]/! s/^/# MVM-only test: /
+}' "$VERIFIER_TESTING_CONFIG"
 
 log "   ✅ Updated verifier_testing.toml with:"
 log "      Chain 1 intent_module_address: 0x$CHAIN1_DEPLOY_ADDRESS"
@@ -70,6 +78,7 @@ log "      Chain 2 intent_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
 log "      Chain 2 escrow_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
 log "      Chain 1 known_accounts: [$ALICE_CHAIN1_ADDRESS, $BOB_CHAIN1_ADDRESS]"
 log "      Chain 2 known_accounts: $ALICE_CHAIN2_ADDRESS"
+log "      EVM chain configuration: commented out (MVM-only test)"
 
 log ""
 log_and_echo "✅ Verifier configuration updated"

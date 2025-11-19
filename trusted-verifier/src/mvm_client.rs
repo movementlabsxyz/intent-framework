@@ -648,8 +648,10 @@ pub struct OracleLimitOrderEvent {
     pub intent_id: String,            // The original intent ID (from hub chain)
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub offered_amount: String,
+    pub offered_chain_id: String, // Chain ID where offered tokens are located
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub desired_amount: String,
+    pub desired_chain_id: String, // Chain ID where desired tokens are located
     pub requester: String,
     pub expiry_time: String,
     pub min_reported_value: String,

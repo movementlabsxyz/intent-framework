@@ -75,6 +75,33 @@ fn test_extract_mvm_fulfillment_params_amount_as_number() {
     assert_eq!(params.amount, 100000000u64);
 }
 
+/// Test that extract_mvm_fulfillment_params handles amount as decimal string
+/// 
+/// What is tested: Extracting amount when Aptos serializes it as a decimal string (without 0x prefix).
+/// 
+/// Why: Aptos may serialize u64 values as decimal strings "100000000" instead of hex strings or JSON numbers.
+#[test]
+fn test_extract_mvm_fulfillment_params_amount_as_decimal_string() {
+    let tx = MvmTransaction {
+        payload: Some(serde_json::json!({
+            "function": "0x123::utils::transfer_with_intent_id",
+            "arguments": [
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "100000000", // Amount as decimal string (without 0x prefix)
+                "0x1111111111111111111111111111111111111111111111111111111111111111"
+            ]
+        })),
+        ..create_base_mvm_transaction()
+    };
+
+    let result = extract_mvm_fulfillment_params(&tx);
+
+    assert!(result.is_ok(), "Extraction should succeed when amount is a decimal string");
+    let params = result.unwrap();
+    assert_eq!(params.amount, 100000000u64);
+}
+
 /// Test that extract_mvm_fulfillment_params fails when transaction is not a transfer_with_intent_id call
 /// 
 /// What is tested: Attempting to extract parameters from a Move VM transaction that doesn't call

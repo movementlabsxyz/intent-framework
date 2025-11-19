@@ -233,8 +233,58 @@ log ""
 if [ -z "$RELEASED_ESCROWS" ]; then
     log_and_echo "❌ ERROR: No escrows were released!"
     log_and_echo "   The verifier may not have approved the escrow, or the claim failed"
-    log_and_echo "   Verifier log:"
-    cat "$VERIFIER_LOG"
+    log ""
+    log "🔍 Diagnostic Information:"
+    log "========================================"
+    
+    # Check what events the verifier has cached
+    log ""
+    log "   Verifier Events:"
+    EVENTS_RESPONSE=$(curl -s "http://127.0.0.1:3333/events" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        ESCROW_COUNT=$(echo "$EVENTS_RESPONSE" | jq -r '.data.escrow_events | length' 2>/dev/null || echo "0")
+        FULFILLMENT_COUNT=$(echo "$EVENTS_RESPONSE" | jq -r '.data.fulfillment_events | length' 2>/dev/null || echo "0")
+        INTENT_COUNT=$(echo "$EVENTS_RESPONSE" | jq -r '.data.intent_events | length' 2>/dev/null || echo "0")
+        
+        log "      Escrow events cached: $ESCROW_COUNT"
+        log "      Fulfillment events cached: $FULFILLMENT_COUNT"
+        log "      Intent events cached: $INTENT_COUNT"
+        
+        if [ "$ESCROW_COUNT" != "0" ]; then
+            log ""
+            log "      Escrow events:"
+            echo "$EVENTS_RESPONSE" | jq -r '.data.escrow_events[] | "         escrow_id: \(.escrow_id), intent_id: \(.intent_id), chain: \(.chain)"' 2>/dev/null || log "         (Unable to parse)"
+        fi
+        
+        if [ "$FULFILLMENT_COUNT" != "0" ]; then
+            log ""
+            log "      Fulfillment events:"
+            echo "$EVENTS_RESPONSE" | jq -r '.data.fulfillment_events[] | "         intent_id: \(.intent_id), solver: \(.solver), chain: \(.chain)"' 2>/dev/null || log "         (Unable to parse)"
+        fi
+    else
+        log "      Failed to query verifier events endpoint"
+    fi
+    
+    # Check what approvals the verifier has
+    log ""
+    log "   Verifier Approvals:"
+    APPROVALS_RESPONSE=$(curl -s "http://127.0.0.1:3333/approvals" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        APPROVAL_COUNT=$(echo "$APPROVALS_RESPONSE" | jq -r '.data | length' 2>/dev/null || echo "0")
+        log "      Approvals cached: $APPROVAL_COUNT"
+        if [ "$APPROVAL_COUNT" != "0" ]; then
+            log ""
+            log "      Approval details:"
+            echo "$APPROVALS_RESPONSE" | jq -r '.data[] | "         escrow_id: \(.escrow_id), intent_id: \(.intent_id), timestamp: \(.timestamp)"' 2>/dev/null || log "         (Unable to parse)"
+        fi
+    else
+        log "      Failed to query verifier approvals endpoint"
+    fi
+    
+    log ""
+    log "   Verifier log:"
+    log "========================================"
+    cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
     exit 1
 fi
 

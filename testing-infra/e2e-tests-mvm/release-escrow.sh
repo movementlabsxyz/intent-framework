@@ -331,8 +331,9 @@ else
             
             TX_EXIT_CODE=$?
             
-            # Wait a bit for transaction to be processed
-            sleep 2
+            # Wait for transaction to be fully processed and finalized
+            log "   - Waiting for escrow release transaction to be finalized..."
+            sleep 10
             
             # Get solver (Bob)'s balance after release
             log "   - Getting solver (Bob)'s balance after release..."
@@ -402,13 +403,40 @@ else
     }
     
     # Poll for approvals a few times before script exits
-    log "   - Checking for approvals (will check 5 times with 3 second intervals)..."
-    for i in {1..5}; do
+    log "   - Checking for approvals (will check 10 times with 3 second intervals)..."
+    for i in {1..10}; do
         sleep 3
         check_and_release_escrows
     done
     
-    log "   ✅ Initial approval check complete"
+    log "   ✅ Approval check complete"
+    log ""
+    
+    # Check if any escrows were actually released
+    if [ -z "$RELEASED_ESCROWS" ]; then
+        log_and_echo "❌ ERROR: No escrows were released during the approval check period"
+        log_and_echo "   This may indicate:"
+        log_and_echo "      - The verifier has not yet generated an approval"
+        log_and_echo "      - The hub intent fulfillment was not detected"
+        log_and_echo "      - There is a timing issue"
+        log ""
+        log "🔍 Diagnostic Information:"
+        log "========================================"
+        log ""
+        log "   Verifier approvals:"
+        curl -s "http://127.0.0.1:3333/approvals" | jq '.' 2>/dev/null || log "      (Unable to query approvals)"
+        log ""
+        log "   Verifier events:"
+        curl -s "http://127.0.0.1:3333/events" | jq '.data | {escrow_events: (.escrow_events | length), fulfillment_events: (.fulfillment_events | length), intent_events: (.intent_events | length)}' 2>/dev/null || log "      (Unable to query events)"
+        log ""
+        log "   Verifier log:"
+        log "========================================"
+        cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
+        exit 1
+    else
+        log_and_echo "   ✅ Released escrows: $RELEASED_ESCROWS"
+    fi
+    
     log ""
     log "   ℹ️  The verifier will continue monitoring in the background"
     log "      To manually check and release escrows, use:"
@@ -427,7 +455,7 @@ log ""
 log "🔍 Validating final balances after inflow flow..."
 log "================================================"
 log "   - Waiting for transactions to be fully processed..."
-sleep 5
+sleep 10
 
 # Get current balances
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
@@ -468,6 +496,19 @@ if [ "$BOB_CHAIN2_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
     log_and_echo "   Balance increase: $BOB_CHAIN2_BALANCE_INCREASE Octas"
     log_and_echo "   Expected increase: at least $MIN_EXPECTED_AMOUNT Octas (after escrow release)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
+    log ""
+    log "🔍 Diagnostic Information:"
+    log "========================================"
+    log ""
+    log "   Verifier approvals:"
+    curl -s "http://127.0.0.1:3333/approvals" | jq '.' 2>/dev/null || log "      (Unable to query approvals)"
+    log ""
+    log "   Verifier events:"
+    curl -s "http://127.0.0.1:3333/events" | jq '.data | {escrow_events: (.escrow_events | length), fulfillment_events: (.fulfillment_events | length), intent_events: (.intent_events | length)}' 2>/dev/null || log "      (Unable to query events)"
+    log ""
+    log "   Verifier log:"
+    log "========================================"
+    cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
     exit 1
 fi
 
@@ -480,6 +521,16 @@ if [ "$ALICE_CHAIN1_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
     log_and_echo "   Balance increase: $ALICE_CHAIN1_BALANCE_INCREASE Octas"
     log_and_echo "   Expected increase: at least $MIN_EXPECTED_AMOUNT Octas (after hub intent fulfillment)"
     log_and_echo "   This indicates the hub intent was not fulfilled or funds were not received"
+    log ""
+    log "🔍 Diagnostic Information:"
+    log "========================================"
+    log ""
+    log "   Verifier events:"
+    curl -s "http://127.0.0.1:3333/events" | jq '.data | {escrow_events: (.escrow_events | length), fulfillment_events: (.fulfillment_events | length), intent_events: (.intent_events | length)}' 2>/dev/null || log "      (Unable to query events)"
+    log ""
+    log "   Verifier log:"
+    log "========================================"
+    cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
     exit 1
 fi
 

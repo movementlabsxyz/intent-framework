@@ -46,10 +46,7 @@ log "   Escrow contract address: $ESCROW_ADDRESS"
 log ""
 log "📊 Capturing initial balances for validation..."
 
-# Get Alice's initial balance on Chain 1 (hub, MVM)
-ALICE_CHAIN1_ADDRESS_INIT=$(get_profile_address "alice-chain1")
-ALICE_CHAIN1_BALANCE_INIT=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
-ALICE_CHAIN1_BALANCE_INIT=$(echo "$ALICE_CHAIN1_BALANCE_INIT" | tr -d ',')
+# Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh
 
 # Get Bob's initial balance on EVM Chain 3
 cd evm-intent-framework
@@ -64,7 +61,6 @@ if [ -z "$BOB_BALANCE_INIT" ]; then
 fi
 
 log "   Initial balances:"
-log "      Alice Chain 1 (hub): $ALICE_CHAIN1_BALANCE_INIT Octas"
 log "      Bob EVM Chain 3: $BOB_BALANCE_INIT wei"
 
 # Track released escrows to avoid duplicate attempts
@@ -302,8 +298,7 @@ log "   - Waiting for transactions to be fully processed..."
 sleep 5
 
 # Get final balances
-ALICE_CHAIN1_BALANCE_FINAL=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
-ALICE_CHAIN1_BALANCE_FINAL=$(echo "$ALICE_CHAIN1_BALANCE_FINAL" | tr -d ',')
+# Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh
 
 cd evm-intent-framework
 BOB_BALANCE_FINAL_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
@@ -317,30 +312,15 @@ if [ -z "$BOB_BALANCE_FINAL" ]; then
 fi
 
 # For inflow flow:
-# - Alice on Chain 1 should have received ~100000000 Octas from hub intent fulfillment (Bob fulfilled it)
 # - Bob on EVM Chain 3 should have received ~1000000000000000000000 wei (1000 ETH) from escrow release
-# We check that balances increased by approximately the expected amount (at least 99% to account for gas)
-
-EXPECTED_ALICE_AMOUNT=100000000  # Octas
-MIN_EXPECTED_ALICE_AMOUNT=99000000  # 99% to account for gas
+# Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
+# We check that Bob's balance increased by approximately the expected amount (at least 99% to account for gas)
 
 EXPECTED_BOB_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH
 MIN_EXPECTED_BOB_WEI=$(echo "$EXPECTED_BOB_AMOUNT_WEI" | awk '{print int($1 * 0.99)}')
 
-# Calculate balance increases
-ALICE_CHAIN1_BALANCE_INCREASE=$((ALICE_CHAIN1_BALANCE_FINAL - ALICE_CHAIN1_BALANCE_INIT))
+# Calculate balance increase for Bob on EVM Chain 3
 BOB_BALANCE_INCREASE=$(echo "$BOB_BALANCE_FINAL $BOB_BALANCE_INIT" | awk '{print $1 - $2}')
-
-# Check if hub intent was fulfilled (Alice on Chain 1 should have received funds)
-if [ "$ALICE_CHAIN1_BALANCE_INCREASE" -lt "$MIN_EXPECTED_ALICE_AMOUNT" ]; then
-    log_and_echo "❌ ERROR: Alice on Chain 1 balance did not increase by expected amount!"
-    log_and_echo "   Initial balance: $ALICE_CHAIN1_BALANCE_INIT Octas"
-    log_and_echo "   Final balance: $ALICE_CHAIN1_BALANCE_FINAL Octas"
-    log_and_echo "   Balance increase: $ALICE_CHAIN1_BALANCE_INCREASE Octas"
-    log_and_echo "   Expected increase: at least $MIN_EXPECTED_ALICE_AMOUNT Octas (after hub intent fulfillment)"
-    log_and_echo "   This indicates the hub intent was not fulfilled or funds were not received"
-    exit 1
-fi
 
 # Check if escrow was released (Bob on EVM Chain 3 should have received funds)
 SUFFICIENT_BOB_INCREASE=$(echo "$BOB_BALANCE_INCREASE $MIN_EXPECTED_BOB_WEI" | awk '{if ($1 >= $2) print "1"; else print "0"}')
@@ -356,7 +336,6 @@ if [ "$SUFFICIENT_BOB_INCREASE" = "0" ] || [ -z "$BOB_BALANCE_INCREASE" ] || [ "
 fi
 
 log "   ✅ Final balances validated:"
-log "      Alice Chain 1: $ALICE_CHAIN1_BALANCE_INIT → $ALICE_CHAIN1_BALANCE_FINAL Octas (+$ALICE_CHAIN1_BALANCE_INCREASE, hub intent fulfilled)"
 log "      Bob EVM Chain 3: $BOB_BALANCE_INIT → $BOB_BALANCE_FINAL wei (+$BOB_BALANCE_INCREASE, escrow released)"
 
 log ""

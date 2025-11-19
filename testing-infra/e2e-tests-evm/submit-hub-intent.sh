@@ -121,7 +121,8 @@ log "     ✅ Solver public key extracted: ${SOLVER_PUBLIC_KEY:0:20}..."
 # Use a simple test EVM address (20 bytes: 0x0000...0001)
 EVM_ADDRESS="0x0000000000000000000000000000000000000001"
 log "     Registering solver (Bob) in solver registry..."
-register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$LOG_FILE"
+# register_solver: profile, chain_address, public_key_hex, evm_address_hex, [connected_chain_mvm_address], [log_file]
+register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "" "$LOG_FILE"
 
 # Remove 0x prefix from signature for hex format
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"

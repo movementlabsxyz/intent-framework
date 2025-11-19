@@ -78,7 +78,9 @@ if [ $CREATE_EXIT_CODE -ne 0 ]; then
     log_and_echo "     ❌ ERROR: Escrow creation failed!"
     log_and_echo "   Creation output: $CREATE_OUTPUT"
     log_and_echo "   Log file contents:"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 fi
 

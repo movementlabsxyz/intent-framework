@@ -244,11 +244,13 @@ start_verifier() {
         if ! ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
             log_and_echo "   ❌ Verifier process died"
             log_and_echo "   Verifier log:"
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             if [ -f "$log_file" ]; then
                 log_and_echo "   $(cat "$log_file")"
             else
                 log_and_echo "   Log file not found at: $log_file"
             fi
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             exit 1
         fi
         
@@ -272,11 +274,13 @@ start_verifier() {
     # If we get here, verifier didn't become healthy
     log_and_echo "   ❌ Verifier failed to start after $MAX_RETRIES seconds"
     log_and_echo "   Verifier log:"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     if [ -f "$log_file" ]; then
         log_and_echo "   $(cat "$log_file")"
     else
         log_and_echo "   Log file not found at: $log_file"
     fi
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 }
 

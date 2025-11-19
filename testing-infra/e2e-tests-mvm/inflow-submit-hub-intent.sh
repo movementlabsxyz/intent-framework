@@ -152,7 +152,9 @@ if [ $? -eq 0 ]; then
 else
     log_and_echo "❌ Request intent creation failed on Chain 1!"
     log_and_echo "   Log file contents:"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 fi
 

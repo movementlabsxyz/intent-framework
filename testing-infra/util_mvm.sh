@@ -591,9 +591,9 @@ register_solver() {
         log_and_echo "     ❌ Failed to register solver"
         if [ -n "$log_file" ]; then
             log_and_echo "     Full error details in: $log_file"
-            tail -30 "$log_file" | while IFS= read -r line; do
-                log_and_echo "       $line"
-            done
+            log_and_echo "     + + + + + + + + + + + + + + + + + + + +"
+            cat "$log_file"
+            log_and_echo "     + + + + + + + + + + + + + + + + + + + +"
         fi
         exit 1
     fi

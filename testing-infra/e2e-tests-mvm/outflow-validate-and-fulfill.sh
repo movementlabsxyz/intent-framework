@@ -193,7 +193,21 @@ if [ -z "$INTENT_OBJECT_ADDRESS" ] || [ "$INTENT_OBJECT_ADDRESS" = "null" ]; the
     exit 1
 fi
 
-SIGNATURE_HEX="${APPROVAL_SIGNATURE#0x}"
+# Convert base64 signature to hex (verifier API returns base64-encoded Ed25519 signature)
+SIGNATURE_HEX=$(echo "$APPROVAL_SIGNATURE" | base64 -d 2>/dev/null | xxd -p -c 1000 | tr -d '\n')
+
+if [ -z "$SIGNATURE_HEX" ]; then
+    log_and_echo "❌ ERROR: Failed to decode signature from base64 to hex"
+    log_and_echo "   Signature: ${APPROVAL_SIGNATURE:0:50}..."
+    exit 1
+fi
+
+# Ed25519 signature should be 128 hex chars (64 bytes * 2)
+if [ ${#SIGNATURE_HEX} -ne 128 ]; then
+    log_and_echo "❌ ERROR: Invalid signature length: expected 128 hex chars (64 bytes), got ${#SIGNATURE_HEX}"
+    log_and_echo "   Signature hex: ${SIGNATURE_HEX:0:50}..."
+    exit 1
+fi
 
 log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
 log "   - Calling fulfill_outflow_request_intent with verifier signature"
@@ -231,7 +245,9 @@ if [ $? -eq 0 ]; then
 else
     log_and_echo "❌ Outflow request intent fulfillment failed!"
     log_and_echo "   Log file contents:"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 fi
 

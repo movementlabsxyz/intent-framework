@@ -151,7 +151,9 @@ check_and_release_escrows() {
             log_and_echo "   ❌ ERROR: Failed to release escrow on EVM chain"
             log_and_echo "   Claim output: $CLAIM_OUTPUT"
             log_and_echo "   Log file contents:"
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             cat "$LOG_FILE"
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             exit 1
         fi
         
@@ -279,8 +281,9 @@ if [ -z "$RELEASED_ESCROWS" ]; then
     
     log ""
     log "   Verifier log:"
-    log "========================================"
+    log "   + + + + + + + + + + + + + + + + + + + +"
     cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
+    log "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 fi
 

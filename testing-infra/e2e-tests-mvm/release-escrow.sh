@@ -273,7 +273,9 @@ else
                 log_and_echo "   ❌ This indicates the verifier may not have polled the escrow event yet, or escrow was not created"
                 log_and_echo "   ❌ Cannot continue without verified escrow object address"
                 log_and_echo "   Verifier log:"
+                log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                 cat "$VERIFIER_LOG"
+                log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                 exit 1
             fi
             
@@ -391,7 +393,9 @@ else
                     log "   ❌ Failed to release escrow"
                     log_and_echo "   ❌ ERROR: Escrow release failed and solver (Bob) did not receive funds"
                     log_and_echo "   Log file contents:"
+                    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                     cat "$LOG_FILE"
+                    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                     log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
                     log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas"
                     exit 1
@@ -428,8 +432,9 @@ else
         curl -s "http://127.0.0.1:3333/events" | jq '.data | {escrow_events: (.escrow_events | length), fulfillment_events: (.fulfillment_events | length), intent_events: (.intent_events | length)}' 2>/dev/null || log "      (Unable to query events)"
         log ""
         log "   Verifier log:"
-        log "========================================"
+        log "   + + + + + + + + + + + + + + + + + + + +"
         cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
+        log "   + + + + + + + + + + + + + + + + + + + +"
         exit 1
     else
         log_and_echo "   ✅ Released escrows: $RELEASED_ESCROWS"
@@ -494,8 +499,9 @@ if [ "$BOB_CHAIN2_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
     curl -s "http://127.0.0.1:3333/events" | jq '.data | {escrow_events: (.escrow_events | length), fulfillment_events: (.fulfillment_events | length), intent_events: (.intent_events | length)}' 2>/dev/null || log "      (Unable to query events)"
     log ""
     log "   Verifier log:"
-    log "========================================"
+    log "   + + + + + + + + + + + + + + + + + + + +"
     cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
+    log "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 fi
 

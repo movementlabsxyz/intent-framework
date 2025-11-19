@@ -354,5 +354,35 @@ module mvmt_intent::solver_registry_tests {
         let stored_evm_address = *option::borrow(&stored_evm_address_opt);
         assert!(stored_evm_address == evm_address2, 6);
     }
+
+    #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe, solver2 = @0xbeef)]
+    /// Test: Register multiple solvers and verify they are all registered
+    fun test_register_multiple_solvers(
+        aptos_framework: &signer,
+        mvmt_intent: &signer,
+        solver: &signer,
+        solver2: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        solver_registry::init_for_test(mvmt_intent);
+        
+        // Register first solver
+        let (_solver_secret_key1, solver_public_key1) = ed25519::generate_keys();
+        let solver_public_key_bytes1 = ed25519::validated_public_key_to_bytes(&solver_public_key1);
+        let evm_address1 = test_utils::create_test_evm_address(0);
+        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1, @0x0);
+        assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
+        
+        // Register second solver
+        let (_solver_secret_key2, solver_public_key2) = ed25519::generate_keys();
+        let solver_public_key_bytes2 = ed25519::validated_public_key_to_bytes(&solver_public_key2);
+        let evm_address2 = test_utils::create_test_evm_address(1);
+        solver_registry::register_solver(solver2, solver_public_key_bytes2, evm_address2, @0x0);
+        assert!(solver_registry::is_registered(signer::address_of(solver2)), 2);
+        
+        // Verify both are still registered
+        assert!(solver_registry::is_registered(signer::address_of(solver)), 3);
+        assert!(solver_registry::is_registered(signer::address_of(solver2)), 4);
+    }
 }
 

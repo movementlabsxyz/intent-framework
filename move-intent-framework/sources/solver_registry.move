@@ -345,7 +345,6 @@ module mvmt_intent::solver_registry {
         (true, solver_info.public_key, solver_info.connected_chain_evm_address, solver_info.connected_chain_mvm_address, solver_info.registered_at)
     }
     
-    
     #[test_only]
     public fun init_for_test(account: &signer) {
         // In tests, initialize at the account's address (which should be @mvmt_intent)

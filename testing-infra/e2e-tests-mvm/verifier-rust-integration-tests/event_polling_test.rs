@@ -103,9 +103,9 @@ async fn test_poll_connected_events_api() {
     }
 }
 
-/// Test event polling with a real intent created on-chain
-/// Why: Verify that poll_hub_events() can parse real intent events from the blockchain
-/// Note: This test runs BEFORE intent fulfillment, so intents should always be found
+// Test event polling with a real intent created on-chain
+// Why: Verify that poll_hub_events() can parse real intent events from the blockchain
+// Note: This test runs BEFORE intent fulfillment, so intents should always be found
 // #[tokio::test]
 // async fn test_poll_hub_events_with_real_intent() {
 //     // This test requires:

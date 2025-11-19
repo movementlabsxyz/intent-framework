@@ -46,6 +46,25 @@ if [ -z "$VERIFIER_LOG" ]; then
     fi
 fi
 
+# ============================================================================
+# SECTION 1.5: CAPTURE INITIAL BALANCES (for final validation)
+# ============================================================================
+log ""
+log "📊 Capturing initial balances for validation..."
+ALICE_CHAIN1_ADDRESS_INIT=$(get_profile_address "alice-chain1")
+BOB_CHAIN2_ADDRESS_INIT=$(get_profile_address "bob-chain2")
+
+ALICE_CHAIN1_BALANCE_INIT=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+BOB_CHAIN2_BALANCE_INIT=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+
+# Remove commas
+ALICE_CHAIN1_BALANCE_INIT=$(echo "$ALICE_CHAIN1_BALANCE_INIT" | tr -d ',')
+BOB_CHAIN2_BALANCE_INIT=$(echo "$BOB_CHAIN2_BALANCE_INIT" | tr -d ',')
+
+log "   Initial balances:"
+log "      Alice Chain 1: $ALICE_CHAIN1_BALANCE_INIT Octas"
+log "      Bob Chain 2: $BOB_CHAIN2_BALANCE_INIT Octas"
+
 log ""
 log "📋 Verifier Status:"
 log "========================================"
@@ -431,37 +450,42 @@ BOB_CHAIN2_BALANCE=$(echo "$BOB_CHAIN2_BALANCE" | tr -d ',')
 # For inflow flow:
 # - Alice on Chain 1 should have received ~100000000 from hub intent fulfillment (Bob fulfilled it)
 # - Bob on Chain 2 should have received ~100000000 from escrow release
-# We check that balances are reasonable (at least 99% of expected amount to account for gas)
+# We check that balances increased by approximately the expected amount (at least 99% to account for gas)
 
 EXPECTED_INTENT_AMOUNT=100000000
 MIN_EXPECTED_AMOUNT=99000000  # 99% to account for gas
 
+# Calculate balance increases
+BOB_CHAIN2_BALANCE_INCREASE=$((BOB_CHAIN2_BALANCE - BOB_CHAIN2_BALANCE_INIT))
+ALICE_CHAIN1_BALANCE_INCREASE=$((ALICE_CHAIN1_BALANCE - ALICE_CHAIN1_BALANCE_INIT))
+
 # Check if escrow was released (Bob on Chain 2 should have received funds)
 # Bob's balance on Chain 2 should have increased by at least MIN_EXPECTED_AMOUNT
-# We can't check the exact increase without initial balance, but we can check it's reasonable
-# If Bob has less than 100000000 on Chain 2, something went wrong (he should have received the escrow)
-if [ "$BOB_CHAIN2_BALANCE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
-    log_and_echo "❌ ERROR: Bob on Chain 2 balance is too low!"
-    log_and_echo "   Expected at least $MIN_EXPECTED_AMOUNT Octas (after escrow release)"
-    log_and_echo "   Got: $BOB_CHAIN2_BALANCE Octas"
+if [ "$BOB_CHAIN2_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
+    log_and_echo "❌ ERROR: Bob on Chain 2 balance did not increase by expected amount!"
+    log_and_echo "   Initial balance: $BOB_CHAIN2_BALANCE_INIT Octas"
+    log_and_echo "   Final balance: $BOB_CHAIN2_BALANCE Octas"
+    log_and_echo "   Balance increase: $BOB_CHAIN2_BALANCE_INCREASE Octas"
+    log_and_echo "   Expected increase: at least $MIN_EXPECTED_AMOUNT Octas (after escrow release)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     exit 1
 fi
 
 # Check if hub intent was fulfilled (Alice on Chain 1 should have received funds)
-# Alice's balance on Chain 1 should be reasonable (she should have received tokens from fulfillment)
-# We check that she has at least some reasonable amount (not just initial funding)
-if [ "$ALICE_CHAIN1_BALANCE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
-    log_and_echo "❌ ERROR: Alice on Chain 1 balance is too low!"
-    log_and_echo "   Expected at least $MIN_EXPECTED_AMOUNT Octas (after hub intent fulfillment)"
-    log_and_echo "   Got: $ALICE_CHAIN1_BALANCE Octas"
+# Alice's balance on Chain 1 should have increased by at least MIN_EXPECTED_AMOUNT
+if [ "$ALICE_CHAIN1_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
+    log_and_echo "❌ ERROR: Alice on Chain 1 balance did not increase by expected amount!"
+    log_and_echo "   Initial balance: $ALICE_CHAIN1_BALANCE_INIT Octas"
+    log_and_echo "   Final balance: $ALICE_CHAIN1_BALANCE Octas"
+    log_and_echo "   Balance increase: $ALICE_CHAIN1_BALANCE_INCREASE Octas"
+    log_and_echo "   Expected increase: at least $MIN_EXPECTED_AMOUNT Octas (after hub intent fulfillment)"
     log_and_echo "   This indicates the hub intent was not fulfilled or funds were not received"
     exit 1
 fi
 
 log "   ✅ Final balances validated:"
-log "      Alice Chain 1: $ALICE_CHAIN1_BALANCE Octas (hub intent fulfilled)"
-log "      Bob Chain 2: $BOB_CHAIN2_BALANCE Octas (escrow released)"
+log "      Alice Chain 1: $ALICE_CHAIN1_BALANCE_INIT → $ALICE_CHAIN1_BALANCE Octas (+$ALICE_CHAIN1_BALANCE_INCREASE, hub intent fulfilled)"
+log "      Bob Chain 2: $BOB_CHAIN2_BALANCE_INIT → $BOB_CHAIN2_BALANCE Octas (+$BOB_CHAIN2_BALANCE_INCREASE, escrow released)"
 
 # ============================================================================
 # SECTION 7: FINAL SUMMARY

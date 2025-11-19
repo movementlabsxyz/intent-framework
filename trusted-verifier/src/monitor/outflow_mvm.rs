@@ -97,8 +97,13 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                 
                 // Use reserved_solver from event (now included in the event)
                 // All outflow intents must have a reserved solver
-                let reserved_solver = data.reserved_solver.clone()
-                    .ok_or_else(|| anyhow::anyhow!("Outflow intent must have reserved_solver, but event has None. This indicates a bug in move-intent-framework."))?;
+                let reserved_solver = match data.reserved_solver.clone() {
+                    Some(solver) => solver,
+                    None => {
+                        error!("Outflow intent {} has no reserved_solver in event. Event data: {:?}", data.intent_id, event.data);
+                        return Err(anyhow::anyhow!("Outflow intent must have reserved_solver, but event has None. This indicates a bug in move-intent-framework or the event was emitted before the code update."));
+                    }
+                };
                 
                 intent_events.push(RequestIntentEvent {
                     intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking

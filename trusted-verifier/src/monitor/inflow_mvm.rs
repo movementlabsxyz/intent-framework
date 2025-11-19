@@ -55,11 +55,8 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
                 let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
                     .context("Failed to parse OracleLimitOrderEvent as escrow")?;
                 
-                // Query reserved solver address from escrow object (if reserved)
-                let reserved_solver = client.get_intent_solver(&data.intent_address, &connected_chain_mvm.escrow_module_address.as_ref().unwrap_or(&connected_chain_mvm.intent_module_address))
-                    .await
-                    .ok()
-                    .flatten();
+                // Use reserved_solver from event (now included in the event)
+                let reserved_solver = data.reserved_solver.clone();
                 
                 escrow_events.push(EscrowEvent {
                     escrow_id: data.intent_address.clone(),

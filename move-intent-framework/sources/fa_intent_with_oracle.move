@@ -90,6 +90,7 @@ module mvmt_intent::fa_intent_with_oracle {
         expiry_time: u64,
         min_reported_value: u64,
         revocable: bool,
+        reserved_solver: Option<address>, // Solver address if the intent is reserved (None for unreserved intents)
     }
 
     // ============================================================================
@@ -169,6 +170,15 @@ module mvmt_intent::fa_intent_with_oracle {
             object::object_from_constructor_ref<FungibleStore>(&coin_store_ref),
             offered_fa
         );
+        
+        // Extract solver from reservation if present (before reservation is moved into create_intent)
+        let reserved_solver = if (option::is_some(&reservation)) {
+            let reservation_ref = option::borrow(&reservation);
+            option::some(intent_reservation::solver(reservation_ref))
+        } else {
+            option::none<address>()
+        };
+        
         let intent_obj = intent::create_intent<FungibleStoreManager, OracleGuardedLimitOrder, OracleGuardedWitness>(
             FungibleStoreManager { extend_ref, delete_ref },
             OracleGuardedLimitOrder { desired_metadata, desired_amount, desired_chain_id, offered_chain_id, requester, requirement, intent_id, requester_address_connected_chain },
@@ -194,6 +204,7 @@ module mvmt_intent::fa_intent_with_oracle {
             expiry_time,
             min_reported_value: requirement.min_reported_value,
             revocable,
+            reserved_solver,
         });
 
         intent_obj

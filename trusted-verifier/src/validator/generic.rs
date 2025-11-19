@@ -3,7 +3,7 @@
 //! This module contains shared validation structures and the CrossChainValidator struct definition
 //! that are used across all flow types (inflow/outflow) and chain types (Move VM/EVM).
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 

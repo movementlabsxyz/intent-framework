@@ -6,7 +6,7 @@
 use anyhow::{Result, Context};
 use tracing::{info, error};
 
-use crate::mvm_client::{MvmClient, LimitOrderEvent as MvmLimitOrderEvent, OracleLimitOrderEvent as MvmOracleLimitOrderEvent, LimitOrderFulfillmentEvent as MvmLimitOrderFulfillmentEvent};
+use crate::mvm_client::{MvmClient, OracleLimitOrderEvent as MvmOracleLimitOrderEvent, LimitOrderFulfillmentEvent as MvmLimitOrderFulfillmentEvent};
 use crate::monitor::generic::{EventMonitor, RequestIntentEvent, FulfillmentEvent};
 use crate::monitor::inflow_generic;
 
@@ -89,75 +89,34 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                         error!("Fulfillment validation failed: {}", e);
                     }
                 }
-            } else if event_type.contains("LimitOrderEvent") || event_type.contains("OracleLimitOrderEvent") {
-                // Try to parse as OracleLimitOrderEvent first (it has min_reported_value)
-                let data_result: Result<MvmOracleLimitOrderEvent, _> = serde_json::from_value(event.data.clone());
+            } else if event_type.contains("OracleLimitOrderEvent") {
+                // Outflow intents use OracleLimitOrderEvent (from fa_intent_with_oracle)
+                // All outflow request intents MUST have a reserved solver
+                let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
+                    .context("Failed to parse OracleLimitOrderEvent")?;
                 
-                match data_result {
-                    Ok(data) => {
-                        // Successfully parsed as OracleLimitOrderEvent
-                        // Note: OracleLimitOrderEvent is for escrows on connected chains, not hub intents
-                        // This shouldn't happen in hub chain monitoring, but handle gracefully
-                        // Query solver address from request intent object (if reserved)
-                        let solver = client.get_intent_solver(&data.intent_address, &monitor.config.hub_chain.intent_module_address)
-                            .await
-                            .ok()
-                            .flatten();
-                        
-                        // OracleLimitOrderEvent doesn't have connected_chain_id (it's for escrows, not request intents)
-                        intent_events.push(RequestIntentEvent {
-                            intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
-                            requester: data.requester.clone(),
-                            offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
-                            offered_amount: data.offered_amount.parse::<u64>()
-                                .context("Failed to parse offered amount")?,
-                            desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
-                            desired_amount: data.desired_amount.parse::<u64>()
-                                .context("Failed to parse desired_amount")?,
-                            expiry_time: data.expiry_time.parse::<u64>()
-                                .context("Failed to parse expiry_time")?,
-                            revocable: data.revocable,
-                            reserved_solver: solver,
-                            connected_chain_id: None, // OracleLimitOrderEvent is for escrows, not request intents
-                            requester_address_connected_chain: None, // Not available from event, would need to query intent object
-                            timestamp,
-                        });
-                    }
-                    Err(_) => {
-                        // Try to parse as regular LimitOrderEvent
-                        let data: MvmLimitOrderEvent = serde_json::from_value(event.data.clone())
-                            .context("Failed to parse LimitOrderEvent")?;
-                        
-                        // Query solver address from request intent object (if reserved)
-                        let solver = client.get_intent_solver(&data.intent_address, &monitor.config.hub_chain.intent_module_address)
-                            .await
-                            .ok()
-                            .flatten();
-                        
-                        // Parse chain IDs from event
-                        // For cross-chain intents: offered_chain_id is where escrow is (connected chain), desired_chain_id is hub
-                        // Use offered_chain_id as connected_chain_id for RequestIntentEvent
-                        let connected_chain_id = data.offered_chain_id.parse::<u64>().ok();
-                        
-                        intent_events.push(RequestIntentEvent {
-                            intent_id: data.intent_id,  // Use intent_id for cross-chain linking
-                            requester: data.requester.clone(),
-                            offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
-                            offered_amount: data.offered_amount.parse::<u64>()
-                                .context("Failed to parse offered_amount")?,
-                            desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
-                            desired_amount: data.desired_amount.parse::<u64>()
-                                .context("Failed to parse desired_amount")?,
-                            expiry_time: data.expiry_time.parse::<u64>()
-                                .context("Failed to parse expiry_time")?,
-                            revocable: data.revocable,
-                            reserved_solver: solver,
-                            connected_chain_id,
-                            requester_address_connected_chain: None, // Not available from LimitOrderEvent, would need to query intent object for outflow intents
-                            timestamp,
-                        });
-                    }
-                }
+                // Use reserved_solver from event (now included in the event)
+                // All outflow intents must have a reserved solver
+                let reserved_solver = data.reserved_solver.clone()
+                    .ok_or_else(|| anyhow::anyhow!("Outflow intent must have reserved_solver, but event has None. This indicates a bug in move-intent-framework."))?;
+                
+                intent_events.push(RequestIntentEvent {
+                    intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
+                    requester: data.requester.clone(),
+                    offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
+                    offered_amount: data.offered_amount.parse::<u64>()
+                        .context("Failed to parse offered amount")?,
+                    desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
+                    desired_amount: data.desired_amount.parse::<u64>()
+                        .context("Failed to parse desired_amount")?,
+                    expiry_time: data.expiry_time.parse::<u64>()
+                        .context("Failed to parse expiry_time")?,
+                    revocable: data.revocable,
+                    reserved_solver: Some(reserved_solver),
+                    connected_chain_id: None, // OracleLimitOrderEvent doesn't have connected_chain_id in the event
+                    requester_address_connected_chain: None, // Not available from event, would need to query intent object
+                    timestamp,
+                });
             }
         }
     }

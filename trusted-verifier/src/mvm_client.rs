@@ -654,6 +654,8 @@ pub struct OracleLimitOrderEvent {
     pub expiry_time: String,
     pub min_reported_value: String,
     pub revocable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reserved_solver: Option<String>, // Solver address if the intent is reserved (None for unreserved intents)
 }
 
 /// Represents a LimitOrderFulfillmentEvent emitted when an intent is fulfilled

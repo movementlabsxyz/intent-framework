@@ -141,6 +141,12 @@ if [ -z "$SOLVER_PUBLIC_KEY" ]; then
 fi
 log "     ✅ Solver public key extracted: ${SOLVER_PUBLIC_KEY:0:20}..."
 
+# EVM address placeholder (not used for MVM-only tests, but required for solver registration)
+EVM_ADDRESS="0x0000000000000000000000000000000000000001"
+
+log "   - Registering solver (Bob) in solver registry..."
+register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$LOG_FILE"
+
 log "   - Creating outflow request intent on Chain 1..."
 log "     Offered FA metadata (hub): $OFFERED_FA_METADATA_CHAIN1"
 log "     Desired FA metadata (connected): $DESIRED_FA_METADATA_CHAIN2"

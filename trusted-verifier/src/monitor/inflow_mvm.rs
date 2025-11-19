@@ -53,7 +53,11 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
             // Escrows use oracle-guarded intents, so we look for OracleLimitOrderEvent
             if event_type.contains("OracleLimitOrderEvent") {
                 let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
-                    .context("Failed to parse OracleLimitOrderEvent as escrow")?;
+                    .with_context(|| format!(
+                        "Failed to parse OracleLimitOrderEvent as escrow. Event type: {}, Event data: {}",
+                        event_type,
+                        serde_json::to_string_pretty(&event.data).unwrap_or_else(|_| format!("{:?}", event.data))
+                    ))?;
                 
                 // Use reserved_solver from event (now included in the event)
                 let reserved_solver = data.reserved_solver.clone();

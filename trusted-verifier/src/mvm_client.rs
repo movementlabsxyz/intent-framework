@@ -13,8 +13,22 @@
 
 use anyhow::{Context, Result};
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
+
+// Helper to deserialize u64 from either string or number
+fn deserialize_u64_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::Error;
+    let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
+    match value {
+        serde_json::Value::String(s) => Ok(s),
+        serde_json::Value::Number(n) => Ok(n.to_string()),
+        _ => Err(D::Error::custom(format!("expected string or number for chain_id, got: {:?}", value))),
+    }
+}
 
 // ============================================================================
 // API RESPONSE STRUCTURES
@@ -648,9 +662,11 @@ pub struct OracleLimitOrderEvent {
     pub intent_id: String,            // The original intent ID (from hub chain)
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub offered_amount: String,
+    #[serde(deserialize_with = "deserialize_u64_string")]
     pub offered_chain_id: String, // Chain ID where offered tokens are located
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub desired_amount: String,
+    #[serde(deserialize_with = "deserialize_u64_string")]
     pub desired_chain_id: String, // Chain ID where desired tokens are located
     pub requester: String,
     pub expiry_time: String,

@@ -540,19 +540,23 @@ register_solver() {
     log "     Registering solver in registry..."
     
     # Build arguments: public_key, Option<evm_address>, Option<mvm_address>
-    # For Option types in Move: use "null" for None, or the value for Some
+    # Use placeholder values when not provided (Aptos CLI doesn't support "null" for Option types)
+    # For EVM address: use 0x0000000000000000000000000000000000000000 (20 bytes) if not provided
+    # For MVM address: use 0x0 if not provided
     local evm_arg
     if [ -n "$evm_address_hex" ]; then
         evm_arg="hex:${evm_address_hex}"
     else
-        evm_arg="null"
+        # Use placeholder: 20 bytes of zeros
+        evm_arg="hex:0000000000000000000000000000000000000000"
     fi
     
     local mvm_arg
     if [ -n "$connected_chain_mvm_address" ]; then
         mvm_arg="address:0x${connected_chain_mvm_address}"
     else
-        mvm_arg="null"
+        # Use placeholder: zero address
+        mvm_arg="address:0x0"
     fi
     
     if [ -n "$log_file" ]; then

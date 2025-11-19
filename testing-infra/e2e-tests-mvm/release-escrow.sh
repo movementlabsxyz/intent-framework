@@ -51,18 +51,16 @@ fi
 # ============================================================================
 log ""
 log "📊 Capturing initial balances for validation..."
-ALICE_CHAIN1_ADDRESS_INIT=$(get_profile_address "alice-chain1")
-BOB_CHAIN2_ADDRESS_INIT=$(get_profile_address "bob-chain2")
+# Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
+# We only need to check Bob's balance on Chain 2 (escrow release)
 
-ALICE_CHAIN1_BALANCE_INIT=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+BOB_CHAIN2_ADDRESS_INIT=$(get_profile_address "bob-chain2")
 BOB_CHAIN2_BALANCE_INIT=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
 
 # Remove commas
-ALICE_CHAIN1_BALANCE_INIT=$(echo "$ALICE_CHAIN1_BALANCE_INIT" | tr -d ',')
 BOB_CHAIN2_BALANCE_INIT=$(echo "$BOB_CHAIN2_BALANCE_INIT" | tr -d ',')
 
 log "   Initial balances:"
-log "      Alice Chain 1: $ALICE_CHAIN1_BALANCE_INIT Octas"
 log "      Bob Chain 2: $BOB_CHAIN2_BALANCE_INIT Octas"
 
 log ""
@@ -458,34 +456,23 @@ log "   - Waiting for transactions to be fully processed..."
 sleep 10
 
 # Get current balances
-ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
+# Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
-
-# Get balances
-ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
-BOB_CHAIN1_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
-ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
 BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
 
 # Remove commas
-ALICE_CHAIN1_BALANCE=$(echo "$ALICE_CHAIN1_BALANCE" | tr -d ',')
-BOB_CHAIN1_BALANCE=$(echo "$BOB_CHAIN1_BALANCE" | tr -d ',')
-ALICE_CHAIN2_BALANCE=$(echo "$ALICE_CHAIN2_BALANCE" | tr -d ',')
 BOB_CHAIN2_BALANCE=$(echo "$BOB_CHAIN2_BALANCE" | tr -d ',')
 
 # For inflow flow:
-# - Alice on Chain 1 should have received ~100000000 from hub intent fulfillment (Bob fulfilled it)
 # - Bob on Chain 2 should have received ~100000000 from escrow release
-# We check that balances increased by approximately the expected amount (at least 99% to account for gas)
+# We check that balance increased by approximately the expected amount (at least 99% to account for gas)
+# Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 
-EXPECTED_INTENT_AMOUNT=100000000
+EXPECTED_ESCROW_AMOUNT=100000000
 MIN_EXPECTED_AMOUNT=99000000  # 99% to account for gas
 
-# Calculate balance increases
+# Calculate balance increase
 BOB_CHAIN2_BALANCE_INCREASE=$((BOB_CHAIN2_BALANCE - BOB_CHAIN2_BALANCE_INIT))
-ALICE_CHAIN1_BALANCE_INCREASE=$((ALICE_CHAIN1_BALANCE - ALICE_CHAIN1_BALANCE_INIT))
 
 # Check if escrow was released (Bob on Chain 2 should have received funds)
 # Bob's balance on Chain 2 should have increased by at least MIN_EXPECTED_AMOUNT
@@ -512,31 +499,9 @@ if [ "$BOB_CHAIN2_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
     exit 1
 fi
 
-# Check if hub intent was fulfilled (Alice on Chain 1 should have received funds)
-# Alice's balance on Chain 1 should have increased by at least MIN_EXPECTED_AMOUNT
-if [ "$ALICE_CHAIN1_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
-    log_and_echo "❌ ERROR: Alice on Chain 1 balance did not increase by expected amount!"
-    log_and_echo "   Initial balance: $ALICE_CHAIN1_BALANCE_INIT Octas"
-    log_and_echo "   Final balance: $ALICE_CHAIN1_BALANCE Octas"
-    log_and_echo "   Balance increase: $ALICE_CHAIN1_BALANCE_INCREASE Octas"
-    log_and_echo "   Expected increase: at least $MIN_EXPECTED_AMOUNT Octas (after hub intent fulfillment)"
-    log_and_echo "   This indicates the hub intent was not fulfilled or funds were not received"
-    log ""
-    log "🔍 Diagnostic Information:"
-    log "========================================"
-    log ""
-    log "   Verifier events:"
-    curl -s "http://127.0.0.1:3333/events" | jq '.data | {escrow_events: (.escrow_events | length), fulfillment_events: (.fulfillment_events | length), intent_events: (.intent_events | length)}' 2>/dev/null || log "      (Unable to query events)"
-    log ""
-    log "   Verifier log:"
-    log "========================================"
-    cat "$VERIFIER_LOG" 2>/dev/null || log "      (Log file not found)"
-    exit 1
-fi
-
 log "   ✅ Final balances validated:"
-log "      Alice Chain 1: $ALICE_CHAIN1_BALANCE_INIT → $ALICE_CHAIN1_BALANCE Octas (+$ALICE_CHAIN1_BALANCE_INCREASE, hub intent fulfilled)"
 log "      Bob Chain 2: $BOB_CHAIN2_BALANCE_INIT → $BOB_CHAIN2_BALANCE Octas (+$BOB_CHAIN2_BALANCE_INCREASE, escrow released)"
+log "      Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)"
 
 # ============================================================================
 # SECTION 7: FINAL SUMMARY

@@ -547,23 +547,21 @@ register_solver() {
     log "       evm_address_hex: $evm_address_hex (length: ${#evm_address_hex} chars)"
     log "       connected_chain_mvm_address: ${connected_chain_mvm_address:-<empty>}"
     
-    # Build arguments: public_key, Option<evm_address>, Option<mvm_address>
-    # Use placeholder values when not provided (Aptos CLI doesn't support "null" for Option types)
-    # For EVM address: use 0x0000000000000000000000000000000000000000 (20 bytes) if not provided
-    # For MVM address: use 0x0 if not provided
+    # Build arguments: public_key, evm_address, mvm_address
+    # Use sentinel values: empty vector (hex:) for EVM address if not provided, 0x0 for MVM address if not provided
     local evm_arg
     if [ -n "$evm_address_hex" ]; then
         evm_arg="hex:${evm_address_hex}"
     else
-        # Use placeholder: 20 bytes of zeros
-        evm_arg="hex:0000000000000000000000000000000000000000"
+        # Use sentinel: empty vector (no hex value)
+        evm_arg="hex:"
     fi
     
     local mvm_arg
     if [ -n "$connected_chain_mvm_address" ]; then
         mvm_arg="address:0x${connected_chain_mvm_address}"
     else
-        # Use placeholder: zero address
+        # Use sentinel: zero address
         mvm_arg="address:0x0"
     fi
     

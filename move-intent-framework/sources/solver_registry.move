@@ -94,13 +94,13 @@ module mvmt_intent::solver_registry {
     /// # Arguments
     /// - `solver`: The solver signing the transaction
     /// - `public_key`: Ed25519 public key (32 bytes) for signature validation
-    /// - `connected_chain_evm_address`: Optional EVM address on connected chain (20 bytes, None if not applicable)
-    /// - `connected_chain_mvm_address`: Optional Move VM address on connected chain (None if not applicable)
+    /// - `connected_chain_evm_address`: EVM address on connected chain (20 bytes, empty vector if not applicable)
+    /// - `connected_chain_mvm_address`: Move VM address on connected chain (0x0 if not applicable)
     public entry fun register_solver(
         solver: &signer,
         public_key: vector<u8>,
-        connected_chain_evm_address: Option<vector<u8>>,
-        connected_chain_mvm_address: Option<address>,
+        connected_chain_evm_address: vector<u8>,
+        connected_chain_mvm_address: address,
     ) acquires SolverRegistry {
         let solver_addr = signer::address_of(solver);
         let registry_addr = @mvmt_intent;
@@ -115,10 +115,11 @@ module mvmt_intent::solver_registry {
         // Validate public key length
         assert!(vector::length(&public_key) == ED25519_PUBLIC_KEY_LENGTH, E_PUBLIC_KEY_LENGTH_INVALID);
         
-        // Validate EVM address length if provided
-        if (option::is_some(&connected_chain_evm_address)) {
-            let evm_addr = option::borrow(&connected_chain_evm_address);
-            assert!(vector::length(evm_addr) == EVM_ADDRESS_LENGTH, E_EVM_ADDRESS_LENGTH_INVALID);
+        // Validate EVM address length if provided (non-empty)
+        // Empty vector (0 bytes) means "not set"
+        let evm_addr_length = vector::length(&connected_chain_evm_address);
+        if (evm_addr_length > 0) {
+            assert!(evm_addr_length == EVM_ADDRESS_LENGTH, E_EVM_ADDRESS_LENGTH_INVALID);
         };
         
         // Validate public key is a valid Ed25519 public key
@@ -126,12 +127,27 @@ module mvmt_intent::solver_registry {
         let validated_public_key_opt = ed25519::public_key_validate(&unvalidated_public_key);
         assert!(option::is_some(&validated_public_key_opt), E_INVALID_PUBLIC_KEY);
         
+        // Convert sentinel values to Option types for storage
+        // Empty vector (0 bytes) means "not set" -> Option::none
+        // 0x0 address means "not set" -> Option::none
+        let evm_addr_opt = if (evm_addr_length > 0) {
+            option::some(connected_chain_evm_address)
+        } else {
+            option::none<vector<u8>>()
+        };
+        
+        let mvm_addr_opt = if (connected_chain_mvm_address != @0x0) {
+            option::some(connected_chain_mvm_address)
+        } else {
+            option::none<address>()
+        };
+        
         // Create solver info
         let solver_info = SolverInfo {
             solver_addr,
             public_key,
-            connected_chain_evm_address,
-            connected_chain_mvm_address,
+            connected_chain_evm_address: evm_addr_opt,
+            connected_chain_mvm_address: mvm_addr_opt,
             registered_at: timestamp::now_seconds(),
         };
         
@@ -150,11 +166,15 @@ module mvmt_intent::solver_registry {
     
     /// Update solver's public key, EVM address, and/or connected chain Move VM address
     /// Only the solver themselves can update their registration
+    /// 
+    /// # Arguments
+    /// - `connected_chain_evm_address`: EVM address on connected chain (20 bytes, empty vector if not applicable)
+    /// - `connected_chain_mvm_address`: Move VM address on connected chain (0x0 if not applicable)
     public entry fun update_solver(
         solver: &signer,
         public_key: vector<u8>,
-        connected_chain_evm_address: Option<vector<u8>>,
-        connected_chain_mvm_address: Option<address>,
+        connected_chain_evm_address: vector<u8>,
+        connected_chain_mvm_address: address,
     ) acquires SolverRegistry {
         let solver_addr = signer::address_of(solver);
         let registry_addr = @mvmt_intent;
@@ -169,10 +189,11 @@ module mvmt_intent::solver_registry {
         // Validate public key length
         assert!(vector::length(&public_key) == ED25519_PUBLIC_KEY_LENGTH, E_PUBLIC_KEY_LENGTH_INVALID);
         
-        // Validate EVM address length if provided
-        if (option::is_some(&connected_chain_evm_address)) {
-            let evm_addr = option::borrow(&connected_chain_evm_address);
-            assert!(vector::length(evm_addr) == EVM_ADDRESS_LENGTH, E_EVM_ADDRESS_LENGTH_INVALID);
+        // Validate EVM address length if provided (non-empty)
+        // Empty vector (0 bytes) means "not set"
+        let evm_addr_length = vector::length(&connected_chain_evm_address);
+        if (evm_addr_length > 0) {
+            assert!(evm_addr_length == EVM_ADDRESS_LENGTH, E_EVM_ADDRESS_LENGTH_INVALID);
         };
         
         // Validate public key is a valid Ed25519 public key
@@ -180,11 +201,24 @@ module mvmt_intent::solver_registry {
         let validated_public_key_opt = ed25519::public_key_validate(&unvalidated_public_key);
         assert!(option::is_some(&validated_public_key_opt), E_INVALID_PUBLIC_KEY);
         
+        // Convert sentinel values to Option types for storage
+        let evm_addr_opt = if (evm_addr_length > 0) {
+            option::some(connected_chain_evm_address)
+        } else {
+            option::none<vector<u8>>()
+        };
+        
+        let mvm_addr_opt = if (connected_chain_mvm_address != @0x0) {
+            option::some(connected_chain_mvm_address)
+        } else {
+            option::none<address>()
+        };
+        
         // Update solver info
         let solver_info = simple_map::borrow_mut(&mut registry.solvers, &solver_addr);
         solver_info.public_key = public_key;
-        solver_info.connected_chain_evm_address = connected_chain_evm_address;
-        solver_info.connected_chain_mvm_address = connected_chain_mvm_address;
+        solver_info.connected_chain_evm_address = evm_addr_opt;
+        solver_info.connected_chain_mvm_address = mvm_addr_opt;
         
         // Emit event
         event::emit(SolverUpdated {

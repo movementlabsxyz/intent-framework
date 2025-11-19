@@ -43,8 +43,8 @@ module mvmt_intent::solver_registry_tests {
         // Create a mock EVM address (20 bytes)
         let evm_address = test_utils::create_test_evm_address(0);
         
-        // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
+        // Register solver (empty vector for EVM address means "not set", 0x0 for MVM address means "not set")
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
         
         // Verify solver is registered
         assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
@@ -85,7 +85,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Should abort with E_PUBLIC_KEY_LENGTH_INVALID
-        solver_registry::register_solver(solver, invalid_public_key, option::some(evm_address), option::none());
+        solver_registry::register_solver(solver, invalid_public_key, evm_address, @0x0);
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -112,7 +112,7 @@ module mvmt_intent::solver_registry_tests {
         };
         
         // Should abort with E_EVM_ADDRESS_LENGTH_INVALID
-        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(invalid_evm_address), option::none());
+        solver_registry::register_solver(solver, solver_public_key_bytes, invalid_evm_address, @0x0);
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -134,10 +134,10 @@ module mvmt_intent::solver_registry_tests {
         let evm_address = test_utils::create_test_evm_address(0);
         
         // Register solver first time
-        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
         
         // Try to register again - should abort
-        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
@@ -159,7 +159,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address1 = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes1, option::some(evm_address1), option::none());
+        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1, @0x0);
         
         // Generate new Ed25519 keys
         let (_solver_secret_key2, solver_public_key2) = ed25519::generate_keys();
@@ -169,7 +169,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address2 = test_utils::create_test_evm_address_reverse(20);
         
         // Update solver (solver updates their own info)
-        solver_registry::update_solver(solver, solver_public_key_bytes2, option::some(evm_address2), option::none());
+        solver_registry::update_solver(solver, solver_public_key_bytes2, evm_address2, @0x0);
         
         // Verify updated values
         let stored_public_key = solver_registry::get_public_key(signer::address_of(solver));
@@ -198,8 +198,8 @@ module mvmt_intent::solver_registry_tests {
         // Create EVM address
         let evm_address = test_utils::create_test_evm_address(0);
         
-        // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
+        // Register solver (empty vector for EVM address means "not set", 0x0 for MVM address means "not set")
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
         
         // Get solver info
         let (is_registered, public_key, evm_addr_opt, mvm_addr_opt, registered_at) = solver_registry::get_solver_info(signer::address_of(solver));
@@ -250,8 +250,8 @@ module mvmt_intent::solver_registry_tests {
         // Create EVM address
         let evm_address = test_utils::create_test_evm_address(0);
         
-        // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
+        // Register solver (empty vector for EVM address means "not set", 0x0 for MVM address means "not set")
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
         
         // Get unvalidated public key
         let _public_key_opt = solver_registry::get_public_key_unvalidated(signer::address_of(solver));
@@ -276,8 +276,8 @@ module mvmt_intent::solver_registry_tests {
         // Create EVM address
         let evm_address = test_utils::create_test_evm_address(0);
         
-        // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes, option::some(evm_address), option::none());
+        // Register solver (empty vector for EVM address means "not set", 0x0 for MVM address means "not set")
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
         assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
         
         // Deregister solver
@@ -327,7 +327,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address1 = test_utils::create_test_evm_address(0);
         
         // Register solver
-        solver_registry::register_solver(solver, solver_public_key_bytes1, option::some(evm_address1), option::none());
+        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1, @0x0);
         assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
         
         // Deregister solver
@@ -342,7 +342,7 @@ module mvmt_intent::solver_registry_tests {
         let evm_address2 = test_utils::create_test_evm_address_reverse(20);
         
         // Re-register solver with new credentials
-        solver_registry::register_solver(solver, solver_public_key_bytes2, option::some(evm_address2), option::none());
+        solver_registry::register_solver(solver, solver_public_key_bytes2, evm_address2, @0x0);
         assert!(solver_registry::is_registered(signer::address_of(solver)), 3);
         
         // Verify new credentials are stored

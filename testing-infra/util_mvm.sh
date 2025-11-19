@@ -599,3 +599,74 @@ register_solver() {
     fi
 }
 
+# Verify that a solver is registered in the solver registry
+# Usage: verify_solver_registered <profile> <chain_address> <solver_address> [log_file]
+# Exits on error if solver is not registered
+verify_solver_registered() {
+    local profile="$1"
+    local chain_address="$2"
+    local solver_address="$3"
+    local log_file="${4:-$LOG_FILE}"
+
+    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$solver_address" ]; then
+        log_and_echo "❌ ERROR: verify_solver_registered() requires profile, chain_address, and solver_address"
+        exit 1
+    fi
+
+    # Remove 0x prefix if present
+    solver_address="${solver_address#0x}"
+    chain_address="${chain_address#0x}"
+
+    log "     Verifying solver is registered in registry..."
+    
+    # Call the is_registered view function
+    # Use a temp file to capture both stdout and stderr, and check exit code
+    local temp_file=$(mktemp)
+    if [ -n "$log_file" ]; then
+        aptos move view \
+            --function-id "0x${chain_address}::solver_registry::is_registered" \
+            --args "address:0x${solver_address}" \
+            --profile "$profile" > "$temp_file" 2>&1
+        local exit_code=$?
+        cat "$temp_file" | tee -a "$log_file" > /dev/null
+        local result=$(cat "$temp_file")
+    else
+        aptos move view \
+            --function-id "0x${chain_address}::solver_registry::is_registered" \
+            --args "address:0x${solver_address}" \
+            --profile "$profile" > "$temp_file" 2>&1
+        local exit_code=$?
+        local result=$(cat "$temp_file")
+    fi
+    rm -f "$temp_file"
+
+    # Check if the command succeeded
+    if [ $exit_code -ne 0 ]; then
+        log_and_echo "❌ ERROR: Failed to query solver registry"
+        log_and_echo "   Solver address: 0x${solver_address}"
+        log_and_echo "   Registry address: 0x${chain_address}"
+        log_and_echo "   View function result:"
+        echo "$result" | while IFS= read -r line; do
+            log_and_echo "     $line"
+        done
+        exit 1
+    fi
+
+    # Extract the boolean result from the JSON output
+    # Aptos view function returns: {"Result": [true]} or {"Result": [false]}
+    local is_registered=$(echo "$result" | jq -r '.Result[0] // false' 2>/dev/null)
+    
+    if [ "$is_registered" = "true" ]; then
+        log "     ✅ Solver is registered in registry"
+    else
+        log_and_echo "❌ ERROR: Solver is not registered in registry"
+        log_and_echo "   Solver address: 0x${solver_address}"
+        log_and_echo "   Registry address: 0x${chain_address}"
+        log_and_echo "   View function result:"
+        echo "$result" | while IFS= read -r line; do
+            log_and_echo "     $line"
+        done
+        exit 1
+    fi
+}
+

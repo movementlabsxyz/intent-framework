@@ -115,6 +115,12 @@ log "   - Registering solver (Bob) in solver registry..."
 # Register with EVM address and connected chain MVM address (Bob's Chain 2 address) for consistency
 register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$BOB_CHAIN2_ADDRESS" "$LOG_FILE"
 
+log "   - Waiting for solver registration to be confirmed on-chain (5 seconds)..."
+sleep 5
+
+log "   - Verifying solver registration..."
+verify_solver_registered "bob-chain1" "$CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "$LOG_FILE"
+
 log "   - Creating cross-chain request intent on Chain 1..."
 log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN1"
 log "     Desired FA metadata: $DESIRED_FA_METADATA_CHAIN1"

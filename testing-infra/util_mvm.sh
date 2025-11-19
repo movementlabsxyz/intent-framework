@@ -619,53 +619,37 @@ verify_solver_registered() {
 
     log "     Verifying solver is registered in registry..."
     
-    # Call the is_registered view function
-    # Use a temp file to capture both stdout and stderr, and check exit code
-    local temp_file=$(mktemp)
-    if [ -n "$log_file" ]; then
-        aptos move view \
-            --function-id "0x${chain_address}::solver_registry::is_registered" \
-            --args "address:0x${solver_address}" \
-            --profile "$profile" > "$temp_file" 2>&1
-        local exit_code=$?
-        cat "$temp_file" | tee -a "$log_file" > /dev/null
-        local result=$(cat "$temp_file")
-    else
-        aptos move view \
-            --function-id "0x${chain_address}::solver_registry::is_registered" \
-            --args "address:0x${solver_address}" \
-            --profile "$profile" > "$temp_file" 2>&1
-        local exit_code=$?
-        local result=$(cat "$temp_file")
-    fi
-    rm -f "$temp_file"
-
-    # Check if the command succeeded
-    if [ $exit_code -ne 0 ]; then
-        log_and_echo "❌ ERROR: Failed to query solver registry"
-        log_and_echo "   Solver address: 0x${solver_address}"
-        log_and_echo "   Registry address: 0x${chain_address}"
-        log_and_echo "   View function result:"
-        echo "$result" | while IFS= read -r line; do
-            log_and_echo "     $line"
-        done
-        exit 1
-    fi
-
-    # Extract the boolean result from the JSON output
-    # Aptos view function returns: {"Result": [true]} or {"Result": [false]}
-    local is_registered=$(echo "$result" | jq -r '.Result[0] // false' 2>/dev/null)
+    # Query SolverRegistered events to check if solver is registered
+    # Get the RPC URL from the profile
+    local rpc_url=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].rest_url" 2>/dev/null || echo "http://127.0.0.1:8080")
+    local registry_addr_hex="0x${chain_address}"
     
-    if [ "$is_registered" = "true" ]; then
+    # Query events for SolverRegistered from the registry address
+    local events_result
+    if [ -n "$log_file" ]; then
+        events_result=$(curl -s "${rpc_url}/v1/accounts/${registry_addr_hex}/events/${registry_addr_hex}::solver_registry::SolverRegistered" 2>&1 | tee -a "$log_file")
+    else
+        events_result=$(curl -s "${rpc_url}/v1/accounts/${registry_addr_hex}/events/${registry_addr_hex}::solver_registry::SolverRegistered" 2>&1)
+    fi
+    
+    # Extract all registered solver addresses for error reporting
+    local all_registered_solvers=$(echo "$events_result" | jq -r '.data[]?.data.solver // empty' 2>/dev/null | sort -u)
+    
+    # Check if solver address appears in the events
+    if echo "$events_result" | jq -e ".data[] | select(.data.solver == \"0x${solver_address}\" or .data.solver == \"${solver_address}\")" > /dev/null 2>&1; then
         log "     ✅ Solver is registered in registry"
     else
         log_and_echo "❌ ERROR: Solver is not registered in registry"
         log_and_echo "   Solver address: 0x${solver_address}"
         log_and_echo "   Registry address: 0x${chain_address}"
-        log_and_echo "   View function result:"
-        echo "$result" | while IFS= read -r line; do
-            log_and_echo "     $line"
-        done
+        if [ -n "$all_registered_solvers" ]; then
+            log_and_echo "   Currently registered solvers:"
+            echo "$all_registered_solvers" | while IFS= read -r solver; do
+                log_and_echo "     - $solver"
+            done
+        else
+            log_and_echo "   No solvers are currently registered in the registry"
+        fi
         exit 1
     fi
 }

@@ -33,12 +33,12 @@ echo ""
 echo "🚀 Step 3: Testing OUTFLOW intents (hub chain → connected chain)..."
 echo "===================================================================="
 echo "   Submitting outflow cross-chain intents..."
+./testing-infra/e2e-tests-mvm/outflow-submit-hub-intent.sh
+./testing-infra/e2e-tests-mvm/outflow-solver-transfer.sh
 ./testing-infra/chain-hub/configure-verifier.sh
 ./testing-infra/chain-connected-mvm/configure-verifier.sh
 ./testing-infra/e2e-tests-mvm/configure-verifier.sh
 ./testing-infra/e2e-tests-mvm/start-verifier.sh
-./testing-infra/e2e-tests-mvm/outflow-submit-hub-intent.sh
-./testing-infra/e2e-tests-mvm/outflow-solver-transfer.sh
 ./testing-infra/e2e-tests-mvm/outflow-validate-and-fulfill.sh
 
 echo ""

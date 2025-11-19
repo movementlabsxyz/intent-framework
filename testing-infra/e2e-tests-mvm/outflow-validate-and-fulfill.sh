@@ -52,10 +52,39 @@ log "   - Checking if verifier is running..."
 if ! curl -s "http://127.0.0.1:3333/health" > /dev/null 2>&1; then
     log_and_echo "❌ ERROR: Verifier is not running"
     log_and_echo "   Please start the verifier service first"
-    log_and_echo "   You can start it by running: ./testing-infra/e2e-tests-mvm/release-escrow.sh"
+    log_and_echo "   The verifier should be started in run-tests-outflow.sh before this script"
     exit 1
 fi
 log "   ✅ Verifier is running"
+
+# Wait for verifier to poll and cache the request intent
+# The verifier polls every 2 seconds, so wait for it to discover the request intent
+log ""
+log "   - Waiting for verifier to poll and cache request intent..."
+MAX_WAIT=10  # Maximum wait time in seconds (should be enough for 2-3 poll cycles)
+WAIT_INTERVAL=2  # Check every 2 seconds (matches polling interval)
+ELAPSED=0
+INTENT_FOUND=false
+
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    EVENTS_RESPONSE=$(curl -s "http://127.0.0.1:3333/events" 2>/dev/null)
+    if [ $? -eq 0 ] && echo "$EVENTS_RESPONSE" | jq -e '.data.intent_events[] | select(.intent_id | ascii_downcase | gsub("0x"; "") == "'"$(echo "$INTENT_ID" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//')"'")' > /dev/null 2>&1; then
+        INTENT_FOUND=true
+        break
+    fi
+    sleep $WAIT_INTERVAL
+    ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+done
+
+if [ "$INTENT_FOUND" = true ]; then
+    log "     ✅ Verifier has cached the request intent"
+else
+    log_and_echo "❌ ERROR: Verifier did not cache the request intent within ${MAX_WAIT} seconds"
+    log_and_echo "   Intent ID: $INTENT_ID"
+    log_and_echo "   Verifier events:"
+    curl -s "http://127.0.0.1:3333/events" | jq '.data.intent_events' 2>/dev/null || log "   (Unable to query events)"
+    exit 1
+fi
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE

@@ -30,6 +30,28 @@ where
     }
 }
 
+// Helper to deserialize Move's Option<T> format: {"vec": [value]} for Some, {"vec": []} for None
+fn deserialize_move_option_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::Error;
+    #[derive(Deserialize)]
+    struct MoveOption {
+        vec: Vec<String>,
+    }
+    
+    let opt: MoveOption = Deserialize::deserialize(deserializer)?;
+    match opt.vec.as_slice() {
+        [value] => Ok(Some(value.clone())),
+        [] => Ok(None),
+        _ => Err(D::Error::custom(format!(
+            "expected Move Option format with 0 or 1 element in vec, got {} elements",
+            opt.vec.len()
+        ))),
+    }
+}
+
 // ============================================================================
 // API RESPONSE STRUCTURES
 // ============================================================================
@@ -672,7 +694,7 @@ pub struct OracleLimitOrderEvent {
     pub expiry_time: String,
     pub min_reported_value: String,
     pub revocable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_move_option_string", skip_serializing_if = "Option::is_none")]
     pub reserved_solver: Option<String>, // Solver address if the intent is reserved (None for unreserved intents)
 }
 

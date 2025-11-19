@@ -174,8 +174,8 @@ display_balances_connected_mvm
 log_and_echo ""
 
 log ""
-log "🎉 ESCROW CREATION COMPLETE!"
-log "============================"
+log "🎉 INFLOW - ESCROW CREATION COMPLETE!"
+log "======================================"
 log ""
 log "✅ Step completed successfully:"
 log "   1. Escrow created on Chain 2 (connected chain) with locked tokens"

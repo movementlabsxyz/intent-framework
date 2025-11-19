@@ -215,8 +215,8 @@ display_balances_connected_mvm
 log_and_echo ""
 
 log ""
-log "🎉 OUTFLOW VALIDATION AND FULFILLMENT COMPLETE!"
-log "=============================================="
+log "🎉 OUTFLOW - VALIDATION AND FULFILLMENT COMPLETE!"
+log "================================================="
 log ""
 log "✅ Steps completed successfully:"
 log "   1. Verifier queried connected chain transaction"

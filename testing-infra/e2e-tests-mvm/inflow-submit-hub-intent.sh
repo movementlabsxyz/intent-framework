@@ -158,8 +158,8 @@ display_balances_connected_mvm
 log_and_echo ""
 
 log ""
-log "🎉 HUB CHAIN INTENT CREATION COMPLETE!"
-log "======================================="
+log "🎉 INFLOW - HUB CHAIN INTENT CREATION COMPLETE!"
+log "================================================"
 log ""
 log "✅ Step completed successfully:"
 log "   1. Request intent created on Chain 1 (hub chain)"

@@ -402,7 +402,69 @@ fi
 # Verification is done inline during escrow release operations
 
 # ============================================================================
-# SECTION 6: FINAL SUMMARY
+# SECTION 6: FINAL BALANCE VALIDATION
+# ============================================================================
+log ""
+log "🔍 Validating final balances after inflow flow..."
+log "================================================"
+log "   - Waiting for transactions to be fully processed..."
+sleep 5
+
+# Get current balances
+ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
+BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
+BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
+
+# Get balances
+ALICE_CHAIN1_BALANCE=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+BOB_CHAIN1_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+ALICE_CHAIN2_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+
+# Remove commas
+ALICE_CHAIN1_BALANCE=$(echo "$ALICE_CHAIN1_BALANCE" | tr -d ',')
+BOB_CHAIN1_BALANCE=$(echo "$BOB_CHAIN1_BALANCE" | tr -d ',')
+ALICE_CHAIN2_BALANCE=$(echo "$ALICE_CHAIN2_BALANCE" | tr -d ',')
+BOB_CHAIN2_BALANCE=$(echo "$BOB_CHAIN2_BALANCE" | tr -d ',')
+
+# For inflow flow:
+# - Alice on Chain 1 should have received ~100000000 from hub intent fulfillment (Bob fulfilled it)
+# - Bob on Chain 2 should have received ~100000000 from escrow release
+# We check that balances are reasonable (at least 99% of expected amount to account for gas)
+
+EXPECTED_INTENT_AMOUNT=100000000
+MIN_EXPECTED_AMOUNT=99000000  # 99% to account for gas
+
+# Check if escrow was released (Bob on Chain 2 should have received funds)
+# Bob's balance on Chain 2 should have increased by at least MIN_EXPECTED_AMOUNT
+# We can't check the exact increase without initial balance, but we can check it's reasonable
+# If Bob has less than 100000000 on Chain 2, something went wrong (he should have received the escrow)
+if [ "$BOB_CHAIN2_BALANCE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
+    log_and_echo "❌ ERROR: Bob on Chain 2 balance is too low!"
+    log_and_echo "   Expected at least $MIN_EXPECTED_AMOUNT Octas (after escrow release)"
+    log_and_echo "   Got: $BOB_CHAIN2_BALANCE Octas"
+    log_and_echo "   This indicates the escrow was not released or funds were not received"
+    exit 1
+fi
+
+# Check if hub intent was fulfilled (Alice on Chain 1 should have received funds)
+# Alice's balance on Chain 1 should be reasonable (she should have received tokens from fulfillment)
+# We check that she has at least some reasonable amount (not just initial funding)
+if [ "$ALICE_CHAIN1_BALANCE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
+    log_and_echo "❌ ERROR: Alice on Chain 1 balance is too low!"
+    log_and_echo "   Expected at least $MIN_EXPECTED_AMOUNT Octas (after hub intent fulfillment)"
+    log_and_echo "   Got: $ALICE_CHAIN1_BALANCE Octas"
+    log_and_echo "   This indicates the hub intent was not fulfilled or funds were not received"
+    exit 1
+fi
+
+log "   ✅ Final balances validated:"
+log "      Alice Chain 1: $ALICE_CHAIN1_BALANCE Octas (hub intent fulfilled)"
+log "      Bob Chain 2: $BOB_CHAIN2_BALANCE Octas (escrow released)"
+
+# ============================================================================
+# SECTION 7: FINAL SUMMARY
 # ============================================================================
 log ""
 display_balances_hub

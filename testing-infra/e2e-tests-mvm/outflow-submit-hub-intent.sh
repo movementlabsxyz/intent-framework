@@ -188,8 +188,8 @@ display_balances_connected_mvm
 log_and_echo ""
 
 log ""
-log "🎉 HUB CHAIN OUTFLOW INTENT CREATION COMPLETE!"
-log "==============================================="
+log "🎉 OUTFLOW - HUB CHAIN INTENT CREATION COMPLETE!"
+log "================================================"
 log ""
 log "✅ Step completed successfully:"
 log "   1. Outflow request intent created on Chain 1 (hub chain)"

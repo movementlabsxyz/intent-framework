@@ -145,8 +145,8 @@ display_balances_connected_mvm
 log_and_echo ""
 
 log ""
-log "🎉 SOLVER TRANSFER COMPLETE!"
-log "============================"
+log "🎉 OUTFLOW - SOLVER TRANSFER COMPLETE!"
+log "======================================="
 log ""
 log "✅ Step completed successfully:"
 log "   1. Solver (Bob) transferred tokens to requester (Alice) on Chain 2"

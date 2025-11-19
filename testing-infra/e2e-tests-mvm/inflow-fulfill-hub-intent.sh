@@ -81,8 +81,8 @@ display_balances_connected_mvm
 log_and_echo ""
 
 log ""
-log "🎉 HUB CHAIN INTENT FULFILLMENT COMPLETE!"
-log "=========================================="
+log "🎉 INFLOW - HUB CHAIN INTENT FULFILLMENT COMPLETE!"
+log "=================================================="
 log ""
 log "✅ Step completed successfully:"
 log "   1. Request intent fulfilled on Chain 1 by solver (Bob)"

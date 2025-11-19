@@ -40,7 +40,7 @@ BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 
 log ""
 log "📋 Chain Information:"
-log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
+log "   Hub Chain Module Address (Chain 1):     $CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Intent ID:               $INTENT_ID"
 log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"

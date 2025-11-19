@@ -29,8 +29,8 @@ BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
 
 log ""
 log "📋 Chain Information:"
-log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
-log "   Connected Chain (Chain 2): $CHAIN2_ADDRESS"
+log "   Hub Chain Module Address (Chain 1):     $CHAIN1_ADDRESS"
+log "   Connected Chain Module Address (Chain 2): $CHAIN2_ADDRESS"
 log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
 log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"

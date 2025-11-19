@@ -48,6 +48,33 @@ fn test_extract_mvm_fulfillment_params_success() {
     assert_eq!(params.token_metadata, "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
 }
 
+/// Test that extract_mvm_fulfillment_params handles amount as JSON number
+/// 
+/// What is tested: Extracting amount when Aptos serializes it as a JSON number (when passed as decimal to aptos CLI).
+/// 
+/// Why: Aptos CLI accepts decimal format (u64:100000000) but serializes it as a JSON number in the transaction payload.
+#[test]
+fn test_extract_mvm_fulfillment_params_amount_as_number() {
+    let tx = MvmTransaction {
+        payload: Some(serde_json::json!({
+            "function": "0x123::utils::transfer_with_intent_id",
+            "arguments": [
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                100000000u64, // Amount as JSON number (when passed as u64:100000000 to aptos CLI)
+                "0x1111111111111111111111111111111111111111111111111111111111111111"
+            ]
+        })),
+        ..create_base_mvm_transaction()
+    };
+
+    let result = extract_mvm_fulfillment_params(&tx);
+
+    assert!(result.is_ok(), "Extraction should succeed when amount is a JSON number");
+    let params = result.unwrap();
+    assert_eq!(params.amount, 100000000u64);
+}
+
 /// Test that extract_mvm_fulfillment_params fails when transaction is not a transfer_with_intent_id call
 /// 
 /// What is tested: Attempting to extract parameters from a Move VM transaction that doesn't call

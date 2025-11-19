@@ -573,49 +573,73 @@ impl MvmClient {
     /// * `Ok(Option<String>)` - Connected chain Move VM address if solver is registered and address is set, None otherwise
     /// * `Err(anyhow::Error)` - Failed to query registry
     pub async fn get_solver_connected_chain_mvm_address(&self, solver_address: &str, registry_address: &str) -> Result<Option<String>> {
-        // Use view function to call solver_registry::get_connected_chain_mvm_address
-        let result = self.call_view_function(
-            registry_address,
-            "solver_registry",
-            "get_connected_chain_mvm_address",
-            vec![],
-            vec![serde_json::json!(solver_address)],
-        ).await;
+        // Query the SolverRegistry resource directly
+        let resources = self.get_resources(registry_address).await?;
         
-        match result {
-            Ok(value) => {
-                // The view function returns an Option<address>
-                // Move's Option is serialized as {"vec": [value]} for Some, {"vec": []} for None
-                if let Some(opt_obj) = value.as_object() {
-                    if let Some(vec_val) = opt_obj.get("vec") {
-                        if let Some(vec_array) = vec_val.as_array() {
-                            if vec_array.is_empty() {
-                                Ok(None)
-                            } else if let Some(addr_val) = vec_array.get(0) {
-                                if let Some(addr_str) = addr_val.as_str() {
-                                    Ok(Some(addr_str.to_string()))
-                                } else {
-                                    Ok(None)
-                                }
-                            } else {
-                                Ok(None)
-                            }
-                        } else {
-                            Ok(None)
-                        }
-                    } else {
-                        Ok(None)
-                    }
-                } else {
-                    Ok(None)
-                }
-            }
-            Err(e) => {
-                // If view function fails, solver might not be registered
-                // Log and return None
-                tracing::debug!("Failed to query solver connected chain Move VM address: {}", e);
-                Ok(None)
-            }
+        let registry_resource_type = format!("{}::solver_registry::SolverRegistry", registry_address);
+        let solver_addr = solver_address.strip_prefix("0x").unwrap_or(solver_address).to_lowercase();
+        
+        // Find the SolverRegistry resource
+        let registry_resource = resources.iter()
+            .find(|r| r.resource_type == registry_resource_type);
+        
+        let Some(registry_resource) = registry_resource else {
+            return Ok(None); // Registry resource not found
+        };
+        
+        // Extract solvers map: SimpleMap<address, SolverInfo> is {"data": [{"key": address, "value": SolverInfo}, ...]}
+        let data = match registry_resource.data.as_object() {
+            Some(d) => d,
+            None => return Ok(None),
+        };
+        
+        let solvers = match data.get("solvers").and_then(|s| s.as_object()) {
+            Some(s) => s,
+            None => return Ok(None),
+        };
+        
+        let data_array = match solvers.get("data").and_then(|d| d.as_array()) {
+            Some(d) => d,
+            None => return Ok(None),
+        };
+        
+        // Find the solver entry
+        let solver_entry = data_array.iter()
+            .find_map(|entry| {
+                let entry_obj = entry.as_object()?;
+                let key = entry_obj.get("key")?.as_str()?;
+                let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+                (key_normalized == solver_addr).then_some(entry_obj)
+            });
+        
+        let Some(entry_obj) = solver_entry else {
+            return Ok(None); // Solver not found in registry
+        };
+        
+        // Extract connected_chain_mvm_address from SolverInfo
+        // Option<address> is serialized as {"vec": [address]} for Some, {"vec": []} for None
+        let value = match entry_obj.get("value").and_then(|v| v.as_object()) {
+            Some(v) => v,
+            None => return Ok(None),
+        };
+        
+        let mvm_addr = match value.get("connected_chain_mvm_address").and_then(|m| m.as_object()) {
+            Some(m) => m,
+            None => return Ok(None),
+        };
+        
+        let vec_array = match mvm_addr.get("vec").and_then(|v| v.as_array()) {
+            Some(v) => v,
+            None => return Ok(None),
+        };
+        
+        if vec_array.is_empty() {
+            return Ok(None); // Solver found but no connected chain MVM address
+        }
+        
+        match vec_array.get(0).and_then(|a| a.as_str()) {
+            Some(addr_str) => Ok(Some(addr_str.to_string())),
+            None => Ok(None),
         }
     }
 

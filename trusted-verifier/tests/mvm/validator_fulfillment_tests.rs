@@ -7,6 +7,9 @@ use trusted_verifier::validator::{extract_mvm_fulfillment_params, validate_outfl
 use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::mvm_client::MvmTransaction;
 use trusted_verifier::monitor::RequestIntentEvent;
+use wiremock::{MockServer, Mock, ResponseTemplate};
+use wiremock::matchers::{method, path};
+use serde_json::json;
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{build_test_config_with_mvm, create_base_request_intent_mvm, create_base_fulfillment_transaction_params_mvm, create_base_mvm_transaction};
@@ -147,6 +150,78 @@ fn test_extract_mvm_fulfillment_params_missing_payload() {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/// Helper to create a mock SolverRegistry resource response with MVM address
+fn create_solver_registry_resource_with_mvm_address(
+    registry_address: &str,
+    solver_address: &str,
+    connected_chain_mvm_address: Option<&str>,
+) -> serde_json::Value {
+    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
+        // SolverInfo with connected_chain_mvm_address set
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "connected_chain_evm_address": {"vec": []}, // None
+                "connected_chain_mvm_address": {"vec": [mvm_addr]}, // Some(address)
+                "registered_at": 1234567890
+            }
+        })
+    } else {
+        // SolverInfo without connected_chain_mvm_address
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "connected_chain_evm_address": {"vec": []}, // None
+                "connected_chain_mvm_address": {"vec": []}, // None
+                "registered_at": 1234567890
+            }
+        })
+    };
+
+    json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
+        }
+    }])
+}
+
+/// Setup a mock server that responds to get_resources calls with SolverRegistry
+async fn setup_mock_server_with_registry(
+    registry_address: &str,
+    solver_address: &str,
+    connected_chain_mvm_address: Option<&str>,
+) -> (MockServer, CrossChainValidator) {
+    let mock_server = MockServer::start().await;
+    
+    let resources_response = create_solver_registry_resource_with_mvm_address(
+        registry_address,
+        solver_address,
+        connected_chain_mvm_address,
+    );
+    
+    Mock::given(method("GET"))
+        .and(path(format!("/v1/accounts/{}/resources", registry_address)))
+        .respond_with(ResponseTemplate::new(200)
+            .set_body_json(resources_response))
+        .mount(&mock_server)
+        .await;
+    
+    let mut config = build_test_config_with_mvm();
+    config.hub_chain.rpc_url = mock_server.uri();
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    (mock_server, validator)
+}
+
+// ============================================================================
 // OUTFLOW FULFILLMENT VALIDATION TESTS
 // ============================================================================
 
@@ -160,16 +235,25 @@ fn test_extract_mvm_fulfillment_params_missing_payload() {
 /// outflow fulfillment.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_success() {
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let registry_address = "0x1";
+    
+    let (_mock_server, validator) = setup_mock_server_with_registry(
+        registry_address,
+        solver_address,
+        Some(connected_chain_mvm_address),
+    ).await;
     
     let request_intent = RequestIntentEvent {
         desired_amount: 25000000, // For outflow request intents, validation uses desired_amount (amount desired on connected chain)
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_request_intent_mvm()
     };
     
     let tx_params = FulfillmentTransactionParams {
         amount: 25000000,
+        solver: connected_chain_mvm_address.to_string(),
         ..create_base_fulfillment_transaction_params_mvm()
     };
     
@@ -177,21 +261,7 @@ async fn test_validate_outflow_fulfillment_success() {
     
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
-    // Note: In unit tests without a real registry, validation may fail if the reserved solver
-    // is not registered in the hub registry. This is expected behavior - the test verifies
-    // that the validation logic works correctly, but requires a registered solver to pass.
-    if !validation_result.valid {
-        // If validation fails due to solver not being registered, that's expected in unit tests
-        // without a real registry. The test still verifies the validation logic is called.
-        assert!(
-            validation_result.message.contains("not registered") || 
-            validation_result.message.contains("registry"),
-            "Validation failed with unexpected error: {}. Expected solver registration check failure.",
-            validation_result.message
-        );
-    } else {
-        assert!(validation_result.valid, "Validation should pass when all parameters match and solver is registered");
-    }
+    assert!(validation_result.valid, "Validation should pass when all parameters match and solver is registered");
 }
 
 /// Test that validate_outflow_fulfillment fails when transaction was not successful
@@ -315,12 +385,26 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 /// Why: Verify that only registered solvers can fulfill intents.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_solver_not_registered() {
-    let config = build_test_config_with_mvm();
+    let unregistered_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let registry_address = "0x1";
+    
+    // Setup mock server with empty registry (solver not registered)
+    let mock_server = MockServer::start().await;
+    
+    Mock::given(method("GET"))
+        .and(path(format!("/v1/accounts/{}/resources", registry_address)))
+        .respond_with(ResponseTemplate::new(200)
+            .set_body_json(json!([]))) // Empty resources
+        .mount(&mock_server)
+        .await;
+    
+    let mut config = build_test_config_with_mvm();
+    config.hub_chain.rpc_url = mock_server.uri();
     let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
     
     let request_intent = RequestIntentEvent {
         desired_amount: 1000, // Set desired_amount to avoid validation failure on amount check
-        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // Move VM address format (32 bytes) - not registered in hub registry
+        reserved_solver: Some(unregistered_solver.to_string()),
         ..create_base_request_intent_mvm()
     };
     
@@ -334,7 +418,6 @@ async fn test_validate_outflow_fulfillment_fails_on_solver_not_registered() {
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
     // The validation will fail because the reserved solver is not registered in the hub registry
-    // (the test config likely points to a non-existent or empty registry)
     assert!(!validation_result.valid, "Validation should fail when reserved solver is not registered");
     assert!(validation_result.message.contains("not registered") || 
             validation_result.message.contains("registry") ||

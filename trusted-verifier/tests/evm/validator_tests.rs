@@ -24,22 +24,52 @@ fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
     config
 }
 
-/// Helper to create a mock response for get_connected_chain_evm_address
-/// Returns an Option<vector<u8>>: {"vec": [bytes_array]} for Some, {"vec": []} for None
-fn create_evm_address_response(evm_address: Option<&str>) -> serde_json::Value {
-    match evm_address {
-        Some(addr) => {
-            // Convert hex string (with or without 0x) to vector<u8>
-            let addr_clean = addr.strip_prefix("0x").unwrap_or(addr);
-            let bytes: Vec<u8> = (0..addr_clean.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&addr_clean[i..i+2], 16).unwrap())
-                .collect();
-            // Return Option<vector<u8>> format: {"vec": [bytes_array]}
-            json!({"vec": [bytes.iter().map(|b| *b as u64).collect::<Vec<u64>>()]})
+/// Helper to create a mock SolverRegistry resource response
+/// SimpleMap<address, SolverInfo> is serialized as {"data": [{"key": address, "value": SolverInfo}, ...]}
+fn create_solver_registry_resource_with_evm_address(
+    registry_address: &str,
+    solver_address: &str,
+    evm_address: Option<&str>,
+) -> serde_json::Value {
+    let solver_entry = if let Some(evm_addr) = evm_address {
+        // Convert hex string (with or without 0x) to vector<u8>
+        let addr_clean = evm_addr.strip_prefix("0x").unwrap_or(evm_addr);
+        let bytes: Vec<u64> = (0..addr_clean.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&addr_clean[i..i+2], 16).unwrap() as u64)
+            .collect();
+        
+        // SolverInfo with connected_chain_evm_address set
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "connected_chain_evm_address": {"vec": [bytes]}, // Some(vector<u8>)
+                "connected_chain_mvm_address": {"vec": []}, // None
+                "registered_at": 1234567890
+            }
+        })
+    } else {
+        // SolverInfo without connected_chain_evm_address
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "connected_chain_evm_address": {"vec": []}, // None
+                "connected_chain_mvm_address": {"vec": []}, // None
+                "registered_at": 1234567890
+            }
+        })
+    };
+
+    json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
         }
-        None => json!({"vec": []}) // Option::None format
-    }
+    }])
 }
 
 /// Setup a mock server that responds to get_solver_evm_address calls
@@ -49,16 +79,18 @@ async fn setup_mock_server_with_evm_address_response(
     evm_address: Option<&str>,
 ) -> (MockServer, Config, CrossChainValidator) {
     let mock_server = MockServer::start().await;
+    let registry_address = "0x1"; // Default registry address from test config
     
-    Mock::given(method("POST"))
-        .and(path("/v1/view"))
-        .and(body_json(&json!({
-            "function": "0x1::solver_registry::get_connected_chain_evm_address",
-            "type_arguments": [],
-            "arguments": [solver_address]
-        })))
+    let resources_response = create_solver_registry_resource_with_evm_address(
+        registry_address,
+        solver_address,
+        evm_address,
+    );
+    
+    Mock::given(method("GET"))
+        .and(path(format!("/v1/accounts/{}/resources", registry_address)))
         .respond_with(ResponseTemplate::new(200)
-            .set_body_json(create_evm_address_response(evm_address)))
+            .set_body_json(resources_response))
         .mount(&mock_server)
         .await;
     
@@ -253,14 +285,12 @@ async fn test_error_handling_for_registry_query_failures() {
         &config.hub_chain.intent_module_address,
     ).await;
     
-    // When registry query fails, get_solver_evm_address returns Ok(None),
-    // which is treated as "solver not registered" rather than a network error
-    // This is the current behavior - errors are caught and treated as "not registered"
-    assert!(result.is_ok(), "Validation should complete (errors are caught and treated as not registered)");
-    let validation_result = result.unwrap();
-    assert!(!validation_result.valid, "Validation should fail when registry query fails (treated as not registered)");
-    assert!(validation_result.message.contains("not registered") ||
-            validation_result.message.contains("Solver"),
-            "Error message should indicate solver not registered (query failures are treated this way)");
+    // When registry query fails, it should return an error, not treat it as "not registered"
+    assert!(result.is_err(), "Validation should return an error when registry query fails");
+    let error_msg = result.unwrap_err().to_string();
+    assert!(error_msg.contains("Failed to query") ||
+            error_msg.contains("resources") ||
+            error_msg.contains("registry"),
+            "Error message should indicate registry query failure. Got: {}", error_msg);
 }
 

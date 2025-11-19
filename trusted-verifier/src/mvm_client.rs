@@ -704,61 +704,89 @@ impl MvmClient {
     /// * `Ok(Option<String>)` - EVM address if solver is registered, None otherwise
     /// * `Err(anyhow::Error)` - Failed to query registry
     pub async fn get_solver_evm_address(&self, solver_address: &str, registry_address: &str) -> Result<Option<String>> {
-        // Use view function to call solver_registry::get_connected_chain_evm_address
-        let result = self.call_view_function(
-            registry_address,
-            "solver_registry",
-            "get_connected_chain_evm_address",
-            vec![],
-            vec![serde_json::json!(solver_address)],
-        ).await;
+        // Query the SolverRegistry resource directly
+        let resources = self.get_resources(registry_address).await?;
         
-        match result {
-            Ok(value) => {
-                // The view function returns an Option<vector<u8>>
-                // Move's Option is serialized as {"vec": [value]} for Some, {"vec": []} for None
-                if let Some(opt_obj) = value.as_object() {
-                    if let Some(vec_val) = opt_obj.get("vec") {
-                        if let Some(vec_array) = vec_val.as_array() {
-                            if vec_array.is_empty() {
-                                Ok(None)
-                            } else if let Some(evm_bytes) = vec_array.get(0) {
-                                if let Some(evm_array) = evm_bytes.as_array() {
-                                    if evm_array.is_empty() {
-                                        Ok(None)
-                                    } else {
-                                        // Convert vector<u8> to hex string with 0x prefix
-                                        let mut hex_string = String::from("0x");
-                                        for byte_val in evm_array {
-                                            if let Some(byte) = byte_val.as_u64() {
-                                                hex_string.push_str(&format!("{:02x}", byte as u8));
-                                            }
-                                        }
-                                        Ok(Some(hex_string))
-                                    }
-                                } else {
-                                    Ok(None)
-                                }
-                            } else {
-                                Ok(None)
-                            }
-                        } else {
-                            Ok(None)
-                        }
-                    } else {
-                        Ok(None)
-                    }
-                } else {
-                    Ok(None)
-                }
-            }
-            Err(e) => {
-                // If view function fails, solver might not be registered
-                // Log and return None
-                tracing::debug!("Failed to query solver EVM address: {}", e);
-                Ok(None)
+        let registry_resource_type = format!("{}::solver_registry::SolverRegistry", registry_address);
+        let solver_addr = solver_address.strip_prefix("0x").unwrap_or(solver_address).to_lowercase();
+        
+        // Find the SolverRegistry resource
+        let registry_resource = resources.iter()
+            .find(|r| r.resource_type == registry_resource_type);
+        
+        let Some(registry_resource) = registry_resource else {
+            return Ok(None); // Registry resource not found
+        };
+        
+        // Extract solvers map: SimpleMap<address, SolverInfo> is {"data": [{"key": address, "value": SolverInfo}, ...]}
+        let data = match registry_resource.data.as_object() {
+            Some(d) => d,
+            None => return Ok(None),
+        };
+        
+        let solvers = match data.get("solvers").and_then(|s| s.as_object()) {
+            Some(s) => s,
+            None => return Ok(None),
+        };
+        
+        let data_array = match solvers.get("data").and_then(|d| d.as_array()) {
+            Some(d) => d,
+            None => return Ok(None),
+        };
+        
+        // Find the solver entry
+        let solver_entry = data_array.iter()
+            .find_map(|entry| {
+                let entry_obj = entry.as_object()?;
+                let key = entry_obj.get("key")?.as_str()?;
+                let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+                (key_normalized == solver_addr).then_some(entry_obj)
+            });
+        
+        let Some(entry_obj) = solver_entry else {
+            return Ok(None); // Solver not found in registry
+        };
+        
+        // Extract connected_chain_evm_address from SolverInfo
+        // Option<vector<u8>> is serialized as {"vec": [bytes_array]} for Some, {"vec": []} for None
+        let value = match entry_obj.get("value").and_then(|v| v.as_object()) {
+            Some(v) => v,
+            None => return Ok(None),
+        };
+        
+        let evm_addr = match value.get("connected_chain_evm_address").and_then(|e| e.as_object()) {
+            Some(e) => e,
+            None => return Ok(None),
+        };
+        
+        let vec_array = match evm_addr.get("vec").and_then(|v| v.as_array()) {
+            Some(v) => v,
+            None => return Ok(None),
+        };
+        
+        if vec_array.is_empty() {
+            return Ok(None); // Solver found but no connected chain EVM address
+        }
+        
+        // Extract the first element (the vector<u8>)
+        let evm_bytes = match vec_array.get(0).and_then(|b| b.as_array()) {
+            Some(b) => b,
+            None => return Ok(None),
+        };
+        
+        if evm_bytes.is_empty() {
+            return Ok(None);
+        }
+        
+        // Convert vector<u8> to hex string with 0x prefix
+        let mut hex_string = String::from("0x");
+        for byte_val in evm_bytes {
+            if let Some(byte) = byte_val.as_u64() {
+                hex_string.push_str(&format!("{:02x}", byte as u8));
             }
         }
+        
+        Ok(Some(hex_string))
     }
 
     /// Calls a view function on the Move VM blockchain.

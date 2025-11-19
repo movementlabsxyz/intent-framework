@@ -7,6 +7,9 @@ use trusted_verifier::validator::{extract_evm_fulfillment_params, validate_outfl
 use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::evm_client::EvmTransaction;
 use trusted_verifier::monitor::RequestIntentEvent;
+use wiremock::{MockServer, Mock, ResponseTemplate};
+use wiremock::matchers::{method, path};
+use serde_json::json;
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{build_test_config_with_evm, create_base_request_intent_evm, create_base_fulfillment_transaction_params_evm, create_base_evm_transaction};
@@ -95,6 +98,87 @@ fn test_extract_evm_fulfillment_params_insufficient_calldata() {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/// Helper to create a mock SolverRegistry resource response with EVM address
+fn create_solver_registry_resource_with_evm_address(
+    registry_address: &str,
+    solver_address: &str,
+    evm_address: Option<&str>,
+) -> serde_json::Value {
+    let solver_entry = if let Some(evm_addr) = evm_address {
+        // Convert hex string (with or without 0x) to vector<u8>
+        let addr_clean = evm_addr.strip_prefix("0x").unwrap_or(evm_addr);
+        let bytes: Vec<u64> = (0..addr_clean.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&addr_clean[i..i+2], 16).unwrap() as u64)
+            .collect();
+        
+        // SolverInfo with connected_chain_evm_address set
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "connected_chain_evm_address": {"vec": [bytes]}, // Some(vector<u8>)
+                "connected_chain_mvm_address": {"vec": []}, // None
+                "registered_at": 1234567890
+            }
+        })
+    } else {
+        // SolverInfo without connected_chain_evm_address
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "connected_chain_evm_address": {"vec": []}, // None
+                "connected_chain_mvm_address": {"vec": []}, // None
+                "registered_at": 1234567890
+            }
+        })
+    };
+
+    json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
+        }
+    }])
+}
+
+/// Setup a mock server that responds to get_resources calls with SolverRegistry
+async fn setup_mock_server_with_registry(
+    registry_address: &str,
+    solver_address: &str,
+    evm_address: Option<&str>,
+) -> (MockServer, CrossChainValidator) {
+    let mock_server = MockServer::start().await;
+    
+    let resources_response = create_solver_registry_resource_with_evm_address(
+        registry_address,
+        solver_address,
+        evm_address,
+    );
+    
+    Mock::given(method("GET"))
+        .and(path(format!("/v1/accounts/{}/resources", registry_address)))
+        .respond_with(ResponseTemplate::new(200)
+            .set_body_json(resources_response))
+        .mount(&mock_server)
+        .await;
+    
+    let mut config = build_test_config_with_evm();
+    config.hub_chain.rpc_url = mock_server.uri();
+    // Clear MVM chain config so validator uses EVM path
+    config.connected_chain_mvm = None;
+    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    
+    (mock_server, validator)
+}
+
+// ============================================================================
 // OUTFLOW FULFILLMENT VALIDATION TESTS
 // ============================================================================
 
@@ -108,16 +192,25 @@ fn test_extract_evm_fulfillment_params_insufficient_calldata() {
 /// outflow fulfillment.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_success() {
-    let config = build_test_config_with_evm();
-    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let registry_address = "0x1";
+    
+    let (_mock_server, validator) = setup_mock_server_with_registry(
+        registry_address,
+        solver_address,
+        Some(evm_address),
+    ).await;
     
     let request_intent = RequestIntentEvent {
         desired_amount: 25000000, // For outflow request intents, validation uses desired_amount (amount desired on connected chain)
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_request_intent_evm()
     };
     
     let tx_params = FulfillmentTransactionParams {
         amount: 25000000,
+        solver: evm_address.to_string(),
         ..create_base_fulfillment_transaction_params_evm()
     };
     
@@ -125,21 +218,7 @@ async fn test_validate_outflow_fulfillment_success() {
     
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
-    // Note: In unit tests without a real registry, validation may fail if the reserved solver
-    // is not registered in the hub registry. This is expected behavior - the test verifies
-    // that the validation logic works correctly, but requires a registered solver to pass.
-    if !validation_result.valid {
-        // If validation fails due to solver not being registered, that's expected in unit tests
-        // without a real registry. The test still verifies the validation logic is called.
-        assert!(
-            validation_result.message.contains("not registered") || 
-            validation_result.message.contains("registry"),
-            "Validation failed with unexpected error: {}. Expected solver registration check failure.",
-            validation_result.message
-        );
-    } else {
-        assert!(validation_result.valid, "Validation should pass when all parameters match and solver is registered");
-    }
+    assert!(validation_result.valid, "Validation should pass when all parameters match and solver is registered. Message: {}", validation_result.message);
 }
 
 /// Test that validate_outflow_fulfillment fails when transaction was not successful
@@ -265,18 +344,26 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 /// Why: Verify that only the authorized solver can fulfill the intent.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_solver_mismatch() {
-    let config = build_test_config_with_evm();
-    let validator = CrossChainValidator::new(&config).await.expect("Failed to create validator");
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let registered_evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let different_solver = "0xcccccccccccccccccccccccccccccccccccccccc";
+    let registry_address = "0x1";
+    
+    let (_mock_server, validator) = setup_mock_server_with_registry(
+        registry_address,
+        solver_address,
+        Some(registered_evm_address),
+    ).await;
     
     let request_intent = RequestIntentEvent {
         desired_amount: 1000, // Set desired_amount to avoid validation failure on amount check
-        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes) - solver on connected EVM chain
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_request_intent_evm()
     };
     
     let tx_params = FulfillmentTransactionParams {
         amount: request_intent.desired_amount,
-        solver: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(), // Different solver (EVM address format)
+        solver: different_solver.to_string(), // Different solver (EVM address format)
         ..create_base_fulfillment_transaction_params_evm()
     };
     

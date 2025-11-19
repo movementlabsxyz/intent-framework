@@ -16,7 +16,7 @@ For contributing guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - Enter dev shell with pinned toolchain (Rust, Aptos CLI):
 
-```
+```text
 nix develop
 ```
 
@@ -38,7 +38,8 @@ nix develop -c bash -c "cd solver && cargo test"
 Run from project root:
 
 ```bash
-nix develop -c bash -c "./testing-infra/e2e-tests-mvm/run-tests.sh"
+nix develop -c bash -c "./testing-infra/e2e-tests-mvm/run-tests-inflow.sh"
+nix develop -c bash -c "./testing-infra/e2e-tests-mvm/run-tests-outflow.sh"
 nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests.sh"
 ```
 

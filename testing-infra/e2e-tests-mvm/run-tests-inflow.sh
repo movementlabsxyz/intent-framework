@@ -36,6 +36,10 @@ echo "   Submitting inflow cross-chain intents..."
 ./testing-infra/e2e-tests-mvm/inflow-submit-escrow.sh
 
 echo ""
+echo "   - Waiting for transactions to be finalized and events to be queryable..."
+sleep 5
+
+echo ""
 echo "🚀 Step 4: Running Rust integration tests (before intent fulfillment)..."
 echo "======================================================="
 ./testing-infra/chain-hub/configure-verifier.sh

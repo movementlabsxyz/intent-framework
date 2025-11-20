@@ -149,22 +149,30 @@ if [ "$SUCCESS" != "true" ]; then
 fi
 
 VALID=$(echo "$RESPONSE" | jq -r '.data.validation.valid' 2>/dev/null)
-REASON=$(echo "$RESPONSE" | jq -r '.data.validation.reason // empty' 2>/dev/null)
+MESSAGE=$(echo "$RESPONSE" | jq -r '.data.validation.message // empty' 2>/dev/null)
 
 if [ "$VALID" != "true" ]; then
     log_and_echo "❌ ERROR: Transaction validation failed"
     log_and_echo "   Validation result: $VALID"
-    if [ -n "$REASON" ]; then
-        log_and_echo "   Reason: $REASON"
+    if [ -n "$MESSAGE" ]; then
+        log_and_echo "   Message: $MESSAGE"
     fi
+    
+    # If the error is about solver registration, list all registered solvers
+    if echo "$MESSAGE" | grep -qi "is not registered in hub chain solver registry"; then
+        log_and_echo ""
+        log_and_echo "   Available registered solvers:"
+        list_all_solvers "bob-chain1" "$CHAIN1_ADDRESS" "$LOG_FILE"
+    fi
+    
     log_and_echo "   Full response:"
     echo "$RESPONSE" | jq '.' 2>/dev/null || echo "$RESPONSE"
     exit 1
 fi
 
 log "   ✅ Transaction validation passed!"
-if [ -n "$REASON" ]; then
-    log "   Reason: $REASON"
+if [ -n "$MESSAGE" ]; then
+    log "   Message: $MESSAGE"
 fi
 
 APPROVAL_SIGNATURE=$(echo "$RESPONSE" | jq -r '.data.approval_signature.signature // empty' 2>/dev/null)

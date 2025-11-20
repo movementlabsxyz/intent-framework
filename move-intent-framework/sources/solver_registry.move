@@ -45,6 +45,7 @@ module mvmt_intent::solver_registry {
     /// Global solver registry
     struct SolverRegistry has key {
         solvers: SimpleMap<address, SolverInfo>,
+        solver_addresses: vector<address>, // Track all solver addresses for iteration
     }
     
     // ==================== Events ====================
@@ -86,6 +87,7 @@ module mvmt_intent::solver_registry {
         
         move_to(account, SolverRegistry {
             solvers: simple_map::create(),
+            solver_addresses: vector::empty(),
         });
     }
     
@@ -152,6 +154,7 @@ module mvmt_intent::solver_registry {
         };
         
         simple_map::add(&mut registry.solvers, solver_addr, solver_info);
+        vector::push_back(&mut registry.solver_addresses, solver_addr);
         
         // Emit event
         let solver_data = simple_map::borrow(&registry.solvers, &solver_addr);
@@ -247,6 +250,18 @@ module mvmt_intent::solver_registry {
         
         // Remove solver from registry
         simple_map::remove(&mut registry.solvers, &solver_addr);
+        
+        // Remove from addresses vector
+        let addresses = &mut registry.solver_addresses;
+        let len = vector::length(addresses);
+        let i = 0;
+        while (i < len) {
+            if (*vector::borrow(addresses, i) == solver_addr) {
+                vector::remove(addresses, i);
+                break
+            };
+            i = i + 1;
+        };
         
         // Emit event
         event::emit(SolverDeregistered {
@@ -371,6 +386,36 @@ module mvmt_intent::solver_registry {
                 connected_chain_mvm_address: option::none(),
                 timestamp: 0,
             });
+        };
+    }
+    
+    /// Entry function to list all registered solvers
+    /// Emits a SolverRegistered event for each registered solver
+    /// The shell script can parse these events to get all solver information
+    public entry fun list_all_solvers(
+        _account: &signer,
+    ) acquires SolverRegistry {
+        if (!exists<SolverRegistry>(@mvmt_intent)) {
+            return
+        };
+        let registry = borrow_global<SolverRegistry>(@mvmt_intent);
+        let addresses = &registry.solver_addresses;
+        let solvers = &registry.solvers;
+        
+        // Iterate through all solver addresses and emit events
+        let len = vector::length(addresses);
+        let i = 0;
+        while (i < len) {
+            let solver_addr = *vector::borrow(addresses, i);
+            let solver_info = simple_map::borrow(solvers, &solver_addr);
+            event::emit(SolverRegistered {
+                solver: solver_addr,
+                public_key: solver_info.public_key,
+                connected_chain_evm_address: solver_info.connected_chain_evm_address,
+                connected_chain_mvm_address: solver_info.connected_chain_mvm_address,
+                timestamp: solver_info.registered_at,
+            });
+            i = i + 1;
         };
     }
     

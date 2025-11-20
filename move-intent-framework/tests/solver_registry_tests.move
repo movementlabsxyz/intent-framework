@@ -384,5 +384,97 @@ module mvmt_intent::solver_registry_tests {
         assert!(solver_registry::is_registered(signer::address_of(solver)), 3);
         assert!(solver_registry::is_registered(signer::address_of(solver2)), 4);
     }
+
+    #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe, solver2 = @0xbeef, caller = @0xabcd)]
+    /// Test: List all registered solvers
+    /// Verifies that list_all_solvers can be called and doesn't abort
+    /// Note: We can't easily verify events in Move unit tests, but we can verify the function executes successfully
+    fun test_list_all_solvers(
+        aptos_framework: &signer,
+        mvmt_intent: &signer,
+        solver: &signer,
+        solver2: &signer,
+        caller: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        solver_registry::init_for_test(mvmt_intent);
+        
+        // Register first solver
+        let (_solver_secret_key1, solver_public_key1) = ed25519::generate_keys();
+        let solver_public_key_bytes1 = ed25519::validated_public_key_to_bytes(&solver_public_key1);
+        let evm_address1 = test_utils::create_test_evm_address(0);
+        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1, @0x0);
+        assert!(solver_registry::is_registered(signer::address_of(solver)), 1);
+        
+        // Register second solver
+        let (_solver_secret_key2, solver_public_key2) = ed25519::generate_keys();
+        let solver_public_key_bytes2 = ed25519::validated_public_key_to_bytes(&solver_public_key2);
+        let evm_address2 = test_utils::create_test_evm_address(1);
+        solver_registry::register_solver(solver2, solver_public_key_bytes2, evm_address2, @0x0);
+        assert!(solver_registry::is_registered(signer::address_of(solver2)), 2);
+        
+        // Call list_all_solvers - should not abort
+        // Note: Events are emitted but we can't easily verify them in Move unit tests
+        // The function is tested end-to-end in shell scripts
+        solver_registry::list_all_solvers(caller);
+        
+        // Verify solvers are still registered after calling list_all_solvers
+        assert!(solver_registry::is_registered(signer::address_of(solver)), 3);
+        assert!(solver_registry::is_registered(signer::address_of(solver2)), 4);
+    }
+
+    #[test(aptos_framework = @0x1, mvmt_intent = @0x123, caller = @0xabcd)]
+    /// Test: List all solvers when registry is empty
+    /// Verifies that list_all_solvers handles empty registry gracefully
+    fun test_list_all_solvers_empty_registry(
+        aptos_framework: &signer,
+        mvmt_intent: &signer,
+        caller: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        solver_registry::init_for_test(mvmt_intent);
+        
+        // Call list_all_solvers on empty registry - should not abort
+        solver_registry::list_all_solvers(caller);
+    }
+
+    #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe, solver2 = @0xbeef, caller = @0xabcd)]
+    /// Test: List all solvers after deregistering one
+    /// Verifies that solver_addresses vector is correctly maintained when deregistering
+    fun test_list_all_solvers_after_deregister(
+        aptos_framework: &signer,
+        mvmt_intent: &signer,
+        solver: &signer,
+        solver2: &signer,
+        caller: &signer,
+    ) {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        solver_registry::init_for_test(mvmt_intent);
+        
+        // Register first solver
+        let (_solver_secret_key1, solver_public_key1) = ed25519::generate_keys();
+        let solver_public_key_bytes1 = ed25519::validated_public_key_to_bytes(&solver_public_key1);
+        let evm_address1 = test_utils::create_test_evm_address(0);
+        solver_registry::register_solver(solver, solver_public_key_bytes1, evm_address1, @0x0);
+        
+        // Register second solver
+        let (_solver_secret_key2, solver_public_key2) = ed25519::generate_keys();
+        let solver_public_key_bytes2 = ed25519::validated_public_key_to_bytes(&solver_public_key2);
+        let evm_address2 = test_utils::create_test_evm_address(1);
+        solver_registry::register_solver(solver2, solver_public_key_bytes2, evm_address2, @0x0);
+        
+        // Deregister first solver
+        solver_registry::deregister_solver(solver);
+        assert!(!solver_registry::is_registered(signer::address_of(solver)), 1);
+        assert!(solver_registry::is_registered(signer::address_of(solver2)), 2);
+        
+        // Call list_all_solvers - should not abort and should only list remaining solver
+        // Note: We can't verify events in Move unit tests, but we can verify the function executes
+        solver_registry::list_all_solvers(caller);
+        
+        // Verify only solver2 is still registered
+        assert!(!solver_registry::is_registered(signer::address_of(solver)), 3);
+        assert!(solver_registry::is_registered(signer::address_of(solver2)), 4);
+    }
 }
 

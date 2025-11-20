@@ -670,7 +670,137 @@ verify_solver_registered() {
         log_and_echo "❌ ERROR: Solver is not registered in registry"
         log_and_echo "   Solver address: 0x${solver_address}"
         log_and_echo "   Registry address: 0x${chain_address}"
+        log_and_echo ""
+        log_and_echo "   Available registered solvers:"
+        list_all_solvers "$profile" "$chain_address" "$log_file"
         exit 1
     fi
+}
+
+# List all registered solvers from the solver registry
+# Usage: list_all_solvers <profile> <chain_address> [log_file]
+# Outputs all registered solvers with their details
+list_all_solvers() {
+    local profile="$1"
+    local chain_address="$2"
+    local log_file="${3:-$LOG_FILE}"
+
+    if [ -z "$profile" ] || [ -z "$chain_address" ]; then
+        log_and_echo "❌ ERROR: list_all_solvers() requires profile and chain_address"
+        exit 1
+    fi
+
+    log "     Querying all registered solvers from registry..."
+
+    # Remove 0x prefix if present
+    chain_address="${chain_address#0x}"
+
+    # Get RPC URL for the profile
+    local rpc_url=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].rest_url" 2>/dev/null || echo "http://127.0.0.1:8080")
+    
+    # Call the Move entry function to list all solvers
+    local temp_file=$(mktemp)
+    local caller_address=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].account" 2>/dev/null)
+    
+    if [ -z "$caller_address" ] || [ "$caller_address" = "null" ]; then
+        log_and_echo "❌ ERROR: Could not get caller address for profile: $profile"
+        rm -f "$temp_file"
+        return 1
+    fi
+    
+    # Call the Move entry function
+    if [ -n "$log_file" ]; then
+        aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::list_all_solvers" \
+            > "$temp_file" 2>&1
+        local exit_code=$?
+        cat "$temp_file" | tee -a "$log_file" > /dev/null
+    else
+        aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::solver_registry::list_all_solvers" \
+            > "$temp_file" 2>&1
+        local exit_code=$?
+    fi
+    
+    if [ $exit_code -ne 0 ]; then
+        log_and_echo "❌ ERROR: Failed to call list_all_solvers function"
+        if [ -n "$log_file" ]; then
+            log_and_echo "   Log file contents:"
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+            cat "$temp_file"
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+        fi
+        rm -f "$temp_file"
+        return 1
+    fi
+    
+    # Extract transaction hash from output
+    local tx_hash=$(grep -i "transaction hash" "$temp_file" | head -1 | awk '{print $NF}' | tr -d '\n' || echo "")
+    
+    if [ -z "$tx_hash" ]; then
+        # Try alternative format
+        tx_hash=$(grep -oE '[0-9a-f]{64}' "$temp_file" | head -1 || echo "")
+    fi
+    
+    # Wait for transaction to be processed
+    sleep 2
+    
+    # Query events from the specific transaction
+    local events=""
+    if [ -n "$tx_hash" ]; then
+        local tx_result=$(curl -s "${rpc_url}/v1/transactions/by_hash/${tx_hash}" 2>/dev/null)
+        events=$(echo "$tx_result" | jq -r '.events[]? | select(.type | contains("SolverRegistered"))' 2>/dev/null)
+    fi
+    
+    # Fallback: query from account's latest transaction if tx_hash not found
+    if [ -z "$events" ] || [ "$events" = "null" ]; then
+        local tx_result=$(curl -s "${rpc_url}/v1/accounts/${caller_address}/transactions?limit=1" 2>/dev/null)
+        events=$(echo "$tx_result" | jq -r '.[0].events[]? | select(.type | contains("SolverRegistered"))' 2>/dev/null)
+    fi
+    
+    rm -f "$temp_file"
+    
+    if [ -z "$events" ] || [ "$events" = "null" ]; then
+        log_and_echo "   No solvers registered in the registry"
+        return 0
+    fi
+    
+    # Count solvers (events with non-empty public_key indicate registered solvers)
+    local solver_count=$(echo "$events" | jq -s '[.[] | select(.data.public_key != null and (.data.public_key | length) > 0)] | length' 2>/dev/null)
+    
+    if [ "$solver_count" = "0" ] || [ -z "$solver_count" ]; then
+        log_and_echo "   No solvers registered in the registry"
+        return 0
+    fi
+    
+    log_and_echo "   Found ${solver_count} registered solver(s):"
+    log_and_echo ""
+    
+    # Parse and display each solver
+    echo "$events" | jq -s '[.[] | select(.data.public_key != null and (.data.public_key | length) > 0)]' 2>/dev/null | jq -c '.[]' 2>/dev/null | while IFS= read -r event; do
+        local solver_addr=$(echo "$event" | jq -r '.data.solver // empty' 2>/dev/null)
+        local public_key=$(echo "$event" | jq -r '.data.public_key // []' 2>/dev/null)
+        local evm_addr=$(echo "$event" | jq -r '.data.connected_chain_evm_address.vec[0] // "None"' 2>/dev/null)
+        local mvm_addr=$(echo "$event" | jq -r '.data.connected_chain_mvm_address.vec[0] // "None"' 2>/dev/null)
+        local registered_at=$(echo "$event" | jq -r '.data.timestamp // 0' 2>/dev/null)
+        
+        if [ -n "$solver_addr" ] && [ "$solver_addr" != "null" ]; then
+            log_and_echo "   Solver: ${solver_addr}"
+            local pk_length=$(echo "$public_key" | jq 'length' 2>/dev/null || echo "0")
+            log_and_echo "     Public Key: ${public_key:0:20}... (${pk_length} bytes)"
+            if [ "$evm_addr" != "None" ] && [ "$evm_addr" != "null" ] && [ "$evm_addr" != "" ]; then
+                log_and_echo "     Connected Chain EVM Address: ${evm_addr}"
+            else
+                log_and_echo "     Connected Chain EVM Address: None"
+            fi
+            if [ "$mvm_addr" != "None" ] && [ "$mvm_addr" != "null" ] && [ "$mvm_addr" != "" ]; then
+                log_and_echo "     Connected Chain MVM Address: ${mvm_addr}"
+            else
+                log_and_echo "     Connected Chain MVM Address: None"
+            fi
+            log_and_echo "     Registered At: ${registered_at}"
+            log_and_echo ""
+        fi
+    done
 }
 

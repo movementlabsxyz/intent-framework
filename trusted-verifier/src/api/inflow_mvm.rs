@@ -5,4 +5,3 @@
 //! for future Move VM-specific inflow validation logic.
 
 // Reserved for future Move VM-specific inflow validation logic
-

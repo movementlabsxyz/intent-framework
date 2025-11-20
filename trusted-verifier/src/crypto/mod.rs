@@ -10,7 +10,7 @@
 //! **CRITICAL**: All cryptographic operations must use secure random number generation
 //! and proper key management practices. Private keys must never be exposed or logged.
 
-use anyhow::Result;
+use anyhow::{Result, Context};
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
 use k256::{
     ecdsa::{SigningKey as EcdsaSigningKey, Signature as EcdsaSignature, VerifyingKey as EcdsaVerifyingKey},
@@ -166,22 +166,33 @@ impl CryptoService {
         // Remove 0x prefix if present
         let intent_id_hex = intent_id.strip_prefix("0x").unwrap_or(intent_id);
         
-        // Convert hex string to bytes
-        let intent_id_bytes = hex::decode(intent_id_hex)
+        // Pad hex string to 64 characters (32 bytes) before decoding to handle odd-length strings
+        // Left-pad with zeros to ensure even number of hex digits
+        let padded_hex = if intent_id_hex.len() < 64 {
+            format!("{:0>64}", intent_id_hex)
+        } else if intent_id_hex.len() > 64 {
+            return Err(anyhow::anyhow!("Intent ID hex too long: {} characters (max 64)", intent_id_hex.len()));
+        } else {
+            intent_id_hex.to_string()
+        };
+        
+        // Convert hex string to bytes (now guaranteed to be even length)
+        let intent_id_bytes = hex::decode(&padded_hex)
             .map_err(|e| anyhow::anyhow!("Invalid intent_id hex: {}", e))?;
         
-        // Pad to 32 bytes (Move VM address format) - left-pad with zeros
-        let mut intent_id_padded = [0u8; 32];
-        if intent_id_bytes.len() <= 32 {
-            intent_id_padded[32 - intent_id_bytes.len()..].copy_from_slice(&intent_id_bytes);
-        } else {
-            return Err(anyhow::anyhow!("Intent ID too long: {} bytes", intent_id_bytes.len()));
+        // Should be exactly 32 bytes after padding
+        if intent_id_bytes.len() != 32 {
+            return Err(anyhow::anyhow!("Intent ID must be 32 bytes after padding, got {} bytes", intent_id_bytes.len()));
         }
+        
+        let intent_id_padded: [u8; 32] = intent_id_bytes.try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to convert intent_id_bytes to [u8; 32]"))?;
         
         // Sign the intent_id address bytes directly (BCS-encoded address)
         // In Move: bcs::to_bytes(&intent_id) where intent_id: address gives us the 32-byte address
         // We sign those same bytes - the signature itself is the approval
-        let message = bcs::to_bytes(&intent_id_padded)?;
+        let message = bcs::to_bytes(&intent_id_padded)
+            .context("Failed to BCS-encode intent_id")?;
         let signature = self.signing_key.sign(&message);
         
         info!("Created approval signature for intent_id: {}", intent_id);

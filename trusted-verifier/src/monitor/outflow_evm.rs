@@ -5,4 +5,3 @@
 //! Currently reserved for future EVM hub chain support.
 
 // Reserved for future EVM hub chain support
-

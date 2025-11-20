@@ -19,4 +19,3 @@ mod monitor_tests;
 
 #[path = "evm/cross_chain_tests.rs"]
 mod cross_chain_tests;
-

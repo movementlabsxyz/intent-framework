@@ -4,4 +4,3 @@
 
 #[path = "hub/validator_tests.rs"]
 mod validator_tests;
-

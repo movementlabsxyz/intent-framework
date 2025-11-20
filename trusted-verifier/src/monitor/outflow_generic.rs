@@ -85,11 +85,11 @@ pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
 /// # Note
 /// 
 /// Currently, the hub chain is always Move VM. This function delegates to
-/// outflow_mvm::poll_hub_events for Move VM-specific polling logic.
+/// hub_mvm::poll_hub_events for Move VM-specific polling logic.
 pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntentEvent>> {
     // Hub chain is currently always Move VM
     // Delegate to Move VM-specific polling
-    outflow_mvm::poll_hub_events(monitor).await
+    hub_mvm::poll_hub_events(monitor).await
 }
 
 // ============================================================================

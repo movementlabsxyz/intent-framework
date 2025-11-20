@@ -10,4 +10,3 @@ mod crypto_tests;
 
 #[path = "mvm/cross_chain_tests.rs"]
 mod cross_chain_tests;
-

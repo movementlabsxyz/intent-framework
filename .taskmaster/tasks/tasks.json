@@ -1,91 +1,11 @@
 {
   "master": {
-    "tasks": [
-      {
-        "id": "11",
-        "title": "Add outflow intent E2E tests",
-        "description": "Add E2E test flow for outflow intents after inflow tests are finalized",
-        "details": "Extend E2E test suite to include outflow intent flow. After inflow tests complete, add outflow test where Alice creates an outflow intent on Chain 1 (hub) to send tokens to the connected chain. Test flow: 1) Alice creates outflow request intent on hub chain (tokens locked on hub), 2) Solver transfers tokens on connected chain to Alice's connected chain address, 3) Solver submits transaction hash to verifier for validation, 4) Verifier validates and generates approval signature, 5) Solver uses signature to fulfill hub intent and receive locked tokens as reward. Update E2E test scripts to include this flow after inflow tests.",
-        "testStrategy": "Create E2E test script that runs outflow flow after inflow, verify tokens are locked on hub, verify solver transfer on connected chain, verify verifier validation and signature generation, verify hub intent fulfillment with signature, verify token balances match expected outcomes",
-        "priority": "high",
-        "dependencies": [],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Create outflow hub intent creation test script",
-            "description": "Create bash script to set up and test Alice creating outflow intent on hub chain (Chain 1), where tokens are locked on the hub",
-            "dependencies": [],
-            "details": "Implement submit-outflow-hub-intent.sh script in testing-infra/e2e-tests-mvm/ that: 1) Generates random intent_id, 2) Gets APT metadata addresses for both chains, 3) Generates solver signature for outflow intent (offered tokens on hub, desired tokens on connected chain), 4) Registers solver in registry if needed, 5) Calls create_outflow_request_intent_entry on hub chain to lock tokens and create intent with requester_address_connected_chain parameter, 6) Verifies intent creation via LimitOrderEvent or OracleLimitOrderEvent, 7) Saves intent info for subsequent scripts. Use existing inflow scripts as reference pattern.\n<info added on 2025-11-18T14:00:56.617Z>\nI'll analyze the codebase to understand the project structure and verify the implementation details before generating the subtask update.Based on my analysis of the codebase, I can confirm the implementation is complete and correctly follows the established patterns. Here's the update text:\n\nScript successfully implemented at testing-infra/e2e-tests-mvm/submit-outflow-hub-intent.sh (237 lines). Verified implementation includes: Random intent_id generation via openssl (line 14), verifier public key loaded from verifier_testing.toml config with base64-to-hex conversion (lines 40-72), APT metadata extraction for both chains using extract_apt_metadata utility (lines 100-108), solver signature generation with correct outflow parameters (offered_amount on chain 1/hub, desired_amount on chain 2/connected) via generate_solver_signature utility (lines 133-146), solver registration in registry using register_solver utility (line 167), create_outflow_request_intent_entry call with all 12 required parameters including requester_address_connected_chain and verifier_public_key (lines 178-180), intent verification via LimitOrderEvent/OracleLimitOrderEvent in transaction events (lines 188-196), and intent info persistence using save_intent_info utility function (line 221). Script follows same structure as submit-hub-intent.sh inflow script and integrates with existing utility functions from util.sh and util_mvm.sh.\n</info added on 2025-11-18T14:00:56.617Z>",
-            "status": "done",
-            "testStrategy": "Run script standalone, verify intent created on hub chain via transaction events, verify tokens locked in hub intent object, verify intent includes requester_address_connected_chain field",
-            "updatedAt": "2025-11-18T14:01:09.395Z",
-            "parentId": "undefined"
-          },
-          {
-            "id": 2,
-            "title": "Create outflow solver transfer test script",
-            "description": "Create bash script to test solver (Bob) transferring tokens directly to Alice's connected chain address without escrow",
-            "dependencies": [
-              1
-            ],
-            "details": "Implement submit-outflow-solver-transfer.sh script in testing-infra/e2e-tests-mvm/ that: 1) Loads intent_id from previous step, 2) Gets Alice's Chain 2 address from intent (requester_address_connected_chain), 3) Calls utils::transfer_fa_with_metadata function on Chain 2 as Bob to transfer tokens directly to Alice with intent_id embedded as metadata, 4) Verifies transfer completed by checking Alice's balance increased, 5) Saves transaction hash for verifier validation. This is a direct transfer, NOT an escrow - Alice receives tokens immediately.\n<info added on 2025-11-18T14:04:34.002Z>\nScript fully implemented with 159 lines. Direct transfer mechanism confirmed (NO escrow). Alice receives tokens immediately on Chain 2. Transfer executes via utils::transfer_with_intent_id function at lines 73-75. Transaction hash extracted from Chain 2 REST API (lines 85-86). Balance verification logic implemented (lines 92-118) confirming Alice +transfer_amount, Bob -transfer_amount-gas. Output saved to .test-data/outflow-transfer-info.txt (lines 121-124) containing transaction_hash and intent_id for next step's verifier validation. Script location: testing-infra/e2e-tests-mvm/submit-outflow-solver-transfer.sh\n</info added on 2025-11-18T14:04:34.002Z>",
-            "status": "done",
-            "testStrategy": "Run script after hub intent creation, verify Bob's balance decreased on Chain 2, verify Alice's balance increased on Chain 2 by desired_amount, verify transaction includes intent_id metadata, capture transaction hash for verifier",
-            "parentId": "undefined",
-            "updatedAt": "2025-11-18T14:04:46.902Z"
-          },
-          {
-            "id": 3,
-            "title": "Create outflow verifier validation test script",
-            "description": "Create bash script to test verifier validating solver's connected chain transfer and generating approval signature for hub fulfillment",
-            "dependencies": [
-              2
-            ],
-            "details": "Implement outflow-validate-and-fulfill.sh script in testing-infra/e2e-tests-mvm/ that combines validation and fulfillment: 1) Loads transaction_hash and intent_id from previous step, 2) Calls verifier's POST /validate-outflow-fulfillment endpoint with transaction hash and connected chain info, 3) Verifies response contains valid=true, 4) Extracts base64-encoded approval signature from response, 5) Converts base64 signature to hex format (Ed25519 signatures are 64 bytes = 128 hex chars), 6) Calls fulfill_outflow_request_intent on hub chain with hex signature, 7) Verifies hub intent fulfillment and token release. The verifier API returns base64-encoded signatures that must be converted to hex for Move function calls.\n<info added on 2025-11-18T14:06:55.157Z>\nBased on the comprehensive implementation details provided in the user request, here is the new text to append to the subtask details:\n\nIMPLEMENTATION COMPLETE: Script fully implemented as outflow-validate-and-fulfill.sh combining both validation and fulfillment steps. Validates data flow from previous step via transfer info file, includes verifier service health check, constructs proper JSON payload with transaction_hash, chain_type='mvm', and intent_id, successfully calls POST /validate-outflow-fulfillment endpoint, validates response structure with success=true check, verifies validation.valid=true field, extracts base64-encoded approval_signature from API response, converts base64 to hex format using base64 -d | xxd -p (Ed25519 signatures are 64 bytes = 128 hex characters), validates hex signature length, calls fulfill_outflow_request_intent on hub chain with hex signature, and verifies hub intent fulfillment with token balance checks. Verifier backend properly queries connected chain transaction, validates parameters against intent requirements, and generates Ed25519 approval signature. Comprehensive error handling and logging included throughout.\n</info added on 2025-11-18T14:06:55.157Z>",
-            "status": "done",
-            "testStrategy": "Run script after solver transfer, verify verifier endpoint returns success response with base64-encoded signature, verify signature is converted from base64 to hex correctly (128 hex chars for 64-byte Ed25519 signature), verify hub intent fulfillment succeeds with hex signature, verify verifier logs show transaction was queried and validated",
-            "parentId": "undefined",
-            "updatedAt": "2025-11-18T14:07:07.229Z"
-          },
-          {
-            "id": 4,
-            "title": "Create outflow hub fulfillment test script",
-            "description": "Create bash script to test solver (Bob) fulfilling the hub intent using verifier signature to claim locked tokens as reward",
-            "dependencies": [
-              3
-            ],
-            "details": "NOTE: This subtask was combined with subtask 3 into a single script outflow-validate-and-fulfill.sh. The fulfillment step is now part of the validation script after signature conversion from base64 to hex.\n<info added on 2025-11-18T14:10:18.720Z>\nBased on the user request, here is the new text that should be appended to the subtask's details:\n\nScript successfully implemented as part of outflow-validate-and-fulfill.sh (combined with validation step). The fulfillment logic loads hub_intent_address from intent info file, uses the base64-to-hex converted signature from the validation step, calls fulfill_outflow_request_intent as Bob with intent object address and hex signature bytes, verifies Bob's balance increased by approximately offered_amount (100000000 minus gas fees) confirming locked tokens were released as reward, and displays comprehensive summary of the complete outflow flow. All outflow scripts use 'outflow-' prefix (outflow-submit-hub-intent.sh, outflow-solver-transfer.sh, outflow-validate-and-fulfill.sh) for consistency.\n</info added on 2025-11-18T14:10:18.720Z>",
-            "status": "done",
-            "testStrategy": "Run outflow-validate-and-fulfill.sh script after solver transfer, verify signature conversion from base64 to hex succeeds, verify Bob's balance increased on Chain 1 by offered_amount, verify hub intent object shows fulfilled status, verify transaction succeeded with verifier signature validation",
-            "parentId": "undefined",
-            "updatedAt": "2025-11-18T14:10:30.998Z"
-          },
-          {
-            "id": 5,
-            "title": "Integrate outflow tests into run-tests.sh",
-            "description": "Update the main E2E test runner to execute outflow test flow after inflow tests complete, and verify end-to-end token balance changes",
-            "dependencies": [
-              1,
-              2,
-              3,
-              4
-            ],
-            "details": "Modify testing-infra/e2e-tests-mvm/run-tests-outflow.sh to: 1) Execute outflow test scripts in sequence (outflow-submit-hub-intent.sh, outflow-solver-transfer.sh, outflow-validate-and-fulfill.sh), 2) Add balance verification showing Alice received tokens on connected chain and Bob received tokens on hub chain, 3) Add cleanup of outflow test artifacts, 4) Update test output to show outflow test phase results. Note: Outflow tests use a separate runner script run-tests-outflow.sh. The combined outflow-validate-and-fulfill.sh script handles both validation (with base64-to-hex signature conversion) and fulfillment in one step.\n<info added on 2025-11-18T14:11:46.449Z>\nI need to analyze the codebase to understand the implementation and provide accurate details about what was actually implemented.Now let me check the outflow test scripts to understand what they do:Based on my analysis of the run-tests-outflow.sh file, I can now generate the implementation completion update:\n\nImplementation completed in testing-infra/e2e-tests-mvm/run-tests-outflow.sh. The script executes OUTFLOW tests sequentially: outflow-submit-hub-intent.sh (Step 3, line 36), outflow-solver-transfer.sh (Step 3, line 37), verifier configuration and startup (Step 3, lines 38-41), and outflow-validate-and-fulfill.sh (Step 3, line 42) showing hub→connected flow direction. Test summary section (lines 47-48) displays completion status for outflow test phase. Sequential execution ensures proper dependency ordering. The outflow-validate-and-fulfill.sh script combines validation and fulfillment, including base64-to-hex signature conversion from the verifier API response.\n</info added on 2025-11-18T14:11:46.449Z>",
-            "status": "done",
-            "testStrategy": "Run full E2E test suite including both inflow and outflow tests, verify all steps complete successfully, verify final token balances reflect both inflow and outflow operations completed correctly, verify test output clearly shows outflow test phase results",
-            "parentId": "undefined",
-            "updatedAt": "2025-11-18T14:12:00.614Z"
-          }
-        ],
-        "updatedAt": "2025-11-18T14:12:00.614Z"
-      }
-    ],
+    "tasks": [],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2025-11-18T14:12:00.615Z",
-      "taskCount": 1,
-      "completedCount": 1,
+      "lastModified": "2025-11-20T07:45:00.000Z",
+      "taskCount": 0,
+      "completedCount": 0,
       "tags": [
         "master"
       ]

@@ -1,12 +1,13 @@
-//! Outflow Move VM-specific monitoring functions
+//! Hub Chain Move VM-specific monitoring functions
 //!
 //! This module contains Move VM-specific event polling logic
-//! for hub chain request intent events on Move VM chains.
+//! for hub chain request intent events. The hub chain handles
+//! both inflow and outflow request intents.
 
 use anyhow::{Result, Context};
 use tracing::{info, error};
 
-use crate::mvm_client::{MvmClient, OracleLimitOrderEvent as MvmOracleLimitOrderEvent, LimitOrderFulfillmentEvent as MvmLimitOrderFulfillmentEvent};
+use crate::mvm_client::{MvmClient, OracleLimitOrderEvent as MvmOracleLimitOrderEvent, LimitOrderFulfillmentEvent as MvmLimitOrderFulfillmentEvent, LimitOrderEvent as MvmLimitOrderEvent};
 use crate::monitor::generic::{EventMonitor, RequestIntentEvent, FulfillmentEvent};
 use crate::monitor::inflow_generic;
 
@@ -15,6 +16,11 @@ use crate::monitor::inflow_generic;
 /// This function queries the hub chain's event logs for new request intent
 /// creation events. Since module events are emitted in user transactions,
 /// we query known test accounts for their events.
+/// 
+/// Handles both inflow and outflow request intents:
+/// - Inflow intents emit `LimitOrderEvent` (from fa_intent)
+/// - Outflow intents emit `OracleLimitOrderEvent` (from fa_intent_with_oracle)
+/// - Both emit `LimitOrderFulfillmentEvent` when fulfilled
 /// 
 /// # Arguments
 /// 
@@ -32,7 +38,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
     let known_accounts = monitor.config.hub_chain.known_accounts.as_ref()
         .ok_or_else(|| anyhow::anyhow!("No known accounts configured for hub chain"))?;
     
-    let mut intent_events = Vec::new();
+    let mut request_intent_events = Vec::new();
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
@@ -89,6 +95,48 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                         error!("Fulfillment validation failed: {}", e);
                     }
                 }
+            } else if event_type.contains("LimitOrderEvent") && !event_type.contains("Fulfillment") {
+                // Inflow intents use LimitOrderEvent (from fa_intent)
+                // This is for regular intents and inflow cross-chain intents
+                let data: MvmLimitOrderEvent = serde_json::from_value(event.data.clone())
+                    .context("Failed to parse LimitOrderEvent")?;
+                
+                // Check if this is a cross-chain intent (has different offered_chain_id and desired_chain_id)
+                let offered_chain_id = data.offered_chain_id.parse::<u64>()
+                    .context("Failed to parse offered_chain_id")?;
+                let desired_chain_id = data.desired_chain_id.parse::<u64>()
+                    .context("Failed to parse desired_chain_id")?;
+                
+                // If chain IDs differ, this is a cross-chain intent
+                // For inflow: offered_chain_id is connected chain, desired_chain_id is hub chain
+                // For outflow: offered_chain_id is hub chain, desired_chain_id is connected chain
+                let connected_chain_id = if offered_chain_id != desired_chain_id {
+                    Some(offered_chain_id) // For inflow, offered_chain_id is the connected chain
+                } else {
+                    None // Regular single-chain intent
+                };
+                
+                // LimitOrderEvent doesn't include reserved_solver in the event data
+                // For inflow intents created via create_inflow_request_intent, the solver is verified
+                // but not stored in the event. We'll set it to None and it will be matched via intent_id
+                // when the escrow event is processed (which has the reserved_solver).
+                request_intent_events.push(RequestIntentEvent {
+                    intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
+                    requester: data.requester.clone(),
+                    offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
+                    offered_amount: data.offered_amount.parse::<u64>()
+                        .context("Failed to parse offered amount")?,
+                    desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
+                    desired_amount: data.desired_amount.parse::<u64>()
+                        .context("Failed to parse desired_amount")?,
+                    expiry_time: data.expiry_time.parse::<u64>()
+                        .context("Failed to parse expiry_time")?,
+                    revocable: data.revocable,
+                    reserved_solver: None, // Not available in LimitOrderEvent, will be matched from escrow event
+                    connected_chain_id,
+                    requester_address_connected_chain: None, // Not available from event
+                    timestamp,
+                });
             } else if event_type.contains("OracleLimitOrderEvent") {
                 // Outflow intents use OracleLimitOrderEvent (from fa_intent_with_oracle)
                 // All outflow request intents MUST have a reserved solver
@@ -105,7 +153,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     }
                 };
                 
-                intent_events.push(RequestIntentEvent {
+                request_intent_events.push(RequestIntentEvent {
                     intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
@@ -126,6 +174,6 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
         }
     }
     
-    Ok(intent_events)
+    Ok(request_intent_events)
 }
 

@@ -1,18 +1,17 @@
 # Move Intent Framework
 
-A framework for creating conditional trading intents. This framework enables users to create time-bound, conditional offers that can be executed by third parties when specific conditions are met. It provides a generic system for creating tradeable intents with built-in expiry, witness validation, and owner revocation capabilities, enabling sophisticated trading mechanisms like limit orders and conditional swaps.
+A framework for creating conditional trading intents with time-bound, conditional offers that can be executed by third parties. Provides a generic system for tradeable intents with expiry, witness validation, and revocation capabilities.
 
-This framework integrates with the blockchain's native fungible asset standard and transaction processing system.
-
-For detailed technical specifications and design rationale, see [AIP-511: Aptos Intent Framework](https://github.com/aptos-foundation/AIPs/pull/511).
+Inspired by [AIP-511: Aptos Intent Framework](https://github.com/aptos-foundation/AIPs/pull/511).
 
 ## Quick Start
 
-For quick start instructions, see the [component README](../../move-intent-framework/README.md).
+See the [component README](../../move-intent-framework/README.md) for quick start commands.
 
 ## Documentation
 
 For detailed flow descriptions and implementation details, see:
+
 - [Technical Overview](technical-overview.md) - Architecture and intent flows
 - [API Reference](api-reference.md) - Complete API documentation
 - [Development Guide](development.md) - Development setup and testing
@@ -22,23 +21,9 @@ For detailed flow descriptions and implementation details, see:
 
 ## Project Structure
 
-```
+```text
 move-intent-framework/
-├── sources/                    # Move modules
-│   ├── intent.move            # Core generic intent framework
-│   ├── fa_intent.move         # Fungible asset implementation
-│   ├── fa_intent_with_oracle.move # Oracle-based implementation
-│   ├── intent_as_escrow.move  # Simplified escrow abstraction
-│   └── intent_reservation.move # Reservation system
-├── tests/                      # Test modules
-└── Move.toml                   # Package configuration
-
-Documentation is located in docs/move-intent-framework/:
-├── README.md                    # This overview
-├── technical-overview.md        # Architecture and intent flows
-├── api-reference.md            # Complete API documentation
-├── development.md              # Development setup and testing
-├── intent-reservation.md       # Reservation system details
-├── oracle-intents.md           # Oracle-guarded intent details
-└── intent-as-escrow.md         # Intent system as escrow mechanism
+├── sources/          # Move modules (intent.move, fa_intent.move, etc.)
+├── tests/            # Test modules
+└── Move.toml         # Package configuration
 ```

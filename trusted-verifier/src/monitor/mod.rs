@@ -19,8 +19,8 @@ mod outflow_generic;
 // Flow + chain specific modules
 mod inflow_mvm;
 mod inflow_evm;
-mod outflow_mvm;
 mod outflow_evm;
+mod hub_mvm;
 
 // Re-export public types and functions
 pub use generic::{

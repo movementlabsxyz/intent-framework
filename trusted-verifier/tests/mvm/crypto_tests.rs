@@ -152,14 +152,13 @@ fn test_mvm_signature_intent_id_validation() {
     let result = service.create_mvm_approval_signature(valid_intent_id);
     assert!(result.is_ok(), "Should accept valid intent ID from base helper with even number of hex digits");
     
-    // Test with intent ID that has odd number of hex digits (invalid)
+    // Test with intent ID that has odd number of hex digits (now valid after padding)
     let odd_digits_intent_id = "0x123";
     let result = service.create_mvm_approval_signature(odd_digits_intent_id);
-    assert!(result.is_err(), "Should reject intent ID with odd number of hex digits");
-    
-    let error_msg = result.unwrap_err().to_string();
-    assert!(error_msg.contains("Invalid intent_id hex") || error_msg.contains("Odd number"),
-            "Error message should indicate invalid hex format: {}", error_msg);
+    assert!(
+        result.is_ok(),
+        "Should accept intent ID with odd number of hex digits after padding"
+    );
     
     // Test with invalid hex string (non-hex characters)
     let invalid_hex = "0xinvalid_hex_string";

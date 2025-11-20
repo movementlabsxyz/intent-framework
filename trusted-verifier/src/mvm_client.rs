@@ -26,7 +26,10 @@ where
     match value {
         serde_json::Value::String(s) => Ok(s),
         serde_json::Value::Number(n) => Ok(n.to_string()),
-        _ => Err(D::Error::custom(format!("expected string or number for chain_id, got: {:?}", value))),
+        _ => Err(D::Error::custom(format!(
+            "expected string or number for chain_id, got: {:?}",
+            value
+        ))),
     }
 }
 
@@ -40,7 +43,7 @@ where
     struct MoveOption {
         vec: Vec<String>,
     }
-    
+
     let opt: MoveOption = Deserialize::deserialize(deserializer)?;
     match opt.vec.as_slice() {
         [value] => Ok(Some(value.clone())),
@@ -212,8 +215,9 @@ impl MvmClient {
     #[allow(dead_code)]
     pub async fn get_account(&self, address: &str) -> Result<AccountInfo> {
         let url = format!("{}/v1/accounts/{}", self.base_url, address);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
@@ -221,7 +225,9 @@ impl MvmClient {
             .error_for_status()
             .context("Account request failed")?;
 
-        let account: AccountInfo = response.json().await
+        let account: AccountInfo = response
+            .json()
+            .await
             .context("Failed to parse account response")?;
 
         Ok(account)
@@ -235,12 +241,12 @@ impl MvmClient {
     ///
     /// ## Event Discovery Strategy
     ///
-    /// **Why not use EventHandle?** 
+    /// **Why not use EventHandle?**
     /// EventHandle-based events could have been an option using the pattern:
     /// (In Move code: `struct GlobalEvents has key { events: event::EventHandle<MyEvent> }`)
     /// This would allow querying via `/v1/accounts/{address}/events/{creation_number}`,
     /// providing a stable, queryable endpoint at a known address.
-    /// 
+    ///
     /// However, Move VM chains (e.g., Aptos) have **deprecated EventHandle in favor of module events**.
     /// See: https://aptos.guide/network/blockchain/events
     ///
@@ -269,15 +275,18 @@ impl MvmClient {
     ) -> Result<Vec<MvmEvent>> {
         // For legacy EventHandle events, use the old approach
         if let Some(handle) = event_handle {
-            return self.get_events_by_creation_number(address, handle, start, limit).await;
+            return self
+                .get_events_by_creation_number(address, handle, start, limit)
+                .await;
         }
 
         // For modern module events, query the account's transactions to find events
         // This is necessary because module events are emitted in user transactions, not on module account
         let limit = limit.unwrap_or(100);
         let url = format!("{}/v1/accounts/{}/transactions", self.base_url, address);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .query(&[("limit", limit.to_string())])
             .send()
@@ -288,7 +297,9 @@ impl MvmClient {
             return Ok(vec![]); // Account might not exist or have no transactions
         }
 
-        let transactions: Vec<serde_json::Value> = response.json().await
+        let transactions: Vec<serde_json::Value> = response
+            .json()
+            .await
             .context("Failed to parse transactions response")?;
 
         // Extract events from transactions
@@ -297,22 +308,34 @@ impl MvmClient {
             if let Some(tx_events) = tx.get("events").and_then(|e| e.as_array()) {
                 for event_json in tx_events {
                     // Extract event fields manually to handle different formats
-                    let event_type = event_json.get("type").and_then(|t| t.as_str())
-                        .unwrap_or("").to_string();
-                    let event_data = event_json.get("data").cloned()
+                    let event_type = event_json
+                        .get("type")
+                        .and_then(|t| t.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let event_data = event_json
+                        .get("data")
+                        .cloned()
                         .unwrap_or(serde_json::Value::Null);
-                    
+
                     // Extract sequence number
-                    let sequence_number = event_json.get("sequence_number")
+                    let sequence_number = event_json
+                        .get("sequence_number")
                         .and_then(|s| s.as_str())
-                        .unwrap_or("0").to_string();
-                    
+                        .unwrap_or("0")
+                        .to_string();
+
                     // Extract guid if present (for module events)
-                    let guid = event_json.get("guid").and_then(|g| serde_json::from_value::<EventGuid>(g.clone()).ok());
-                    
+                    let guid = event_json
+                        .get("guid")
+                        .and_then(|g| serde_json::from_value::<EventGuid>(g.clone()).ok());
+
                     // Extract key if present (for EventHandle events)
-                    let key = event_json.get("key").and_then(|k| k.as_str()).map(|s| s.to_string());
-                    
+                    let key = event_json
+                        .get("key")
+                        .and_then(|k| k.as_str())
+                        .map(|s| s.to_string());
+
                     events.push(MvmEvent {
                         guid,
                         key,
@@ -347,7 +370,10 @@ impl MvmClient {
         start: Option<u64>,
         limit: Option<u64>,
     ) -> Result<Vec<MvmEvent>> {
-        let mut url = format!("{}/v1/accounts/{}/events/{}", self.base_url, address, creation_number);
+        let mut url = format!(
+            "{}/v1/accounts/{}/events/{}",
+            self.base_url, address, creation_number
+        );
 
         // Add query parameters
         let mut query_params = vec![];
@@ -362,22 +388,26 @@ impl MvmClient {
             url.push_str(&query_params.join("&"));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
             .context("Failed to send events request")?;
-        
+
         // If 404, return empty vec (no events yet)
         let status = response.status();
         if status == 404 {
             return Ok(vec![]);
         }
-        
-        let response = response.error_for_status()
+
+        let response = response
+            .error_for_status()
             .context("Events request failed")?;
 
-        let events: Vec<MvmEvent> = response.json().await
+        let events: Vec<MvmEvent> = response
+            .json()
+            .await
             .context("Failed to parse events response")?;
 
         Ok(events)
@@ -395,8 +425,9 @@ impl MvmClient {
     /// * `Err(anyhow::Error)` - Failed to query resources
     pub async fn get_resources(&self, address: &str) -> Result<Vec<ResourceData>> {
         let url = format!("{}/v1/accounts/{}/resources", self.base_url, address);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
@@ -404,7 +435,9 @@ impl MvmClient {
             .error_for_status()
             .context("Resources request failed")?;
 
-        let resources: Vec<ResourceData> = response.json().await
+        let resources: Vec<ResourceData> = response
+            .json()
+            .await
             .context("Failed to parse resources response")?;
 
         Ok(resources)
@@ -413,7 +446,7 @@ impl MvmClient {
     /// Finds event handles matching the given event type pattern
     ///
     /// This queries the account's resources to find event handles that match the pattern.
-    /// Event handles contain creation numbers which are used to query events via the 
+    /// Event handles contain creation numbers which are used to query events via the
     /// `/v1/accounts/{address}/events/{creation_number}` endpoint.
     ///
     /// Note: An alternative approach would be to query transactions and extract events
@@ -432,7 +465,11 @@ impl MvmClient {
     /// * `Ok(Vec<String>)` - List of creation numbers for matching event handles
     /// * `Err(anyhow::Error)` - Failed to find event handles
     #[allow(dead_code)]
-    pub async fn find_event_handles(&self, address: &str, event_type_pattern: &str) -> Result<Vec<String>> {
+    pub async fn find_event_handles(
+        &self,
+        address: &str,
+        event_type_pattern: &str,
+    ) -> Result<Vec<String>> {
         let resources = self.get_resources(address).await?;
         let mut creation_numbers = Vec::new();
 
@@ -449,7 +486,8 @@ impl MvmClient {
                 if let Some(handle_obj) = resource.data.get("events") {
                     if handle_obj.is_object() {
                         for (_key, value) in handle_obj.as_object().unwrap() {
-                            if let Ok(handle) = serde_json::from_value::<EventHandle>(value.clone()) {
+                            if let Ok(handle) = serde_json::from_value::<EventHandle>(value.clone())
+                            {
                                 creation_numbers.push(handle.guid.id.creation_num.clone());
                             }
                         }
@@ -474,8 +512,9 @@ impl MvmClient {
     #[allow(dead_code)]
     pub async fn get_transaction(&self, hash: &str) -> Result<MvmTransaction> {
         let url = format!("{}/v1/transactions/by_hash/{}", self.base_url, hash);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
@@ -483,7 +522,9 @@ impl MvmClient {
             .error_for_status()
             .context("Transaction request failed")?;
 
-        let tx: MvmTransaction = response.json().await
+        let tx: MvmTransaction = response
+            .json()
+            .await
             .context("Failed to parse transaction response")?;
 
         Ok(tx)
@@ -498,8 +539,9 @@ impl MvmClient {
     #[allow(dead_code)]
     pub async fn health_check(&self) -> Result<()> {
         let url = format!("{}/v1", self.base_url);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
@@ -508,7 +550,9 @@ impl MvmClient {
             .context("Health check failed")?;
 
         // Just check if we got a response
-        response.text().await
+        response
+            .text()
+            .await
             .context("Failed to read health check response")?;
 
         Ok(())
@@ -531,10 +575,14 @@ impl MvmClient {
     ///
     /// * `Ok(Option<String>)` - Solver address if reserved, None if not reserved
     /// * `Err(anyhow::Error)` - Failed to query intent
-    pub async fn get_intent_solver(&self, intent_address: &str, _module_address: &str) -> Result<Option<String>> {
+    pub async fn get_intent_solver(
+        &self,
+        intent_address: &str,
+        _module_address: &str,
+    ) -> Result<Option<String>> {
         // Query the intent object's resources
         let resources = self.get_resources(intent_address).await?;
-        
+
         // Look for the TradeIntent resource which contains the reservation
         // The resource type should be something like: "0x{module_address}::fa_intent::TradeIntent<...>"
         for resource in resources {
@@ -557,7 +605,7 @@ impl MvmClient {
                 }
             }
         }
-        
+
         Ok(None)
     }
 
@@ -572,71 +620,82 @@ impl MvmClient {
     ///
     /// * `Ok(Option<String>)` - Connected chain Move VM address if solver is registered and address is set, None otherwise
     /// * `Err(anyhow::Error)` - Failed to query registry
-    pub async fn get_solver_connected_chain_mvm_address(&self, solver_address: &str, registry_address: &str) -> Result<Option<String>> {
+    pub async fn get_solver_connected_chain_mvm_address(
+        &self,
+        solver_address: &str,
+        registry_address: &str,
+    ) -> Result<Option<String>> {
         // Query the SolverRegistry resource directly
         let resources = self.get_resources(registry_address).await?;
-        
-        let registry_resource_type = format!("{}::solver_registry::SolverRegistry", registry_address);
-        let solver_addr = solver_address.strip_prefix("0x").unwrap_or(solver_address).to_lowercase();
-        
+
+        let registry_resource_type =
+            format!("{}::solver_registry::SolverRegistry", registry_address);
+        let solver_addr = solver_address
+            .strip_prefix("0x")
+            .unwrap_or(solver_address)
+            .to_lowercase();
+
         // Find the SolverRegistry resource
-        let registry_resource = resources.iter()
+        let registry_resource = resources
+            .iter()
             .find(|r| r.resource_type == registry_resource_type);
-        
+
         let Some(registry_resource) = registry_resource else {
             return Ok(None); // Registry resource not found
         };
-        
+
         // Extract solvers map: SimpleMap<address, SolverInfo> is {"data": [{"key": address, "value": SolverInfo}, ...]}
         let data = match registry_resource.data.as_object() {
             Some(d) => d,
             None => return Ok(None),
         };
-        
+
         let solvers = match data.get("solvers").and_then(|s| s.as_object()) {
             Some(s) => s,
             None => return Ok(None),
         };
-        
+
         let data_array = match solvers.get("data").and_then(|d| d.as_array()) {
             Some(d) => d,
             None => return Ok(None),
         };
-        
+
         // Find the solver entry
-        let solver_entry = data_array.iter()
-            .find_map(|entry| {
-                let entry_obj = entry.as_object()?;
-                let key = entry_obj.get("key")?.as_str()?;
-                let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
-                (key_normalized == solver_addr).then_some(entry_obj)
-            });
-        
+        let solver_entry = data_array.iter().find_map(|entry| {
+            let entry_obj = entry.as_object()?;
+            let key = entry_obj.get("key")?.as_str()?;
+            let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+            (key_normalized == solver_addr).then_some(entry_obj)
+        });
+
         let Some(entry_obj) = solver_entry else {
             return Ok(None); // Solver not found in registry
         };
-        
+
         // Extract connected_chain_mvm_address from SolverInfo
         // Option<address> is serialized as {"vec": [address]} for Some, {"vec": []} for None
         let value = match entry_obj.get("value").and_then(|v| v.as_object()) {
             Some(v) => v,
             None => return Ok(None),
         };
-        
-        let mvm_addr = match value.get("connected_chain_mvm_address").and_then(|m| m.as_object()) {
+
+        let mvm_addr = match value
+            .get("connected_chain_mvm_address")
+            .and_then(|m| m.as_object())
+        {
             Some(m) => m,
             None => return Ok(None),
         };
-        
+
         let vec_array = match mvm_addr.get("vec").and_then(|v| v.as_array()) {
             Some(v) => v,
             None => return Ok(None),
         };
-        
+
         if vec_array.is_empty() {
             return Ok(None); // Solver found but no connected chain MVM address
         }
-        
+
         match vec_array.get(0).and_then(|a| a.as_str()) {
             Some(addr_str) => Ok(Some(addr_str.to_string())),
             None => Ok(None),
@@ -654,16 +713,22 @@ impl MvmClient {
     ///
     /// * `Ok(Option<Vec<u8>>)` - Public key bytes if solver is registered, None otherwise
     /// * `Err(anyhow::Error)` - Failed to query registry
-    pub async fn get_solver_public_key(&self, solver_address: &str, registry_address: &str) -> Result<Option<Vec<u8>>> {
+    pub async fn get_solver_public_key(
+        &self,
+        solver_address: &str,
+        registry_address: &str,
+    ) -> Result<Option<Vec<u8>>> {
         // Use view function to call solver_registry::get_public_key
-        let result = self.call_view_function(
-            registry_address,
-            "solver_registry",
-            "get_public_key",
-            vec![],
-            vec![serde_json::json!(solver_address)],
-        ).await;
-        
+        let result = self
+            .call_view_function(
+                registry_address,
+                "solver_registry",
+                "get_public_key",
+                vec![],
+                vec![serde_json::json!(solver_address)],
+            )
+            .await;
+
         match result {
             Ok(value) => {
                 // The view function returns a vector<u8> (empty if not registered)
@@ -703,81 +768,92 @@ impl MvmClient {
     ///
     /// * `Ok(Option<String>)` - EVM address if solver is registered, None otherwise
     /// * `Err(anyhow::Error)` - Failed to query registry
-    pub async fn get_solver_evm_address(&self, solver_address: &str, registry_address: &str) -> Result<Option<String>> {
+    pub async fn get_solver_evm_address(
+        &self,
+        solver_address: &str,
+        registry_address: &str,
+    ) -> Result<Option<String>> {
         // Query the SolverRegistry resource directly
         let resources = self.get_resources(registry_address).await?;
-        
-        let registry_resource_type = format!("{}::solver_registry::SolverRegistry", registry_address);
-        let solver_addr = solver_address.strip_prefix("0x").unwrap_or(solver_address).to_lowercase();
-        
+
+        let registry_resource_type =
+            format!("{}::solver_registry::SolverRegistry", registry_address);
+        let solver_addr = solver_address
+            .strip_prefix("0x")
+            .unwrap_or(solver_address)
+            .to_lowercase();
+
         // Find the SolverRegistry resource
-        let registry_resource = resources.iter()
+        let registry_resource = resources
+            .iter()
             .find(|r| r.resource_type == registry_resource_type);
-        
+
         let Some(registry_resource) = registry_resource else {
             return Ok(None); // Registry resource not found
         };
-        
+
         // Extract solvers map: SimpleMap<address, SolverInfo> is {"data": [{"key": address, "value": SolverInfo}, ...]}
         let data = match registry_resource.data.as_object() {
             Some(d) => d,
             None => return Ok(None),
         };
-        
+
         let solvers = match data.get("solvers").and_then(|s| s.as_object()) {
             Some(s) => s,
             None => return Ok(None),
         };
-        
+
         let data_array = match solvers.get("data").and_then(|d| d.as_array()) {
             Some(d) => d,
             None => return Ok(None),
         };
-        
+
         // Find the solver entry
-        let solver_entry = data_array.iter()
-            .find_map(|entry| {
-                let entry_obj = entry.as_object()?;
-                let key = entry_obj.get("key")?.as_str()?;
-                let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
-                (key_normalized == solver_addr).then_some(entry_obj)
-            });
-        
+        let solver_entry = data_array.iter().find_map(|entry| {
+            let entry_obj = entry.as_object()?;
+            let key = entry_obj.get("key")?.as_str()?;
+            let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+            (key_normalized == solver_addr).then_some(entry_obj)
+        });
+
         let Some(entry_obj) = solver_entry else {
             return Ok(None); // Solver not found in registry
         };
-        
+
         // Extract connected_chain_evm_address from SolverInfo
         // Option<vector<u8>> is serialized as {"vec": [bytes_array]} for Some, {"vec": []} for None
         let value = match entry_obj.get("value").and_then(|v| v.as_object()) {
             Some(v) => v,
             None => return Ok(None),
         };
-        
-        let evm_addr = match value.get("connected_chain_evm_address").and_then(|e| e.as_object()) {
+
+        let evm_addr = match value
+            .get("connected_chain_evm_address")
+            .and_then(|e| e.as_object())
+        {
             Some(e) => e,
             None => return Ok(None),
         };
-        
+
         let vec_array = match evm_addr.get("vec").and_then(|v| v.as_array()) {
             Some(v) => v,
             None => return Ok(None),
         };
-        
+
         if vec_array.is_empty() {
             return Ok(None); // Solver found but no connected chain EVM address
         }
-        
+
         // Extract the first element (the vector<u8>)
         let evm_bytes = match vec_array.get(0).and_then(|b| b.as_array()) {
             Some(b) => b,
             None => return Ok(None),
         };
-        
+
         if evm_bytes.is_empty() {
             return Ok(None);
         }
-        
+
         // Convert vector<u8> to hex string with 0x prefix
         let mut hex_string = String::from("0x");
         for byte_val in evm_bytes {
@@ -785,7 +861,7 @@ impl MvmClient {
                 hex_string.push_str(&format!("{:02x}", byte as u8));
             }
         }
-        
+
         Ok(Some(hex_string))
     }
 
@@ -812,14 +888,15 @@ impl MvmClient {
         args: Vec<serde_json::Value>,
     ) -> Result<serde_json::Value> {
         let url = format!("{}/v1/view", self.base_url);
-        
+
         let request_body = serde_json::json!({
             "function": format!("{}::{}::{}", module_address, module_name, function_name),
             "type_arguments": type_args,
             "arguments": args,
         });
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(&url)
             .json(&request_body)
             .send()
@@ -828,7 +905,9 @@ impl MvmClient {
             .error_for_status()
             .context("View function request failed")?;
 
-        let result: serde_json::Value = response.json().await
+        let result: serde_json::Value = response
+            .json()
+            .await
             .context("Failed to parse view function response")?;
 
         Ok(result)
@@ -843,7 +922,7 @@ impl MvmClient {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitOrderEvent {
     pub intent_address: String,
-    pub intent_id: String,  // For cross-chain linking
+    pub intent_id: String,                   // For cross-chain linking
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub offered_amount: String,
     pub offered_chain_id: String,
@@ -858,8 +937,8 @@ pub struct LimitOrderEvent {
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OracleLimitOrderEvent {
-    pub intent_address: String,      // The escrow intent address (on connected chain)
-    pub intent_id: String,            // The original intent ID (from hub chain)
+    pub intent_address: String, // The escrow intent address (on connected chain)
+    pub intent_id: String,      // The original intent ID (from hub chain)
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub offered_amount: String,
     #[serde(deserialize_with = "deserialize_u64_string")]
@@ -872,7 +951,10 @@ pub struct OracleLimitOrderEvent {
     pub expiry_time: String,
     pub min_reported_value: String,
     pub revocable: bool,
-    #[serde(deserialize_with = "deserialize_move_option_string", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        deserialize_with = "deserialize_move_option_string",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub reserved_solver: Option<String>, // Solver address if the intent is reserved (None for unreserved intents)
 }
 
@@ -891,4 +973,3 @@ pub struct LimitOrderFulfillmentEvent {
 mod tests {
     // Tests will be added in integration tests or separate test file
 }
-

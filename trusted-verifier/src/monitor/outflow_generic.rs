@@ -7,7 +7,7 @@ use anyhow::Result;
 use tracing::{info, error};
 
 use super::generic::{EventMonitor, RequestIntentEvent, FulfillmentEvent};
-use super::outflow_mvm;
+use super::hub_mvm;
 
 // ============================================================================
 // HUB CHAIN MONITORING

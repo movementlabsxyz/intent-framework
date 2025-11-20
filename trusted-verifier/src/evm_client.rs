@@ -4,10 +4,10 @@
 //! via their JSON-RPC API. It handles event polling and transaction verification.
 
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use reqwest::Client;
-use sha3::{Keccak256, Digest};
+use serde::{Deserialize, Serialize};
+use sha3::{Digest, Keccak256};
+use std::time::Duration;
 
 // ============================================================================
 // API RESPONSE STRUCTURES
@@ -178,7 +178,7 @@ impl EvmClient {
         hasher.update(signature_string.as_bytes());
         let hash = hasher.finalize();
         let event_signature = format!("0x{}", hex::encode(hash));
-        
+
         // Build filter: topics[0] = event signature, address = escrow contract
         let from_block_str = from_block
             .map(|n| format!("0x{:x}", n))
@@ -210,7 +210,12 @@ impl EvmClient {
             .with_context(|| format!("Failed to send eth_getLogs request to {}", self.base_url))?
             .json()
             .await
-            .with_context(|| format!("Failed to parse eth_getLogs response from {}", self.base_url))?;
+            .with_context(|| {
+                format!(
+                    "Failed to parse eth_getLogs response from {}",
+                    self.base_url
+                )
+            })?;
 
         if let Some(error) = response.error {
             return Err(anyhow::anyhow!(
@@ -294,10 +299,20 @@ impl EvmClient {
             .json(&request)
             .send()
             .await
-            .with_context(|| format!("Failed to send eth_getTransactionByHash request to {}", self.base_url))?
+            .with_context(|| {
+                format!(
+                    "Failed to send eth_getTransactionByHash request to {}",
+                    self.base_url
+                )
+            })?
             .json()
             .await
-            .with_context(|| format!("Failed to parse eth_getTransactionByHash response from {}", self.base_url))?;
+            .with_context(|| {
+                format!(
+                    "Failed to parse eth_getTransactionByHash response from {}",
+                    self.base_url
+                )
+            })?;
 
         if let Some(error) = response.error {
             return Err(anyhow::anyhow!(
@@ -334,10 +349,20 @@ impl EvmClient {
             .json(&request)
             .send()
             .await
-            .with_context(|| format!("Failed to send eth_blockNumber request to {}", self.base_url))?
+            .with_context(|| {
+                format!(
+                    "Failed to send eth_blockNumber request to {}",
+                    self.base_url
+                )
+            })?
             .json()
             .await
-            .with_context(|| format!("Failed to parse eth_blockNumber response from {}", self.base_url))?;
+            .with_context(|| {
+                format!(
+                    "Failed to parse eth_blockNumber response from {}",
+                    self.base_url
+                )
+            })?;
 
         if let Some(error) = response.error {
             return Err(anyhow::anyhow!(
@@ -348,12 +373,14 @@ impl EvmClient {
             ));
         }
 
-        let block_number_hex = response.result.ok_or_else(|| {
-            anyhow::anyhow!("No result in eth_blockNumber response")
-        })?;
+        let block_number_hex = response
+            .result
+            .ok_or_else(|| anyhow::anyhow!("No result in eth_blockNumber response"))?;
 
         let block_number = u64::from_str_radix(
-            block_number_hex.strip_prefix("0x").unwrap_or(&block_number_hex),
+            block_number_hex
+                .strip_prefix("0x")
+                .unwrap_or(&block_number_hex),
             16,
         )
         .context("Failed to parse block number")?;
@@ -372,4 +399,3 @@ impl EvmClient {
 mod tests {
     // Tests will be added in integration tests or separate test file
 }
-

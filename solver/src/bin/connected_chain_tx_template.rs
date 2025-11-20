@@ -37,7 +37,6 @@ struct Args {
     /// Metadata object address (required for Move VM transfers)
     #[arg(long)]
     metadata: Option<String>,
-
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -56,11 +55,11 @@ fn main() -> Result<()> {
 }
 
 /// Generates Move VM CLI command to call the on-chain transfer_with_intent_id function.
-/// 
+///
 /// This function calls the on-chain utils::transfer_with_intent_id() entry function
 /// which includes intent_id as a parameter so the verifier can extract it from the
 /// transaction payload when querying by transaction hash.
-/// 
+///
 /// **Why this approach differs from EVM:**
 /// Move VM allows us to create a contract function that transfers tokens from the solver's
 /// account to the recipient in one call. This is possible because Move VM's
@@ -81,7 +80,7 @@ fn generate_mvm_template(args: &Args) -> Result<()> {
     let metadata_addr = normalize_address(metadata)?;
     let recipient_addr = normalize_address(&args.recipient)?;
     let intent_id_addr = normalize_address(&args.intent_id)?;
-    
+
     // Parse amount as u64 for Move VM (base units)
     let amount: u64 = args
         .amount
@@ -97,9 +96,13 @@ fn generate_mvm_template(args: &Args) -> Result<()> {
     println!();
     println!("  aptos move run --profile <solver-profile> \\");
     println!("      --function-id <module_address>::utils::transfer_with_intent_id \\");
-    println!("      --args address:{} address:{} u64:{} address:{}",
-        recipient_addr, metadata_addr, amount, intent_id_addr);
-    println!("\n  Replace <solver-profile> with your Aptos CLI profile name (e.g., 'solver-chain2')");
+    println!(
+        "      --args address:{} address:{} u64:{} address:{}",
+        recipient_addr, metadata_addr, amount, intent_id_addr
+    );
+    println!(
+        "\n  Replace <solver-profile> with your Aptos CLI profile name (e.g., 'solver-chain2')"
+    );
     println!("  Replace <module_address> with the deployed module address on the connected chain");
     println!("\n  The function will:");
     println!("  - Transfer tokens from your account to the recipient address");
@@ -109,16 +112,16 @@ fn generate_mvm_template(args: &Args) -> Result<()> {
 }
 
 /// Generates an EVM transaction data payload for ERC20 transfer with intent_id metadata.
-/// 
+///
 /// The payload follows the format:
 /// - Function selector: transfer(address,uint256) = 0xa9059cbb
 /// - to address: 32 bytes (right-padded)
 /// - amount: 32 bytes
 /// - intent_id: 32 bytes (metadata appended after function parameters)
-/// 
+///
 /// The ERC20 contract ignores the extra intent_id bytes, but they remain in the transaction
 /// data and are verifiable on-chain by the verifier.
-/// 
+///
 /// **Why this approach differs from Aptos:**
 /// In EVM with standard ERC20, a contract cannot transfer tokens from the solver's account
 /// to the recipient without requiring the solver to first approve the contract (via approve)
@@ -141,14 +144,17 @@ fn generate_evm_template(args: &Args) -> Result<()> {
 
     // ERC20 transfer function selector: transfer(address,uint256) = 0xa9059cbb
     let selector = "a9059cbb";
-    
+
     // Format addresses and amounts as 32-byte hex strings (64 hex chars, right-padded)
     let recipient_hex = format!("{:0>64}", recipient_clean.to_lowercase());
     let amount_hex = format!("{amount:064x}", amount = amount_u256);
     let intent_hex = format!("{:0>64}", intent_clean.to_lowercase());
-    
+
     // Concatenate: selector + to + amount + intent_id
-    let data = format!("0x{}{}{}{}", selector, recipient_hex, amount_hex, intent_hex);
+    let data = format!(
+        "0x{}{}{}{}",
+        selector, recipient_hex, amount_hex, intent_hex
+    );
 
     println!("=== Connected EVM Chain : Outflow fulfill transaction ===\n");
     println!("Recipient: 0x{}", recipient_clean);
@@ -158,7 +164,9 @@ fn generate_evm_template(args: &Args) -> Result<()> {
     println!("Call the ERC20 transfer() function with intent_id in calldata:");
     println!();
     println!("  cast send <token_address> --data {}", data);
-    println!("\n  Replace <token_address> with the ERC20 token contract address on the connected chain");
+    println!(
+        "\n  Replace <token_address> with the ERC20 token contract address on the connected chain"
+    );
     println!("\n  The transaction will:");
     println!("  - Transfer tokens from your account to the recipient address");
     println!("  - Include intent_id in the transaction calldata for verifier tracking\n");
@@ -167,7 +175,7 @@ fn generate_evm_template(args: &Args) -> Result<()> {
 }
 
 /// Normalizes an address to lowercase hex with 0x prefix.
-/// 
+///
 /// Strips existing 0x prefix, validates hex characters, then adds 0x prefix back.
 fn normalize_address(input: &str) -> Result<String> {
     let stripped = strip_0x(input)?;
@@ -175,21 +183,20 @@ fn normalize_address(input: &str) -> Result<String> {
 }
 
 /// Strips 0x prefix from a hex string and validates it contains only hex characters.
-/// 
+///
 /// Returns the hex string without prefix, or an error if the string is empty or contains
 /// non-hex characters.
 fn strip_0x(input: &str) -> Result<String> {
     let s = input.trim();
     let without = s.strip_prefix("0x").unwrap_or(s);
-    
+
     if without.is_empty() {
         anyhow::bail!("Address '{}' is empty", input);
     }
-    
+
     if !without.chars().all(|c| c.is_ascii_hexdigit()) {
         anyhow::bail!("Address '{}' must be hex", input);
     }
-    
+
     Ok(without.to_string())
 }
-

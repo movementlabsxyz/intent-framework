@@ -18,31 +18,38 @@ mod tests {
     fn strip_0x(input: &str) -> Result<String, String> {
         let s = input.trim();
         let without = s.strip_prefix("0x").unwrap_or(s);
-        
+
         if without.is_empty() {
             return Err(format!("Address '{}' is empty", input));
         }
-        
+
         if !without.chars().all(|c| c.is_ascii_hexdigit()) {
             return Err(format!("Address '{}' must be hex", input));
         }
-        
+
         Ok(without.to_string())
     }
 
-    fn generate_evm_calldata(recipient: &str, amount: &str, intent_id: &str) -> Result<String, String> {
+    fn generate_evm_calldata(
+        recipient: &str,
+        amount: &str,
+        intent_id: &str,
+    ) -> Result<String, String> {
         let recipient_clean = strip_0x(recipient)?;
         let intent_clean = strip_0x(intent_id)?;
-        
-        let amount_u256 = U256::from_dec_str(amount)
-            .map_err(|e| format!("Invalid amount: {}", e))?;
-        
+
+        let amount_u256 =
+            U256::from_dec_str(amount).map_err(|e| format!("Invalid amount: {}", e))?;
+
         let selector = "a9059cbb";
         let recipient_hex = format!("{:0>64}", recipient_clean.to_lowercase());
         let amount_hex = format!("{amount:064x}", amount = amount_u256);
         let intent_hex = format!("{:0>64}", intent_clean.to_lowercase());
-        
-        Ok(format!("0x{}{}{}{}", selector, recipient_hex, amount_hex, intent_hex))
+
+        Ok(format!(
+            "0x{}{}{}{}",
+            selector, recipient_hex, amount_hex, intent_hex
+        ))
     }
 
     // ============================================================================
@@ -137,11 +144,16 @@ mod tests {
     // Move VM Command Generation Tests
     // ============================================================================
 
-    fn generate_mvm_command(recipient: &str, metadata: &str, amount: u64, intent_id: &str) -> Result<String, String> {
+    fn generate_mvm_command(
+        recipient: &str,
+        metadata: &str,
+        amount: u64,
+        intent_id: &str,
+    ) -> Result<String, String> {
         let recipient_addr = normalize_address(recipient)?;
         let metadata_addr = normalize_address(metadata)?;
         let intent_id_addr = normalize_address(intent_id)?;
-        
+
         Ok(format!(
             "aptos move run --profile <solver-profile> \\\n      --function-id <module_address>::utils::transfer_with_intent_id \\\n      --args address:{} address:{} u64:{} address:{}",
             recipient_addr, metadata_addr, amount, intent_id_addr
@@ -156,17 +168,23 @@ mod tests {
         let metadata = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
         let amount = 25000000u64;
         let intent_id = "0x5678123456789012345678901234567890123456789012345678901234567890";
-        
+
         let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
-        
+
         // Should contain the function call
         assert!(result.contains("utils::transfer_with_intent_id"));
-        
+
         // Should contain all addresses in correct format
-        assert!(result.contains("address:0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"));
-        assert!(result.contains("address:0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"));
-        assert!(result.contains("address:0x5678123456789012345678901234567890123456789012345678901234567890"));
-        
+        assert!(result.contains(
+            "address:0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        ));
+        assert!(result.contains(
+            "address:0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        ));
+        assert!(result.contains(
+            "address:0x5678123456789012345678901234567890123456789012345678901234567890"
+        ));
+
         // Should contain amount as u64
         assert!(result.contains("u64:25000000"));
     }
@@ -179,9 +197,9 @@ mod tests {
         let metadata = "1234567890abcdef"; // No prefix
         let amount = 1000u64;
         let intent_id = "0x5678";
-        
+
         let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
-        
+
         // All addresses should be normalized to lowercase with 0x prefix
         assert!(result.contains("address:0xcafe1234"));
         assert!(result.contains("address:0x1234567890abcdef"));
@@ -196,9 +214,9 @@ mod tests {
         let metadata = "0x5678";
         let amount = 0u64;
         let intent_id = "0x9abc";
-        
+
         let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
-        
+
         // Should handle zero amount
         assert!(result.contains("u64:0"));
     }
@@ -211,9 +229,9 @@ mod tests {
         let metadata = "0x5678";
         let amount = u64::MAX;
         let intent_id = "0x9abc";
-        
+
         let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
-        
+
         // Should handle max u64 value
         assert!(result.contains(&format!("u64:{}", u64::MAX)));
     }
@@ -226,7 +244,7 @@ mod tests {
         let metadata = "0x5678";
         let amount = 1000u64;
         let intent_id = "0x9abc";
-        
+
         let result = generate_mvm_command(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
@@ -240,7 +258,7 @@ mod tests {
         let metadata = "0xinvalid";
         let amount = 1000u64;
         let intent_id = "0x9abc";
-        
+
         let result = generate_mvm_command(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
@@ -254,7 +272,7 @@ mod tests {
         let metadata = "0x5678";
         let amount = 1000u64;
         let intent_id = "0xinvalid";
-        
+
         let result = generate_mvm_command(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
@@ -264,26 +282,33 @@ mod tests {
     fn test_mvm_command_invalid_amount_parsing() {
         // What is tested: Non-numeric amount string is rejected
         // Why: Amount must parse as u64; invalid strings should fail with clear error
-        fn generate_mvm_command_with_string_amount(recipient: &str, metadata: &str, amount: &str, intent_id: &str) -> Result<String, String> {
+        fn generate_mvm_command_with_string_amount(
+            recipient: &str,
+            metadata: &str,
+            amount: &str,
+            intent_id: &str,
+        ) -> Result<String, String> {
             let recipient_addr = normalize_address(recipient)?;
             let metadata_addr = normalize_address(metadata)?;
             let intent_id_addr = normalize_address(intent_id)?;
-            
-            let amount_u64: u64 = amount.parse()
+
+            let amount_u64: u64 = amount
+                .parse()
                 .map_err(|_| "Invalid amount: must be a u64".to_string())?;
-            
+
             Ok(format!(
                 "aptos move run --profile <solver-profile> \\\n      --function-id <module_address>::utils::transfer_with_intent_id \\\n      --args address:{} address:{} u64:{} address:{}",
                 recipient_addr, metadata_addr, amount_u64, intent_id_addr
             ))
         }
-        
+
         let recipient = "0x1234";
         let metadata = "0x5678";
         let amount = "not_a_number";
         let intent_id = "0x9abc";
-        
-        let result = generate_mvm_command_with_string_amount(recipient, metadata, amount, intent_id);
+
+        let result =
+            generate_mvm_command_with_string_amount(recipient, metadata, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid amount"));
     }
@@ -299,21 +324,21 @@ mod tests {
         let recipient = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
         let amount = "1000000000000000000";
         let intent_id = "0x5678123456789012345678901234567890123456789012345678901234567890";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
-        
+
         // Should start with selector
         assert!(result.starts_with("0xa9059cbb"));
-        
+
         // Should contain recipient (padded to 64 hex chars)
         assert!(result.contains("742d35cc6634c0532925a3b844bc9e7595f0beb"));
-        
+
         // Should contain amount (padded to 64 hex chars)
         assert!(result.contains("0de0b6b3a7640000")); // 1 ETH in hex
-        
+
         // Should contain intent_id (padded to 64 hex chars)
         assert!(result.contains("5678123456789012345678901234567890123456789012345678901234567890"));
-        
+
         // Total length: 0x (2) + selector (8) + recipient (64) + amount (64) + intent_id (64) = 202
         assert_eq!(result.len(), 202);
     }
@@ -325,14 +350,15 @@ mod tests {
         let recipient = "0x1234"; // Short address
         let amount = "1000";
         let intent_id = "0x5678";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
-        
+
         // Recipient should be padded to 64 hex chars (32 bytes)
         // Position: after selector (0xa9059cbb = 8 chars) + 0x (2 chars) = starts at index 10
         let recipient_part = &result[10..74]; // 64 hex chars
         assert_eq!(recipient_part.len(), 64);
-        assert!(recipient_part.starts_with("0000000000000000000000000000000000000000000000000000000000001234"));
+        assert!(recipient_part
+            .starts_with("0000000000000000000000000000000000000000000000000000000000001234"));
     }
 
     #[test]
@@ -342,14 +368,15 @@ mod tests {
         let recipient = "0x1234";
         let amount = "1"; // Small amount
         let intent_id = "0x5678";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
-        
+
         // Amount should be padded to 64 hex chars
         // Position: after selector (8) + recipient (64) + 0x (2) = starts at index 74
         let amount_part = &result[74..138]; // 64 hex chars
         assert_eq!(amount_part.len(), 64);
-        assert!(amount_part.starts_with("0000000000000000000000000000000000000000000000000000000000000001"));
+        assert!(amount_part
+            .starts_with("0000000000000000000000000000000000000000000000000000000000000001"));
     }
 
     #[test]
@@ -357,15 +384,18 @@ mod tests {
         // What is tested: Maximum U256 value is handled correctly
         // Why: Ensures large token amounts (up to U256::MAX) don't cause overflow
         let recipient = "0x1234";
-        let amount = "115792089237316195423570985008687907853269984665640564039457584007913129639935"; // U256::MAX
+        let amount =
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935"; // U256::MAX
         let intent_id = "0x5678";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id);
         assert!(result.is_ok());
-        
+
         // Should handle max U256 value
         let calldata = result.unwrap();
-        assert!(calldata.contains("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+        assert!(
+            calldata.contains("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+        );
     }
 
     #[test]
@@ -375,7 +405,7 @@ mod tests {
         let recipient = "0x1234";
         let amount = "not_a_number";
         let intent_id = "0x5678";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid amount"));
@@ -388,7 +418,7 @@ mod tests {
         let recipient = "0xinvalid";
         let amount = "1000";
         let intent_id = "0x5678";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
@@ -401,7 +431,7 @@ mod tests {
         let recipient = "0x1234";
         let amount = "1000";
         let intent_id = "0xinvalid";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id);
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
@@ -414,9 +444,9 @@ mod tests {
         let recipient = "0x1234";
         let amount = "0";
         let intent_id = "0x5678";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
-        
+
         // Amount should be all zeros (padded)
         assert!(result.contains("0000000000000000000000000000000000000000000000000000000000000000"));
     }
@@ -428,9 +458,9 @@ mod tests {
         let recipient = "0x1234";
         let amount = "1000";
         let intent_id = "0x5678";
-        
+
         let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
-        
+
         // ERC20 transfer selector: transfer(address,uint256) = 0xa9059cbb
         assert_eq!(&result[0..10], "0xa9059cbb");
     }

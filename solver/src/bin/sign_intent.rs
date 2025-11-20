@@ -1,8 +1,8 @@
 //! Intent Signature Generation Utility
-//! 
+//!
 //! This binary generates an Ed25519 signature for an IntentToSign structure.
 //! It calls the Move function to get the hash, then signs it with the solver's private key.
-//! 
+//!
 //! ## Usage
 //!
 //! ```bash
@@ -22,15 +22,15 @@
 //! ```
 
 use anyhow::{Context, Result};
-use ed25519_dalek::{SigningKey, Signer};
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
+use ed25519_dalek::{Signer, SigningKey};
 use serde_json::Value;
 use std::process::Command;
 use std::str;
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
-    
+
     if args.len() < 2 || args[1] == "--help" || args[1] == "-h" {
         eprintln!("Usage: sign_intent --profile <profile> --chain-address <address> --offered-metadata <address> --offered-amount <u64> --offered-chain-id <u64> --desired-metadata <address> --desired-amount <u64> --desired-chain-id <u64> --expiry-time <u64> --issuer <address> --solver <address> --chain-num <1|2>");
         eprintln!("\nExample:");
@@ -151,7 +151,7 @@ fn main() -> Result<()> {
     // Step 4: Output signature as hex (with 0x prefix) to stdout
     let signature_hex = format!("0x{}", hex::encode(signature_bytes));
     println!("{}", signature_hex);
-    
+
     // Output public key to stderr (needed for new authentication key format)
     // The script extracts this using grep "PUBLIC_KEY:"
     let public_key_bytes = verifying_key.to_bytes();
@@ -181,10 +181,13 @@ fn get_intent_hash(
     // Call Move function
     let output = Command::new("aptos")
         .args(&[
-            "move", "run",
-            "--profile", profile,
+            "move",
+            "run",
+            "--profile",
+            profile,
             "--assume-yes",
-            "--function-id", &format!("0x{}::utils::get_intent_to_sign_hash", chain_address),
+            "--function-id",
+            &format!("0x{}::utils::get_intent_to_sign_hash", chain_address),
             "--args",
             &format!("address:{}", offered_metadata),
             &format!("u64:{}", offered_amount),
@@ -212,7 +215,10 @@ fn get_intent_hash(
     let solver_address = solver.strip_prefix("0x").unwrap_or(solver);
 
     // Query REST API for the latest transaction event
-    let url = format!("http://127.0.0.1:{}/v1/accounts/{}/transactions?limit=1", rest_port, solver_address);
+    let url = format!(
+        "http://127.0.0.1:{}/v1/accounts/{}/transactions?limit=1",
+        rest_port, solver_address
+    );
     let response = reqwest::blocking::get(&url)
         .context("Failed to query REST API")?
         .json::<Value>()
@@ -220,7 +226,9 @@ fn get_intent_hash(
 
     // Extract hash from IntentHashEvent
     // The event structure: { "type": "...::utils::IntentHashEvent", "data": { "hash": "0x..." } }
-    let events = response[0]["events"].as_array().context("No events found")?;
+    let events = response[0]["events"]
+        .as_array()
+        .context("No events found")?;
     for event in events {
         if let Some(event_type) = event["type"].as_str() {
             if event_type.contains("IntentHashEvent") {
@@ -246,15 +254,17 @@ fn get_intent_hash(
         }
     }
 
-    anyhow::bail!("IntentHashEvent not found in transaction events. Response: {}", serde_json::to_string_pretty(&response)?);
+    anyhow::bail!(
+        "IntentHashEvent not found in transaction events. Response: {}",
+        serde_json::to_string_pretty(&response)?
+    );
 }
 
 fn get_private_key_from_profile(profile: &str) -> Result<[u8; 32]> {
     // Get private key from Aptos config
     // Use project root .aptos/config.yaml (go up from current dir to find project root)
-    let mut current_dir = std::env::current_dir()
-        .context("Failed to get current directory")?;
-    
+    let mut current_dir = std::env::current_dir().context("Failed to get current directory")?;
+
     // Try current directory and parent directories to find .aptos/config.yaml
     let mut config_path = current_dir.join(".aptos").join("config.yaml");
     let mut attempts = 0;
@@ -267,52 +277,59 @@ fn get_private_key_from_profile(profile: &str) -> Result<[u8; 32]> {
             break;
         }
     }
-    
+
     if !config_path.exists() {
         anyhow::bail!("Failed to find Aptos config file at: {}. Please ensure the config file exists in the project root.", config_path.display());
     }
-    
+
     let config_path = config_path.to_string_lossy().to_string();
 
     // Read and parse YAML config
-    let config_content = std::fs::read_to_string(&config_path)
-        .with_context(|| format!("Failed to read Aptos config file at: {}. Make sure the file exists.", config_path))?;
+    let config_content = std::fs::read_to_string(&config_path).with_context(|| {
+        format!(
+            "Failed to read Aptos config file at: {}. Make sure the file exists.",
+            config_path
+        )
+    })?;
 
     // Parse YAML to find the profile's private key
     // Note: Aptos CLI stores private keys, but they might be encrypted
     // For e2e tests, we assume the key is stored in plaintext or we use a different method
-    
+
     // Alternative: Use aptos key extract to get the key
     // But aptos CLI doesn't have a direct command for this
-    
+
     // For now, we'll try to extract from config.yaml
     // The structure is: profiles.<profile>.private_key
-    let yaml: serde_yaml::Value = serde_yaml::from_str(&config_content)
-        .context("Failed to parse YAML config")?;
+    let yaml: serde_yaml::Value =
+        serde_yaml::from_str(&config_content).context("Failed to parse YAML config")?;
 
-    let private_key_str = yaml["profiles"][profile]["private_key"]
-        .as_str()
-        .context("Private key not found in profile. Make sure the profile exists and has a private key.")?;
+    let private_key_str = yaml["profiles"][profile]["private_key"].as_str().context(
+        "Private key not found in profile. Make sure the profile exists and has a private key.",
+    )?;
 
     // Decode private key - supports both ed25519-priv-0x<hex> format and base64
     let private_key_bytes = if private_key_str.starts_with("ed25519-priv-0x") {
         // Extract hex part after "ed25519-priv-0x"
-        let hex_part = private_key_str.strip_prefix("ed25519-priv-0x")
+        let hex_part = private_key_str
+            .strip_prefix("ed25519-priv-0x")
             .context("Invalid private key format: expected ed25519-priv-0x<hex>")?;
-        hex::decode(hex_part)
-            .context("Failed to decode private key from hex")?
+        hex::decode(hex_part).context("Failed to decode private key from hex")?
     } else {
         // Try base64 decoding (legacy format)
-        general_purpose::STANDARD.decode(private_key_str)
+        general_purpose::STANDARD
+            .decode(private_key_str)
             .context("Failed to decode private key from base64")?
     };
 
     if private_key_bytes.len() != 32 {
-        anyhow::bail!("Invalid private key length: expected 32 bytes, got {}", private_key_bytes.len());
+        anyhow::bail!(
+            "Invalid private key length: expected 32 bytes, got {}",
+            private_key_bytes.len()
+        );
     }
 
     let mut key_array = [0u8; 32];
     key_array.copy_from_slice(&private_key_bytes);
     Ok(key_array)
 }
-

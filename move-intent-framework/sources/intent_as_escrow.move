@@ -1,15 +1,15 @@
 /// Simplified Escrow Module
-/// 
+///
 /// This module provides a clean abstraction over the oracle-intent system,
 /// allowing users to create escrows with simple yes/no verifier approval.
-/// 
+///
 /// **IMPORTANT**: This module uses "verifier" terminology in its public API,
 /// but internally calls oracle functions from fa_intent_with_oracle.move.
 /// The verifier IS an oracle - we use oracle implementation to create verifier functionality.
-/// 
+///
 /// The verifier acts as a trusted entity that approves or rejects escrow conditions.
 /// Verifier provides approval_value: 1 = approve, 0 = reject
-/// 
+///
 module mvmt_intent::intent_as_escrow {
     use std::option::{Self as option};
     use std::signer;
@@ -29,7 +29,7 @@ module mvmt_intent::intent_as_escrow {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         oracle_public_key: ed25519::UnvalidatedPublicKey,
-        expiry_time: u64,
+        expiry_time: u64
     }
 
     // ============================================================================
@@ -37,7 +37,7 @@ module mvmt_intent::intent_as_escrow {
     // ============================================================================
 
     /// Creates a simple escrow with verifier approval requirement
-    /// 
+    ///
     /// # Arguments
     /// - `requester_signer`: Signer of the escrow creator (requester who created the request intent on hub chain)
     /// - `offered_asset`: Asset to be escrowed
@@ -47,10 +47,10 @@ module mvmt_intent::intent_as_escrow {
     /// - `intent_id`: Intent ID from the hub chain (for cross-chain matching)
     /// - `reservation`: Required reservation specifying which solver can claim the escrow
     /// - `desired_chain_id`: Chain ID where desired tokens are located (hub chain for inflow intents)
-    /// 
+    ///
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created escrow
-    /// 
+    ///
     /// # Aborts
     /// - If reservation is None (escrows must always be reserved for a specific solver)
     public fun create_escrow(
@@ -61,26 +61,27 @@ module mvmt_intent::intent_as_escrow {
         expiry_time: u64,
         intent_id: address,
         reservation: IntentReserved,
-        desired_chain_id: u64,
+        desired_chain_id: u64
     ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
         // Create verifier requirement: signature itself is the approval, min_reported_value is 0
         // (the signature verification is what matters, not the reported_value)
-        let requirement = fa_intent_with_oracle::new_oracle_signature_requirement(
-            0, // min_reported_value: signature verification is what matters, this check always passes
-            verifier_public_key,
-        );
+        let requirement =
+            fa_intent_with_oracle::new_oracle_signature_requirement(
+                0, // min_reported_value: signature verification is what matters, this check always passes
+                verifier_public_key
+            );
 
         // Create the verifier-guarded intent with placeholder values
         // Note: desired_metadata and desired_amount are placeholders since actual logic is off-chain
         let placeholder_metadata = fungible_asset::asset_metadata(&offered_asset); // Use same metadata as placeholder
         let placeholder_amount = 1; // Minimal placeholder amount
-        
+
         fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
             offered_asset,
-            offered_chain_id,  // Chain ID where escrow is created (connected chain)
+            offered_chain_id, // Chain ID where escrow is created (connected chain)
             placeholder_metadata,
             placeholder_amount, // desired_amount: use placeholder_amount (payment validation will check chain IDs)
-            desired_chain_id,   // Chain ID where desired tokens are located (hub chain for inflow)
+            desired_chain_id, // Chain ID where desired tokens are located (hub chain for inflow)
             expiry_time,
             signer::address_of(requester_signer),
             requirement,
@@ -89,16 +90,16 @@ module mvmt_intent::intent_as_escrow {
             //      Verifiers can safely trigger actions elsewhere based on deposit events
             intent_id,
             option::none(), // Not an outflow intent, so no requester address on connected chain
-            option::some(reservation), // Escrows must always be reserved for a specific solver
+            option::some(reservation) // Escrows must always be reserved for a specific solver
         )
     }
 
     /// Starts an escrow session for a solver to fulfill
-    /// 
+    ///
     /// # Arguments
     /// - `solver`: Signer of the solver attempting to claim the escrow
     /// - `intent`: Handle to the escrow intent
-    /// 
+    ///
     /// # Returns
     /// - `FungibleAsset`: The escrowed asset that solver can claim
     /// - `TradeSession<...>`: Session for completing the escrow
@@ -113,16 +114,16 @@ module mvmt_intent::intent_as_escrow {
     }
 
     /// Completes an escrow with verifier approval
-    /// 
+    ///
     /// The verifier signs the intent_id - the signature itself is the approval.
     /// If the signature verifies correctly against the escrow's intent_id, the escrow is approved.
-    /// 
+    ///
     /// # Arguments
     /// - `solver`: Signer of the solver completing the escrow
     /// - `session`: Active escrow session
     /// - `solver_payment`: Asset provided by solver to fulfill escrow
     /// - `verifier_signature`: Verifier's Ed25519 signature (signs the intent_id)
-    /// 
+    ///
     /// # Aborts
     /// - If verifier signature verification fails (wrong intent_id or invalid signature)
     /// - If solver payment doesn't match escrow requirements
@@ -131,7 +132,7 @@ module mvmt_intent::intent_as_escrow {
         solver: &signer,
         session: TradeSession<fa_intent_with_oracle::OracleGuardedLimitOrder>,
         solver_payment: FungibleAsset,
-        verifier_signature: ed25519::Signature,
+        verifier_signature: ed25519::Signature
     ) {
         // Verify solver is authorized if escrow is reserved
         let reservation = intent::get_reservation(&session);
@@ -139,17 +140,17 @@ module mvmt_intent::intent_as_escrow {
 
         // Create verifier witness - signature itself is the approval, reported_value is just metadata
         // We use 0 as reported_value since min_reported_value is 0 (signature verification is what matters)
-        let witness = fa_intent_with_oracle::new_oracle_signature_witness(
-            0, // reported_value: signature verification is what matters, this is just metadata
-            verifier_signature,
-        );
+        let witness =
+            fa_intent_with_oracle::new_oracle_signature_witness(
+                0, // reported_value: signature verification is what matters, this is just metadata
+                verifier_signature
+            );
 
         // Complete the escrow
         fa_intent_with_oracle::finish_fa_receiving_session_with_oracle(
             session,
             solver_payment,
-            option::some(witness),
+            option::some(witness)
         );
     }
-
 }

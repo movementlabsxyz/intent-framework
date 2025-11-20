@@ -10,11 +10,17 @@ use trusted_verifier::config::Config;
 #[test]
 fn test_default_config_creation() {
     let config = Config::default();
-    
+
     assert_eq!(config.hub_chain.name, "Hub Chain");
     assert_eq!(config.hub_chain.rpc_url, "http://127.0.0.1:8080");
-    assert!(config.connected_chain_mvm.is_none(), "Default config should have no connected Move VM chain");
-    assert!(config.connected_chain_evm.is_none(), "Default config should have no connected EVM chain");
+    assert!(
+        config.connected_chain_mvm.is_none(),
+        "Default config should have no connected Move VM chain"
+    );
+    assert!(
+        config.connected_chain_evm.is_none(),
+        "Default config should have no connected EVM chain"
+    );
 }
 
 /// Test that known_accounts field exists and can be None
@@ -22,7 +28,7 @@ fn test_default_config_creation() {
 #[test]
 fn test_known_accounts_field() {
     let config = Config::default();
-    
+
     assert_eq!(config.hub_chain.known_accounts, None);
     assert!(config.connected_chain_mvm.is_none());
 }
@@ -32,10 +38,13 @@ fn test_known_accounts_field() {
 #[test]
 fn test_known_accounts_with_values() {
     let mut config = Config::default();
-    
+
     config.hub_chain.known_accounts = Some(vec!["0xalice".to_string(), "0xbob".to_string()]);
-    
-    assert_eq!(config.hub_chain.known_accounts, Some(vec!["0xalice".to_string(), "0xbob".to_string()]));
+
+    assert_eq!(
+        config.hub_chain.known_accounts,
+        Some(vec!["0xalice".to_string(), "0xbob".to_string()])
+    );
 }
 
 /// Test that connected_chain_mvm can be set to Some(ChainConfig)
@@ -44,7 +53,7 @@ fn test_known_accounts_with_values() {
 fn test_connected_chain_mvm_with_values() {
     use trusted_verifier::config::ChainConfig;
     let mut config = Config::default();
-    
+
     config.connected_chain_mvm = Some(ChainConfig {
         name: "Connected Move VM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
@@ -53,9 +62,15 @@ fn test_connected_chain_mvm_with_values() {
         escrow_module_address: Some("0x123".to_string()),
         known_accounts: Some(vec!["0xalice2".to_string(), "0xbob2".to_string()]),
     });
-    
-    assert_eq!(config.connected_chain_mvm.as_ref().unwrap().name, "Connected Move VM Chain");
-    assert_eq!(config.connected_chain_mvm.as_ref().unwrap().known_accounts, Some(vec!["0xalice2".to_string(), "0xbob2".to_string()]));
+
+    assert_eq!(
+        config.connected_chain_mvm.as_ref().unwrap().name,
+        "Connected Move VM Chain"
+    );
+    assert_eq!(
+        config.connected_chain_mvm.as_ref().unwrap().known_accounts,
+        Some(vec!["0xalice2".to_string(), "0xbob2".to_string()])
+    );
 }
 
 /// Test that config can be serialized and deserialized
@@ -63,13 +78,13 @@ fn test_connected_chain_mvm_with_values() {
 #[test]
 fn test_config_serialization() {
     let config = Config::default();
-    
+
     // Serialize to TOML
     let toml = toml::to_string(&config).expect("Should serialize to TOML");
-    
+
     // Deserialize back
     let deserialized: Config = toml::from_str(&toml).expect("Should deserialize from TOML");
-    
+
     assert_eq!(config.hub_chain.name, deserialized.hub_chain.name);
     assert_eq!(config.hub_chain.rpc_url, deserialized.hub_chain.rpc_url);
 }

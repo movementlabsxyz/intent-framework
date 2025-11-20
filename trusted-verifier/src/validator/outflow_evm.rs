@@ -3,27 +3,27 @@
 //! This module contains EVM-specific transaction parsing and parameter extraction
 //! for outflow fulfillment validation.
 
-use anyhow::{Result, Context};
 use crate::evm_client::EvmTransaction;
-use crate::validator::generic::{FulfillmentTransactionParams, validate_address_format};
+use crate::validator::generic::{validate_address_format, FulfillmentTransactionParams};
+use anyhow::{Context, Result};
 
 /// Extracts intent_id and transaction parameters from an EVM transaction
-/// 
+///
 /// This function parses the transaction calldata to extract parameters from
 /// ERC20 transfer() calls with appended intent_id.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `tx` - The EVM transaction information
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `Ok(FulfillmentTransactionParams)` - Extracted parameters
 /// * `Err(anyhow::Error)` - Failed to extract parameters
 pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<FulfillmentTransactionParams> {
     // ERC20 transfer() function selector: 0xa9059cbb
     let transfer_selector = "0xa9059cbb";
-    
+
     // Check if calldata starts with transfer selector
     let input = tx.input.strip_prefix("0x").unwrap_or(&tx.input);
     if !input.starts_with(&transfer_selector[2..]) {
@@ -33,13 +33,15 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
     // Calldata format: selector (4 bytes) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes)
     // Total: 4 + 32 + 32 + 32 = 100 bytes = 200 hex chars
     if input.len() < 200 {
-        return Err(anyhow::anyhow!("Insufficient calldata length for transfer with intent_id"));
+        return Err(anyhow::anyhow!(
+            "Insufficient calldata length for transfer with intent_id"
+        ));
     }
 
     // Extract recipient address (bytes 4-35, skip selector)
     // EVM addresses are 20 bytes, but calldata pads them to 32 bytes (first 12 bytes should be zeros)
     let recipient_hex = &input[8..72]; // 32 bytes = 64 hex chars, starting after 4-byte selector
-    
+
     // Validate calldata padding: first 12 bytes (24 hex chars) must be zeros
     let padding = &recipient_hex[0..24];
     if padding != "000000000000000000000000" {
@@ -48,7 +50,7 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
             padding
         ));
     }
-    
+
     // Extract and validate the 20-byte address
     let address_part = &recipient_hex[24..64]; // Last 20 bytes (40 hex chars)
     let recipient = format!("0x{}", address_part);
@@ -57,8 +59,8 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
 
     // Extract amount (bytes 36-67)
     let amount_hex = &input[72..136]; // Next 32 bytes = 64 hex chars
-    let amount = u64::from_str_radix(amount_hex, 16)
-        .context("Failed to parse amount from calldata")?;
+    let amount =
+        u64::from_str_radix(amount_hex, 16).context("Failed to parse amount from calldata")?;
 
     // Extract intent_id (bytes 68-99, last 32 bytes)
     let intent_id_hex = &input[136..200]; // Last 32 bytes = 64 hex chars
@@ -72,9 +74,10 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
         recipient,
         amount,
         solver,
-        token_metadata: tx.to.as_ref()
+        token_metadata: tx
+            .to
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Transaction 'to' address (token contract) not found"))?
             .clone(),
     })
 }
-

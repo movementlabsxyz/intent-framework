@@ -6,11 +6,13 @@
 use anyhow::Result;
 use tracing::info;
 
+use super::generic::{
+    validate_address_format, CrossChainValidator, FulfillmentTransactionParams, ValidationResult,
+};
 use crate::monitor::RequestIntentEvent;
-use super::generic::{CrossChainValidator, FulfillmentTransactionParams, ValidationResult, validate_address_format};
 
 /// Validates an outflow fulfillment transaction against a request intent
-/// 
+///
 /// This function validates that a connected chain transaction properly fulfills
 /// an outflow request intent by checking:
 /// - Transaction was confirmed and successful
@@ -18,9 +20,9 @@ use super::generic::{CrossChainValidator, FulfillmentTransactionParams, Validati
 /// - Recipient address matches requester_address_connected_chain
 /// - Amount matches desired_amount
 /// - Solver address matches reserved solver
-/// 
+///
 /// ## Solver Registration Requirements
-/// 
+///
 /// **IMPORTANT**: The solver must be registered in the solver registry with the correct
 /// address for the connected chain. All addresses (Move VM address for Move VM chains,
 /// EVM address for EVM chains) must be provided during registration. If the solver
@@ -28,16 +30,16 @@ use super::generic::{CrossChainValidator, FulfillmentTransactionParams, Validati
 /// error on the solver's side - they must register correctly before attempting to
 /// fulfill intents. The verifier will reject transactions from unregistered or
 /// incorrectly registered solvers.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `validator` - The cross-chain validator instance
 /// * `request_intent` - The outflow request intent from the hub chain
 /// * `tx_params` - Extracted parameters from the connected chain transaction
 /// * `tx_success` - Whether the transaction was successful
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `Ok(ValidationResult)` - Validation result
 /// * `Err(anyhow::Error)` - Validation failed due to error
 pub async fn validate_outflow_fulfillment(
@@ -46,7 +48,10 @@ pub async fn validate_outflow_fulfillment(
     tx_params: &FulfillmentTransactionParams,
     tx_success: bool,
 ) -> Result<ValidationResult> {
-    info!("Validating outflow fulfillment for intent: {}", request_intent.intent_id);
+    info!(
+        "Validating outflow fulfillment for intent: {}",
+        request_intent.intent_id
+    );
 
     // Validate transaction was successful
     if !tx_success {
@@ -83,28 +88,41 @@ pub async fn validate_outflow_fulfillment(
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         };
-        
+
         // Validate address formats match chain type
         if let Err(e) = validate_address_format(&tx_params.recipient, chain_type) {
             return Ok(ValidationResult {
                 valid: false,
-                message: format!("Transaction recipient address format validation failed: {}", e),
+                message: format!(
+                    "Transaction recipient address format validation failed: {}",
+                    e
+                ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         if let Err(e) = validate_address_format(requester_address, chain_type) {
             return Ok(ValidationResult {
                 valid: false,
-                message: format!("Request intent requester_address_connected_chain format validation failed: {}", e),
+                message: format!(
+                    "Request intent requester_address_connected_chain format validation failed: {}",
+                    e
+                ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         // Normalize addresses for comparison (remove 0x prefix, lowercase)
-        let tx_recipient = tx_params.recipient.strip_prefix("0x").unwrap_or(&tx_params.recipient).to_lowercase();
-        let requester = requester_address.strip_prefix("0x").unwrap_or(requester_address).to_lowercase();
-        
+        let tx_recipient = tx_params
+            .recipient
+            .strip_prefix("0x")
+            .unwrap_or(&tx_params.recipient)
+            .to_lowercase();
+        let requester = requester_address
+            .strip_prefix("0x")
+            .unwrap_or(requester_address)
+            .to_lowercase();
+
         if tx_recipient != requester {
             return Ok(ValidationResult {
                 valid: false,
@@ -137,7 +155,7 @@ pub async fn validate_outflow_fulfillment(
     // The event contains the original desired_amount for the connected chain
     // If desired_amount is 0, this indicates a bug in the Move code
     let expected_amount = request_intent.desired_amount;
-    
+
     if expected_amount == 0 {
         return Ok(ValidationResult {
             valid: false,
@@ -147,7 +165,7 @@ pub async fn validate_outflow_fulfillment(
             timestamp: chrono::Utc::now().timestamp() as u64,
         });
     }
-    
+
     if tx_params.amount != expected_amount {
         return Ok(ValidationResult {
             valid: false,
@@ -165,20 +183,20 @@ pub async fn validate_outflow_fulfillment(
     if let Some(ref reserved_solver) = request_intent.reserved_solver {
         use crate::mvm_client::MvmClient;
         use anyhow::Context;
-        
+
         let hub_rpc_url = &validator.config().hub_chain.rpc_url;
         let hub_registry_address = &validator.config().hub_chain.intent_module_address;
         let hub_client = MvmClient::new(hub_rpc_url)?;
-        
+
         // Determine if this is a Move VM connected chain
         let is_mvm_chain = validator.config().connected_chain_mvm.is_some();
-        
+
         if is_mvm_chain {
             // For Move VM chains: Look up connected chain Move VM address from hub registry and compare to transaction solver
             let registered_mvm_address = hub_client.get_solver_connected_chain_mvm_address(reserved_solver, hub_registry_address)
                 .await
                 .context("Failed to query reserved solver connected chain Move VM address from hub chain registry")?;
-            
+
             let registered_mvm_address = match registered_mvm_address {
                 Some(addr) => addr,
                 None => {
@@ -189,11 +207,18 @@ pub async fn validate_outflow_fulfillment(
                     });
                 }
             };
-            
+
             // Compare transaction solver (Move VM address on connected chain) to registered connected chain address
-            let tx_solver = tx_params.solver.strip_prefix("0x").unwrap_or(&tx_params.solver).to_lowercase();
-            let registered_mvm = registered_mvm_address.strip_prefix("0x").unwrap_or(&registered_mvm_address).to_lowercase();
-            
+            let tx_solver = tx_params
+                .solver
+                .strip_prefix("0x")
+                .unwrap_or(&tx_params.solver)
+                .to_lowercase();
+            let registered_mvm = registered_mvm_address
+                .strip_prefix("0x")
+                .unwrap_or(&registered_mvm_address)
+                .to_lowercase();
+
             if tx_solver != registered_mvm {
                 return Ok(ValidationResult {
                     valid: false,
@@ -206,25 +231,36 @@ pub async fn validate_outflow_fulfillment(
             }
         } else {
             // For EVM chains: Look up EVM address from hub registry and compare to transaction solver
-            let registered_evm_address = hub_client.get_solver_evm_address(reserved_solver, hub_registry_address)
+            let registered_evm_address = hub_client
+                .get_solver_evm_address(reserved_solver, hub_registry_address)
                 .await
                 .context("Failed to query reserved solver EVM address from hub chain registry")?;
-            
+
             let registered_evm_address = match registered_evm_address {
                 Some(addr) => addr,
                 None => {
                     return Ok(ValidationResult {
                         valid: false,
-                        message: format!("Reserved solver '{}' is not registered in hub chain solver registry", reserved_solver),
+                        message: format!(
+                            "Reserved solver '{}' is not registered in hub chain solver registry",
+                            reserved_solver
+                        ),
                         timestamp: chrono::Utc::now().timestamp() as u64,
                     });
                 }
             };
-            
+
             // Compare transaction solver (EVM address) to registered EVM address
-            let tx_solver = tx_params.solver.strip_prefix("0x").unwrap_or(&tx_params.solver).to_lowercase();
-            let registered_evm = registered_evm_address.strip_prefix("0x").unwrap_or(&registered_evm_address).to_lowercase();
-            
+            let tx_solver = tx_params
+                .solver
+                .strip_prefix("0x")
+                .unwrap_or(&tx_params.solver)
+                .to_lowercase();
+            let registered_evm = registered_evm_address
+                .strip_prefix("0x")
+                .unwrap_or(&registered_evm_address)
+                .to_lowercase();
+
             if tx_solver != registered_evm {
                 return Ok(ValidationResult {
                     valid: false,
@@ -251,4 +287,3 @@ pub async fn validate_outflow_fulfillment(
         timestamp: chrono::Utc::now().timestamp() as u64,
     })
 }
-

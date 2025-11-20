@@ -3,10 +3,10 @@
 //! These tests verify that MVM client functions work correctly,
 //! including resource queries and registry lookups.
 
-use trusted_verifier::mvm_client::MvmClient;
-use wiremock::{MockServer, Mock, ResponseTemplate};
-use wiremock::matchers::{method, path};
 use serde_json::json;
+use trusted_verifier::mvm_client::MvmClient;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -60,23 +60,21 @@ async fn setup_mock_server_with_registry(
     connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, MvmClient) {
     let mock_server = MockServer::start().await;
-    
+
     let resources_response = create_solver_registry_resource(
         registry_address,
         solver_address,
         connected_chain_mvm_address,
     );
-    
+
     Mock::given(method("GET"))
         .and(path(format!("/v1/accounts/{}/resources", registry_address)))
-        .respond_with(ResponseTemplate::new(200)
-            .set_body_json(resources_response))
+        .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
         .mount(&mock_server)
         .await;
-    
-    let client = MvmClient::new(&mock_server.uri())
-        .expect("Failed to create MvmClient");
-    
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
     (mock_server, client)
 }
 
@@ -90,23 +88,27 @@ async fn setup_mock_server_with_registry(
 async fn test_get_solver_connected_chain_mvm_address_success() {
     let registry_address = "0x1";
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-    
+    let connected_chain_mvm_address =
+        "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
     let (_mock_server, client) = setup_mock_server_with_registry(
         registry_address,
         solver_address,
         Some(connected_chain_mvm_address),
-    ).await;
-    
-    let result = client.get_solver_connected_chain_mvm_address(
-        solver_address,
-        registry_address,
-    ).await;
-    
+    )
+    .await;
+
+    let result = client
+        .get_solver_connected_chain_mvm_address(solver_address, registry_address)
+        .await;
+
     assert!(result.is_ok(), "Query should succeed");
     let address = result.unwrap();
-    assert_eq!(address, Some(connected_chain_mvm_address.to_string()),
-               "Should return the connected chain MVM address");
+    assert_eq!(
+        address,
+        Some(connected_chain_mvm_address.to_string()),
+        "Should return the connected chain MVM address"
+    );
 }
 
 /// Test that get_solver_connected_chain_mvm_address returns None when solver has no connected chain address
@@ -115,21 +117,24 @@ async fn test_get_solver_connected_chain_mvm_address_success() {
 async fn test_get_solver_connected_chain_mvm_address_none() {
     let registry_address = "0x1";
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    
+
     let (_mock_server, client) = setup_mock_server_with_registry(
         registry_address,
         solver_address,
         None, // No connected chain MVM address
-    ).await;
-    
-    let result = client.get_solver_connected_chain_mvm_address(
-        solver_address,
-        registry_address,
-    ).await;
-    
+    )
+    .await;
+
+    let result = client
+        .get_solver_connected_chain_mvm_address(solver_address, registry_address)
+        .await;
+
     assert!(result.is_ok(), "Query should succeed");
     let address = result.unwrap();
-    assert_eq!(address, None, "Should return None when no connected chain MVM address is set");
+    assert_eq!(
+        address, None,
+        "Should return None when no connected chain MVM address is set"
+    );
 }
 
 /// Test that get_solver_connected_chain_mvm_address returns None when solver is not registered
@@ -139,21 +144,27 @@ async fn test_get_solver_connected_chain_mvm_address_solver_not_found() {
     let registry_address = "0x1";
     let registered_solver = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     let unregistered_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    
+
     let (_mock_server, client) = setup_mock_server_with_registry(
         registry_address,
         registered_solver, // Only this solver is registered
         Some("0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"),
-    ).await;
-    
-    let result = client.get_solver_connected_chain_mvm_address(
-        unregistered_solver, // Query for unregistered solver
-        registry_address,
-    ).await;
-    
+    )
+    .await;
+
+    let result = client
+        .get_solver_connected_chain_mvm_address(
+            unregistered_solver, // Query for unregistered solver
+            registry_address,
+        )
+        .await;
+
     assert!(result.is_ok(), "Query should succeed");
     let address = result.unwrap();
-    assert_eq!(address, None, "Should return None when solver is not registered");
+    assert_eq!(
+        address, None,
+        "Should return None when solver is not registered"
+    );
 }
 
 /// Test that get_solver_connected_chain_mvm_address returns None when registry resource is not found
@@ -163,26 +174,26 @@ async fn test_get_solver_connected_chain_mvm_address_registry_not_found() {
     let mock_server = MockServer::start().await;
     let registry_address = "0x1";
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    
+
     // Mock empty resources (no SolverRegistry)
     Mock::given(method("GET"))
         .and(path(format!("/v1/accounts/{}/resources", registry_address)))
-        .respond_with(ResponseTemplate::new(200)
-            .set_body_json(json!([]))) // Empty resources
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([]))) // Empty resources
         .mount(&mock_server)
         .await;
-    
-    let client = MvmClient::new(&mock_server.uri())
-        .expect("Failed to create MvmClient");
-    
-    let result = client.get_solver_connected_chain_mvm_address(
-        solver_address,
-        registry_address,
-    ).await;
-    
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_connected_chain_mvm_address(solver_address, registry_address)
+        .await;
+
     assert!(result.is_ok(), "Query should succeed");
     let address = result.unwrap();
-    assert_eq!(address, None, "Should return None when registry resource is not found");
+    assert_eq!(
+        address, None,
+        "Should return None when registry resource is not found"
+    );
 }
 
 /// Test that get_solver_connected_chain_mvm_address handles address normalization (with/without 0x prefix)
@@ -190,25 +201,30 @@ async fn test_get_solver_connected_chain_mvm_address_registry_not_found() {
 #[tokio::test]
 async fn test_get_solver_connected_chain_mvm_address_address_normalization() {
     let registry_address = "0x1";
-    let solver_address_with_prefix = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let solver_address_without_prefix = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-    
+    let solver_address_with_prefix =
+        "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_address_without_prefix =
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address =
+        "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
     let (_mock_server, client) = setup_mock_server_with_registry(
         registry_address,
         solver_address_with_prefix, // Registry has address with 0x prefix
         Some(connected_chain_mvm_address),
-    ).await;
-    
+    )
+    .await;
+
     // Query with address without 0x prefix
-    let result = client.get_solver_connected_chain_mvm_address(
-        solver_address_without_prefix,
-        registry_address,
-    ).await;
-    
+    let result = client
+        .get_solver_connected_chain_mvm_address(solver_address_without_prefix, registry_address)
+        .await;
+
     assert!(result.is_ok(), "Query should succeed");
     let address = result.unwrap();
-    assert_eq!(address, Some(connected_chain_mvm_address.to_string()),
-               "Should return the connected chain MVM address regardless of 0x prefix");
+    assert_eq!(
+        address,
+        Some(connected_chain_mvm_address.to_string()),
+        "Should return the connected chain MVM address regardless of 0x prefix"
+    );
 }
-

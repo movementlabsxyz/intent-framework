@@ -8,30 +8,30 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::config::Config;
-use crate::monitor::{RequestIntentEvent, FulfillmentEvent, ChainType};
+use crate::monitor::{ChainType, FulfillmentEvent, RequestIntentEvent};
 
 // ============================================================================
 // ADDRESS VALIDATION UTILITIES
 // ============================================================================
 
 /// Validates that an address string matches the required format for the chain type.
-/// 
+///
 /// EVM addresses must be exactly 20 bytes (40 hex chars after removing 0x prefix).
 /// Move VM addresses must be exactly 32 bytes (64 hex chars after removing 0x prefix).
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `address` - Address string to validate (with or without 0x prefix)
 /// * `chain_type` - The chain type (EVM or Move VM)
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `Ok(())` - Address format is valid
 /// * `Err(anyhow::Error)` - Address format is invalid
 pub fn validate_address_format(address: &str, chain_type: ChainType) -> Result<()> {
     let address_no_prefix = address.strip_prefix("0x").unwrap_or(address);
     let address_len = address_no_prefix.len();
-    
+
     match chain_type {
         ChainType::Evm => {
             // EVM addresses must be exactly 20 bytes (40 hex chars)
@@ -61,7 +61,7 @@ pub fn validate_address_format(address: &str, chain_type: ChainType) -> Result<(
             }
         }
     }
-    
+
     // Validate that the address contains only valid hex characters
     if !address_no_prefix.chars().all(|c| c.is_ascii_hexdigit()) {
         return Err(anyhow::anyhow!(
@@ -69,7 +69,7 @@ pub fn validate_address_format(address: &str, chain_type: ChainType) -> Result<(
             address
         ));
     }
-    
+
     Ok(())
 }
 
@@ -78,7 +78,7 @@ pub fn validate_address_format(address: &str, chain_type: ChainType) -> Result<(
 // ============================================================================
 
 /// Result of cross-chain validation between a request intent and escrow event.
-/// 
+///
 /// This structure contains the validation result and any relevant metadata
 /// for approval or rejection decisions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,7 +103,7 @@ pub struct FulfillmentTransactionParams {
     /// Solver address (transaction sender)
     pub solver: String,
     /// Token metadata/address
-    /// 
+    ///
     /// Note: Currently extracted but not used in validation. Kept for completeness
     /// and potential future validation logic.
     #[allow(dead_code)]
@@ -115,7 +115,7 @@ pub struct FulfillmentTransactionParams {
 // ============================================================================
 
 /// Cross-chain validator that ensures escrow deposits fulfill request intent conditions.
-/// 
+///
 /// This validator performs comprehensive checks to ensure that deposits
 /// made on the connected chain properly fulfill the requirements specified
 /// in request intents created on the hub chain. It provides cryptographic approval
@@ -135,50 +135,58 @@ impl CrossChainValidator {
     }
 
     /// Creates a new cross-chain validator with the given configuration.
-    /// 
+    ///
     /// This function initializes HTTP clients for communication with both
     /// chains and prepares the validator for operation.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `config` - Service configuration containing chain URLs and timeouts
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(CrossChainValidator)` - Successfully created validator
     /// * `Err(anyhow::Error)` - Failed to create validator
     pub async fn new(config: &Config) -> anyhow::Result<Self> {
         // Create HTTP client with configured timeout
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_millis(config.verifier.validation_timeout_ms))
+            .timeout(std::time::Duration::from_millis(
+                config.verifier.validation_timeout_ms,
+            ))
             .build()?;
-        
+
         Ok(Self {
             config: Arc::new(config.clone()),
             client,
         })
     }
-    
+
     /// Validates that a request intent is safe for escrow operations.
-    /// 
+    ///
     /// This function performs critical security checks to ensure that a request intent
     /// can be safely used for escrow operations. The most important check
     /// is verifying that the request intent is non-revocable.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `request_intent` - The request intent event to validate
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
     #[allow(dead_code)]
-    pub async fn validate_request_intent_safety(&self, request_intent: &RequestIntentEvent) -> anyhow::Result<ValidationResult> {
+    pub async fn validate_request_intent_safety(
+        &self,
+        request_intent: &RequestIntentEvent,
+    ) -> anyhow::Result<ValidationResult> {
         use tracing::info;
-        
-        info!("Validating request intent safety: {}", request_intent.intent_id);
-        
+
+        info!(
+            "Validating request intent safety: {}",
+            request_intent.intent_id
+        );
+
         // CRITICAL SECURITY CHECK: Verify request intent is non-revocable
         if request_intent.revocable {
             return Ok(ValidationResult {
@@ -187,7 +195,7 @@ impl CrossChainValidator {
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         // Additional safety checks: verify request intent has not expired
         if request_intent.expiry_time < chrono::Utc::now().timestamp() as u64 {
             return Ok(ValidationResult {
@@ -196,7 +204,7 @@ impl CrossChainValidator {
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         // All safety checks passed
         Ok(ValidationResult {
             valid: true,
@@ -204,21 +212,21 @@ impl CrossChainValidator {
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
     }
-    
+
     /// Validates that a fulfillment event satisfies the request intent requirements.
-    /// 
+    ///
     /// This function checks that:
     /// 1. The fulfilled amount matches the request intent's desired amount
     /// 2. The fulfilled metadata matches the request intent's desired metadata
     /// 3. The fulfillment occurred before the request intent expired
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `request_intent` - The request intent event from the hub chain
     /// * `fulfillment` - The fulfillment event from the hub chain
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
     #[allow(dead_code)]
@@ -228,9 +236,12 @@ impl CrossChainValidator {
         fulfillment: &FulfillmentEvent,
     ) -> anyhow::Result<ValidationResult> {
         use tracing::info;
-        
-        info!("Validating fulfillment for request intent: {}", request_intent.intent_id);
-        
+
+        info!(
+            "Validating fulfillment for request intent: {}",
+            request_intent.intent_id
+        );
+
         // Verify fulfillment is for the same request intent
         if fulfillment.intent_id != request_intent.intent_id {
             return Ok(ValidationResult {
@@ -242,7 +253,7 @@ impl CrossChainValidator {
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         // Validate the fulfillment's provided_amount matches the request intent's desired_amount
         if fulfillment.provided_amount != request_intent.desired_amount {
             return Ok(ValidationResult {
@@ -254,7 +265,7 @@ impl CrossChainValidator {
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         // Validate the fulfillment's provided_metadata matches the request intent's desired_metadata
         if fulfillment.provided_metadata != request_intent.desired_metadata {
             return Ok(ValidationResult {
@@ -266,7 +277,7 @@ impl CrossChainValidator {
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         // Validate fulfillment occurred before request intent expired
         if fulfillment.timestamp > request_intent.expiry_time {
             return Ok(ValidationResult {
@@ -278,7 +289,7 @@ impl CrossChainValidator {
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
-        
+
         // All validations passed
         Ok(ValidationResult {
             valid: true,
@@ -286,20 +297,20 @@ impl CrossChainValidator {
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
     }
-    
+
     /// Validates cross-chain conditions between hub and connected chains.
-    /// 
+    ///
     /// This function performs validation of conditions that span both chains,
     /// ensuring consistency and proper state management across the cross-chain
     /// operation.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `hub_condition` - Condition data from the hub chain
     /// * `connected_condition` - Condition data from the connected chain
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
     #[allow(dead_code)]
@@ -309,16 +320,16 @@ impl CrossChainValidator {
         _connected_condition: &str,
     ) -> anyhow::Result<ValidationResult> {
         use tracing::info;
-        
+
         info!("Validating cross-chain conditions");
-        
+
         // TODO: Implement actual cross-chain validation logic
         // This could involve:
         // - Checking balances and states across both chains
         // - Verifying transaction consistency
         // - Validating cryptographic proofs
         // - Ensuring atomicity of cross-chain operations
-        
+
         Ok(ValidationResult {
             valid: true,
             message: "Cross-chain conditions validated successfully".to_string(),
@@ -326,4 +337,3 @@ impl CrossChainValidator {
         })
     }
 }
-

@@ -5,11 +5,7 @@ module mvmt_intent::fa_intent_inflow {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self as object, Object};
     use aptos_framework::fungible_asset::{FungibleAsset, Metadata};
-    use mvmt_intent::fa_intent::{
-        Self,
-        FungibleStoreManager,
-        FungibleAssetLimitOrder,
-    };
+    use mvmt_intent::fa_intent::{Self, FungibleStoreManager, FungibleAssetLimitOrder};
     use mvmt_intent::intent::{Self as intent, TradeIntent};
     use mvmt_intent::intent_reservation;
 
@@ -33,7 +29,7 @@ module mvmt_intent::fa_intent_inflow {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        requester: address,
+        requester: address
     ): intent_reservation::IntentDraft {
         intent_reservation::create_draft_intent(
             offered_metadata,
@@ -43,7 +39,7 @@ module mvmt_intent::fa_intent_inflow {
             desired_amount,
             desired_chain_id,
             expiry_time,
-            requester,
+            requester
         )
     }
 
@@ -52,11 +48,11 @@ module mvmt_intent::fa_intent_inflow {
     // ============================================================================
 
     /// Entry function for solver to fulfill an inflow request intent.
-    /// 
+    ///
     /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
     /// The solver provides the desired tokens to the requester on the hub chain.
     /// No verifier signature is required for inflow intents.
-    /// 
+    ///
     /// # Arguments
     /// - `solver`: Signer fulfilling the intent
     /// - `intent`: Object reference to the inflow intent to fulfill (FungibleAssetLimitOrder)
@@ -64,32 +60,40 @@ module mvmt_intent::fa_intent_inflow {
     public entry fun fulfill_inflow_request_intent(
         solver: &signer,
         intent: Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
-        payment_amount: u64,
+        payment_amount: u64
     ) {
         let intent_address = object::object_address(&intent);
         let solver_address = signer::address_of(solver);
-        
+
         // 1. Start the session (this unlocks 0 tokens, but creates the session)
-        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(solver, intent);
-        
+        let (unlocked_fa, session) = fa_intent::start_fa_offering_session(
+            solver, intent
+        );
+
         // Deposit the unlocked tokens (which are 0 for inflow intents)
         primary_fungible_store::deposit(solver_address, unlocked_fa);
-        
+
         // 2. Infer desired metadata from the intent's stored argument
         let argument = intent::get_argument(&session);
         let desired_metadata = fa_intent::get_desired_metadata(argument);
-        
+
         // 3. Withdraw the desired tokens from solver's account
-        let payment_fa = primary_fungible_store::withdraw(solver, desired_metadata, payment_amount);
-        
+        let payment_fa =
+            primary_fungible_store::withdraw(solver, desired_metadata, payment_amount);
+
         // 4. Finish the session by providing the payment tokens and emit fulfillment event
-        fa_intent::finish_fa_receiving_session_with_event(session, payment_fa, intent_address, solver_address);
+        fa_intent::finish_fa_receiving_session_with_event(
+            session,
+            payment_fa,
+            intent_address,
+            solver_address
+        );
     }
 
     /// Creates an inflow request intent and returns the intent object.
-    /// 
+    ///
     /// This is the core implementation that both the entry function and tests use.
-    /// 
+    ///
     /// # Arguments
     /// - `account`: Signer of the requester creating the intent
     /// - `offered_metadata`: Metadata of the token type being offered (locked on connected chain)
@@ -120,32 +124,37 @@ module mvmt_intent::fa_intent_inflow {
         expiry_time: u64,
         intent_id: address,
         solver: address,
-        solver_signature: vector<u8>,
+        solver_signature: vector<u8>
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Withdraw 0 tokens of offered type (no tokens locked on hub chain, just requesting for cross-chain swap)
-        let fa: FungibleAsset = primary_fungible_store::withdraw(account, offered_metadata, 0);
+        let fa: FungibleAsset =
+            primary_fungible_store::withdraw(account, offered_metadata, 0);
 
         // Verify solver signature and create reservation using the solver registry
-        let intent_to_sign = intent_reservation::new_intent_to_sign(
-            offered_metadata,
-            offered_amount,
-            offered_chain_id,
-            desired_metadata,
-            desired_amount,
-            desired_chain_id,
-            expiry_time,
-            signer::address_of(account),
-            solver,
-        );
-        
+        let intent_to_sign =
+            intent_reservation::new_intent_to_sign(
+                offered_metadata,
+                offered_amount,
+                offered_chain_id,
+                desired_metadata,
+                desired_amount,
+                desired_chain_id,
+                expiry_time,
+                signer::address_of(account),
+                solver
+            );
+
         // Use verify_and_create_reservation_from_registry to look up public key from registry
-        let reservation_result = intent_reservation::verify_and_create_reservation_from_registry(
-            intent_to_sign,
-            solver_signature,
-        );
+        let reservation_result =
+            intent_reservation::verify_and_create_reservation_from_registry(
+                intent_to_sign, solver_signature
+            );
         // Fail if signature verification failed - cross-chain intents must be reserved
-        assert!(option::is_some(&reservation_result), error::invalid_argument(EINVALID_SIGNATURE));
-        
+        assert!(
+            option::is_some(&reservation_result),
+            error::invalid_argument(EINVALID_SIGNATURE)
+        );
+
         fa_intent::create_fa_to_fa_intent(
             fa,
             offered_chain_id, // where escrow is created
@@ -156,13 +165,13 @@ module mvmt_intent::fa_intent_inflow {
             signer::address_of(account),
             reservation_result, // Reserved for specific solver
             false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
-                   // Ensures consistent safety guarantees for verifiers across chains
-            option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
+            // Ensures consistent safety guarantees for verifiers across chains
+            option::some(intent_id) // Store the cross-chain intent_id for fulfillment event
         )
     }
 
     /// Entry function to create an inflow request intent.
-    /// 
+    ///
     /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
     /// The solver's public key is looked up from the on-chain solver registry.
     ///
@@ -178,21 +187,21 @@ module mvmt_intent::fa_intent_inflow {
         expiry_time: u64,
         intent_id: address,
         solver: address,
-        solver_signature: vector<u8>,
+        solver_signature: vector<u8>
     ) {
-        let _intent_obj = create_inflow_request_intent(
-            account,
-            offered_metadata,
-            offered_amount,
-            offered_chain_id,
-            desired_metadata,
-            desired_amount,
-            desired_chain_id,
-            expiry_time,
-            intent_id,
-            solver,
-            solver_signature,
-        );
+        let _intent_obj =
+            create_inflow_request_intent(
+                account,
+                offered_metadata,
+                offered_amount,
+                offered_chain_id,
+                desired_metadata,
+                desired_amount,
+                desired_chain_id,
+                expiry_time,
+                intent_id,
+                solver,
+                solver_signature
+            );
     }
 }
-

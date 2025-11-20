@@ -3,8 +3,8 @@
 //! These tests verify EVM escrow detection, ECDSA signature creation, and approval workflows
 //! without requiring external services.
 
-use trusted_verifier::monitor::{EventMonitor, FulfillmentEvent};
 use base64::Engine;
+use trusted_verifier::monitor::{EventMonitor, FulfillmentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::build_test_config_with_evm;
@@ -15,7 +15,9 @@ use test_helpers::build_test_config_with_evm;
 async fn test_evm_escrow_detection_logic() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_evm();
-    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    let monitor = EventMonitor::new(&config)
+        .await
+        .expect("Failed to create monitor");
 
     // Create a fulfillment event for an intent that doesn't exist in Move VM escrow cache
     // This should be detected as an EVM escrow
@@ -33,7 +35,7 @@ async fn test_evm_escrow_detection_logic() {
     // 2. connected_chain_evm is configured
     // This will be verified by checking that ECDSA signature is created (not Ed25519)
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
-    
+
     // Should succeed and create approval (even without escrow in cache, the logic should work)
     // The actual detection happens in validate_and_approve_fulfillment
     // We verify by checking the approval signature format
@@ -43,8 +45,14 @@ async fn test_evm_escrow_detection_logic() {
         let approval = approval.unwrap();
         // ECDSA signatures are base64 encoded 65-byte signatures
         // Decode and verify it's 65 bytes (r || s || v format)
-        let sig_bytes = base64::engine::general_purpose::STANDARD.decode(&approval.signature).unwrap();
-        assert_eq!(sig_bytes.len(), 65, "EVM signature should be 65 bytes (ECDSA format)");
+        let sig_bytes = base64::engine::general_purpose::STANDARD
+            .decode(&approval.signature)
+            .unwrap();
+        assert_eq!(
+            sig_bytes.len(),
+            65,
+            "EVM signature should be 65 bytes (ECDSA format)"
+        );
     }
 }
 
@@ -54,7 +62,9 @@ async fn test_evm_escrow_detection_logic() {
 async fn test_evm_escrow_ecdsa_signature_creation() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_evm();
-    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    let monitor = EventMonitor::new(&config)
+        .await
+        .expect("Failed to create monitor");
 
     let fulfillment = FulfillmentEvent {
         intent_id: "0xevm_test_intent".to_string(),
@@ -67,14 +77,20 @@ async fn test_evm_escrow_ecdsa_signature_creation() {
 
     // Process fulfillment - should create ECDSA signature for EVM
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
-    
+
     // Should succeed (even if escrow not in cache, signature creation should work)
     if result.is_ok() {
         let approval = monitor.get_approval_for_escrow("0xevm_test_intent").await;
         if let Some(approval) = approval {
             // Verify signature is ECDSA format (65 bytes)
-            let sig_bytes = base64::engine::general_purpose::STANDARD.decode(&approval.signature).unwrap();
-            assert_eq!(sig_bytes.len(), 65, "EVM escrow should use ECDSA signature (65 bytes)");
+            let sig_bytes = base64::engine::general_purpose::STANDARD
+                .decode(&approval.signature)
+                .unwrap();
+            assert_eq!(
+                sig_bytes.len(),
+                65,
+                "EVM escrow should use ECDSA signature (65 bytes)"
+            );
         }
     }
 }
@@ -85,7 +101,9 @@ async fn test_evm_escrow_ecdsa_signature_creation() {
 async fn test_evm_vs_mvm_escrow_differentiation() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_evm();
-    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    let monitor = EventMonitor::new(&config)
+        .await
+        .expect("Failed to create monitor");
 
     // First, add a Move VM escrow to the cache
     {
@@ -117,13 +135,21 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
         timestamp: 2,
     };
 
-    let mvm_result = monitor.validate_and_approve_fulfillment(&mvm_fulfillment).await;
+    let mvm_result = monitor
+        .validate_and_approve_fulfillment(&mvm_fulfillment)
+        .await;
     if mvm_result.is_ok() {
         let mvm_approval = monitor.get_approval_for_escrow("0xmvm_escrow").await;
         if let Some(approval) = mvm_approval {
             // Ed25519 signatures are 64 bytes (not 65)
-            let sig_bytes = base64::engine::general_purpose::STANDARD.decode(&approval.signature).unwrap();
-            assert_eq!(sig_bytes.len(), 64, "Move VM escrow should use Ed25519 signature (64 bytes)");
+            let sig_bytes = base64::engine::general_purpose::STANDARD
+                .decode(&approval.signature)
+                .unwrap();
+            assert_eq!(
+                sig_bytes.len(),
+                64,
+                "Move VM escrow should use Ed25519 signature (64 bytes)"
+            );
         }
     }
 
@@ -137,13 +163,21 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
         timestamp: 3,
     };
 
-    let evm_result = monitor.validate_and_approve_fulfillment(&evm_fulfillment).await;
+    let evm_result = monitor
+        .validate_and_approve_fulfillment(&evm_fulfillment)
+        .await;
     if evm_result.is_ok() {
         let evm_approval = monitor.get_approval_for_escrow("0xevm_intent").await;
         if let Some(approval) = evm_approval {
             // ECDSA signatures are 65 bytes
-            let sig_bytes = base64::engine::general_purpose::STANDARD.decode(&approval.signature).unwrap();
-            assert_eq!(sig_bytes.len(), 65, "EVM escrow should use ECDSA signature (65 bytes)");
+            let sig_bytes = base64::engine::general_purpose::STANDARD
+                .decode(&approval.signature)
+                .unwrap();
+            assert_eq!(
+                sig_bytes.len(),
+                65,
+                "EVM escrow should use ECDSA signature (65 bytes)"
+            );
         }
     }
 }
@@ -154,7 +188,9 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
 async fn test_evm_escrow_approval_flow() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_evm();
-    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    let monitor = EventMonitor::new(&config)
+        .await
+        .expect("Failed to create monitor");
 
     let intent_id = "0xevm_workflow_intent";
     let fulfillment = FulfillmentEvent {
@@ -168,19 +204,34 @@ async fn test_evm_escrow_approval_flow() {
 
     // Process fulfillment
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
-    
+
     // Should succeed and create approval
     if result.is_ok() {
         let approval = monitor.get_approval_for_escrow(intent_id).await;
-        assert!(approval.is_some(), "Approval should exist after workflow completion");
-        
+        assert!(
+            approval.is_some(),
+            "Approval should exist after workflow completion"
+        );
+
         let approval = approval.unwrap();
-        assert_eq!(approval.intent_id, intent_id, "Approval should have correct intent_id");
-        assert!(!approval.signature.is_empty(), "Signature should not be empty");
-        
+        assert_eq!(
+            approval.intent_id, intent_id,
+            "Approval should have correct intent_id"
+        );
+        assert!(
+            !approval.signature.is_empty(),
+            "Signature should not be empty"
+        );
+
         // Verify signature format is ECDSA (65 bytes)
-        let sig_bytes = base64::engine::general_purpose::STANDARD.decode(&approval.signature).unwrap();
-        assert_eq!(sig_bytes.len(), 65, "Signature should be ECDSA format (65 bytes)");
+        let sig_bytes = base64::engine::general_purpose::STANDARD
+            .decode(&approval.signature)
+            .unwrap();
+        assert_eq!(
+            sig_bytes.len(),
+            65,
+            "Signature should be ECDSA format (65 bytes)"
+        );
     }
 }
 
@@ -190,7 +241,9 @@ async fn test_evm_escrow_approval_flow() {
 async fn test_evm_escrow_with_invalid_intent_id() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_evm();
-    let monitor = EventMonitor::new(&config).await.expect("Failed to create monitor");
+    let monitor = EventMonitor::new(&config)
+        .await
+        .expect("Failed to create monitor");
 
     // Test with empty intent ID
     let fulfillment_empty = FulfillmentEvent {
@@ -202,9 +255,14 @@ async fn test_evm_escrow_with_invalid_intent_id() {
         timestamp: 1,
     };
 
-    let result_empty = monitor.validate_and_approve_fulfillment(&fulfillment_empty).await;
+    let result_empty = monitor
+        .validate_and_approve_fulfillment(&fulfillment_empty)
+        .await;
     // Should handle empty intent ID gracefully (may succeed or fail, but shouldn't panic)
-    assert!(result_empty.is_ok() || result_empty.is_err(), "Should handle empty intent ID without panic");
+    assert!(
+        result_empty.is_ok() || result_empty.is_err(),
+        "Should handle empty intent ID without panic"
+    );
 
     // Test with invalid hex format (if signature creation requires valid hex)
     let fulfillment_invalid = FulfillmentEvent {
@@ -216,8 +274,12 @@ async fn test_evm_escrow_with_invalid_intent_id() {
         timestamp: 1,
     };
 
-    let result_invalid = monitor.validate_and_approve_fulfillment(&fulfillment_invalid).await;
+    let result_invalid = monitor
+        .validate_and_approve_fulfillment(&fulfillment_invalid)
+        .await;
     // Should handle invalid hex gracefully
-    assert!(result_invalid.is_ok() || result_invalid.is_err(), "Should handle invalid hex without panic");
+    assert!(
+        result_invalid.is_ok() || result_invalid.is_err(),
+        "Should handle invalid hex without panic"
+    );
 }
-

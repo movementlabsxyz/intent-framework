@@ -2,14 +2,14 @@
 //!
 //! This module provides helper functions used by unit tests.
 
+use base64::{engine::general_purpose, Engine as _};
 use ed25519_dalek::SigningKey;
 use rand::RngCore;
-use base64::{engine::general_purpose, Engine as _};
-use trusted_verifier::config::{ApiConfig, ChainConfig, VerifierConfig, Config, EvmChainConfig};
-use trusted_verifier::monitor::{RequestIntentEvent, FulfillmentEvent, EscrowEvent, ChainType};
-use trusted_verifier::validator::FulfillmentTransactionParams;
-use trusted_verifier::mvm_client::MvmTransaction;
+use trusted_verifier::config::{ApiConfig, ChainConfig, Config, EvmChainConfig, VerifierConfig};
 use trusted_verifier::evm_client::EvmTransaction;
+use trusted_verifier::monitor::{ChainType, EscrowEvent, FulfillmentEvent, RequestIntentEvent};
+use trusted_verifier::mvm_client::MvmTransaction;
+use trusted_verifier::validator::FulfillmentTransactionParams;
 
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
 /// Keys are encoded using standard Base64 to satisfy CryptoService requirements.
@@ -92,9 +92,13 @@ pub fn create_base_request_intent_mvm() -> RequestIntentEvent {
         desired_amount: 0,
         expiry_time: 0, // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // Move VM address format (32 bytes)
+        reserved_solver: Some(
+            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        ), // Move VM address format (32 bytes)
         connected_chain_id: Some(2),
-        requester_address_connected_chain: Some("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
+        requester_address_connected_chain: Some(
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        ), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
         timestamp: 0,
     }
 }
@@ -115,7 +119,9 @@ pub fn create_base_request_intent_evm() -> RequestIntentEvent {
     RequestIntentEvent {
         reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes)
         connected_chain_id: Some(3), // EVM chain ID
-        requester_address_connected_chain: Some("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string()), // EVM address format (20 bytes)
+        requester_address_connected_chain: Some(
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        ), // EVM address format (20 bytes)
         ..create_base_request_intent_mvm()
     }
 }
@@ -135,7 +141,8 @@ pub fn create_base_request_intent_evm() -> RequestIntentEvent {
 pub fn create_base_fulfillment() -> FulfillmentEvent {
     FulfillmentEvent {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
-        intent_address: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string(), // Intent object address (64 hex chars for Move VM)
+        intent_address: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            .to_string(), // Intent object address (64 hex chars for Move VM)
         solver: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 0,
@@ -164,9 +171,11 @@ pub fn create_base_escrow_event() -> EscrowEvent {
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0, // Escrow desired_amount must be 0 (validation requirement)
-        expiry_time: 0, // Should be set explicitly in tests
+        expiry_time: 0,    // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
+        reserved_solver: Some(
+            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        ),
         chain_id: 2,
         chain_type: ChainType::Mvm,
         timestamp: 0, // Should be set explicitly in tests
@@ -219,7 +228,7 @@ pub fn create_base_fulfillment_transaction_params_evm() -> FulfillmentTransactio
 /// ```
 /// let base = create_base_mvm_transaction();
 /// let custom = MvmTransaction {
-///     hash: "0x123123".to_string(), 
+///     hash: "0x123123".to_string(),
 ///     success: false,
 ///     ..base
 /// };
@@ -232,7 +241,9 @@ pub fn create_base_mvm_transaction() -> MvmTransaction {
         success: true,
         events: vec![],
         payload: None, // Should be set explicitly in tests
-        sender: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
+        sender: Some(
+            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        ),
     }
 }
 
@@ -261,4 +272,3 @@ pub fn create_base_evm_transaction() -> EvmTransaction {
         status: Some("0x1".to_string()), // Success
     }
 }
-

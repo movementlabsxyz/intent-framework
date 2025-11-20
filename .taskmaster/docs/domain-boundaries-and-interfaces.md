@@ -223,6 +223,8 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 - `GET /approvals` - Get cached approval signatures
 - `GET /approvals/:escrow_id` - Get approval for specific escrow
 - `POST /approval` - Manually create approval signature
+- `POST /validate-outflow-fulfillment` - Validate connected chain transaction for outflow intent and return approval signature
+- `POST /validate-inflow-escrow` - Validate escrow deposit for inflow intent
 
 **Public Functions** (Rust):
 

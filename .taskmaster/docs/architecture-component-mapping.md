@@ -306,7 +306,7 @@ graph TB
   - **`outflow_mvm.rs`**: Move VM-specific transaction querying (`query_mvm_fulfillment_transaction()`)
   - **`outflow_evm.rs`**: EVM-specific transaction querying (`query_evm_fulfillment_transaction()`)
   - **Purpose**: REST API for external system integration
-  - **Key Endpoints**: `/health`, `/public-key`, `/events`, `/approvals`, `/approval`, `/validate-fulfillment`
+  - **Key Endpoints**: `/health`, `/public-key`, `/events`, `/approvals`, `/approval`, `/validate-outflow-fulfillment`, `/validate-inflow-escrow`
   - **Key Structures**: `ApiServer`, `ApiResponse<T>`
   - **Responsibilities**: HTTP request handling, event/approval retrieval, manual approval creation, fulfillment validation
 

@@ -1,5 +1,19 @@
+//! Escrow claim utility
+//!
+//! This script claims an escrow on the IntentEscrow contract using a verifier signature.
+//! The solver (Account 2) calls claim() to release the escrowed funds.
+
 const hre = require("hardhat");
 
+/// Claims an escrow with verifier signature
+///
+/// # Environment Variables
+/// - `ESCROW_ADDRESS`: IntentEscrow contract address
+/// - `INTENT_ID_EVM`: Intent ID in EVM format (uint256, hex with 0x prefix)
+/// - `SIGNATURE_HEX`: Verifier ECDSA signature (hex string without 0x prefix)
+///
+/// # Returns
+/// Outputs transaction hash and success message on success.
 async function main() {
   const escrowAddress = process.env.ESCROW_ADDRESS;
   const intentIdHex = process.env.INTENT_ID_EVM;

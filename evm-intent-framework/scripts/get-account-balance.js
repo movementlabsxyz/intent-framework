@@ -1,5 +1,17 @@
+//! Native ETH balance query utility
+//!
+//! This script queries the native ETH balance (in wei) for a Hardhat account by index.
+
 const hre = require("hardhat");
 
+/// Gets native ETH balance for a Hardhat account
+///
+/// # Environment Variables or Arguments
+/// - `ACCOUNT_INDEX`: Account index (0-based) or command line argument
+///   Defaults to 0 if not provided
+///
+/// # Returns
+/// Outputs balance in wei (decimal string) on success.
 async function main() {
   // Get account index from environment variable or command line argument
   // Defaults to 0 (Alice) if not provided

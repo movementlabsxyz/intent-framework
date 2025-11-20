@@ -1,5 +1,17 @@
+//! Hardhat test accounts information utility
+//!
+//! This script outputs addresses and balances for the standard Hardhat test accounts.
+//! Account 0 = deployer/verifier, Account 1 = Alice, Account 2 = Bob
+
 const hre = require('hardhat');
 
+/// Outputs test account addresses and balances
+///
+/// Outputs environment variable format strings for Alice, Bob, and Verifier addresses,
+/// as well as their native ETH balances.
+///
+/// # Returns
+/// Outputs ALICE_ADDRESS, BOB_ADDRESS, VERIFIER_ADDRESS, ALICE_BALANCE, and BOB_BALANCE.
 async function main() {
   const signers = await hre.ethers.getSigners();
   

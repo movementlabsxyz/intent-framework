@@ -1,5 +1,17 @@
+//! IntentEscrow contract deployment utility
+//!
+//! This script deploys the IntentEscrow contract with a specified verifier address.
+//! If no verifier address is provided via environment variable, uses the deployer account.
+
 const hre = require("hardhat");
 
+/// Deploys IntentEscrow contract with verifier
+///
+/// # Environment Variables
+/// - `VERIFIER_ADDRESS`: Optional verifier Ethereum address (defaults to deployer address)
+///
+/// # Returns
+/// Outputs contract address, verifier address, and deployment status on success.
 async function main() {
   console.log("Deploying IntentEscrow...");
 

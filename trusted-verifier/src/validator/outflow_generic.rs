@@ -112,16 +112,17 @@ pub async fn validate_outflow_fulfillment(
             });
         }
 
-        // Normalize addresses for comparison (remove 0x prefix, lowercase)
-        let tx_recipient = tx_params
+        // Normalize addresses for comparison (remove 0x prefix, pad to 64 hex chars, lowercase)
+        // Move VM addresses can be represented with or without leading zeros, so we pad them
+        let tx_recipient_raw = tx_params
             .recipient
             .strip_prefix("0x")
-            .unwrap_or(&tx_params.recipient)
-            .to_lowercase();
-        let requester = requester_address
+            .unwrap_or(&tx_params.recipient);
+        let tx_recipient = format!("{:0>64}", tx_recipient_raw).to_lowercase();
+        let requester_raw = requester_address
             .strip_prefix("0x")
-            .unwrap_or(requester_address)
-            .to_lowercase();
+            .unwrap_or(requester_address);
+        let requester = format!("{:0>64}", requester_raw).to_lowercase();
 
         if tx_recipient != requester {
             return Ok(ValidationResult {
@@ -209,15 +210,16 @@ pub async fn validate_outflow_fulfillment(
             };
 
             // Compare transaction solver (Move VM address on connected chain) to registered connected chain address
-            let tx_solver = tx_params
+            // Normalize addresses: remove 0x prefix, pad to 64 hex chars, lowercase
+            let tx_solver_raw = tx_params
                 .solver
                 .strip_prefix("0x")
-                .unwrap_or(&tx_params.solver)
-                .to_lowercase();
-            let registered_mvm = registered_mvm_address
+                .unwrap_or(&tx_params.solver);
+            let tx_solver = format!("{:0>64}", tx_solver_raw).to_lowercase();
+            let registered_mvm_raw = registered_mvm_address
                 .strip_prefix("0x")
-                .unwrap_or(&registered_mvm_address)
-                .to_lowercase();
+                .unwrap_or(&registered_mvm_address);
+            let registered_mvm = format!("{:0>64}", registered_mvm_raw).to_lowercase();
 
             if tx_solver != registered_mvm {
                 return Ok(ValidationResult {

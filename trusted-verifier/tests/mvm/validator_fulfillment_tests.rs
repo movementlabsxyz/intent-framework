@@ -180,6 +180,69 @@ fn test_extract_mvm_fulfillment_params_missing_payload() {
     assert!(result.unwrap_err().to_string().contains("payload"));
 }
 
+/// Test that extract_mvm_fulfillment_params normalizes addresses with missing leading zeros
+///
+/// What is tested: Extracting parameters from a Move VM transaction where addresses
+/// are missing leading zeros (e.g., 62 hex chars instead of 64) should be normalized
+/// to 64 hex characters with leading zeros.
+///
+/// Why: Move VM addresses can be serialized without leading zeros, but validation
+/// requires exactly 64 hex characters. This test ensures addresses are properly normalized.
+#[test]
+fn test_extract_mvm_fulfillment_params_address_normalization() {
+    // Address without leading zeros: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (62 chars)
+    // Should be normalized to: 00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (64 chars)
+    let recipient_short = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    
+    let tx = MvmTransaction {
+        payload: Some(serde_json::json!({
+            "function": "0x123::utils::transfer_with_intent_id",
+            "arguments": [
+                recipient_short,
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "100000000",
+                "0x1111111111111111111111111111111111111111111111111111111111111111"
+            ]
+        })),
+        sender: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
+        ..create_base_mvm_transaction()
+    };
+
+    let result = extract_mvm_fulfillment_params(&tx);
+
+    assert!(
+        result.is_ok(),
+        "Extraction should succeed and normalize addresses"
+    );
+    let params = result.unwrap();
+    
+    // Recipient should be normalized to 64 hex chars with leading zeros
+    assert_eq!(
+        params.recipient,
+        "0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "Recipient address should be padded to 64 hex characters"
+    );
+    
+    // Intent ID is already 64 hex chars, so should remain unchanged
+    assert_eq!(
+        params.intent_id,
+        "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "Intent ID should remain 64 hex characters (already correct length)"
+    );
+    assert_eq!(
+        params.intent_id.len(),
+        66, // 0x + 64 hex chars
+        "Intent ID should be 66 characters (0x + 64 hex)"
+    );
+    
+    // Solver should also be normalized (already 64 chars in test, but should still work)
+    assert_eq!(
+        params.solver.len(),
+        66, // 0x + 64 hex chars
+        "Solver address should be 66 characters (0x + 64 hex)"
+    );
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================

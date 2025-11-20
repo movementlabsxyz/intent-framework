@@ -16,6 +16,8 @@ git commit -m "<type of change>: <description>
 
 - <more detailed points if needed (optional)>
 - <more detailed points if needed (optional)>
+
+Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust) <number>
 "
 ```
 
@@ -27,6 +29,7 @@ git commit -m "<type of change>: <description>
 - Do NOT include phrases like "Generated with Claude Code" or "Co-Authored-By ..."
 - Follow conventional commit format when applicable (e.g., `feat:`, `fix:`, `refactor:`)
 - Focus on what changed and why, not who/what tool made the change
+- **Always include test results** at the end of the commit message in the format: `Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust) <number>`
 
 ## Context Requirements
 

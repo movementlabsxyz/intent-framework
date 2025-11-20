@@ -54,10 +54,12 @@ pub fn extract_mvm_fulfillment_params(tx: &MvmTransaction) -> Result<Fulfillment
         ));
     }
 
-    let recipient = args[0]
+    // Normalize Move VM address: strip 0x prefix, pad to 64 hex chars, add 0x back
+    let recipient_raw = args[0]
         .as_str()
-        .ok_or_else(|| anyhow::anyhow!("Invalid recipient address"))?
-        .to_string();
+        .ok_or_else(|| anyhow::anyhow!("Invalid recipient address"))?;
+    let recipient_no_prefix = recipient_raw.strip_prefix("0x").unwrap_or(recipient_raw);
+    let recipient = format!("0x{:0>64}", recipient_no_prefix);
 
     // Metadata is Object<Metadata> which is serialized as {"inner": "0x..."} in Aptos
     let metadata = if let Some(metadata_obj) = args[1].as_object() {
@@ -98,17 +100,20 @@ pub fn extract_mvm_fulfillment_params(tx: &MvmTransaction) -> Result<Fulfillment
         return Err(anyhow::anyhow!("Invalid amount: expected number or string"));
     };
 
-    let intent_id = args[3]
+    // Normalize Move VM address: strip 0x prefix, pad to 64 hex chars, add 0x back
+    let intent_id_raw = args[3]
         .as_str()
-        .ok_or_else(|| anyhow::anyhow!("Invalid intent_id"))?
-        .to_string();
+        .ok_or_else(|| anyhow::anyhow!("Invalid intent_id"))?;
+    let intent_id_no_prefix = intent_id_raw.strip_prefix("0x").unwrap_or(intent_id_raw);
+    let intent_id = format!("0x{:0>64}", intent_id_no_prefix);
 
-    // Get sender from transaction
-    let solver = tx
+    // Get sender from transaction and normalize Move VM address
+    let solver_raw = tx
         .sender
         .as_ref()
-        .ok_or_else(|| anyhow::anyhow!("Transaction sender not found"))?
-        .clone();
+        .ok_or_else(|| anyhow::anyhow!("Transaction sender not found"))?;
+    let solver_no_prefix = solver_raw.strip_prefix("0x").unwrap_or(solver_raw);
+    let solver = format!("0x{:0>64}", solver_no_prefix);
 
     Ok(FulfillmentTransactionParams {
         intent_id,

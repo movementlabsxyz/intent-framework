@@ -605,6 +605,57 @@ async fn test_base_helpers_work_with_signature_generation() {
     );
 }
 
+/// Test that fulfillment events with odd-length intent_ids are normalized correctly
+/// Why: Move VM events can emit intent_ids with odd number of hex characters (e.g., 63 chars),
+/// which must be normalized to 64 chars before signature creation to avoid hex parsing errors
+#[tokio::test]
+async fn test_fulfillment_with_odd_length_intent_id() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let config = build_test_config_with_mvm();
+    let monitor = EventMonitor::new(&config)
+        .await
+        .expect("Failed to create monitor");
+
+    // Create escrow with normalized intent_id (64 hex chars)
+    // Odd-length intent_id (63 hex chars): eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    // Normalized to (64 hex chars): 0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    let escrow_intent_id = "0x0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    {
+        let mut escrow_cache = monitor.escrow_cache.write().await;
+        escrow_cache.push(EscrowEvent {
+            intent_id: escrow_intent_id.to_string(),
+            escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(),
+            ..create_base_escrow_event()
+        });
+    }
+
+    // Create fulfillment with odd-length intent_id (63 hex chars) - simulates real Move VM event
+    // This should be normalized to 64 chars when creating the signature
+    let fulfillment_odd_intent_id = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; // 63 hex chars
+    let fulfillment = FulfillmentEvent {
+        intent_id: fulfillment_odd_intent_id.to_string(),
+        ..create_base_fulfillment()
+    };
+
+    // This should succeed - the intent_id should be normalized to 64 chars before signature creation
+    let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
+    assert!(
+        result.is_ok(),
+        "Fulfillment with odd-length intent_id should be normalized and work with signature generation"
+    );
+
+    // Verify approval was generated
+    let approval = monitor
+        .get_approval_for_escrow(
+            "0x2222222222222222222222222222222222222222222222222222222222222222",
+        )
+        .await;
+    assert!(
+        approval.is_some(),
+        "Approval should exist for fulfillment with odd-length intent_id after normalization"
+    );
+}
+
 /// Test that approval generation fails when fulfillment intent_id doesn't match escrow intent_id
 /// Why: Verify that mismatched intent_ids are rejected - fulfillment must match an existing escrow
 #[tokio::test]

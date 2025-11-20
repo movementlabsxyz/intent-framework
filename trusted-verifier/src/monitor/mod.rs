@@ -30,7 +30,7 @@ pub use generic::{
 // Re-export test utilities (used in integration tests)
 #[doc(hidden)]
 #[allow(unused_imports)] // Only used in tests, not in library code
-pub use generic::normalize_intent_id;
+pub use generic::{normalize_intent_id, normalize_intent_id_to_64_chars};
 
 // Re-export poll_hub_events for testing
 #[doc(hidden)]

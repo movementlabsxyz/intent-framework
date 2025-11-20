@@ -74,8 +74,10 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
 
                 if let Ok(data) = fulfillment_data_result {
                     // Create fulfillment event
+                    // Normalize intent_id to 64 hex characters to ensure it can be safely parsed as hex
+                    let normalized_intent_id = crate::monitor::generic::normalize_intent_id_to_64_chars(&data.intent_id);
                     let fulfillment_event = FulfillmentEvent {
-                        intent_id: data.intent_id.clone(),
+                        intent_id: normalized_intent_id,
                         intent_address: data.intent_address.clone(),
                         solver: data.solver.clone(),
                         provided_metadata: serde_json::to_string(&data.provided_metadata)

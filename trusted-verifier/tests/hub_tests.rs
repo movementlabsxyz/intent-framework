@@ -4,3 +4,6 @@
 
 #[path = "hub/validator_tests.rs"]
 mod validator_tests;
+
+#[path = "hub/event_parsing_tests.rs"]
+mod event_parsing_tests;

@@ -57,6 +57,8 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
             let event_type = event.r#type.clone();
             
             // Handle LimitOrderEvent, OracleLimitOrderEvent, and LimitOrderFulfillmentEvent
+            // IMPORTANT: Check OracleLimitOrderEvent BEFORE LimitOrderEvent because
+            // "OracleLimitOrderEvent".contains("LimitOrderEvent") is true!
             if event_type.contains("LimitOrderFulfillmentEvent") {
                 // Try to parse as fulfillment event
                 let fulfillment_data_result: Result<MvmLimitOrderFulfillmentEvent, _> = serde_json::from_value(event.data.clone());
@@ -95,6 +97,57 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                         error!("Fulfillment validation failed: {}", e);
                     }
                 }
+            } else if event_type.contains("OracleLimitOrderEvent") {
+                // Outflow intents use OracleLimitOrderEvent (from fa_intent_with_oracle)
+                // All outflow request intents MUST have a reserved solver
+                let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
+                    .context("Failed to parse OracleLimitOrderEvent")?;
+                
+                // Use reserved_solver from event (now included in the event)
+                // All outflow intents must have a reserved solver
+                let reserved_solver = match data.reserved_solver.clone() {
+                    Some(solver) => solver,
+                    None => {
+                        error!("Outflow intent {} has no reserved_solver in event. Event data: {:?}", data.intent_id, event.data);
+                        return Err(anyhow::anyhow!("Outflow intent must have reserved_solver, but event has None. This indicates a bug in move-intent-framework or the event was emitted before the code update."));
+                    }
+                };
+                
+                // Determine connected_chain_id for outflow intents
+                // For outflow: offered_chain_id is hub chain, desired_chain_id is connected chain
+                let offered_chain_id = data.offered_chain_id.parse::<u64>()
+                    .context("Failed to parse offered_chain_id")?;
+                let desired_chain_id = data.desired_chain_id.parse::<u64>()
+                    .context("Failed to parse desired_chain_id")?;
+                
+                // If chain IDs differ, this is a cross-chain intent
+                // For outflow: desired_chain_id is the connected chain
+                let connected_chain_id = if offered_chain_id != desired_chain_id {
+                    Some(desired_chain_id) // For outflow, desired_chain_id is the connected chain
+                } else {
+                    None // Regular single-chain intent (shouldn't happen for outflow, but handle gracefully)
+                };
+                
+                // Convert Move event (OracleLimitOrderEvent) to verifier's internal RequestIntentEvent structure
+                // RequestIntentEvent is NOT an on-chain event - it's the verifier's internal representation
+                // used for caching and validation
+                request_intent_events.push(RequestIntentEvent {
+                    intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
+                    requester: data.requester.clone(),
+                    offered_metadata: serde_json::to_string(&data.offered_metadata).unwrap_or_default(),
+                    offered_amount: data.offered_amount.parse::<u64>()
+                        .context("Failed to parse offered amount")?,
+                    desired_metadata: serde_json::to_string(&data.desired_metadata).unwrap_or_default(),
+                    desired_amount: data.desired_amount.parse::<u64>()
+                        .context("Failed to parse desired_amount")?,
+                    expiry_time: data.expiry_time.parse::<u64>()
+                        .context("Failed to parse expiry_time")?,
+                    revocable: data.revocable,
+                    reserved_solver: Some(reserved_solver),
+                    connected_chain_id,
+                    requester_address_connected_chain: data.requester_address_connected_chain.clone(),
+                    timestamp,
+                });
             } else if event_type.contains("LimitOrderEvent") && !event_type.contains("Fulfillment") {
                 // Inflow intents use LimitOrderEvent (from fa_intent)
                 // This is for regular intents and inflow cross-chain intents
@@ -153,6 +206,24 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     }
                 };
                 
+                // Determine connected_chain_id for outflow intents
+                // For outflow: offered_chain_id is hub chain, desired_chain_id is connected chain
+                let offered_chain_id = data.offered_chain_id.parse::<u64>()
+                    .context("Failed to parse offered_chain_id")?;
+                let desired_chain_id = data.desired_chain_id.parse::<u64>()
+                    .context("Failed to parse desired_chain_id")?;
+                
+                // If chain IDs differ, this is a cross-chain intent
+                // For outflow: desired_chain_id is the connected chain
+                let connected_chain_id = if offered_chain_id != desired_chain_id {
+                    Some(desired_chain_id) // For outflow, desired_chain_id is the connected chain
+                } else {
+                    None // Regular single-chain intent (shouldn't happen for outflow, but handle gracefully)
+                };
+                
+                // Convert Move event (OracleLimitOrderEvent) to verifier's internal RequestIntentEvent structure
+                // RequestIntentEvent is NOT an on-chain event - it's the verifier's internal representation
+                // used for caching and validation
                 request_intent_events.push(RequestIntentEvent {
                     intent_id: data.intent_id.clone(),  // Use intent_id for cross-chain linking
                     requester: data.requester.clone(),
@@ -166,8 +237,8 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                         .context("Failed to parse expiry_time")?,
                     revocable: data.revocable,
                     reserved_solver: Some(reserved_solver),
-                    connected_chain_id: None, // OracleLimitOrderEvent doesn't have connected_chain_id in the event
-                    requester_address_connected_chain: None, // Not available from event, would need to query intent object
+                    connected_chain_id,
+                    requester_address_connected_chain: data.requester_address_connected_chain.clone(),
                     timestamp,
                 });
             }

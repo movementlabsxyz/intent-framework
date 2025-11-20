@@ -91,6 +91,7 @@ module mvmt_intent::fa_intent_with_oracle {
         min_reported_value: u64,
         revocable: bool,
         reserved_solver: Option<address>, // Solver address if the intent is reserved (None for unreserved intents)
+        requester_address_connected_chain: Option<address>, // Requester address on connected chain (for outflow intents)
     }
 
     // ============================================================================
@@ -205,6 +206,7 @@ module mvmt_intent::fa_intent_with_oracle {
             min_reported_value: requirement.min_reported_value,
             revocable,
             reserved_solver,
+            requester_address_connected_chain,
         });
 
         intent_obj

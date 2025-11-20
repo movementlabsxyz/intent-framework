@@ -31,3 +31,8 @@ pub use generic::{
 #[doc(hidden)]
 #[allow(unused_imports)] // Only used in tests, not in library code
 pub use generic::normalize_intent_id;
+
+// Re-export poll_hub_events for testing
+#[doc(hidden)]
+#[allow(unused_imports)] // Only used in tests
+pub use outflow_generic::poll_hub_events;

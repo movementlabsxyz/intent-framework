@@ -956,6 +956,11 @@ pub struct OracleLimitOrderEvent {
         skip_serializing_if = "Option::is_none"
     )]
     pub reserved_solver: Option<String>, // Solver address if the intent is reserved (None for unreserved intents)
+    #[serde(
+        deserialize_with = "deserialize_move_option_string",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub requester_address_connected_chain: Option<String>, // Requester address on connected chain (for outflow intents)
 }
 
 /// Represents a LimitOrderFulfillmentEvent emitted when an intent is fulfilled

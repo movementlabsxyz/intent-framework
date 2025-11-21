@@ -68,7 +68,7 @@ log ""
 log "   Executing solver transfer on connected chain..."
 log "   - Solver (Bob) transfers tokens directly to requester (Alice) on Chain 2"
 log "   - This is a DIRECT TRANSFER, not an escrow"
-log "   - Requester (Alice) receives tokens immediately"
+log "   - Requester (Alice) receives tokens immediately on Chain 2"
 log "   - Amount: $TRANSFER_AMOUNT Octas"
 log "   - Intent ID included in transaction for verifier tracking"
 
@@ -105,9 +105,9 @@ if [ $? -eq 0 ]; then
     ALICE_EXPECTED=$((ALICE_INITIAL_BALANCE + TRANSFER_AMOUNT))
 
     if [ "$ALICE_FINAL_BALANCE" -eq "$ALICE_EXPECTED" ]; then
-        log "     ✅ Requester (Alice) balance increased by $TRANSFER_AMOUNT as expected"
+        log "     ✅ Requester (Alice) Chain 2 balance increased by $TRANSFER_AMOUNT as expected"
     else
-        log_and_echo "❌ ERROR: Requester (Alice) balance mismatch"
+        log_and_echo "❌ ERROR: Requester (Alice) Chain 2 balance mismatch"
         log_and_echo "   Expected: $ALICE_EXPECTED Octas"
         log_and_echo "   Got: $ALICE_FINAL_BALANCE Octas"
         exit 1
@@ -115,9 +115,9 @@ if [ $? -eq 0 ]; then
 
     if [ "$BOB_FINAL_BALANCE" -le "$((BOB_INITIAL_BALANCE - TRANSFER_AMOUNT))" ]; then
         BOB_DECREASE=$((BOB_INITIAL_BALANCE - BOB_FINAL_BALANCE))
-        log "     ✅ Solver (Bob) balance decreased by $BOB_DECREASE Octas (transfer + gas)"
+        log "     ✅ Solver (Bob) Chain 2 balance decreased by $BOB_DECREASE Octas (transfer + gas)"
     else
-        log_and_echo "❌ ERROR: Solver (Bob) balance did not decrease as expected"
+        log_and_echo "❌ ERROR: Solver (Bob) Chain 2 balance did not decrease as expected"
         log_and_echo "   Initial: $BOB_INITIAL_BALANCE Octas"
         log_and_echo "   Final: $BOB_FINAL_BALANCE Octas"
         exit 1

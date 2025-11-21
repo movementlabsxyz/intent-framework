@@ -55,12 +55,12 @@ if [ -z "$TOKEN_ADDRESS" ]; then
     log "     ✅ MockERC20 deployed to: $TOKEN_ADDRESS"
     
     # Mint tokens to Bob (Account 2) for the transfer
-    log "   - Minting tokens to Bob (solver)..."
+    log "   - Minting tokens to Bob (solver) on EVM chain..."
     MINT_AMOUNT="2000000000000000000000"  # 2000 ETH worth
     MINT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$TOKEN_ADDRESS' RECIPIENT='$BOB_EVM_ADDRESS' AMOUNT='$MINT_AMOUNT' npx hardhat run scripts/mint-token.js --network localhost" 2>&1 | tee -a "$LOG_FILE" || echo "")
     
     if [ -n "$MINT_OUTPUT" ] && echo "$MINT_OUTPUT" | grep -qi "success\|minted"; then
-        log "     ✅ Tokens minted to Bob"
+        log "     ✅ Tokens minted to Bob on EVM chain"
     else
         log "     ⚠️  Warning: Could not verify token minting (may need manual minting)"
     fi
@@ -82,8 +82,8 @@ ALICE_TOKEN_BALANCE_INIT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_
 BOB_TOKEN_BALANCE_INIT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$TOKEN_ADDRESS' ACCOUNT='$BOB_EVM_ADDRESS' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
 cd ..
 
-log "   Alice token balance (initial): $ALICE_TOKEN_BALANCE_INIT"
-log "   Bob token balance (initial): $BOB_TOKEN_BALANCE_INIT"
+log "   Alice EVM token balance (initial): $ALICE_TOKEN_BALANCE_INIT"
+log "   Bob EVM token balance (initial): $BOB_TOKEN_BALANCE_INIT"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -92,7 +92,7 @@ log ""
 log "   Executing solver transfer on connected EVM chain..."
 log "   - Solver (Bob) transfers tokens directly to requester (Alice) on EVM chain"
 log "   - This is a DIRECT TRANSFER, not an escrow"
-log "   - Requester (Alice) receives tokens immediately"
+log "   - Requester (Alice) receives tokens immediately on EVM chain"
 log "   - Amount: $TRANSFER_AMOUNT_WEI wei (1000 ETH)"
 log "   - Intent ID included in transaction calldata for verifier tracking"
 
@@ -138,16 +138,23 @@ if [ $TRANSFER_EXIT_CODE -eq 0 ] && echo "$TRANSFER_OUTPUT" | grep -qi "SUCCESS"
     BOB_TOKEN_BALANCE_FINAL=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$TOKEN_ADDRESS' ACCOUNT='$BOB_EVM_ADDRESS' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
     cd ..
 
-    log "     Alice token balance (final): $ALICE_TOKEN_BALANCE_FINAL"
-    log "     Bob token balance (final): $BOB_TOKEN_BALANCE_FINAL"
+    log "     Alice EVM token balance (final): $ALICE_TOKEN_BALANCE_FINAL"
+    log "     Bob EVM token balance (final): $BOB_TOKEN_BALANCE_FINAL"
 
     ALICE_EXPECTED=$(echo "$ALICE_TOKEN_BALANCE_INIT + $TRANSFER_AMOUNT_WEI" | bc)
     ALICE_INCREASE=$(echo "$ALICE_TOKEN_BALANCE_FINAL - $ALICE_TOKEN_BALANCE_INIT" | bc)
 
-    if [ "$ALICE_TOKEN_BALANCE_FINAL" -ge "$ALICE_EXPECTED" ] || [ "$ALICE_INCREASE" -ge "$TRANSFER_AMOUNT_WEI" ]; then
-        log "     ✅ Requester (Alice) token balance increased by $ALICE_INCREASE as expected"
+    # Use bc for comparison since wei values exceed bash integer limits
+    # Token balance should increase by exactly the transfer amount (gas fees don't affect token balances)
+    BALANCE_MATCH=$(echo "$ALICE_TOKEN_BALANCE_FINAL == $ALICE_EXPECTED" | bc)
+    INCREASE_MATCH=$(echo "$ALICE_INCREASE == $TRANSFER_AMOUNT_WEI" | bc)
+
+    if [ "$BALANCE_MATCH" -eq 1 ] || [ "$INCREASE_MATCH" -eq 1 ]; then
+        log "     ✅ Requester (Alice) EVM token balance increased by $ALICE_INCREASE as expected"
     else
-        log_and_echo "❌ ERROR: Requester (Alice) token balance mismatch"
+        log_and_echo "❌ ERROR: Requester (Alice) EVM token balance mismatch"
+        log_and_echo "   Expected final balance: $ALICE_EXPECTED"
+        log_and_echo "   Got final balance: $ALICE_TOKEN_BALANCE_FINAL"
         log_and_echo "   Expected increase: $TRANSFER_AMOUNT_WEI"
         log_and_echo "   Got increase: $ALICE_INCREASE"
         exit 1

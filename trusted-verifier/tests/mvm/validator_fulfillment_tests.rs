@@ -193,7 +193,7 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
     // Address without leading zeros: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (62 chars)
     // Should be normalized to: 00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (64 chars)
     let recipient_short = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-    
+
     let tx = MvmTransaction {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer_with_intent_id",
@@ -204,7 +204,9 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
                 "0x1111111111111111111111111111111111111111111111111111111111111111"
             ]
         })),
-        sender: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()),
+        sender: Some(
+            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        ),
         ..create_base_mvm_transaction()
     };
 
@@ -215,18 +217,16 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
         "Extraction should succeed and normalize addresses"
     );
     let params = result.unwrap();
-    
+
     // Recipient should be normalized to 64 hex chars with leading zeros
     assert_eq!(
-        params.recipient,
-        "0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        params.recipient, "0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "Recipient address should be padded to 64 hex characters"
     );
-    
+
     // Intent ID is already 64 hex chars, so should remain unchanged
     assert_eq!(
-        params.intent_id,
-        "0x1111111111111111111111111111111111111111111111111111111111111111",
+        params.intent_id, "0x1111111111111111111111111111111111111111111111111111111111111111",
         "Intent ID should remain 64 hex characters (already correct length)"
     );
     assert_eq!(
@@ -234,7 +234,7 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
         66, // 0x + 64 hex chars
         "Intent ID should be 66 characters (0x + 64 hex)"
     );
-    
+
     // Solver should also be normalized (already 64 chars in test, but should still work)
     assert_eq!(
         params.solver.len(),

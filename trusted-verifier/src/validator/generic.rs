@@ -14,6 +14,40 @@ use crate::monitor::{ChainType, FulfillmentEvent, RequestIntentEvent};
 // CHAIN TYPE UTILITIES
 // ============================================================================
 
+/// Normalizes an address by padding it to the expected length for the given chain type.
+///
+/// Move VM addresses can be serialized without leading zeros (e.g., 63 hex chars instead of 64),
+/// so this function pads them to the expected length before validation or comparison.
+///
+/// # Arguments
+///
+/// * `address` - The address to normalize (with or without 0x prefix)
+/// * `chain_type` - The chain type (determines expected address length)
+///
+/// # Returns
+///
+/// * `String` - The normalized address with 0x prefix, padded to expected length
+pub fn normalize_address(address: &str, chain_type: ChainType) -> String {
+    let address_no_prefix = address.strip_prefix("0x").unwrap_or(address);
+    let expected_len = match chain_type {
+        ChainType::Evm => 40, // 20 bytes = 40 hex chars
+        ChainType::Mvm => 64, // 32 bytes = 64 hex chars
+        ChainType::Svm => 64, // 32 bytes = 64 hex chars
+    };
+
+    if address_no_prefix.len() < expected_len {
+        // Pad with leading zeros to expected length
+        format!("0x{:0>width$}", address_no_prefix, width = expected_len)
+    } else {
+        // Ensure 0x prefix is present
+        if address.starts_with("0x") {
+            address.to_string()
+        } else {
+            format!("0x{}", address)
+        }
+    }
+}
+
 /// Determines the chain type from a chain ID by comparing it to configured chain IDs.
 ///
 /// This function compares the provided chain ID against the configured EVM and MVM
@@ -32,7 +66,8 @@ use crate::monitor::{ChainType, FulfillmentEvent, RequestIntentEvent};
 /// * `Err(anyhow::Error)` - Chain ID does not match any configured connected chain, or duplicate chain IDs detected
 pub fn get_chain_type_from_chain_id(chain_id: u64, config: &Config) -> Result<ChainType> {
     // Validate that EVM and MVM chains don't have the same chain ID
-    if let (Some(evm_config), Some(mvm_config)) = (&config.connected_chain_evm, &config.connected_chain_mvm) {
+    if let (Some(evm_config), Some(mvm_config)) = (&config.connected_chain_evm, &config.connected_chain_mvm)
+    {
         if evm_config.chain_id == mvm_config.chain_id {
             return Err(anyhow::anyhow!(
                 "Configuration error: EVM and MVM chains have the same chain ID {}. Each chain must have a unique chain ID.",

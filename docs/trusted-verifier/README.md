@@ -53,6 +53,8 @@ See the [component README](../../trusted-verifier/README.md) for quick start com
 - `GET /events` - Get cached intent events
 - `POST /approval` - Create approval signature
 - `GET /public-key` - Get verifier public key
+- `POST /validate-outflow-fulfillment` - Validate connected chain transaction for outflow intent
+- `POST /validate-inflow-escrow` - Validate escrow for inflow intent
 
 For detailed API documentation, see [api.md](api.md). For usage guide, see [guide.md](guide.md).
 

@@ -131,8 +131,9 @@ fn test_extract_evm_fulfillment_params_amount_exceeds_u64_max() {
     // u64::MAX = 18446744073709551615 (0xffffffffffffffff)
     // Use u64::MAX + 1 = 18446744073709551616 (0x10000000000000000)
     // Padded to 32 bytes (64 hex chars): 0000000000000000000000000000000000000000000000010000000000000000
-    let amount_exceeding_u64_max = "0000000000000000000000000000000000000000000000010000000000000000"; // u64::MAX + 1, padded to 32 bytes
-    
+    let amount_exceeding_u64_max =
+        "0000000000000000000000000000000000000000000000010000000000000000"; // u64::MAX + 1, padded to 32 bytes
+
     let calldata = format!(
         "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{}{}",
         amount_exceeding_u64_max,
@@ -174,7 +175,7 @@ fn test_extract_evm_fulfillment_params_amount_equals_u64_max() {
     // u64::MAX = 18446744073709551615 (0xffffffffffffffff)
     // Padded to 32 bytes (64 hex chars): 000000000000000000000000000000000000000000000000ffffffffffffffff
     let amount_u64_max = "000000000000000000000000000000000000000000000000ffffffffffffffff"; // u64::MAX, padded to 32 bytes
-    
+
     let calldata = format!(
         "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{}{}",
         amount_u64_max,
@@ -211,7 +212,7 @@ fn test_extract_evm_fulfillment_params_large_valid_amount() {
     // Use a large but valid u64 value: 1000000000000000000 (10^18, 1 ETH in wei)
     // This is well within u64::MAX but tests large number handling
     let large_amount = "0000000000000000000000000000000000000000000000000de0b6b3a7640000"; // 1000000000000000000, padded to 32 bytes (64 hex chars)
-    
+
     let calldata = format!(
         "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{}{}",
         large_amount,
@@ -231,8 +232,7 @@ fn test_extract_evm_fulfillment_params_large_valid_amount() {
     );
     let params = result.unwrap();
     assert_eq!(
-        params.amount,
-        1000000000000000000u64,
+        params.amount, 1000000000000000000u64,
         "Extracted amount should match the large value"
     );
 }

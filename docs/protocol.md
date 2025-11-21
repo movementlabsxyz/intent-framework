@@ -115,14 +115,12 @@ sequenceDiagram
     Connected->>Connected: Tokens received by requester
 
     Note over Requester,Solver: Phase 3: Verifier Validation and Approval
-    Solver->>Verifier: Inform verifier about transaction hash/ID<br/>(proves transfer on connected chain)
-    Verifier->>Connected: Check connected chain for transaction<br/>(verify transfer occurred)
-    Verifier->>Verifier: Match intent_id with hub intent
+    Solver->>Verifier: POST /validate-outflow-fulfillment<br/>(transaction_hash, chain_type, intent_id)
+    Verifier->>Connected: Query transaction by hash<br/>(verify transfer occurred)
     Verifier->>Verifier: Validate transfer conditions met
-    Verifier->>Verifier: Generate approval signature<br/>(signs intent_id)
+    Verifier->>Solver: Return approval signature
 
     Note over Requester,Solver: Phase 4: Intent Fulfillment on Hub Chain
-    Verifier->>Solver: Delivers approval signature<br/>(Ed25519 signature)
     Solver->>Hub: fulfill_outflow_request_intent(<br/>intent, verifier_signature_bytes)
     Hub->>Hub: Verify verifier signature
     Hub->>Hub: Unlock tokens and transfer to solver
@@ -135,8 +133,8 @@ sequenceDiagram
    - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
 2. **Hub**: Requester calls `create_outflow_request_intent()` with `offered_amount` (amount to lock on hub), `intent_id`, `offered_chain_id` (hub), `desired_chain_id` (connected), `requester_address_connected_chain` (where solver should send tokens), `verifier_public_key`, `solver` address, and `solver_signature`. The function locks tokens on the hub and creates an oracle-guarded intent requiring verifier signature (emits `OracleLimitOrderEvent` with `revocable=false`).
 3. **Connected Chain**: Solver transfers tokens directly to `requester_address_connected_chain` using standard token transfer (not an escrow). The transaction must include `intent_id` as metadata for verifier tracking. See [Connected Chain Outflow Fulfillment Transaction Format](#connected-chain-outflow-fulfillment-transaction-format) for exact specification.
-4. **Solver**: Informs the verifier about the transaction hash/ID from the connected chain transfer.
-5. **Verifier**: Checks the connected chain for the transaction to verify the transfer occurred, matches the `intent_id` with the hub intent, validates conditions are met, and generates approval signature by signing the `intent_id`.
+4. **Solver**: Calls the verifier REST API endpoint `POST /validate-outflow-fulfillment` with the transaction hash, chain type, and intent ID.
+5. **Verifier**: Validates the transaction matches the hub intent requirements and generates approval signature by signing the `intent_id`.
 6. **Hub**: Solver calls `fulfill_outflow_request_intent()` with the verifier signature. The function verifies the signature, unlocks the tokens locked on hub, and transfers them to the solver as reward.
 7. **Result**: Requester receives tokens on connected chain, solver receives locked tokens from hub as reward.
 

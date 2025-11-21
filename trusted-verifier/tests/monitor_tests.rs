@@ -624,14 +624,16 @@ async fn test_fulfillment_with_odd_length_intent_id() {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             intent_id: escrow_intent_id.to_string(),
-            escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(),
+            escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222"
+                .to_string(),
             ..create_base_escrow_event()
         });
     }
 
     // Create fulfillment with odd-length intent_id (63 hex chars) - simulates real Move VM event
     // This should be normalized to 64 chars when creating the signature
-    let fulfillment_odd_intent_id = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; // 63 hex chars
+    let fulfillment_odd_intent_id =
+        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; // 63 hex chars
     let fulfillment = FulfillmentEvent {
         intent_id: fulfillment_odd_intent_id.to_string(),
         ..create_base_fulfillment()

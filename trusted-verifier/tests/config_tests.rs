@@ -5,7 +5,7 @@
 
 use trusted_verifier::config::{ChainConfig, Config, EvmChainConfig};
 use trusted_verifier::monitor::ChainType;
-use trusted_verifier::validator::get_chain_type_from_chain_id;
+use trusted_verifier::validator::{get_chain_type_from_chain_id, normalize_address};
 
 /// Test that default configuration creates valid structure
 /// Why: Verify default config is valid and doesn't panic
@@ -264,4 +264,81 @@ fn test_config_validate_unique_chain_ids() {
 
     let result = config.validate();
     assert!(result.is_ok(), "Should accept unique chain IDs");
+}
+
+// ============================================================================
+// ADDRESS NORMALIZATION TESTS
+// ============================================================================
+
+/// Test that normalize_address pads Move VM addresses with leading zeros
+/// Why: Move VM addresses can be serialized without leading zeros (63 chars), need to pad to 64
+#[test]
+fn test_normalize_address_mvm_pads_short_address() {
+    let address = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; // 63 chars
+    let normalized = normalize_address(address, ChainType::Mvm);
+
+    assert_eq!(
+        normalized.len(),
+        66,
+        "Should be 0x + 64 hex chars = 66 total"
+    );
+    assert!(normalized.starts_with("0x"), "Should have 0x prefix");
+    assert_eq!(&normalized[2..3], "0", "Should be padded with leading zero");
+    assert_eq!(
+        &normalized[3..],
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "Rest should match"
+    );
+}
+
+/// Test that normalize_address doesn't pad Move VM addresses that are already 64 chars
+/// Why: Addresses that are already correct length should not be modified
+#[test]
+fn test_normalize_address_mvm_keeps_full_address() {
+    let address = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"; // 64 chars
+    let normalized = normalize_address(address, ChainType::Mvm);
+
+    assert_eq!(normalized, address, "Should remain unchanged");
+}
+
+/// Test that normalize_address handles Move VM addresses without 0x prefix
+/// Why: Addresses may come without prefix, should add it
+#[test]
+fn test_normalize_address_mvm_adds_prefix() {
+    let address = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"; // 63 chars, no prefix
+    let normalized = normalize_address(address, ChainType::Mvm);
+
+    assert!(normalized.starts_with("0x"), "Should add 0x prefix");
+    assert_eq!(
+        normalized.len(),
+        66,
+        "Should be 0x + 64 hex chars = 66 total"
+    );
+    assert_eq!(&normalized[2..3], "0", "Should be padded with leading zero");
+}
+
+/// Test that normalize_address pads EVM addresses correctly
+/// Why: EVM addresses should be padded to 40 hex chars (20 bytes)
+#[test]
+fn test_normalize_address_evm_pads_short_address() {
+    let address = "0xccccccccccccccccccccccccccccccccccccccc"; // 39 chars
+    let normalized = normalize_address(address, ChainType::Evm);
+
+    assert_eq!(
+        normalized.len(),
+        42,
+        "Should be 0x + 40 hex chars = 42 total"
+    );
+    assert!(normalized.starts_with("0x"), "Should have 0x prefix");
+    assert_eq!(&normalized[2..3], "0", "Should be padded with leading zero");
+}
+
+/// Test that normalize_address handles EVM addresses correctly
+/// Why: EVM addresses are 40 hex chars, should not be padded if already correct
+#[test]
+fn test_normalize_address_evm_keeps_full_address() {
+    let address = "0xdddddddddddddddddddddddddddddddddddddddd"; // 40 chars
+    let normalized = normalize_address(address, ChainType::Evm);
+
+    assert_eq!(normalized, address, "Should remain unchanged");
 }

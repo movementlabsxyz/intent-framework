@@ -254,7 +254,7 @@ fn test_parse_amount_with_u64_limit_exceeds_max() {
     // Test u64::MAX + 1
     let amount_exceeding = (u64::MAX as u128 + 1).to_string();
     let result = parse_amount_with_u64_limit(&amount_exceeding, "test_amount");
-    
+
     assert!(result.is_err(), "Should reject amount exceeding u64::MAX");
     let error_msg = result.unwrap_err().to_string();
     assert!(
@@ -311,7 +311,7 @@ fn test_parse_amount_with_u64_limit_large_valid() {
     // Test a large but valid value (u64::MAX - 1)
     let large_valid = (u64::MAX - 1).to_string();
     let result = parse_amount_with_u64_limit(&large_valid, "test_amount");
-    
+
     assert!(result.is_ok(), "Should parse large valid value");
     assert_eq!(result.unwrap(), u64::MAX - 1);
 

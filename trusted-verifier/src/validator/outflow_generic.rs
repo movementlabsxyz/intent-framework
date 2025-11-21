@@ -88,7 +88,10 @@ pub async fn validate_outflow_fulfillment(
             }
         };
 
-        let chain_type = match crate::validator::generic::get_chain_type_from_chain_id(chain_id, validator.config()) {
+        let chain_type = match crate::validator::generic::get_chain_type_from_chain_id(
+            chain_id,
+            validator.config(),
+        ) {
             Ok(ct) => ct,
             Err(e) => {
                 return Ok(ValidationResult {
@@ -98,6 +101,10 @@ pub async fn validate_outflow_fulfillment(
                 });
             }
         };
+
+        // Normalize requester_address_connected_chain by padding to expected length
+        // Move VM addresses can be serialized without leading zeros, so we pad them
+        let normalized_requester_address = crate::validator::generic::normalize_address(requester_address, chain_type);
 
         // Validate address formats match chain type
         if let Err(e) = validate_address_format(&tx_params.recipient, chain_type) {
@@ -111,7 +118,7 @@ pub async fn validate_outflow_fulfillment(
             });
         }
 
-        if let Err(e) = validate_address_format(requester_address, chain_type) {
+        if let Err(e) = validate_address_format(&normalized_requester_address, chain_type) {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
@@ -123,15 +130,15 @@ pub async fn validate_outflow_fulfillment(
         }
 
         // Normalize addresses for comparison (remove 0x prefix, pad to 64 hex chars, lowercase)
-        // Move VM addresses can be represented with or without leading zeros, so we pad them
+        // Use the normalized requester address we created above
         let tx_recipient_raw = tx_params
             .recipient
             .strip_prefix("0x")
             .unwrap_or(&tx_params.recipient);
         let tx_recipient = format!("{:0>64}", tx_recipient_raw).to_lowercase();
-        let requester_raw = requester_address
+        let requester_raw = normalized_requester_address
             .strip_prefix("0x")
-            .unwrap_or(requester_address);
+            .unwrap_or(&normalized_requester_address);
         let requester = format!("{:0>64}", requester_raw).to_lowercase();
 
         if tx_recipient != requester {
@@ -212,12 +219,18 @@ pub async fn validate_outflow_fulfillment(
             }
         };
 
-        let chain_type = match crate::validator::generic::get_chain_type_from_chain_id(chain_id, validator.config()) {
+        let chain_type = match crate::validator::generic::get_chain_type_from_chain_id(
+            chain_id,
+            validator.config(),
+        ) {
             Ok(ct) => ct,
             Err(e) => {
                 return Ok(ValidationResult {
                     valid: false,
-                    message: format!("Failed to determine chain type from connected_chain_id: {}", e),
+                    message: format!(
+                        "Failed to determine chain type from connected_chain_id: {}",
+                        e
+                    ),
                     timestamp: chrono::Utc::now().timestamp() as u64,
                 });
             }

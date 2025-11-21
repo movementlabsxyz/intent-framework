@@ -180,8 +180,8 @@ if [ "$VALID" != "true" ]; then
         done || log_and_echo "   (No relevant error lines found)"
         
         log_and_echo ""
-        log_and_echo "   Last 50 lines of verifier log:"
-        tail -50 "$VERIFIER_LOG_FILE" | while IFS= read -r line; do
+        log_and_echo "   Full verifier log:"
+        cat "$VERIFIER_LOG_FILE" | while IFS= read -r line; do
             log_and_echo "   $line"
         done
     else

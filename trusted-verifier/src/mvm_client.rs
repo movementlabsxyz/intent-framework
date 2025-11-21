@@ -792,6 +792,14 @@ impl MvmClient {
         solver_address: &str,
         registry_address: &str,
     ) -> Result<Option<String>> {
+        tracing::error!(
+            "DEBUG: get_solver_evm_address called with solver_address='{}' (len: {}, type: str), registry_address='{}' (len: {}, type: str)",
+            solver_address,
+            solver_address.len(),
+            registry_address,
+            registry_address.len()
+        );
+        
         // Normalize registry address (remove 0x prefix for resource type matching)
         let registry_addr_normalized = registry_address
             .strip_prefix("0x")
@@ -810,6 +818,16 @@ impl MvmClient {
             .strip_prefix("0x")
             .unwrap_or(solver_address)
             .to_lowercase();
+
+        tracing::error!(
+            "DEBUG: Normalized values - solver_address='{}' -> normalized='{}' (len: {}), registry_address='{}' -> normalized='{}' (len: {})",
+            solver_address,
+            solver_addr,
+            solver_addr.len(),
+            registry_address,
+            registry_addr_normalized,
+            registry_addr_normalized.len()
+        );
 
         // Find the SolverRegistry resource (try both formats)
         let registry_resource = resources
@@ -846,30 +864,57 @@ impl MvmClient {
             None => return Ok(None),
         };
 
-        // Find the solver entry
+        // Find the solver entry with detailed debug output
+        tracing::error!(
+            "DEBUG: Looking for solver in registry. Input solver_address='{}' (type: str), normalized='{}' (type: str, len: {}), registry_address='{}' (type: str)",
+            solver_address,
+            solver_addr,
+            solver_addr.len(),
+            registry_address
+        );
+        
+        // Log all available solver keys with their normalized forms
+        let available_solvers_debug: Vec<(String, String)> = data_array
+            .iter()
+            .filter_map(|entry| {
+                let entry_obj = entry.as_object()?;
+                let key = entry_obj.get("key")?.as_str()?;
+                let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+                Some((key.to_string(), key_normalized))
+            })
+            .collect();
+        
+        tracing::error!(
+            "DEBUG: Available solvers in registry (original -> normalized): {:?}",
+            available_solvers_debug
+        );
+        
         let solver_entry = data_array.iter().find_map(|entry| {
             let entry_obj = entry.as_object()?;
             let key = entry_obj.get("key")?.as_str()?;
             let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+            
+            tracing::error!(
+                "DEBUG: Comparing - Looking for: '{}' (normalized: '{}', len: {}) vs Registry key: '{}' (normalized: '{}', len: {}) -> Match: {}",
+                solver_address,
+                solver_addr,
+                solver_addr.len(),
+                key,
+                key_normalized,
+                key_normalized.len(),
+                key_normalized == solver_addr
+            );
+            
             (key_normalized == solver_addr).then_some(entry_obj)
         });
 
         let Some(entry_obj) = solver_entry else {
-            // Log available solver addresses for debugging
-            let available_solvers: Vec<String> = data_array
-                .iter()
-                .filter_map(|entry| {
-                    entry.as_object()?
-                        .get("key")?
-                        .as_str()
-                        .map(|s| s.to_string())
-                })
-                .collect();
-            tracing::warn!(
-                "Solver not found in registry. Looking for: {} (normalized: {}), Available solvers: {:?}",
+            tracing::error!(
+                "Solver not found in registry. Looking for: '{}' (normalized: '{}', len: {}), Available solvers (original -> normalized): {:?}",
                 solver_address,
                 solver_addr,
-                available_solvers
+                solver_addr.len(),
+                available_solvers_debug
             );
             return Ok(None); // Solver not found in registry
         };

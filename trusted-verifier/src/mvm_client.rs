@@ -789,6 +789,12 @@ impl MvmClient {
             .find(|r| r.resource_type == registry_resource_type);
 
         let Some(registry_resource) = registry_resource else {
+            tracing::warn!(
+                "SolverRegistry resource not found. Registry address: {}, Resource type: {}, Available resources: {:?}",
+                registry_address,
+                registry_resource_type,
+                resources.iter().map(|r| &r.resource_type).collect::<Vec<_>>()
+            );
             return Ok(None); // Registry resource not found
         };
 
@@ -817,6 +823,22 @@ impl MvmClient {
         });
 
         let Some(entry_obj) = solver_entry else {
+            // Log available solver addresses for debugging
+            let available_solvers: Vec<String> = data_array
+                .iter()
+                .filter_map(|entry| {
+                    entry.as_object()?
+                        .get("key")?
+                        .as_str()
+                        .map(|s| s.to_string())
+                })
+                .collect();
+            tracing::warn!(
+                "Solver not found in registry. Looking for: {} (normalized: {}), Available solvers: {:?}",
+                solver_address,
+                solver_addr,
+                available_solvers
+            );
             return Ok(None); // Solver not found in registry
         };
 

@@ -118,7 +118,7 @@ pub fn create_base_request_intent_mvm() -> RequestIntentEvent {
 pub fn create_base_request_intent_evm() -> RequestIntentEvent {
     RequestIntentEvent {
         reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes)
-        connected_chain_id: Some(3), // EVM chain ID
+        connected_chain_id: Some(31337), // EVM chain ID (matches build_test_config_with_evm)
         requester_address_connected_chain: Some(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         ), // EVM address format (20 bytes)

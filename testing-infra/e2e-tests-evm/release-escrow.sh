@@ -184,12 +184,12 @@ check_and_release_escrows() {
         log "   - Bob's balance after claim: $BOB_BALANCE_AFTER wei"
         
         # Calculate balance increase
-        # Expected: Bob should receive 1000 ETH = 1000000000000000000000 wei (minus gas fees)
-        EXPECTED_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH
+        # Expected: Bob should receive 100000000 wei (matches request intent offered_amount, minus gas fees)
+        EXPECTED_AMOUNT_WEI="100000000"  # 100 million wei (matches request intent offered_amount)
         BALANCE_INCREASE=$(echo "$BOB_BALANCE_AFTER $BOB_BALANCE_BEFORE" | awk '{print $1 - $2}')
         
         log "   - Balance increase: $BALANCE_INCREASE wei"
-        log "   - Expected: ~$EXPECTED_AMOUNT_WEI wei (1000 ETH minus gas)"
+        log "   - Expected: ~$EXPECTED_AMOUNT_WEI wei (matches request intent offered_amount, minus gas)"
         
         # Check if balance increased by at least 99% of expected (allowing for gas fees)
         MIN_EXPECTED=$(echo "$EXPECTED_AMOUNT_WEI" | awk '{print int($1 * 0.99)}')
@@ -202,8 +202,8 @@ check_and_release_escrows() {
             log_and_echo "   Bob's balance before: $BOB_BALANCE_BEFORE wei"
             log_and_echo "   Bob's balance after:  $BOB_BALANCE_AFTER wei"
             log_and_echo "   Balance increase:    $BALANCE_INCREASE wei"
-            log_and_echo "   Expected increase:   ~$EXPECTED_AMOUNT_WEI wei (1000 ETH)"
-            log_and_echo "   Minimum expected:     $MIN_EXPECTED wei (99% of 1000 ETH)"
+            log_and_echo "   Expected increase:   ~$EXPECTED_AMOUNT_WEI wei (matches request intent offered_amount)"
+            log_and_echo "   Minimum expected:     $MIN_EXPECTED wei (99% of escrow amount)"
             log_and_echo "   Escrow release FAILED - Bob did not receive funds!"
             exit 1
         fi
@@ -315,11 +315,11 @@ if [ -z "$BOB_BALANCE_FINAL" ]; then
 fi
 
 # For inflow flow:
-# - Bob on EVM Chain 3 should have received ~1000000000000000000000 wei (1000 ETH) from escrow release
+# - Bob on EVM Chain 3 should have received ~100000000 wei (matches request intent offered_amount) from escrow release
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 # We check that Bob's balance increased by approximately the expected amount (at least 99% to account for gas)
 
-EXPECTED_BOB_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH
+EXPECTED_BOB_AMOUNT_WEI="100000000"  # 100 million wei (matches request intent offered_amount)
 MIN_EXPECTED_BOB_WEI=$(echo "$EXPECTED_BOB_AMOUNT_WEI" | awk '{print int($1 * 0.99)}')
 
 # Calculate balance increase for Bob on EVM Chain 3
@@ -333,7 +333,7 @@ if [ "$SUFFICIENT_BOB_INCREASE" = "0" ] || [ -z "$BOB_BALANCE_INCREASE" ] || [ "
     log_and_echo "   Initial balance: $BOB_BALANCE_INIT wei"
     log_and_echo "   Final balance: $BOB_BALANCE_FINAL wei"
     log_and_echo "   Balance increase: $BOB_BALANCE_INCREASE wei"
-    log_and_echo "   Expected increase: at least $MIN_EXPECTED_BOB_WEI wei (99% of 1000 ETH, after escrow release)"
+    log_and_echo "   Expected increase: at least $MIN_EXPECTED_BOB_WEI wei (99% of escrow amount, after escrow release)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     exit 1
 fi

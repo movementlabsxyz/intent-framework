@@ -30,12 +30,14 @@ log "📋 Chain Information:"
 log "   Alice EVM (connected): $ALICE_EVM_ADDRESS"
 log "   Bob EVM (connected): $BOB_EVM_ADDRESS"
 
-TRANSFER_AMOUNT_WEI="1000000000000000000000"  # 1000 ETH = 1000 * 10^18 wei
+# Transfer amount must match the request intent's desired_amount (100000000)
+# This is the amount the requester specified they want on the connected chain
+TRANSFER_AMOUNT_WEI="100000000"  # 100 million wei (matches request intent desired_amount)
 
 log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
-log "   Transfer Amount: $TRANSFER_AMOUNT_WEI wei (1000 ETH)"
+log "   Transfer Amount: $TRANSFER_AMOUNT_WEI wei (matches request intent desired_amount)"
 
 # Get or deploy token address
 cd evm-intent-framework
@@ -56,7 +58,7 @@ if [ -z "$TOKEN_ADDRESS" ]; then
     
     # Mint tokens to Bob (Account 2) for the transfer
     log "   - Minting tokens to Bob (solver) on EVM chain..."
-    MINT_AMOUNT="2000000000000000000000"  # 2000 ETH worth
+    MINT_AMOUNT="200000000"  # 200 million wei (enough for transfer + buffer)
     MINT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$TOKEN_ADDRESS' RECIPIENT='$BOB_EVM_ADDRESS' AMOUNT='$MINT_AMOUNT' npx hardhat run scripts/mint-token.js --network localhost" 2>&1 | tee -a "$LOG_FILE" || echo "")
     
     if [ -n "$MINT_OUTPUT" ] && echo "$MINT_OUTPUT" | grep -qi "success\|minted"; then
@@ -93,7 +95,7 @@ log "   Executing solver transfer on connected EVM chain..."
 log "   - Solver (Bob) transfers tokens directly to requester (Alice) on EVM chain"
 log "   - This is a DIRECT TRANSFER, not an escrow"
 log "   - Requester (Alice) receives tokens immediately on EVM chain"
-log "   - Amount: $TRANSFER_AMOUNT_WEI wei (1000 ETH)"
+log "   - Amount: $TRANSFER_AMOUNT_WEI wei (matches request intent desired_amount)"
 log "   - Intent ID included in transaction calldata for verifier tracking"
 
 cd evm-intent-framework
@@ -195,7 +197,7 @@ log ""
 log "📋 Transfer Details:"
 log "   Intent ID: $INTENT_ID"
 log "   Transaction Hash: $TX_HASH"
-log "   Amount Transferred: $TRANSFER_AMOUNT_WEI wei (1000 ETH)"
+log "   Amount Transferred: $TRANSFER_AMOUNT_WEI wei (matches request intent desired_amount)"
 log "   Recipient: $ALICE_EVM_ADDRESS"
 log "   Token Address: $TOKEN_ADDRESS"
 

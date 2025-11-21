@@ -212,3 +212,112 @@ async fn test_poll_hub_events_handles_missing_requester_address_connected_chain(
     // This event would fail validation later when validate_outflow_fulfillment is called
     // because requester_address_connected_chain is None but connected_chain_id is Some
 }
+
+// ============================================================================
+// AMOUNT PARSING TESTS
+// ============================================================================
+
+/// Test that parse_amount_with_u64_limit successfully parses valid u64 amounts
+///
+/// What is tested: Parsing amounts that are valid u64 values should succeed.
+///
+/// Why: Verify that the function correctly parses and converts valid amounts.
+#[test]
+fn test_parse_amount_with_u64_limit_success() {
+    use trusted_verifier::monitor::parse_amount_with_u64_limit;
+
+    // Test small value
+    let result = parse_amount_with_u64_limit("1000", "test_amount");
+    assert!(result.is_ok(), "Should parse small value");
+    assert_eq!(result.unwrap(), 1000u64);
+
+    // Test u64::MAX
+    let result = parse_amount_with_u64_limit(&u64::MAX.to_string(), "test_amount");
+    assert!(result.is_ok(), "Should parse u64::MAX");
+    assert_eq!(result.unwrap(), u64::MAX);
+
+    // Test zero
+    let result = parse_amount_with_u64_limit("0", "test_amount");
+    assert!(result.is_ok(), "Should parse zero");
+    assert_eq!(result.unwrap(), 0u64);
+}
+
+/// Test that parse_amount_with_u64_limit rejects amounts exceeding u64::MAX
+///
+/// What is tested: Parsing amounts that exceed u64::MAX should fail with a clear error.
+///
+/// Why: Verify that the function correctly validates the Move contract constraint.
+#[test]
+fn test_parse_amount_with_u64_limit_exceeds_max() {
+    use trusted_verifier::monitor::parse_amount_with_u64_limit;
+
+    // Test u64::MAX + 1
+    let amount_exceeding = (u64::MAX as u128 + 1).to_string();
+    let result = parse_amount_with_u64_limit(&amount_exceeding, "test_amount");
+    
+    assert!(result.is_err(), "Should reject amount exceeding u64::MAX");
+    let error_msg = result.unwrap_err().to_string();
+    assert!(
+        error_msg.contains("exceeds") && error_msg.contains("u64::MAX"),
+        "Error message should mention exceeding u64::MAX. Got: {}",
+        error_msg
+    );
+    assert!(
+        error_msg.contains("Move contract") || error_msg.contains("Move contracts"),
+        "Error message should mention Move contract limitation. Got: {}",
+        error_msg
+    );
+    assert!(
+        error_msg.contains("test_amount"),
+        "Error message should include field name. Got: {}",
+        error_msg
+    );
+}
+
+/// Test that parse_amount_with_u64_limit handles invalid number strings
+///
+/// What is tested: Parsing invalid number strings should fail with a parse error.
+///
+/// Why: Verify that the function correctly handles invalid input.
+#[test]
+fn test_parse_amount_with_u64_limit_invalid_string() {
+    use trusted_verifier::monitor::parse_amount_with_u64_limit;
+
+    // Test invalid string
+    let result = parse_amount_with_u64_limit("not_a_number", "test_amount");
+    assert!(result.is_err(), "Should reject invalid number string");
+    let error_msg = result.unwrap_err().to_string();
+    assert!(
+        error_msg.contains("parse") || error_msg.contains("Failed to parse"),
+        "Error message should mention parse failure. Got: {}",
+        error_msg
+    );
+    assert!(
+        error_msg.contains("test_amount"),
+        "Error message should include field name. Got: {}",
+        error_msg
+    );
+}
+
+/// Test that parse_amount_with_u64_limit handles large but valid u64 values
+///
+/// What is tested: Parsing large but valid u64 values (close to u64::MAX) should succeed.
+///
+/// Why: Verify that the function correctly handles large values within the limit.
+#[test]
+fn test_parse_amount_with_u64_limit_large_valid() {
+    use trusted_verifier::monitor::parse_amount_with_u64_limit;
+
+    // Test a large but valid value (u64::MAX - 1)
+    let large_valid = (u64::MAX - 1).to_string();
+    let result = parse_amount_with_u64_limit(&large_valid, "test_amount");
+    
+    assert!(result.is_ok(), "Should parse large valid value");
+    assert_eq!(result.unwrap(), u64::MAX - 1);
+
+    // Test 1 ETH in wei (10^18, well within u64::MAX)
+    let one_eth_wei = "1000000000000000000";
+    let result = parse_amount_with_u64_limit(one_eth_wei, "test_amount");
+    assert!(result.is_ok(), "Should parse 1 ETH in wei");
+    assert_eq!(result.unwrap(), 1000000000000000000u64);
+}

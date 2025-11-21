@@ -4,6 +4,7 @@
 //! for outflow fulfillment validation.
 
 use crate::evm_client::EvmTransaction;
+use crate::monitor::parse_amount_with_u64_limit;
 use crate::validator::generic::{validate_address_format, FulfillmentTransactionParams};
 use anyhow::{Context, Result};
 
@@ -59,8 +60,9 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
 
     // Extract amount (bytes 36-67)
     let amount_hex = &input[72..136]; // Next 32 bytes = 64 hex chars
-    let amount =
-        u64::from_str_radix(amount_hex, 16).context("Failed to parse amount from calldata")?;
+    
+    // Parse and validate amount using shared function (handles hex strings and u64::MAX validation)
+    let amount = parse_amount_with_u64_limit(amount_hex, "EVM transfer amount")?;
 
     // Extract intent_id (bytes 68-99, last 32 bytes)
     let intent_id_hex = &input[136..200]; // Last 32 bytes = 64 hex chars

@@ -80,11 +80,11 @@ pub struct RequestIntentEvent {
     pub requester: String,
     /// Metadata of the asset being offered
     pub offered_metadata: String,
-    /// Amount of the asset being offered (offered_amount from hub intent)
+    /// Amount of the asset being offered (u64, matching Move contract constraint)
     pub offered_amount: u64,
     /// Metadata of the desired asset
     pub desired_metadata: String,
-    /// Amount of the desired asset
+    /// Amount of the desired asset (u64, matching Move contract constraint)
     pub desired_amount: u64,
     /// Unix timestamp when the request intent expires
     pub expiry_time: u64,
@@ -116,11 +116,11 @@ pub struct EscrowEvent {
     pub issuer: String,
     /// Metadata of the asset being offered (what's locked in escrow)
     pub offered_metadata: String,
-    /// Amount of the asset being offered (what's locked in escrow)
+    /// Amount of the asset being offered (u64, matching Move contract constraint)
     pub offered_amount: u64,
     /// Metadata of the desired asset (what solver needs to provide)
     pub desired_metadata: String,
-    /// Amount of the desired asset
+    /// Amount of the desired asset (u64, matching Move contract constraint)
     pub desired_amount: u64,
     /// Unix timestamp when the escrow expires
     pub expiry_time: u64,
@@ -157,7 +157,7 @@ pub struct FulfillmentEvent {
     pub solver: String,
     /// Metadata of the asset provided by the solver
     pub provided_metadata: String,
-    /// Amount of the asset provided by the solver
+    /// Amount of the asset provided by the solver (u64, matching Move contract constraint)
     pub provided_amount: u64,
     /// Unix timestamp when the request intent was fulfilled
     pub timestamp: u64,

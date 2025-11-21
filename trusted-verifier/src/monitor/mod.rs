@@ -36,3 +36,8 @@ pub use generic::{normalize_intent_id, normalize_intent_id_to_64_chars};
 #[doc(hidden)]
 #[allow(unused_imports)] // Only used in tests
 pub use outflow_generic::poll_hub_events;
+
+// Re-export parse_amount_with_u64_limit for testing
+#[doc(hidden)]
+#[allow(unused_imports)] // Only used in tests
+pub use hub_mvm::parse_amount_with_u64_limit;

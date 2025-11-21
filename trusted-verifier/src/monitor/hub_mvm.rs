@@ -15,6 +15,62 @@ use crate::mvm_client::{
     OracleLimitOrderEvent as MvmOracleLimitOrderEvent,
 };
 
+/// Parses an amount (decimal string or hex string) and validates it doesn't exceed u64::MAX (Move contract constraint)
+///
+/// This function parses a string as u128 first to handle large values, then validates
+/// it doesn't exceed u64::MAX since Move contracts only support u64 for amounts.
+///
+/// # Arguments
+///
+/// * `amount_str` - The amount as a string (decimal or hex, with or without 0x prefix)
+/// * `field_name` - The name of the field being parsed (for error messages)
+///
+/// # Returns
+///
+/// * `Ok(u64)` - Parsed and validated amount
+/// * `Err(anyhow::Error)` - Failed to parse or amount exceeds u64::MAX
+#[doc(hidden)]
+pub fn parse_amount_with_u64_limit(amount_str: &str, field_name: &str) -> Result<u64> {
+    // Parse as u128 first to handle large values
+    // Support both decimal strings and hex strings (with or without 0x prefix)
+    // For EVM calldata: hex strings are 64 chars (32 bytes), so treat long hex-looking strings as hex
+    // For Move events: decimal strings are typically shorter
+    let amount_u128 = if amount_str.starts_with("0x") {
+        // Explicit hex string with 0x prefix
+        let hex_str = &amount_str[2..];
+        u128::from_str_radix(hex_str, 16)
+            .with_context(|| format!("Failed to parse {} as hex number", field_name))?
+    } else if amount_str.len() >= 16 && amount_str.chars().all(|c| c.is_ascii_hexdigit()) {
+        // Long hex string without 0x prefix (likely from EVM calldata, 64 hex chars = 32 bytes)
+        // Check if all chars are hex digits to avoid misinterpreting decimal strings
+        u128::from_str_radix(amount_str, 16)
+            .with_context(|| format!("Failed to parse {} as hex number", field_name))?
+    } else {
+        // Try decimal first, fall back to hex if it fails
+        amount_str
+            .parse::<u128>()
+            .or_else(|_| {
+                u128::from_str_radix(amount_str, 16)
+                    .with_context(|| format!("Failed to parse {} as number (tried both decimal and hex)", field_name))
+            })?
+    };
+    
+    // Validate amount doesn't exceed u64::MAX (Move contract constraint)
+    if amount_u128 > u64::MAX as u128 {
+        return Err(anyhow::anyhow!(
+            "{} {} exceeds Move contract limit (u64::MAX = {}). Move contracts only support u64 for amounts",
+            field_name, amount_u128, u64::MAX
+        ));
+    }
+    
+    // Safe to convert since we've validated it doesn't exceed u64::MAX
+    u64::try_from(amount_u128)
+        .map_err(|_| anyhow::anyhow!(
+            "Failed to convert {} {} to u64 (this should not happen after validation)",
+            field_name, amount_u128
+        ))
+}
+
 /// Polls the hub Move VM chain for new request intent events.
 ///
 /// This function queries the hub chain's event logs for new request intent
@@ -82,10 +138,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                         solver: data.solver.clone(),
                         provided_metadata: serde_json::to_string(&data.provided_metadata)
                             .unwrap_or_default(),
-                        provided_amount: data
-                            .provided_amount
-                            .parse::<u64>()
-                            .context("Failed to parse provided_amount")?,
+                        provided_amount: parse_amount_with_u64_limit(&data.provided_amount, "Fulfillment provided_amount")?,
                         timestamp: data
                             .timestamp
                             .parse::<u64>()
@@ -171,16 +224,10 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: data
-                        .offered_amount
-                        .parse::<u64>()
-                        .context("Failed to parse offered amount")?,
+                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: data
-                        .desired_amount
-                        .parse::<u64>()
-                        .context("Failed to parse desired_amount")?,
+                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request intent desired_amount")?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
@@ -228,16 +275,10 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: data
-                        .offered_amount
-                        .parse::<u64>()
-                        .context("Failed to parse offered amount")?,
+                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: data
-                        .desired_amount
-                        .parse::<u64>()
-                        .context("Failed to parse desired_amount")?,
+                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request intent desired_amount")?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
@@ -294,16 +335,10 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: data
-                        .offered_amount
-                        .parse::<u64>()
-                        .context("Failed to parse offered amount")?,
+                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: data
-                        .desired_amount
-                        .parse::<u64>()
-                        .context("Failed to parse desired_amount")?,
+                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request intent desired_amount")?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()

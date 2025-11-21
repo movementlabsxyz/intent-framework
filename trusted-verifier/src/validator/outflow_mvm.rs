@@ -83,10 +83,11 @@ pub fn extract_mvm_fulfillment_params(tx: &MvmTransaction) -> Result<Fulfillment
     // - JSON number: 100000000
     // - Decimal string: "100000000"
     // - Hex string: "0x5f5e100"
+    // Parse as u64 (Move contract constraint)
     let amount = if let Some(amount_num) = args[2].as_u64() {
         amount_num
     } else if let Some(amount_str) = args[2].as_str() {
-        // If string starts with "0x", parse as hex; otherwise parse as decimal
+        // If string starts with "0x", parse as hex
         if amount_str.starts_with("0x") {
             u64::from_str_radix(&amount_str[2..], 16)
                 .context("Failed to parse amount from hex string")?

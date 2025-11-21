@@ -51,6 +51,7 @@ pub async fn validate_request_intent_fulfillment(
     }
 
     // Validate the escrow's offered_amount matches the specified offered_amount in the hub request intent
+    // Amounts are u64 (matching Move contract constraint)
     if escrow_event.offered_amount != request_intent_event.offered_amount {
         return Ok(ValidationResult {
             valid: false,
@@ -92,6 +93,7 @@ pub async fn validate_request_intent_fulfillment(
     }
 
     // Validate that escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request intent)
+    // Amounts are u64 (matching Move contract constraint)
     if escrow_event.desired_amount != 0 {
         return Ok(ValidationResult {
             valid: false,

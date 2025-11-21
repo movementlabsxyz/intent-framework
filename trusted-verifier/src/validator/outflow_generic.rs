@@ -154,7 +154,7 @@ pub async fn validate_outflow_fulfillment(
     // Validate amount matches expected amount
     // For outflow request intents: desired_amount specifies the amount desired on the connected chain
     // The event contains the original desired_amount for the connected chain
-    // If desired_amount is 0, this indicates a bug in the Move code
+    // Amounts are u64 (matching Move contract constraint)
     let expected_amount = request_intent.desired_amount;
 
     if expected_amount == 0 {

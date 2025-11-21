@@ -98,7 +98,7 @@ pub struct FulfillmentTransactionParams {
     pub intent_id: String,
     /// Recipient address (where tokens were sent)
     pub recipient: String,
-    /// Amount transferred
+    /// Amount transferred (u64, matching Move contract constraint)
     pub amount: u64,
     /// Solver address (transaction sender)
     pub solver: String,
@@ -255,6 +255,7 @@ impl CrossChainValidator {
         }
 
         // Validate the fulfillment's provided_amount matches the request intent's desired_amount
+        // Both are u64 (matching Move contract constraint)
         if fulfillment.provided_amount != request_intent.desired_amount {
             return Ok(ValidationResult {
                 valid: false,

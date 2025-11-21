@@ -5,6 +5,7 @@
 
 use crate::config::Config;
 use crate::monitor::generic::{ChainType, EscrowEvent};
+use crate::monitor::hub_mvm::parse_amount_with_u64_limit;
 use crate::mvm_client::{MvmClient, OracleLimitOrderEvent as MvmOracleLimitOrderEvent};
 use anyhow::{Context, Result};
 
@@ -71,16 +72,10 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
                     issuer: data.requester.clone(), // For inflow escrows, this is the original requester from the hub chain (not the solver who created the escrow)
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: data
-                        .offered_amount
-                        .parse::<u64>()
-                        .context("Failed to parse offered amount")?,
+                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Escrow offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: data
-                        .desired_amount
-                        .parse::<u64>()
-                        .context("Failed to parse desired amount")?,
+                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Escrow desired_amount")?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()

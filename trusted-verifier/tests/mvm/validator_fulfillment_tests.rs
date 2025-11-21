@@ -56,7 +56,7 @@ fn test_extract_mvm_fulfillment_params_success() {
         params.recipient,
         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     );
-    assert_eq!(params.amount, 25000000u64); // 0x17d7840 in decimal
+    assert_eq!(params.amount, 25000000); // 0x17d7840 in decimal
     assert_eq!(
         params.intent_id,
         "0x1111111111111111111111111111111111111111111111111111111111111111"
@@ -98,7 +98,7 @@ fn test_extract_mvm_fulfillment_params_amount_as_number() {
         "Extraction should succeed when amount is a JSON number"
     );
     let params = result.unwrap();
-    assert_eq!(params.amount, 100000000u64);
+    assert_eq!(params.amount, 100000000);
 }
 
 /// Test that extract_mvm_fulfillment_params handles amount as decimal string
@@ -128,7 +128,7 @@ fn test_extract_mvm_fulfillment_params_amount_as_decimal_string() {
         "Extraction should succeed when amount is a decimal string"
     );
     let params = result.unwrap();
-    assert_eq!(params.amount, 100000000u64);
+    assert_eq!(params.amount, 100000000);
 }
 
 /// Test that extract_mvm_fulfillment_params fails when transaction is not a transfer_with_intent_id call

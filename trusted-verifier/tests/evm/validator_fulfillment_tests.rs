@@ -56,7 +56,7 @@ fn test_extract_evm_fulfillment_params_success() {
         params.recipient,
         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     );
-    assert_eq!(params.amount, 25000000u64); // 0x17d7840 in decimal
+    assert_eq!(params.amount, 25000000); // 0x17d7840 in decimal
     assert_eq!(
         params.intent_id,
         "0x1111111111111111111111111111111111111111111111111111111111111111"
@@ -117,6 +117,124 @@ fn test_extract_evm_fulfillment_params_insufficient_calldata() {
     );
     let error_msg = result.unwrap_err().to_string();
     assert!(error_msg.contains("Insufficient") || error_msg.contains("length"));
+}
+
+/// Test that extract_evm_fulfillment_params rejects amounts exceeding u64::MAX
+///
+/// What is tested: Attempting to extract parameters from an EVM transaction with an amount
+/// that exceeds u64::MAX should fail with a clear error about Move contract limitation.
+///
+/// Why: Move contracts only support u64 for amounts, so EVM amounts must not exceed u64::MAX.
+/// This test verifies the overflow validation we added.
+#[test]
+fn test_extract_evm_fulfillment_params_amount_exceeds_u64_max() {
+    // u64::MAX = 18446744073709551615 (0xffffffffffffffff)
+    // Use u64::MAX + 1 = 18446744073709551616 (0x10000000000000000)
+    // Padded to 32 bytes (64 hex chars): 0000000000000000000000000000000000000000000000010000000000000000
+    let amount_exceeding_u64_max = "0000000000000000000000000000000000000000000000010000000000000000"; // u64::MAX + 1, padded to 32 bytes
+    
+    let calldata = format!(
+        "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{}{}",
+        amount_exceeding_u64_max,
+        "1111111111111111111111111111111111111111111111111111111111111111" // intent_id
+    );
+
+    let tx = EvmTransaction {
+        input: format!("0x{}", calldata),
+        ..create_base_evm_transaction()
+    };
+
+    let result = extract_evm_fulfillment_params(&tx);
+
+    assert!(
+        result.is_err(),
+        "Extraction should fail when amount exceeds u64::MAX"
+    );
+    let error_msg = result.unwrap_err().to_string();
+    assert!(
+        error_msg.contains("exceeds") && error_msg.contains("u64::MAX"),
+        "Error message should mention exceeding u64::MAX. Got: {}",
+        error_msg
+    );
+    assert!(
+        error_msg.contains("Move contract") || error_msg.contains("Move contracts"),
+        "Error message should mention Move contract limitation. Got: {}",
+        error_msg
+    );
+}
+
+/// Test that extract_evm_fulfillment_params accepts amounts equal to u64::MAX
+///
+/// What is tested: Extracting parameters from an EVM transaction with an amount
+/// exactly equal to u64::MAX should succeed.
+///
+/// Why: Verify that the maximum allowed value (u64::MAX) is accepted.
+#[test]
+fn test_extract_evm_fulfillment_params_amount_equals_u64_max() {
+    // u64::MAX = 18446744073709551615 (0xffffffffffffffff)
+    // Padded to 32 bytes (64 hex chars): 000000000000000000000000000000000000000000000000ffffffffffffffff
+    let amount_u64_max = "000000000000000000000000000000000000000000000000ffffffffffffffff"; // u64::MAX, padded to 32 bytes
+    
+    let calldata = format!(
+        "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{}{}",
+        amount_u64_max,
+        "1111111111111111111111111111111111111111111111111111111111111111" // intent_id
+    );
+
+    let tx = EvmTransaction {
+        input: format!("0x{}", calldata),
+        ..create_base_evm_transaction()
+    };
+
+    let result = extract_evm_fulfillment_params(&tx);
+
+    assert!(
+        result.is_ok(),
+        "Extraction should succeed when amount equals u64::MAX"
+    );
+    let params = result.unwrap();
+    assert_eq!(
+        params.amount,
+        u64::MAX,
+        "Extracted amount should equal u64::MAX"
+    );
+}
+
+/// Test that extract_evm_fulfillment_params accepts large but valid u64 amounts
+///
+/// What is tested: Extracting parameters from an EVM transaction with a large
+/// but valid u64 amount (close to but not exceeding u64::MAX) should succeed.
+///
+/// Why: Verify that large but valid amounts are handled correctly.
+#[test]
+fn test_extract_evm_fulfillment_params_large_valid_amount() {
+    // Use a large but valid u64 value: 1000000000000000000 (10^18, 1 ETH in wei)
+    // This is well within u64::MAX but tests large number handling
+    let large_amount = "0000000000000000000000000000000000000000000000000de0b6b3a7640000"; // 1000000000000000000, padded to 32 bytes (64 hex chars)
+    
+    let calldata = format!(
+        "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{}{}",
+        large_amount,
+        "1111111111111111111111111111111111111111111111111111111111111111" // intent_id
+    );
+
+    let tx = EvmTransaction {
+        input: format!("0x{}", calldata),
+        ..create_base_evm_transaction()
+    };
+
+    let result = extract_evm_fulfillment_params(&tx);
+
+    assert!(
+        result.is_ok(),
+        "Extraction should succeed for large but valid u64 amount"
+    );
+    let params = result.unwrap();
+    assert_eq!(
+        params.amount,
+        1000000000000000000u64,
+        "Extracted amount should match the large value"
+    );
 }
 
 // ============================================================================

@@ -254,12 +254,13 @@ async fn test_evm_address_normalization() {
     let _ = tracing_subscriber::fmt::try_init();
 
     // Test cases: (escrow_address, registered_address, should_match)
+    // Use valid 20-byte EVM addresses (40 hex characters)
     let test_cases = vec![
-        ("0xABC123", "0xabc123", true),
-        ("0xabc123", "0xABC123", true),
-        ("ABC123", "0xabc123", true),    // Missing 0x prefix
-        ("0xABC123", "abc123", true),    // Missing 0x prefix
-        ("0xABC123", "0xDEF456", false), // Different addresses
+        ("0xABC1234567890123456789012345678901234567", "0xabc1234567890123456789012345678901234567", true),
+        ("0xabc1234567890123456789012345678901234567", "0xABC1234567890123456789012345678901234567", true),
+        ("ABC1234567890123456789012345678901234567", "0xabc1234567890123456789012345678901234567", true),    // Missing 0x prefix
+        ("0xABC1234567890123456789012345678901234567", "abc1234567890123456789012345678901234567", true),    // Missing 0x prefix
+        ("0xABC1234567890123456789012345678901234567", "0xDEF4567890123456789012345678901234567890", false), // Different addresses
     ];
 
     for (escrow_addr, registered_addr, should_match) in test_cases {

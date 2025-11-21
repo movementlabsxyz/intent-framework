@@ -878,43 +878,150 @@ impl MvmClient {
         // Option<vector<u8>> is serialized as {"vec": [bytes_array]} for Some, {"vec": []} for None
         let value = match entry_obj.get("value").and_then(|v| v.as_object()) {
             Some(v) => v,
-            None => return Ok(None),
+            None => {
+                tracing::warn!(
+                    "SolverInfo 'value' field not found or not an object for solver '{}'. Entry object keys: {:?}",
+                    solver_address,
+                    entry_obj.keys().collect::<Vec<_>>()
+                );
+                return Ok(None);
+            }
         };
 
-        let evm_addr = match value
-            .get("connected_chain_evm_address")
-            .and_then(|e| e.as_object())
-        {
-            Some(e) => e,
-            None => return Ok(None),
+        let evm_addr_field = match value.get("connected_chain_evm_address") {
+            Some(field) => field,
+            None => {
+                tracing::warn!(
+                    "connected_chain_evm_address field not found for solver '{}'. SolverInfo keys: {:?}",
+                    solver_address,
+                    value.keys().collect::<Vec<_>>()
+                );
+                return Ok(None);
+            }
+        };
+
+        tracing::warn!(
+            "DEBUG: connected_chain_evm_address field for solver '{}': {}",
+            solver_address,
+            serde_json::to_string(evm_addr_field).unwrap_or_else(|_| "failed to serialize".to_string())
+        );
+
+        let evm_addr = match evm_addr_field.as_object() {
+            Some(obj) => obj,
+            None => {
+                tracing::warn!(
+                    "connected_chain_evm_address is not an object for solver '{}'. Type: {:?}, Value: {}",
+                    solver_address,
+                    evm_addr_field,
+                    serde_json::to_string(evm_addr_field).unwrap_or_else(|_| "failed to serialize".to_string())
+                );
+                return Ok(None);
+            }
         };
 
         let vec_array = match evm_addr.get("vec").and_then(|v| v.as_array()) {
             Some(v) => v,
-            None => return Ok(None),
+            None => {
+                tracing::warn!(
+                    "connected_chain_evm_address 'vec' field not found or not an array for solver '{}'. EVM address object keys: {:?}, 'vec' field: {:?}",
+                    solver_address,
+                    evm_addr.keys().collect::<Vec<_>>(),
+                    evm_addr.get("vec")
+                );
+                return Ok(None);
+            }
         };
 
         if vec_array.is_empty() {
+            tracing::debug!(
+                "Solver '{}' found but connected_chain_evm_address vec is empty (None)",
+                solver_address
+            );
             return Ok(None); // Solver found but no connected chain EVM address
         }
 
+        tracing::warn!(
+            "DEBUG: connected_chain_evm_address vec for solver '{}': length={}, vec[0]={}",
+            solver_address,
+            vec_array.len(),
+            serde_json::to_string(vec_array.get(0).unwrap_or(&serde_json::Value::Null)).unwrap_or_else(|_| "failed to serialize".to_string())
+        );
+
         // Extract the first element (the vector<u8>)
+        // Option<vector<u8>> is serialized as {"vec": [bytes_array]} where bytes_array is [u64, u64, ...]
         let evm_bytes = match vec_array.get(0).and_then(|b| b.as_array()) {
             Some(b) => b,
-            None => return Ok(None),
+            None => {
+                tracing::warn!(
+                    "connected_chain_evm_address vec[0] is not an array for solver '{}'. vec[0] type: {:?}, vec[0] value: {}",
+                    solver_address,
+                    vec_array.get(0).map(|v| format!("{:?}", v)),
+                    serde_json::to_string(vec_array.get(0).unwrap_or(&serde_json::Value::Null)).unwrap_or_else(|_| "failed to serialize".to_string())
+                );
+                return Ok(None);
+            }
         };
 
         if evm_bytes.is_empty() {
+            tracing::warn!(
+                "Solver '{}' found but connected_chain_evm_address bytes array is empty",
+                solver_address
+            );
             return Ok(None);
         }
+
+        tracing::warn!(
+            "DEBUG: EVM address bytes array for solver '{}': length={}, first 5 bytes: {:?}, full array: {}",
+            solver_address,
+            evm_bytes.len(),
+            evm_bytes.iter().take(5).map(|v| v.as_u64()).collect::<Vec<_>>(),
+            serde_json::to_string(evm_bytes).unwrap_or_else(|_| "failed to serialize".to_string())
+        );
+
+        tracing::debug!(
+            "EVM address bytes array for solver '{}': length={}, first few bytes: {:?}",
+            solver_address,
+            evm_bytes.len(),
+            evm_bytes.iter().take(5).collect::<Vec<_>>()
+        );
 
         // Convert vector<u8> to hex string with 0x prefix
         let mut hex_string = String::from("0x");
         for byte_val in evm_bytes {
             if let Some(byte) = byte_val.as_u64() {
+                if byte > 255 {
+                    tracing::warn!(
+                        "Invalid byte value {} (>255) in EVM address for solver '{}'",
+                        byte,
+                        solver_address
+                    );
+                    return Ok(None);
+                }
                 hex_string.push_str(&format!("{:02x}", byte as u8));
+            } else {
+                tracing::warn!(
+                    "Non-u64 value in EVM address bytes array for solver '{}': {:?}",
+                    solver_address,
+                    byte_val
+                );
+                return Ok(None);
             }
         }
+
+        if hex_string.len() != 42 {
+            tracing::warn!(
+                "Solver '{}' found but connected_chain_evm_address has invalid length {} (expected 20 bytes = 42 hex chars with 0x prefix)",
+                solver_address,
+                hex_string.len()
+            );
+            return Ok(None);
+        }
+
+        tracing::warn!(
+            "DEBUG: Successfully extracted EVM address for solver '{}': {}",
+            solver_address,
+            hex_string
+        );
 
         Ok(Some(hex_string))
     }
@@ -1032,3 +1139,4 @@ pub struct LimitOrderFulfillmentEvent {
 mod tests {
     // Tests will be added in integration tests or separate test file
 }
+

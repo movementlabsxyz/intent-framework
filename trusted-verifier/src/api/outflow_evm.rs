@@ -48,8 +48,14 @@ pub async fn query_evm_fulfillment_transaction(
     let params = extract_evm_fulfillment_params(&tx)
         .map_err(|e| format!("Failed to extract parameters: {}", e))?;
 
-    // Check transaction status (1 = success, 0 = failure, null = pending)
-    let success = tx.status.as_ref().map(|s| s == "0x1").unwrap_or(false);
+    // Get transaction status from receipt (status is only available in receipt, not in transaction)
+    let status = evm_client
+        .get_transaction_receipt_status(transaction_hash)
+        .await
+        .map_err(|e| format!("Failed to query transaction receipt: {}", e))?;
+    
+    // Check transaction status (1 = success, 0 = failure, null = pending/not found)
+    let success = status.as_ref().map(|s| s == "0x1").unwrap_or(false);
 
     Ok((params, success))
 }

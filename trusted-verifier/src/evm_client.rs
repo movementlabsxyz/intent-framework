@@ -329,6 +329,73 @@ impl EvmClient {
         }
     }
 
+    /// Queries transaction receipt by hash using eth_getTransactionReceipt
+    ///
+    /// The receipt contains the transaction status, which is not available
+    /// in eth_getTransactionByHash.
+    ///
+    /// # Arguments
+    ///
+    /// * `hash` - Transaction hash (with or without 0x prefix)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Option<String>)` - Transaction status ("0x1" = success, "0x0" = failure, None = pending/not found)
+    /// * `Err(anyhow::Error)` - Failed to query transaction receipt
+    pub async fn get_transaction_receipt_status(&self, hash: &str) -> Result<Option<String>> {
+        // Normalize hash (ensure 0x prefix)
+        let hash = if hash.starts_with("0x") {
+            hash.to_string()
+        } else {
+            format!("0x{}", hash)
+        };
+
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "eth_getTransactionReceipt".to_string(),
+            params: vec![serde_json::json!(hash)],
+            id: 1,
+        };
+
+        #[derive(Debug, Deserialize)]
+        struct TransactionReceipt {
+            /// Transaction status (1 = success, 0 = failure)
+            status: Option<String>,
+        }
+
+        let response: JsonRpcResponse<TransactionReceipt> = self
+            .client
+            .post(&self.base_url)
+            .json(&request)
+            .send()
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to send eth_getTransactionReceipt request to {}",
+                    self.base_url
+                )
+            })?
+            .json()
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to parse eth_getTransactionReceipt response from {}",
+                    self.base_url
+                )
+            })?;
+
+        if let Some(error) = response.error {
+            return Err(anyhow::anyhow!(
+                "JSON-RPC error from {}: {} (code: {})",
+                self.base_url,
+                error.message,
+                error.code
+            ));
+        }
+
+        Ok(response.result.and_then(|receipt| receipt.status))
+    }
+
     /// Gets the current block number
     ///
     /// # Returns

@@ -30,9 +30,9 @@ log "📋 Chain Information:"
 log "   Alice EVM (connected): $ALICE_EVM_ADDRESS"
 log "   Bob EVM (connected): $BOB_EVM_ADDRESS"
 
-# Transfer amount must match the request intent's desired_amount (100000000)
+# Transfer amount must match the request intent's desired_amount (1 ETH)
 # This is the amount the requester specified they want on the connected chain
-TRANSFER_AMOUNT_WEI="100000000"  # 100 million wei (matches request intent desired_amount)
+TRANSFER_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request intent desired_amount)
 
 log ""
 log "🔑 Configuration:"
@@ -58,7 +58,7 @@ if [ -z "$TOKEN_ADDRESS" ]; then
     
     # Mint tokens to Bob (Account 2) for the transfer
     log "   - Minting tokens to Bob (solver) on EVM chain..."
-    MINT_AMOUNT="200000000"  # 200 million wei (enough for transfer + buffer)
+    MINT_AMOUNT="2000000000000000000"  # 2 ETH (enough for transfer + buffer)
     MINT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$TOKEN_ADDRESS' RECIPIENT='$BOB_EVM_ADDRESS' AMOUNT='$MINT_AMOUNT' npx hardhat run scripts/mint-token.js --network localhost" 2>&1 | tee -a "$LOG_FILE" || echo "")
     
     if [ -n "$MINT_OUTPUT" ] && echo "$MINT_OUTPUT" | grep -qi "success\|minted"; then

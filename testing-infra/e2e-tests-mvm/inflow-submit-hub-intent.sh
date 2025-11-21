@@ -37,8 +37,8 @@ log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-OFFERED_AMOUNT="100000000"
-DESIRED_AMOUNT="100000000"
+OFFERED_AMOUNT="1000000000000000000"  # 1 ETH
+DESIRED_AMOUNT="1000000000000000000"  # 1 ETH
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID
 DESIRED_CHAIN_ID=1
 HUB_CHAIN_ID=1
@@ -78,7 +78,7 @@ log_and_echo ""
 log ""
 log "   Creating request intent on hub chain..."
 log "   - Requester (Alice) creates request intent on Chain 1 (hub chain)"
-log "   - Request intent requests 100000000 tokens to be provided by solver (Bob)"
+log "   - Request intent requests 1 ETH to be provided by solver (Bob)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."

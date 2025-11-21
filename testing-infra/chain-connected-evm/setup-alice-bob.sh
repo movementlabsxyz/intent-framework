@@ -90,6 +90,71 @@ log "   Alice balance: $ALICE_BALANCE wei (should be 10000 ETH = 100000000000000
 log "   Bob balance:   $BOB_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
 
 log ""
+log "% - - - - - - - - - - - BURN EXCESS ETH - - - - - - - - - - - -"
+log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+
+# Burn excess ETH from Alice and Bob, leaving only 2 ETH each
+# This ensures half of Bob's balance (1 ETH) is within u64::MAX for Move contracts
+log ""
+log "🔥 Burning excess ETH from Alice and Bob (leaving 2 ETH each)..."
+
+cd evm-intent-framework
+
+# Burn from Alice (Account 1)
+log "   - Burning excess ETH from Alice (Account 1)..."
+KEEP_AMOUNT_WEI="2000000000000000000"  # 2 ETH
+ALICE_BURN_RESULT=$(nix develop -c bash -c "ACCOUNT_INDEX=1 KEEP_AMOUNT_WEI='$KEEP_AMOUNT_WEI' npx hardhat run scripts/burn-excess-eth.js --network localhost" 2>&1)
+
+if echo "$ALICE_BURN_RESULT" | grep -q "SUCCESS"; then
+    log "     ✅ Alice excess ETH burned"
+else
+    log_and_echo "     ❌ Failed to burn Alice's excess ETH"
+    echo "$ALICE_BURN_RESULT" >> "$LOG_FILE"
+    exit 1
+fi
+
+# Burn from Bob (Account 2)
+log "   - Burning excess ETH from Bob (Account 2)..."
+BOB_BURN_RESULT=$(nix develop -c bash -c "ACCOUNT_INDEX=2 KEEP_AMOUNT_WEI='$KEEP_AMOUNT_WEI' npx hardhat run scripts/burn-excess-eth.js --network localhost" 2>&1)
+
+if echo "$BOB_BURN_RESULT" | grep -q "SUCCESS"; then
+    log "     ✅ Bob excess ETH burned"
+else
+    log_and_echo "     ❌ Failed to burn Bob's excess ETH"
+    echo "$BOB_BURN_RESULT" >> "$LOG_FILE"
+    exit 1
+fi
+
+cd ..
+
+# Verify final balances
+log ""
+log "💰 Verifying final balances..."
+
+cd evm-intent-framework
+FINAL_BALANCES_OUTPUT=$(nix develop -c bash -c "npx hardhat run scripts/get-accounts.js" 2>&1)
+
+if [ $? -ne 0 ]; then
+    log_and_echo "❌ Error: Failed to get final account balances"
+    echo "$FINAL_BALANCES_OUTPUT" >> "$LOG_FILE"
+    exit 1
+fi
+
+ALICE_FINAL_BALANCE=$(echo "$FINAL_BALANCES_OUTPUT" | grep "^ALICE_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
+BOB_FINAL_BALANCE=$(echo "$FINAL_BALANCES_OUTPUT" | grep "^BOB_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
+
+cd ..
+
+if [ -z "$ALICE_FINAL_BALANCE" ] || [ -z "$BOB_FINAL_BALANCE" ]; then
+    log_and_echo "❌ Error: Failed to extract final account balances"
+    echo "$FINAL_BALANCES_OUTPUT" >> "$LOG_FILE"
+    exit 1
+fi
+
+log "   Alice final balance: $ALICE_FINAL_BALANCE wei (should be ~2 ETH = 2000000000000000000 wei)"
+log "   Bob final balance:   $BOB_FINAL_BALANCE wei (should be ~2 ETH = 2000000000000000000 wei)"
+
+log ""
 log "% - - - - - - - - - - - TEST TRANSFER - - - - - - - - - - - -"
 log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
 

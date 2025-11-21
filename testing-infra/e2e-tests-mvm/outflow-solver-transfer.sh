@@ -36,12 +36,12 @@ log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
-TRANSFER_AMOUNT="100000000"
+TRANSFER_AMOUNT="1000000000000000000"  # 1 ETH
 
 log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
-log "   Transfer Amount: $TRANSFER_AMOUNT Octas"
+log "   Transfer Amount: $TRANSFER_AMOUNT Octas (1 ETH)"
 
 log ""
 log "   - Getting APT metadata on Chain 2..."

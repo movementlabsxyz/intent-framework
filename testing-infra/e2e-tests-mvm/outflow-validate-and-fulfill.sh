@@ -237,10 +237,13 @@ if [ $? -eq 0 ]; then
     log "     Bob Chain 1 final balance: $BOB_FINAL_BALANCE Octas"
 
     BALANCE_INCREASE=$((BOB_FINAL_BALANCE - BOB_INITIAL_BALANCE))
-    OFFERED_AMOUNT=100000000
-    EXPECTED_MIN_AMOUNT=$((OFFERED_AMOUNT - 1000000))
+    OFFERED_AMOUNT=1000000000000000000  # 1 ETH
+    # Using bc for large number arithmetic
+    EXPECTED_MIN_AMOUNT=$(echo "$OFFERED_AMOUNT - 1000000000000000" | bc)  # 1 ETH - 0.001 ETH buffer
 
-    if [ "$BALANCE_INCREASE" -ge "$EXPECTED_MIN_AMOUNT" ]; then
+    # Use bc for comparison since amounts exceed bash integer limits
+    BALANCE_CHECK=$(echo "$BALANCE_INCREASE >= $EXPECTED_MIN_AMOUNT" | bc)
+    if [ "$BALANCE_CHECK" -eq 1 ]; then
         log "     ✅ Solver (Bob) received locked tokens: +$BALANCE_INCREASE Octas (expected ~$OFFERED_AMOUNT minus gas)"
     else
         log_and_echo "❌ ERROR: Solver (Bob)'s balance increase is less than expected"
@@ -287,8 +290,8 @@ log "   Signature Type: $SIGNATURE_TYPE"
 log "   Solver (Bob)'s balance increase: $BALANCE_INCREASE Octas"
 log ""
 log "📖 Outflow Request Intent Summary:"
-log "   1. Requester (Alice) created outflow request intent on hub chain (locked 100000000 tokens)"
-log "   2. Solver (Bob) transferred 100000000 tokens to requester (Alice) on connected chain"
+log "   1. Requester (Alice) created outflow request intent on hub chain (locked 1 ETH)"
+log "   2. Solver (Bob) transferred 1 ETH to requester (Alice) on connected chain"
 log "   3. Verifier validated the connected chain transfer"
 log "   4. Solver (Bob) fulfilled hub request intent with verifier signature"
 log "   5. Solver (Bob) received locked tokens as reward on hub chain"

@@ -33,16 +33,15 @@ use crate::mvm_client::{
 pub fn parse_amount_with_u64_limit(amount_str: &str, field_name: &str) -> Result<u64> {
     // Parse as u128 first to handle large values
     // Support both decimal strings and hex strings (with or without 0x prefix)
-    // For EVM calldata: hex strings are 64 chars (32 bytes), so treat long hex-looking strings as hex
+    // For EVM calldata: hex strings are exactly 64 chars (32 bytes)
     // For Move events: decimal strings are typically shorter
     let amount_u128 = if amount_str.starts_with("0x") {
         // Explicit hex string with 0x prefix
         let hex_str = &amount_str[2..];
         u128::from_str_radix(hex_str, 16)
             .with_context(|| format!("Failed to parse {} as hex number", field_name))?
-    } else if amount_str.len() >= 16 && amount_str.chars().all(|c| c.is_ascii_hexdigit()) {
-        // Long hex string without 0x prefix (likely from EVM calldata, 64 hex chars = 32 bytes)
-        // Check if all chars are hex digits to avoid misinterpreting decimal strings
+    } else if amount_str.len() == 64 && amount_str.chars().all(|c| c.is_ascii_hexdigit()) {
+        // Exactly 64 hex chars without 0x prefix (from EVM calldata, 32 bytes)
         u128::from_str_radix(amount_str, 16)
             .with_context(|| format!("Failed to parse {} as hex number", field_name))?
     } else {

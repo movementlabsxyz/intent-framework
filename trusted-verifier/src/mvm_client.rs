@@ -625,22 +625,41 @@ impl MvmClient {
         solver_address: &str,
         registry_address: &str,
     ) -> Result<Option<String>> {
+        // Normalize registry address (remove 0x prefix for resource type matching)
+        let registry_addr_normalized = registry_address
+            .strip_prefix("0x")
+            .unwrap_or(registry_address);
+        
         // Query the SolverRegistry resource directly
         let resources = self.get_resources(registry_address).await?;
 
-        let registry_resource_type =
-            format!("{}::solver_registry::SolverRegistry", registry_address);
+        // Try both formats: with and without 0x prefix (Aptos may return either)
+        let registry_resource_type_with_prefix =
+            format!("0x{}::solver_registry::SolverRegistry", registry_addr_normalized);
+        let registry_resource_type_without_prefix =
+            format!("{}::solver_registry::SolverRegistry", registry_addr_normalized);
+        
         let solver_addr = solver_address
             .strip_prefix("0x")
             .unwrap_or(solver_address)
             .to_lowercase();
 
-        // Find the SolverRegistry resource
+        // Find the SolverRegistry resource (try both formats)
         let registry_resource = resources
             .iter()
-            .find(|r| r.resource_type == registry_resource_type);
+            .find(|r| {
+                r.resource_type == registry_resource_type_with_prefix
+                    || r.resource_type == registry_resource_type_without_prefix
+            });
 
         let Some(registry_resource) = registry_resource else {
+            tracing::warn!(
+                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}' and '{}', Available resources: {:?}",
+                registry_address,
+                registry_resource_type_with_prefix,
+                registry_resource_type_without_prefix,
+                resources.iter().map(|r| &r.resource_type).collect::<Vec<_>>()
+            );
             return Ok(None); // Registry resource not found
         };
 
@@ -773,26 +792,39 @@ impl MvmClient {
         solver_address: &str,
         registry_address: &str,
     ) -> Result<Option<String>> {
+        // Normalize registry address (remove 0x prefix for resource type matching)
+        let registry_addr_normalized = registry_address
+            .strip_prefix("0x")
+            .unwrap_or(registry_address);
+        
         // Query the SolverRegistry resource directly
         let resources = self.get_resources(registry_address).await?;
 
-        let registry_resource_type =
-            format!("{}::solver_registry::SolverRegistry", registry_address);
+        // Try both formats: with and without 0x prefix (Aptos may return either)
+        let registry_resource_type_with_prefix =
+            format!("0x{}::solver_registry::SolverRegistry", registry_addr_normalized);
+        let registry_resource_type_without_prefix =
+            format!("{}::solver_registry::SolverRegistry", registry_addr_normalized);
+        
         let solver_addr = solver_address
             .strip_prefix("0x")
             .unwrap_or(solver_address)
             .to_lowercase();
 
-        // Find the SolverRegistry resource
+        // Find the SolverRegistry resource (try both formats)
         let registry_resource = resources
             .iter()
-            .find(|r| r.resource_type == registry_resource_type);
+            .find(|r| {
+                r.resource_type == registry_resource_type_with_prefix
+                    || r.resource_type == registry_resource_type_without_prefix
+            });
 
         let Some(registry_resource) = registry_resource else {
             tracing::warn!(
-                "SolverRegistry resource not found. Registry address: {}, Resource type: {}, Available resources: {:?}",
+                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}' and '{}', Available resources: {:?}",
                 registry_address,
-                registry_resource_type,
+                registry_resource_type_with_prefix,
+                registry_resource_type_without_prefix,
                 resources.iter().map(|r| &r.resource_type).collect::<Vec<_>>()
             );
             return Ok(None); // Registry resource not found

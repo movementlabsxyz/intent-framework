@@ -160,6 +160,38 @@ if [ "$VALID" != "true" ]; then
         log_and_echo "   Message: $MESSAGE"
     fi
     
+    # Output verifier logs for debugging
+    log_and_echo ""
+    log_and_echo "   Verifier logs (relevant errors and debug info):"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+    
+    VERIFIER_LOG_FILE=""
+    if [ -n "$VERIFIER_LOG" ] && [ -f "$VERIFIER_LOG" ]; then
+        VERIFIER_LOG_FILE="$VERIFIER_LOG"
+    elif [ -f "$LOG_DIR/verifier-evm.log" ]; then
+        VERIFIER_LOG_FILE="$LOG_DIR/verifier-evm.log"
+    fi
+    
+    if [ -n "$VERIFIER_LOG_FILE" ]; then
+        # First, show relevant error/debug lines
+        log_and_echo "   Relevant error/debug lines:"
+        grep -E "(ERROR|WARN|DEBUG|connected_chain_evm_address|get_solver_evm_address|SolverRegistry)" "$VERIFIER_LOG_FILE" | tail -50 | while IFS= read -r line; do
+            log_and_echo "   $line"
+        done || log_and_echo "   (No relevant error lines found)"
+        
+        log_and_echo ""
+        log_and_echo "   Last 50 lines of verifier log:"
+        tail -50 "$VERIFIER_LOG_FILE" | while IFS= read -r line; do
+            log_and_echo "   $line"
+        done
+    else
+        log_and_echo "   (Verifier log file not found)"
+        log_and_echo "   Tried: VERIFIER_LOG='$VERIFIER_LOG'"
+        log_and_echo "   Tried: $LOG_DIR/verifier-evm.log"
+    fi
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+    log_and_echo ""
+    
     # If the error is about solver registration, list all registered solvers
     if echo "$MESSAGE" | grep -qi "is not registered in hub chain solver registry"; then
         log_and_echo ""

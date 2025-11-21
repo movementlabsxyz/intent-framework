@@ -285,10 +285,20 @@ pub async fn validate_outflow_fulfillment(
             let registered_evm_address = match registered_evm_address {
                 Some(addr) => addr,
                 None => {
+                    // Log detailed error information for debugging
+                    tracing::warn!(
+                        "Failed to get EVM address for solver '{}' from registry at '{}'. This could mean:\n\
+                        1. Solver is not registered\n\
+                        2. Solver is registered but has no connected_chain_evm_address set\n\
+                        3. Resource query failed or returned unexpected format\n\
+                        Check verifier logs for detailed parsing information.",
+                        reserved_solver,
+                        hub_registry_address
+                    );
                     return Ok(ValidationResult {
                         valid: false,
                         message: format!(
-                            "Reserved solver '{}' is not registered in hub chain solver registry or has no connected chain EVM address",
+                            "Reserved solver '{}' is not registered in hub chain solver registry or has no connected chain EVM address. Check verifier logs for detailed parsing information.",
                             reserved_solver
                         ),
                         timestamp: chrono::Utc::now().timestamp() as u64,

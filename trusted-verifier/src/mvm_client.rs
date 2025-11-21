@@ -879,10 +879,13 @@ impl MvmClient {
         let value = match entry_obj.get("value").and_then(|v| v.as_object()) {
             Some(v) => v,
             None => {
+                let entry_keys = entry_obj.keys().collect::<Vec<_>>();
+                let entry_json = serde_json::to_string(entry_obj).unwrap_or_else(|_| "failed to serialize".to_string());
                 tracing::warn!(
-                    "SolverInfo 'value' field not found or not an object for solver '{}'. Entry object keys: {:?}",
+                    "SolverInfo 'value' field not found or not an object for solver '{}'. Entry object keys: {:?}, Full entry: {}",
                     solver_address,
-                    entry_obj.keys().collect::<Vec<_>>()
+                    entry_keys,
+                    entry_json
                 );
                 return Ok(None);
             }
@@ -891,16 +894,19 @@ impl MvmClient {
         let evm_addr_field = match value.get("connected_chain_evm_address") {
             Some(field) => field,
             None => {
-                tracing::warn!(
-                    "connected_chain_evm_address field not found for solver '{}'. SolverInfo keys: {:?}",
+                let solver_info_keys = value.keys().collect::<Vec<_>>();
+                let solver_info_json = serde_json::to_string(value).unwrap_or_else(|_| "failed to serialize".to_string());
+                tracing::error!(
+                    "connected_chain_evm_address field not found for solver '{}'. SolverInfo keys: {:?}, Full SolverInfo: {}",
                     solver_address,
-                    value.keys().collect::<Vec<_>>()
+                    solver_info_keys,
+                    solver_info_json
                 );
                 return Ok(None);
             }
         };
 
-        tracing::warn!(
+        tracing::error!(
             "DEBUG: connected_chain_evm_address field for solver '{}': {}",
             solver_address,
             serde_json::to_string(evm_addr_field).unwrap_or_else(|_| "failed to serialize".to_string())
@@ -909,11 +915,11 @@ impl MvmClient {
         let evm_addr = match evm_addr_field.as_object() {
             Some(obj) => obj,
             None => {
-                tracing::warn!(
-                    "connected_chain_evm_address is not an object for solver '{}'. Type: {:?}, Value: {}",
+                let field_json = serde_json::to_string(evm_addr_field).unwrap_or_else(|_| "failed to serialize".to_string());
+                tracing::error!(
+                    "connected_chain_evm_address is not an object for solver '{}'. Value: {}",
                     solver_address,
-                    evm_addr_field,
-                    serde_json::to_string(evm_addr_field).unwrap_or_else(|_| "failed to serialize".to_string())
+                    field_json
                 );
                 return Ok(None);
             }
@@ -922,11 +928,13 @@ impl MvmClient {
         let vec_array = match evm_addr.get("vec").and_then(|v| v.as_array()) {
             Some(v) => v,
             None => {
-                tracing::warn!(
-                    "connected_chain_evm_address 'vec' field not found or not an array for solver '{}'. EVM address object keys: {:?}, 'vec' field: {:?}",
+                let evm_addr_keys = evm_addr.keys().collect::<Vec<_>>();
+                let evm_addr_json = serde_json::to_string(evm_addr).unwrap_or_else(|_| "failed to serialize".to_string());
+                tracing::error!(
+                    "connected_chain_evm_address 'vec' field not found or not an array for solver '{}'. EVM address object keys: {:?}, Full object: {}",
                     solver_address,
-                    evm_addr.keys().collect::<Vec<_>>(),
-                    evm_addr.get("vec")
+                    evm_addr_keys,
+                    evm_addr_json
                 );
                 return Ok(None);
             }
@@ -940,7 +948,7 @@ impl MvmClient {
             return Ok(None); // Solver found but no connected chain EVM address
         }
 
-        tracing::warn!(
+        tracing::error!(
             "DEBUG: connected_chain_evm_address vec for solver '{}': length={}, vec[0]={}",
             solver_address,
             vec_array.len(),
@@ -952,11 +960,11 @@ impl MvmClient {
         let evm_bytes = match vec_array.get(0).and_then(|b| b.as_array()) {
             Some(b) => b,
             None => {
-                tracing::warn!(
-                    "connected_chain_evm_address vec[0] is not an array for solver '{}'. vec[0] type: {:?}, vec[0] value: {}",
+                let vec0_json = serde_json::to_string(vec_array.get(0).unwrap_or(&serde_json::Value::Null)).unwrap_or_else(|_| "failed to serialize".to_string());
+                tracing::error!(
+                    "connected_chain_evm_address vec[0] is not an array for solver '{}'. vec[0] value: {}",
                     solver_address,
-                    vec_array.get(0).map(|v| format!("{:?}", v)),
-                    serde_json::to_string(vec_array.get(0).unwrap_or(&serde_json::Value::Null)).unwrap_or_else(|_| "failed to serialize".to_string())
+                    vec0_json
                 );
                 return Ok(None);
             }
@@ -970,7 +978,7 @@ impl MvmClient {
             return Ok(None);
         }
 
-        tracing::warn!(
+        tracing::error!(
             "DEBUG: EVM address bytes array for solver '{}': length={}, first 5 bytes: {:?}, full array: {}",
             solver_address,
             evm_bytes.len(),
@@ -1017,7 +1025,7 @@ impl MvmClient {
             return Ok(None);
         }
 
-        tracing::warn!(
+        tracing::error!(
             "DEBUG: Successfully extracted EVM address for solver '{}': {}",
             solver_address,
             hex_string

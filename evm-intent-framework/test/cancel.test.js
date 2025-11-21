@@ -28,6 +28,7 @@ describe("IntentEscrow - Cancel", function () {
 
   /// Test: Cancellation After Expiry
   /// Verifies that makers can cancel escrows after expiry and reclaim funds.
+  /// Why: Makers need a way to reclaim funds if fulfillment doesn't occur before expiry.
   it("Should allow maker to cancel and reclaim funds after expiry", async function () {
     // Cancellation blocked before expiry
     await expect(
@@ -54,6 +55,7 @@ describe("IntentEscrow - Cancel", function () {
 
   /// Test: Unauthorized Cancellation Prevention
   /// Verifies that only the maker can cancel their escrow.
+  /// Why: Security requirement - only the escrow creator should be able to cancel.
   it("Should revert if not maker", async function () {
     await expect(
       escrow.connect(solver).cancel(intentId)
@@ -62,6 +64,7 @@ describe("IntentEscrow - Cancel", function () {
 
   /// Test: Cancellation After Claim Prevention
   /// Verifies that attempting to cancel an already-claimed escrow reverts.
+  /// Why: Once funds are claimed, they cannot be cancelled to prevent double-spending.
   it("Should revert if already claimed", async function () {
     // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(

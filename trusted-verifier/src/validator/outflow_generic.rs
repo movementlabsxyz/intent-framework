@@ -76,17 +76,27 @@ pub async fn validate_outflow_fulfillment(
 
     // Validate recipient matches requester_address_connected_chain (for outflow intents)
     if let Some(ref requester_address) = request_intent.requester_address_connected_chain {
-        // Determine chain type for address validation based on configured connected chain
-        let chain_type = if validator.config().connected_chain_evm.is_some() {
-            crate::monitor::ChainType::Evm
-        } else if validator.config().connected_chain_mvm.is_some() {
-            crate::monitor::ChainType::Mvm
-        } else {
-            return Ok(ValidationResult {
-                valid: false,
-                message: "No connected chain configured (neither EVM nor Move VM)".to_string(),
-                timestamp: chrono::Utc::now().timestamp() as u64,
-            });
+        // Determine chain type from request intent's connected_chain_id for address validation
+        let chain_id = match request_intent.connected_chain_id {
+            Some(id) => id,
+            None => {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: "Request intent missing connected_chain_id (required for address validation)".to_string(),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        };
+
+        let chain_type = match crate::validator::generic::get_chain_type_from_chain_id(chain_id, validator.config()) {
+            Ok(ct) => ct,
+            Err(e) => {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: format!("Failed to determine chain type from connected_chain_id for address validation: {}", e),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
         };
 
         // Validate address formats match chain type
@@ -189,10 +199,31 @@ pub async fn validate_outflow_fulfillment(
         let hub_registry_address = &validator.config().hub_chain.intent_module_address;
         let hub_client = MvmClient::new(hub_rpc_url)?;
 
-        // Determine if this is a Move VM connected chain
-        let is_mvm_chain = validator.config().connected_chain_mvm.is_some();
+        // Determine chain type from request intent's connected_chain_id
+        // This is more reliable than checking config, as the intent explicitly specifies the target chain
+        let chain_id = match request_intent.connected_chain_id {
+            Some(id) => id,
+            None => {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: "Request intent missing connected_chain_id (required for outflow validation)".to_string(),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        };
 
-        if is_mvm_chain {
+        let chain_type = match crate::validator::generic::get_chain_type_from_chain_id(chain_id, validator.config()) {
+            Ok(ct) => ct,
+            Err(e) => {
+                return Ok(ValidationResult {
+                    valid: false,
+                    message: format!("Failed to determine chain type from connected_chain_id: {}", e),
+                    timestamp: chrono::Utc::now().timestamp() as u64,
+                });
+            }
+        };
+
+        if chain_type == crate::monitor::ChainType::Mvm {
             // For Move VM chains: Look up connected chain Move VM address from hub registry and compare to transaction solver
             let registered_mvm_address = hub_client.get_solver_connected_chain_mvm_address(reserved_solver, hub_registry_address)
                 .await
@@ -231,7 +262,7 @@ pub async fn validate_outflow_fulfillment(
                     timestamp: chrono::Utc::now().timestamp() as u64,
                 });
             }
-        } else {
+        } else if chain_type == crate::monitor::ChainType::Evm {
             // For EVM chains: Look up EVM address from hub registry and compare to transaction solver
             let registered_evm_address = hub_client
                 .get_solver_evm_address(reserved_solver, hub_registry_address)
@@ -244,7 +275,7 @@ pub async fn validate_outflow_fulfillment(
                     return Ok(ValidationResult {
                         valid: false,
                         message: format!(
-                            "Reserved solver '{}' is not registered in hub chain solver registry",
+                            "Reserved solver '{}' is not registered in hub chain solver registry or has no connected chain EVM address",
                             reserved_solver
                         ),
                         timestamp: chrono::Utc::now().timestamp() as u64,
@@ -273,6 +304,16 @@ pub async fn validate_outflow_fulfillment(
                     timestamp: chrono::Utc::now().timestamp() as u64,
                 });
             }
+        } else {
+            // Unhandled chain type (e.g., SVM or future chain types)
+            return Ok(ValidationResult {
+                valid: false,
+                message: format!(
+                    "Unhandled chain type {:?} for connected_chain_id {}. Only MVM and EVM chains are currently supported for outflow validation.",
+                    chain_type, chain_id
+                ),
+                timestamp: chrono::Utc::now().timestamp() as u64,
+            });
         }
     } else {
         return Ok(ValidationResult {

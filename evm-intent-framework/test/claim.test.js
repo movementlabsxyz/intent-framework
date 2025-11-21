@@ -29,6 +29,7 @@ describe("IntentEscrow - Claim", function () {
 
   /// Test: Valid Claim with Verifier Signature
   /// Verifies that solvers can claim escrow funds when provided with a valid verifier signature.
+  /// Why: Claiming is the core fulfillment mechanism. Solvers must be able to receive funds after verifier approval.
   it("Should allow solver to claim with valid verifier signature", async function () {
     // Create message hash: keccak256(intentId) - signature itself is the approval
     const messageHash = ethers.solidityPackedKeccak256(
@@ -53,6 +54,7 @@ describe("IntentEscrow - Claim", function () {
 
   /// Test: Invalid Signature Rejection
   /// Verifies that claims with invalid signatures are rejected with UnauthorizedVerifier error.
+  /// Why: Security requirement - only verifier-approved fulfillments should allow fund release.
   it("Should revert with invalid signature", async function () {
     const wrongIntentId = intentId + 1n;
     const messageHash = ethers.solidityPackedKeccak256(
@@ -68,7 +70,7 @@ describe("IntentEscrow - Claim", function () {
 
   /// Test: Signature Replay Prevention
   /// Verifies that a signature for one intent_id cannot be reused on a different escrow with a different intent_id.
-  /// This explicitly tests signature replay prevention - signatures are bound to specific intent_ids.
+  /// Why: Signatures must be bound to specific intent_ids to prevent replay attacks across different escrows.
   it("Should prevent signature replay across different intent_ids", async function () {
     // Create a second escrow with a different intent_id
     const intentIdB = intentId + 1n;
@@ -95,6 +97,7 @@ describe("IntentEscrow - Claim", function () {
 
   /// Test: Duplicate Claim Prevention
   /// Verifies that attempting to claim an already-claimed escrow reverts.
+  /// Why: Prevents double-spending - each escrow can only be claimed once.
   it("Should revert if escrow already claimed", async function () {
     // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
@@ -112,6 +115,7 @@ describe("IntentEscrow - Claim", function () {
 
   /// Test: Non-Existent Escrow Rejection
   /// Verifies that attempting to claim a non-existent escrow reverts with EscrowDoesNotExist error.
+  /// Why: Prevents claims on non-existent escrows and ensures proper error handling.
   it("Should revert if escrow does not exist", async function () {
     const newIntentId = intentId + 1n;
 

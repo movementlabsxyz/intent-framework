@@ -24,7 +24,7 @@ mod outflow_evm;
 mod outflow_mvm;
 
 // Re-export public types and functions
-pub use generic::{CrossChainValidator, FulfillmentTransactionParams, ValidationResult};
+pub use generic::{CrossChainValidator, FulfillmentTransactionParams, ValidationResult, get_chain_type_from_chain_id};
 pub use outflow_evm::extract_evm_fulfillment_params;
 pub use outflow_generic::validate_outflow_fulfillment;
 pub use outflow_mvm::extract_mvm_fulfillment_params;

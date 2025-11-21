@@ -22,7 +22,7 @@ describe("IntentEscrow - Expiry Handling", function () {
 
   /// Test: Expired Escrow Cancellation
   /// Verifies that makers can cancel escrows after expiry and reclaim funds.
-  /// Cancellation before expiry is blocked to ensure funds remain locked until expiry.
+  /// Why: Makers need a way to reclaim funds if fulfillment doesn't occur before expiry. Cancellation before expiry is blocked to ensure funds remain locked until expiry.
   it("Should allow maker to cancel expired escrow", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
@@ -54,6 +54,7 @@ describe("IntentEscrow - Expiry Handling", function () {
 
   /// Test: Expiry Timestamp Validation
   /// Verifies that expiry timestamp is correctly calculated and stored.
+  /// Why: Correct expiry calculation is critical for time-based cancellation logic.
   it("Should verify expiry timestamp is stored correctly", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
@@ -75,6 +76,7 @@ describe("IntentEscrow - Expiry Handling", function () {
 
   /// Test: Expired Escrow Claim Prevention
   /// Verifies that expired escrows cannot be claimed, even with valid verifier signatures.
+  /// Why: Expired escrows should only be cancellable by the maker, not claimable by solvers.
   it("Should prevent claim on expired escrow", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);

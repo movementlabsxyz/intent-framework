@@ -22,6 +22,7 @@ describe("IntentEscrow - Edge Cases", function () {
 
   /// Test: Maximum uint256 Values
   /// Verifies that createEscrow handles maximum uint256 values for both amounts and intent IDs.
+  /// Why: Edge case testing ensures the contract handles boundary values without overflow or underflow.
   it("Should handle maximum uint256 values for amounts and intent IDs", async function () {
     const maxAmount = ethers.MaxUint256;
     const maxIntentId = ethers.MaxUint256;
@@ -41,6 +42,7 @@ describe("IntentEscrow - Edge Cases", function () {
 
   /// Test: Empty Deposit Scenarios
   /// Verifies edge cases around minimum deposit amounts (1 wei).
+  /// Why: Ensures the contract accepts the minimum valid amount (1 wei) without rejecting it as zero.
   it("Should handle minimum deposit amount (1 wei)", async function () {
     const minAmount = 1n; // 1 wei
     const testIntentId = intentId + 1n;
@@ -57,6 +59,7 @@ describe("IntentEscrow - Edge Cases", function () {
 
   /// Test: Multiple Escrows Per Maker
   /// Verifies that a maker can create multiple escrows with different intent IDs.
+  /// Why: Makers may need multiple concurrent escrows for different intents. State isolation must be maintained.
   it("Should allow maker to create multiple escrows", async function () {
     const numEscrows = 10;
     const amount = ethers.parseEther("100");
@@ -79,6 +82,7 @@ describe("IntentEscrow - Edge Cases", function () {
 
   /// Test: Gas Limit Scenarios
   /// Verifies gas consumption for large operations (multiple escrows, large amounts).
+  /// Why: Gas efficiency is critical for user experience. Operations must stay within reasonable gas limits.
   it("Should handle gas consumption for large operations", async function () {
     const numEscrows = 5;
     const amount = ethers.parseEther("1000");
@@ -106,6 +110,7 @@ describe("IntentEscrow - Edge Cases", function () {
 
   /// Test: Concurrent Operations
   /// Verifies that multiple simultaneous escrow operations can be handled correctly.
+  /// Why: Real-world usage involves concurrent operations. The contract must handle them without state corruption.
   it("Should handle concurrent escrow operations", async function () {
     const numEscrows = 5;
     const amount = ethers.parseEther("100");

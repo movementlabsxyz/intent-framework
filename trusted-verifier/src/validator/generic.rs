@@ -11,6 +11,59 @@ use crate::config::Config;
 use crate::monitor::{ChainType, FulfillmentEvent, RequestIntentEvent};
 
 // ============================================================================
+// CHAIN TYPE UTILITIES
+// ============================================================================
+
+/// Determines the chain type from a chain ID by comparing it to configured chain IDs.
+///
+/// This function compares the provided chain ID against the configured EVM and MVM
+/// chain IDs to determine which type of chain it represents. This is more reliable
+/// than checking which config section is present, as the chain ID comes directly
+/// from the request intent.
+///
+/// # Arguments
+///
+/// * `chain_id` - The chain ID to look up
+/// * `config` - The validator configuration containing chain ID mappings
+///
+/// # Returns
+///
+/// * `Ok(ChainType)` - The chain type (Evm or Mvm)
+/// * `Err(anyhow::Error)` - Chain ID does not match any configured connected chain, or duplicate chain IDs detected
+pub fn get_chain_type_from_chain_id(chain_id: u64, config: &Config) -> Result<ChainType> {
+    // Validate that EVM and MVM chains don't have the same chain ID
+    if let (Some(evm_config), Some(mvm_config)) = (&config.connected_chain_evm, &config.connected_chain_mvm) {
+        if evm_config.chain_id == mvm_config.chain_id {
+            return Err(anyhow::anyhow!(
+                "Configuration error: EVM and MVM chains have the same chain ID {}. Each chain must have a unique chain ID.",
+                evm_config.chain_id
+            ));
+        }
+    }
+
+    // Check if chain_id matches configured EVM chain
+    if let Some(evm_config) = &config.connected_chain_evm {
+        if evm_config.chain_id == chain_id {
+            return Ok(ChainType::Evm);
+        }
+    }
+
+    // Check if chain_id matches configured MVM chain
+    if let Some(mvm_config) = &config.connected_chain_mvm {
+        if mvm_config.chain_id == chain_id {
+            return Ok(ChainType::Mvm);
+        }
+    }
+
+    Err(anyhow::anyhow!(
+        "Chain ID {} does not match any configured connected chain (EVM: {:?}, MVM: {:?})",
+        chain_id,
+        config.connected_chain_evm.as_ref().map(|c| c.chain_id),
+        config.connected_chain_mvm.as_ref().map(|c| c.chain_id)
+    ))
+}
+
+// ============================================================================
 // ADDRESS VALIDATION UTILITIES
 // ============================================================================
 

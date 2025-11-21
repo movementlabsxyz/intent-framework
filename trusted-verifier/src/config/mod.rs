@@ -105,17 +105,65 @@ pub struct ApiConfig {
 // ============================================================================
 
 impl Config {
+    /// Validates the configuration for duplicate chain IDs.
+    ///
+    /// This function ensures that:
+    /// - Hub chain ID is unique
+    /// - Connected MVM chain ID (if present) is unique
+    /// - Connected EVM chain ID (if present) is unique
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(())` - Configuration is valid
+    /// - `Err(anyhow::Error)` - Duplicate chain IDs detected
+    pub fn validate(&self) -> anyhow::Result<()> {
+        let hub_chain_id = self.hub_chain.chain_id;
+
+        // Check hub vs connected_chain_mvm
+        if let Some(ref mvm_config) = self.connected_chain_mvm {
+            if hub_chain_id == mvm_config.chain_id {
+                return Err(anyhow::anyhow!(
+                    "Configuration error: Hub chain and connected MVM chain have the same chain ID {}. Each chain must have a unique chain ID.",
+                    hub_chain_id
+                ));
+            }
+        }
+
+        // Check hub vs connected_chain_evm
+        if let Some(ref evm_config) = self.connected_chain_evm {
+            if hub_chain_id == evm_config.chain_id {
+                return Err(anyhow::anyhow!(
+                    "Configuration error: Hub chain and connected EVM chain have the same chain ID {}. Each chain must have a unique chain ID.",
+                    hub_chain_id
+                ));
+            }
+        }
+
+        // Check connected_chain_mvm vs connected_chain_evm
+        if let (Some(ref mvm_config), Some(ref evm_config)) = (&self.connected_chain_mvm, &self.connected_chain_evm) {
+            if mvm_config.chain_id == evm_config.chain_id {
+                return Err(anyhow::anyhow!(
+                    "Configuration error: Connected MVM chain and connected EVM chain have the same chain ID {}. Each chain must have a unique chain ID.",
+                    mvm_config.chain_id
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
     /// Loads configuration from the TOML file.
     ///
     /// This function:
     /// 1. Checks if config/verifier.toml exists
     /// 2. If it exists, loads and parses the configuration
-    /// 3. If it doesn't exist, returns an error asking user to copy template
+    /// 3. Validates the configuration for duplicate chain IDs
+    /// 4. If it doesn't exist, returns an error asking user to copy template
     ///
     /// # Returns
     ///
-    /// - `Ok(Config)` - Successfully loaded configuration
-    /// - `Err(anyhow::Error)` - Failed to load configuration or file doesn't exist
+    /// - `Ok(Config)` - Successfully loaded and validated configuration
+    /// - `Err(anyhow::Error)` - Failed to load configuration, file doesn't exist, or validation failed
     pub fn load() -> anyhow::Result<Self> {
         // Check for custom config path via environment variable (for tests)
         let config_path = std::env::var("VERIFIER_CONFIG_PATH")
@@ -125,6 +173,8 @@ impl Config {
             // Load existing configuration
             let content = std::fs::read_to_string(&config_path)?;
             let config: Config = toml::from_str(&content)?;
+            // Validate configuration
+            config.validate()?;
             Ok(config)
         } else {
             // Configuration file doesn't exist - user needs to copy template

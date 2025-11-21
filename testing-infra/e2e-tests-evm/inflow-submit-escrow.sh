@@ -9,7 +9,7 @@ source "$SCRIPT_DIR/../chain-connected-evm/utils.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "submit-escrow"
+setup_logging "inflow-submit-escrow"
 cd "$PROJECT_ROOT"
 
 

@@ -37,8 +37,9 @@ log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-OFFERED_AMOUNT="1000000000000000000"  # 1 ETH
-DESIRED_AMOUNT="1000000000000000000"  # 1 ETH
+# Bob gets funded with 200000000 Octas (2 APT), so half is 100000000 Octas (1 APT)
+OFFERED_AMOUNT="100000000"  # 1 APT (half of Bob's 200000000 Octas)
+DESIRED_AMOUNT="100000000"  # 1 APT (half of Bob's 200000000 Octas)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID
 DESIRED_CHAIN_ID=1
 HUB_CHAIN_ID=1
@@ -48,8 +49,8 @@ log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
-log "   Offered amount: $OFFERED_AMOUNT"
-log "   Desired amount: $DESIRED_AMOUNT"
+log "   Offered amount: $OFFERED_AMOUNT Octas (1 APT)"
+log "   Desired amount: $DESIRED_AMOUNT Octas (1 APT)"
 
 log ""
 log "   - Getting APT metadata addresses..."
@@ -78,7 +79,7 @@ log_and_echo ""
 log ""
 log "   Creating request intent on hub chain..."
 log "   - Requester (Alice) creates request intent on Chain 1 (hub chain)"
-log "   - Request intent requests 1 ETH to be provided by solver (Bob)"
+log "   - Request intent requests 1 APT to be provided by solver (Bob)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."

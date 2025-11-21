@@ -348,28 +348,25 @@ else
             # Calculate balance increase
             BALANCE_INCREASE=$((BOB_BALANCE_AFTER - BOB_BALANCE_BEFORE))
             
-            # Expected amount: 1 ETH (locked in escrow) minus gas fees
+            # Expected amount: 1 APT (locked in escrow) minus gas fees
             # We expect at least 99% of the locked amount to be received (allowing for gas)
-            # Using bc for large number arithmetic (1 ETH = 1000000000000000000)
-            EXPECTED_MIN_AMOUNT=$(echo "1000000000000000000 * 99 / 100" | bc)
+            EXPECTED_MIN_AMOUNT=99000000  # 99% of 100000000 (1 APT)
             
             if [ $TX_EXIT_CODE -eq 0 ]; then
                 log "   ✅ Escrow release transaction succeeded!"
                 
                 # Verify solver (Bob) received the funds
-                # Use bc for comparison since amounts exceed bash integer limits
-                BALANCE_CHECK=$(echo "$BALANCE_INCREASE < $EXPECTED_MIN_AMOUNT" | bc)
-                if [ "$BALANCE_CHECK" -eq 1 ]; then
+                if [ "$BALANCE_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
                     log_and_echo "   ❌ ERROR: Solver (Bob) did not receive escrow funds!"
                     log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
-                    log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (1 ETH minus gas)"
+                    log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (1 APT minus gas)"
                     log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_BEFORE Octas"
                     log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_AFTER Octas"
                     log_and_echo "      Escrow ID: $ESCROW_ID"
                     exit 1
                 fi
                 
-                log "   ✅ Solver (Bob) received $BALANCE_INCREASE Octas (expected ~1 ETH minus gas)"
+                log "   ✅ Solver (Bob) received $BALANCE_INCREASE Octas (expected ~1 APT minus gas)"
                 RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
             else
                 # Check the log file for error messages
@@ -379,12 +376,10 @@ else
                     log "   ℹ️  Escrow object no longer exists (may already be released)"
                     
                     # Verify solver (Bob) received the funds even though the object doesn't exist
-                    # Use bc for comparison since amounts exceed bash integer limits
-                    BALANCE_CHECK=$(echo "$BALANCE_INCREASE < $EXPECTED_MIN_AMOUNT" | bc)
-                    if [ "$BALANCE_CHECK" -eq 1 ]; then
+                    if [ "$BALANCE_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
                         log_and_echo "   ❌ ERROR: Escrow object doesn't exist but solver (Bob) did NOT receive funds!"
                         log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
-                        log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (1 ETH minus gas)"
+                        log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (1 APT minus gas)"
                         log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_BEFORE Octas"
                         log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_AFTER Octas"
                         log_and_echo "      Escrow ID: $ESCROW_ID"
@@ -474,7 +469,7 @@ BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq
 BOB_CHAIN2_BALANCE=$(echo "$BOB_CHAIN2_BALANCE" | tr -d ',')
 
 # For inflow flow:
-# - Bob on Chain 2 should have received ~1 ETH from escrow release
+# - Bob on Chain 2 should have received ~1 APT from escrow release
 # We check that balance increased by approximately the expected amount (at least 99% to account for gas)
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 

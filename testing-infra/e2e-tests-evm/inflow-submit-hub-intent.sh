@@ -8,7 +8,7 @@ source "$SCRIPT_DIR/../util_evm.sh"
 
 # Setup project root and logging
 setup_project_root
-setup_logging "submit-hub-intent-evm"
+setup_logging "inflow-submit-hub-intent-evm"
 cd "$PROJECT_ROOT"
 
 # Generate a random intent_id that will be used for both hub and escrow
@@ -46,7 +46,7 @@ log_and_echo ""
 log ""
 log "   Creating intent on hub chain..."
 log "   - Alice creates intent on Chain 1 (hub chain)"
-log "   - Intent requests 1 ETH to be provided by solver"
+log "   - Intent requests 1 APT to be provided by solver (on hub chain)"
 log "   - Using intent_id: $INTENT_ID"
 log "   - Connected chain: EVM (Chain ID: 31337)"
 
@@ -84,7 +84,8 @@ log "     Generating solver signature..."
 
 # Generate solver signature using helper function
 # For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
-OFFERED_AMOUNT="1000000000000000000"  # 1 ETH
+OFFERED_AMOUNT="1000000000000000000"  # 1 ETH (on EVM chain)
+DESIRED_AMOUNT="100000000"  # 1 APT (on hub chain Chain 1)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (31337 for EVM)
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
@@ -94,7 +95,7 @@ SOLVER_SIGNATURE=$(generate_solver_signature \
     "$OFFERED_AMOUNT" \
     "$OFFERED_CHAIN_ID" \
     "$DESIRED_FA_METADATA_CHAIN1" \
-    "1000000000000000000" \
+    "$DESIRED_AMOUNT" \
     "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
     "$ALICE_CHAIN1_ADDRESS" \
@@ -135,7 +136,7 @@ SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
 HUB_CHAIN_ID=1
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
-    --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:1000000000000000000" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"

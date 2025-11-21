@@ -69,8 +69,8 @@ fi
 
 VERIFIER_PUBLIC_KEY="0x${VERIFIER_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-OFFERED_AMOUNT="1000000000000000000"  # 1 ETH
-DESIRED_AMOUNT="1000000000000000000"  # 1 ETH
+OFFERED_AMOUNT="100000000"  # 1 APT (on hub chain Chain 1)
+DESIRED_AMOUNT="1000000000000000000"  # 1 ETH (on EVM chain)
 OFFERED_CHAIN_ID=1
 DESIRED_CHAIN_ID=$CONNECTED_CHAIN_ID
 HUB_CHAIN_ID=1
@@ -80,8 +80,8 @@ log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Verifier public key: $VERIFIER_PUBLIC_KEY"
-log "   Offered amount: $OFFERED_AMOUNT"
-log "   Desired amount: $DESIRED_AMOUNT"
+log "   Offered amount: $OFFERED_AMOUNT Octas (1 APT on hub chain)"
+log "   Desired amount: $DESIRED_AMOUNT wei (1 ETH on EVM chain)"
 
 log ""
 log "   - Getting APT metadata addresses..."
@@ -107,7 +107,7 @@ log_and_echo ""
 log ""
 log "   Creating outflow request intent on hub chain..."
 log "   - Requester (Alice) creates outflow request intent on Chain 1 (hub chain)"
-log "   - Requester (Alice) locks 1 ETH on hub chain"
+log "   - Requester (Alice) locks 1 APT on hub chain"
 log "   - Requester (Alice) wants 1 ETH on connected chain (EVM Chain 3)"
 log "   - Using intent_id: $INTENT_ID"
 

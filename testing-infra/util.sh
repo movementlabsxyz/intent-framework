@@ -141,9 +141,9 @@ load_intent_info() {
     if [ ! -f "$INTENT_INFO_FILE" ]; then
         log_and_echo "❌ ERROR: intent-info.env not found at $INTENT_INFO_FILE"
         if [ "$required_vars" = "INTENT_ID,HUB_INTENT_ADDRESS" ]; then
-            log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id> and HUB_INTENT_ADDRESS=<address>"
+            log_and_echo "   Run inflow-submit-hub-intent.sh first, or provide INTENT_ID=<id> and HUB_INTENT_ADDRESS=<address>"
         else
-            log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id>"
+            log_and_echo "   Run inflow-submit-hub-intent.sh first, or provide INTENT_ID=<id>"
         fi
         exit 1
     fi
@@ -159,7 +159,7 @@ load_intent_info() {
         if [ -z "$value" ]; then
             log_and_echo "❌ ERROR: $var not found in intent-info.env"
             if [ "$required_vars" = "INTENT_ID,HUB_INTENT_ADDRESS" ]; then
-                log_and_echo "   Run submit-hub-intent.sh first"
+                log_and_echo "   Run inflow-submit-hub-intent.sh first"
             fi
             exit 1
         fi

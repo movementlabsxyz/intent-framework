@@ -36,7 +36,7 @@ log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
 log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
-TRANSFER_AMOUNT="1000000000000000000"  # 1 ETH
+TRANSFER_AMOUNT="100000000"  # 1 APT (half of Bob's 200000000 Octas)
 
 log ""
 log "🔑 Configuration:"

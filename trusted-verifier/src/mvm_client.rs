@@ -1001,18 +1001,67 @@ impl MvmClient {
         );
 
         // Extract the first element (the vector<u8>)
-        // Option<vector<u8>> is serialized as {"vec": [bytes_array]} where bytes_array is [u64, u64, ...]
-        let evm_bytes = match vec_array.get(0).and_then(|b| b.as_array()) {
-            Some(b) => b,
-            None => {
-                let vec0_json = serde_json::to_string(vec_array.get(0).unwrap_or(&serde_json::Value::Null)).unwrap_or_else(|_| "failed to serialize".to_string());
+        // Option<vector<u8>> can be serialized in two ways:
+        // 1. As {"vec": [bytes_array]} where bytes_array is [u64, u64, ...] (array of numbers)
+        // 2. As {"vec": ["0xhexstring"]} where the hex string is the address (string format)
+        let evm_bytes_opt = vec_array.get(0);
+        
+        let evm_bytes: Vec<u8> = if let Some(bytes_val) = evm_bytes_opt {
+            // Try to parse as array of u64 (most common case for Move vector<u8>)
+            if let Some(bytes_array) = bytes_val.as_array() {
+                let mut result = Vec::new();
+                for byte_val in bytes_array {
+                    if let Some(byte) = byte_val.as_u64() {
+                        if byte > 255 {
+                            tracing::error!(
+                                "Invalid byte value {} (>255) in EVM address for solver '{}'",
+                                byte,
+                                solver_address
+                            );
+                            return Ok(None);
+                        }
+                        result.push(byte as u8);
+                    } else {
+                        let vec0_json = serde_json::to_string(byte_val).unwrap_or_else(|_| "failed to serialize".to_string());
+                        tracing::error!(
+                            "Non-u64 value in EVM address bytes array for solver '{}': {}",
+                            solver_address,
+                            vec0_json
+                        );
+                        return Ok(None);
+                    }
+                }
+                result
+            } else if let Some(hex_str) = bytes_val.as_str() {
+                // Try to parse as hex string (e.g., "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc")
+                let hex_clean = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+                if hex_clean.len() % 2 != 0 {
+                    tracing::error!(
+                        "Invalid hex string length {} in EVM address for solver '{}'",
+                        hex_clean.len(),
+                        solver_address
+                    );
+                    return Ok(None);
+                }
+                (0..hex_clean.len())
+                    .step_by(2)
+                    .filter_map(|i| u8::from_str_radix(&hex_clean[i..i + 2], 16).ok())
+                    .collect()
+            } else {
+                let vec0_json = serde_json::to_string(bytes_val).unwrap_or_else(|_| "failed to serialize".to_string());
                 tracing::error!(
-                    "connected_chain_evm_address vec[0] is not an array for solver '{}'. vec[0] value: {}",
+                    "connected_chain_evm_address vec[0] is neither an array nor a string for solver '{}'. vec[0] value: {}",
                     solver_address,
                     vec0_json
                 );
                 return Ok(None);
             }
+        } else {
+            tracing::error!(
+                "connected_chain_evm_address vec is non-empty but vec[0] is missing for solver '{}'",
+                solver_address
+            );
+            return Ok(None);
         };
 
         if evm_bytes.is_empty() {
@@ -1023,43 +1072,24 @@ impl MvmClient {
             return Ok(None);
         }
 
-        tracing::error!(
-            "DEBUG: EVM address bytes array for solver '{}': length={}, first 5 bytes: {:?}, full array: {}",
-            solver_address,
-            evm_bytes.len(),
-            evm_bytes.iter().take(5).map(|v| v.as_u64()).collect::<Vec<_>>(),
-            serde_json::to_string(evm_bytes).unwrap_or_else(|_| "failed to serialize".to_string())
-        );
-
-        tracing::debug!(
-            "EVM address bytes array for solver '{}': length={}, first few bytes: {:?}",
-            solver_address,
-            evm_bytes.len(),
-            evm_bytes.iter().take(5).collect::<Vec<_>>()
-        );
-
-        // Convert vector<u8> to hex string with 0x prefix
-        let mut hex_string = String::from("0x");
-        for byte_val in evm_bytes {
-            if let Some(byte) = byte_val.as_u64() {
-                if byte > 255 {
-                    tracing::warn!(
-                        "Invalid byte value {} (>255) in EVM address for solver '{}'",
-                        byte,
-                        solver_address
-                    );
-                    return Ok(None);
-                }
-                hex_string.push_str(&format!("{:02x}", byte as u8));
-            } else {
-                tracing::warn!(
-                    "Non-u64 value in EVM address bytes array for solver '{}': {:?}",
-                    solver_address,
-                    byte_val
-                );
-                return Ok(None);
-            }
+        if evm_bytes.len() != 20 {
+            tracing::error!(
+                "Solver '{}' found but connected_chain_evm_address has invalid length {} (expected 20 bytes for EVM address)",
+                solver_address,
+                evm_bytes.len()
+            );
+            return Ok(None);
         }
+
+        tracing::error!(
+            "DEBUG: Successfully parsed EVM address bytes for solver '{}': length={}, first 5 bytes: {:?}",
+            solver_address,
+            evm_bytes.len(),
+            evm_bytes.iter().take(5).copied().collect::<Vec<_>>()
+        );
+
+        // Convert bytes to hex string with 0x prefix
+        let hex_string = format!("0x{}", evm_bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>());
 
         if hex_string.len() != 42 {
             tracing::warn!(

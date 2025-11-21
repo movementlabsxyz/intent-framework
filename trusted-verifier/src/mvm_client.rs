@@ -1001,9 +1001,16 @@ impl MvmClient {
         );
 
         // Extract the first element (the vector<u8>)
-        // Option<vector<u8>> can be serialized in two ways:
-        // 1. As {"vec": [bytes_array]} where bytes_array is [u64, u64, ...] (array of numbers)
-        // 2. As {"vec": ["0xhexstring"]} where the hex string is the address (string format)
+        //
+        // IMPORTANT: Aptos can serialize Option<vector<u8>> in two different formats:
+        // 1. Array format: {"vec": [bytes_array]} where bytes_array is [u64, u64, ...]
+        //    Example: {"vec": [[60, 68, 205, 221, ...]]}
+        // 2. Hex string format: {"vec": ["0xhexstring"]} where the hex string is the address
+        //    Example: {"vec": ["0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"]}
+        //
+        // This inconsistency in Aptos serialization caused EVM outflow validation to fail
+        // when addresses were returned as hex strings. We now handle both formats.
+        //
         let evm_bytes_opt = vec_array.get(0);
         
         let evm_bytes: Vec<u8> = if let Some(bytes_val) = evm_bytes_opt {

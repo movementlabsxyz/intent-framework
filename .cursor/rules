@@ -1,0 +1,112 @@
+---
+description: Intent Framework project architecture, patterns, and coding standards
+alwaysApply: true
+---
+
+# Intent Framework Project Rules
+
+For guidance on how to write rules, see [Cursor Rules Documentation](https://cursor.com/docs/context/rules).
+
+## Commit Message Conventions
+
+After marking a subtask or task as done, create a commit with the changes
+
+```bash
+git commit -m "<type of change>: <description>
+
+- <more detailed points if needed (optional)>
+- <more detailed points if needed (optional)>
+
+Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust) <number>
+"
+```
+
+**IMPORTANT:** All commit messages must be concise and professional.
+
+- Do NOT git add anything
+- Keep commit messages brief and to the point
+- Do NOT include advertising, promotional text, or references to Claude/AI assistance
+- Do NOT include phrases like "Generated with Claude Code" or "Co-Authored-By ..."
+- Follow conventional commit format when applicable (e.g., `feat:`, `fix:`, `refactor:`)
+- Focus on what changed and why, not who/what tool made the change
+- **Always include test results** at the end of the commit message in the format: `Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust) <number>`
+
+## Context Requirements
+
+**IMPORTANT:** The root [README.md](README.md) must always be included in context when working on this project. It provides essential project overview, quick start instructions, and links to all major components.
+
+## Documentation
+
+For information on how documentation is organized and how to navigate it, see [docs/docs-guide.md](docs/docs-guide.md).
+
+### Markdown Style Guidelines
+
+**IMPORTANT:** All markdown files must follow these formatting rules:
+
+- **Blank lines around headings**: There must be a blank line before and after all headings (MD022)
+- **Blank lines around lists**: There must be a blank line before bullet lists and numbered lists (MD032)
+- **No multiple blank lines**: Use only one blank line between sections (MD012)
+
+These rules ensure consistent formatting and prevent linting errors. Always check linting errors before committing documentation changes.
+
+--------------------------------------------------------------------------------
+
+## Project Overview
+
+This is a cross-chain intent framework enabling conditional asset transfers across blockchain networks. The system supports both **inflow** (tokens locked on connected chain, desired on hub) and **outflow** (tokens locked on hub, desired on connected chain) flows.
+
+For comprehensive architecture documentation, see `.taskmaster/docs/` - includes component-to-domain mapping, domain boundaries, data models, and use cases.
+
+--------------------------------------------------------------------------------
+
+## Code Organization
+
+### Move/Aptos Contracts
+
+See [Move Intent Framework Documentation](docs/move-intent-framework/README.md) for API reference, technical overview, and oracle-guarded intents. Planned cross-chain functions documented in [Implementation Plan](.taskmaster/implementplan.md).
+
+### EVM/Solidity Contracts
+
+See [EVM Intent Framework README](docs/evm-intent-framework/README.md) for contract interface and usage. Outflow transaction format documented in [Implementation Plan](.taskmaster/implementplan.md#scenario-b-evm-connected-chain).
+
+### Rust Services
+
+See [Trusted Verifier README](docs/trusted-verifier/README.md) and [Solver README](docs/solver/README.md) for service architecture and implementation details.
+
+### Testing Infrastructure
+
+See [Testing Infrastructure README](docs/testing-infra/README.md) for E2E test structure and utilities.
+
+--------------------------------------------------------------------------------
+
+## Coding Standards
+
+See [`.cursor/codestandards.md`](.cursor/codestandards.md) for language-specific coding standards and conventions.
+
+--------------------------------------------------------------------------------
+
+## Documentation Standards
+
+- **Location**: `docs/` directory
+- **Structure**: Each major component has its own README.md
+- **API docs**: Use code comments that can be extracted to API reference
+- **Architecture docs**: Use mermaid diagrams for visual representation
+
+## Testing Standards
+
+- **Move tests**: Place in `move-intent-framework/tests/` with `*_tests.move` naming
+- **Solidity tests**: Place in `evm-intent-framework/test/` with `*.test.js` naming
+- **E2E tests**: Use shell scripts in `testing-infra/e2e-tests-*/`
+- **Test isolation**: Each test should be independent and clean up after itself
+- **Balance checks**: Use granular balance display functions appropriate for the chain being tested
+
+--------------------------------------------------------------------------------
+
+## Common Patterns
+
+### Error Handling
+
+- Move: Use `abort` with error codes defined in module
+- Solidity: Use `require()` with descriptive error messages
+- Rust: Use `anyhow::Result` and propagate errors with context
+- Shell scripts: Use `set -e` and check return codes

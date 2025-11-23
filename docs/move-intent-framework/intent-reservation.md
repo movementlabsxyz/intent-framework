@@ -47,14 +47,22 @@ graph TD
    - Solver creates an `IntentToSign` by calling `add_solver_to_draft_intent` to add the solver address to the draft.
 4. Solver signature:
    - Solver signs the `IntentToSign` data and returns the signature to the offerer.
-5. `fa_intent.move`
-   - **Offerer** submits transaction calling `create_fa_to_fa_intent_entry` with the solver address and **solver's signature**
-   - **Contract** calls `verify_and_create_reservation` which:
-     - Gets the solver's authentication key from the blockchain
-     - Extracts the Ed25519 public key from the auth key
-     - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
-     - If verification succeeds, creates an `IntentReserved` struct
-     - If verification fails, the transaction aborts with `EINVALID_SIGNATURE`
+5. `fa_intent.move`, `fa_intent_inflow.move`, or `fa_intent_outflow.move`
+   - **Offerer** submits transaction calling `create_fa_to_fa_intent_entry` (or `create_inflow_request_intent` / `create_outflow_request_intent` for cross-chain) with the solver address and **solver's signature**
+   - **Contract** verifies the signature:
+     - For `create_fa_to_fa_intent_entry`: Calls `verify_and_create_reservation` which:
+       - Gets the solver's authentication key from the blockchain
+       - Extracts the Ed25519 public key from the auth key (only works for old format, 33 bytes)
+       - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
+       - If verification succeeds, creates an `IntentReserved` struct
+       - If verification fails, the transaction aborts with `EINVALID_SIGNATURE` or `EINVALID_AUTH_KEY_FORMAT`
+     - For `create_inflow_request_intent` or `create_outflow_request_intent`: Uses `verify_and_create_reservation_from_registry` which:
+       - Looks up the solver's public key from the on-chain solver registry
+       - Verifies the **solver's signature** against the `IntentToSign` data using `ed25519::signature_verify_strict`
+       - If verification succeeds, creates an `IntentReserved` struct
+       - If verification fails, the transaction aborts with `EINVALID_SIGNATURE` or `ESOLVER_NOT_REGISTERED`
+
+   **Note**: For cross-chain intents, the solver must be registered in the solver registry before creating the intent. The registry stores the solver's Ed25519 public key on-chain, eliminating the need to pass it explicitly.
 
 ### Stage 3 - Common Path
 

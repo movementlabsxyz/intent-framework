@@ -26,7 +26,7 @@ setup_project_root() {
     # Scripts in testing-infra/*/* need to go up 2 levels
     # Scripts in testing-infra/* need to go up 1 level
     if [[ "$script_dir" == *"/testing-infra/"*"/"* ]]; then
-        # Script is in a subdirectory (e.g., testing-infra/e2e-tests-apt/)
+        # Script is in a subdirectory (e.g., testing-infra/e2e-tests-mvm/)
         PROJECT_ROOT="$( cd "$script_dir/../../.." && pwd )"
     else
         # Script is directly in testing-infra/
@@ -64,64 +64,6 @@ log_and_echo() {
 log() {
     echo "$@"
     [ -n "$LOG_FILE" ] && echo "$@" >> "$LOG_FILE"
-}
-
-# Fetch and display balances
-# Usage: display_balances
-# Fetches balances from aptos CLI and displays them on both terminal and log file
-# Also shows EVM chain balances if EVM chain is running
-display_balances() {
-    # Fetch Aptos balances
-    local alice1=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    local alice2=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    local bob1=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    local bob2=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    
-    log_and_echo ""
-    log_and_echo "   Chain 1 (Hub):"
-    log_and_echo "      Alice: $alice1 Octas"
-    log_and_echo "      Bob:   $bob1 Octas"
-    log_and_echo "   Chain 2 (Connected Apt):"
-    log_and_echo "      Alice: $alice2 Octas"
-    log_and_echo "      Bob:   $bob2 Octas"
-    
-    # Fetch EVM balances if EVM chain is running
-    if curl -s -X POST http://127.0.0.1:8545 \
-        -H "Content-Type: application/json" \
-        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-        >/dev/null 2>&1; then
-        cd "$PROJECT_ROOT/evm-intent-framework"
-        
-        # Use the actual script files instead of inline heredoc (Hardhat doesn't support inline scripts)
-        # Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
-        local alice_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-        local alice_evm=$(echo "$alice_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
-        
-        local solver_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-        local solver_evm=$(echo "$solver_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
-        
-        cd "$PROJECT_ROOT"
-        
-        # Always show Chain 3 (EVM) header when EVM chain is running
-        log_and_echo "   Chain 3 (Connected EVM):"
-        
-        # Format EVM balances (show both ETH and wei)
-        if [ "$alice_evm" != "0" ] && [ -n "$alice_evm" ]; then
-            local alice_eth=$(echo "scale=4; $alice_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
-            log_and_echo "      Alice (Acc 1): ${alice_eth} ETH"
-        else
-            log_and_echo "      Alice (Acc 1): 0 ETH"
-        fi
-        
-        if [ "$solver_evm" != "0" ] && [ -n "$solver_evm" ]; then
-            local bob_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
-            log_and_echo "      Bob (Acc 2): ${bob_eth} ETH"
-        else
-            log_and_echo "      Bob (Acc 2): 0 ETH"
-        fi
-    fi
-    
-    log_and_echo ""
 }
 
 # Setup verifier configuration
@@ -199,9 +141,9 @@ load_intent_info() {
     if [ ! -f "$INTENT_INFO_FILE" ]; then
         log_and_echo "❌ ERROR: intent-info.env not found at $INTENT_INFO_FILE"
         if [ "$required_vars" = "INTENT_ID,HUB_INTENT_ADDRESS" ]; then
-            log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id> and HUB_INTENT_ADDRESS=<address>"
+            log_and_echo "   Run inflow-submit-hub-intent.sh first, or provide INTENT_ID=<id> and HUB_INTENT_ADDRESS=<address>"
         else
-            log_and_echo "   Run submit-hub-intent.sh first, or provide INTENT_ID=<id>"
+            log_and_echo "   Run inflow-submit-hub-intent.sh first, or provide INTENT_ID=<id>"
         fi
         exit 1
     fi
@@ -217,7 +159,7 @@ load_intent_info() {
         if [ -z "$value" ]; then
             log_and_echo "❌ ERROR: $var not found in intent-info.env"
             if [ "$required_vars" = "INTENT_ID,HUB_INTENT_ADDRESS" ]; then
-                log_and_echo "   Run submit-hub-intent.sh first"
+                log_and_echo "   Run inflow-submit-hub-intent.sh first"
             fi
             exit 1
         fi
@@ -295,18 +237,20 @@ start_verifier() {
     # Wait for verifier to be ready
     log "   - Waiting for verifier to initialize..."
     RETRY_COUNT=0
-    MAX_RETRIES=90
+    MAX_RETRIES=180
     
     while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         # Check if process is still running
         if ! ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
             log_and_echo "   ❌ Verifier process died"
             log_and_echo "   Verifier log:"
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             if [ -f "$log_file" ]; then
                 log_and_echo "   $(cat "$log_file")"
             else
                 log_and_echo "   Log file not found at: $log_file"
             fi
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             exit 1
         fi
         
@@ -330,11 +274,13 @@ start_verifier() {
     # If we get here, verifier didn't become healthy
     log_and_echo "   ❌ Verifier failed to start after $MAX_RETRIES seconds"
     log_and_echo "   Verifier log:"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     if [ -f "$log_file" ]; then
         log_and_echo "   $(cat "$log_file")"
     else
         log_and_echo "   Log file not found at: $log_file"
     fi
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 }
 

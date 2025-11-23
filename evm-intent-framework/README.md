@@ -6,8 +6,6 @@ Solidity contracts for EVM escrows.
 
 ## Quick Start
 
-### Setup
-
 ```bash
 npm install
 npx hardhat compile

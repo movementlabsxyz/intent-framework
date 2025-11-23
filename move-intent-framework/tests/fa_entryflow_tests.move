@@ -2,7 +2,7 @@
 // These complement `fa_tests.move` by validating solver/offerer
 // transactions interact correctly through `PendingIntent` and shared state.
 #[test_only]
-module aptos_intent::fa_entryflow_tests {
+module mvmt_intent::fa_entryflow_tests {
     use std::signer;
     use std::option;
 
@@ -11,9 +11,9 @@ module aptos_intent::fa_entryflow_tests {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
 
-    use aptos_intent::fa_intent::{Self, FungibleAssetLimitOrder, FungibleStoreManager};
-    use aptos_intent::intent;
-    use aptos_intent::fa_test_utils::register_and_mint_tokens;
+    use mvmt_intent::fa_intent::{Self, FungibleAssetLimitOrder, FungibleStoreManager};
+    use mvmt_intent::intent;
+    use mvmt_intent::test_utils;
 
     #[test_only]
     struct PendingIntent has key {
@@ -29,7 +29,7 @@ module aptos_intent::fa_entryflow_tests {
     public entry fun offerer_submit_limit_order(
         offerer: &signer,
         offered_fa: object::Object<Metadata>,
-        source_amount: u64,
+        offered_amount: u64,
         desired_fa: object::Object<Metadata>,
         desired_amount: u64,
         expiry_time: u64,
@@ -37,12 +37,14 @@ module aptos_intent::fa_entryflow_tests {
         let offerer_addr = signer::address_of(offerer);
         assert!(!exists<PendingIntent>(offerer_addr));
 
-        let source_fa = primary_fungible_store::withdraw(offerer, offered_fa, source_amount);
+        let offered_fa = primary_fungible_store::withdraw(offerer, offered_fa, offered_amount);
         // Preserve the created intent so the solver can access it later.
         let intent = fa_intent::create_fa_to_fa_intent(
-            source_fa,
+            offered_fa,
+            1, // offered_chain_id
             desired_fa,
             desired_amount,
+            1, // desired_chain_id
             expiry_time,
             offerer_addr,
             option::none(),
@@ -83,7 +85,7 @@ module aptos_intent::fa_entryflow_tests {
         offerer = @0xcafe,
         solver = @0xdead
     )]
-    /// Integration-style test exercising user and solver transactions end-to-end.
+    /// Integration-style test exercising requester and solver transactions end-to-end.
     fun test_fa_limit_order(
         aptos_framework: &signer,
         offerer: &signer,
@@ -92,8 +94,8 @@ module aptos_intent::fa_entryflow_tests {
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
         // Each actor starts with 100 tokens of their respective asset.
-        let (offered_fa, _) = register_and_mint_tokens(aptos_framework, offerer, 100);
-        let (desired_fa, _) = register_and_mint_tokens(aptos_framework, solver, 100);
+        let (offered_fa, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
+        let (desired_fa, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
 
         let expiry_time = timestamp::now_seconds() + 3600;
 
@@ -126,8 +128,8 @@ module aptos_intent::fa_entryflow_tests {
     ) acquires PendingIntent {
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
-        let (offered_fa, _) = register_and_mint_tokens(aptos_framework, offerer, 100);
-        let (desired_fa, _) = register_and_mint_tokens(aptos_framework, solver, 100);
+        let (offered_fa, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
+        let (desired_fa, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
 
         let expiry_time = timestamp::now_seconds() + 3600;
 

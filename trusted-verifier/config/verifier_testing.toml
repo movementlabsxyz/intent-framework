@@ -7,23 +7,24 @@
 [hub_chain]
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
-chain_id = 4
-intent_module_address = "0xbb10780188504134178816a5d25548e191e14c3709e1f23f3b22840bab64f20d"
-known_accounts = ["aee84575f3b8fa93200f81b35a8c4b11f6a49774ee345868a27a9904da139463", "7a92c85319e135c866e185465c6fd7af0c57a657b8155f6a1ce9179aee5a1a63"]
+chain_id = 1
+intent_module_address = "0xe7314b32806e55c0d343062403a1962402f918a4a3a1ee6acd364a1690c915f7"
+known_accounts = ["71d612fd87129226c861233f9686601fef4afe791ec2a49c92b4bd6c33e5c553", "4d95b9eb03eed503b8d32e2e9354f2b18b4c83557b378f828dc9f7b50e7593a5"]
 
-# Connected Aptos Chain Configuration  
-# The connected Aptos chain is where escrow events occur and are monitored
-[connected_chain_apt]
-name = "Connected Chain Apt"
+# Connected Move VM Chain Configuration  
+# The connected Move VM chain is where escrow events occur and are monitored
+[connected_chain_mvm]
+name = "Connected Move VM Chain"
 rpc_url = "http://127.0.0.1:8082"
-chain_id = 4
-intent_module_address = "0x731122dd7b611a07757e82fddf5dae3a20b4a4ccf3a7780fa19e56b61b638ecd"
-escrow_module_address = "0x731122dd7b611a07757e82fddf5dae3a20b4a4ccf3a7780fa19e56b61b638ecd"
-known_accounts = ["5c0199e4b45770462709942d6730e06376b896421b608fe3e2ec8e61b8b642eb"]
+chain_id = 2
+intent_module_address = "0x4f733abc2052a89514c258cfec3cbe0e26369dac36b66255e0e37fa07c0f013a"
+escrow_module_address = "0x4f733abc2052a89514c258cfec3cbe0e26369dac36b66255e0e37fa07c0f013a"
+known_accounts = ["fe6d5e530a3efb47b5df0b3891904e97dd19ad7e91da3add3acc027126675314"]
 
-# Verifier Configuration
-# Cryptographic keys and timing parameters for the verifier
+# Connected EVM Chain Configuration
+# The connected EVM chain is where EVM escrow events occur and are monitored
 [connected_chain_evm]
+name = "Connected EVM Chain"
 rpc_url = "http://127.0.0.1:8545"
 escrow_contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 chain_id = 31337

@@ -1,6 +1,6 @@
 # Protocol Specification
 
-This document specifies the cross-chain intent protocol: how intents, escrows, and verifiers work together across chains. For component-specific implementation details, see the [component documentation](#component-documentation).
+This document specifies the cross-chain intent protocol: how intents, escrows, and verifiers work together across chains. For component-specific implementation details, see the component README files in the repository.
 
 ## Table of Contents
 
@@ -24,62 +24,126 @@ The protocol links these components using `intent_id` to correlate events across
 
 The intent framework enables cross-chain escrow operations where intents are created on a hub chain and escrows are created on connected chains. The verifier monitors both chains and provides approval signatures to authorize escrow release.
 
-### Standard Flow
+### Inflow Flow
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant Requester
     participant Hub as Hub Chain<br/>(Move)
     participant Verifier as Trusted Verifier<br/>(Rust)
     participant Connected as Connected Chain<br/>(Move/EVM)
     participant Solver
 
-    Note over User,Solver: Phase 1: Intent Creation on Hub Chain
-    User->>Hub: create_cross_chain_request_intent_entry(<br/>source_metadata, desired_metadata,<br/>desired_amount, expiry_time, intent_id)
-    Note right of Hub: Intent is unreserved<br/>(any solver can fulfill)<br/>⚠️ TODO: Request intent should be reserved
-    Hub->>Verifier: LimitOrderEvent(intent_id, source_amount=0,<br/>desired_amount, expiry, revocable=false)
+    Note over Requester,Solver: Phase 1: Intent Creation on Hub Chain
+    Requester->>Requester: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
+    Requester->>Solver: Send draft
+    Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
+    Solver->>Requester: Returns signature
+    Requester->>Hub: create_inflow_request_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, solver, solver_signature)
+    Hub->>Verifier: LimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
 
-    Note over User,Solver: Phase 2: Escrow Creation on Connected Chain
+    Note over Requester,Solver: Phase 2: Escrow Creation on Connected Chain
     alt Move Chain
-        User->>Connected: create_escrow_from_fa(<br/>source_metadata, amount, verifier_pk,<br/>expiry_time, intent_id, reserved_solver)
+        Requester->>Connected: create_escrow_from_fa(<br/>offered_metadata, amount, verifier_pk,<br/>expiry_time, intent_id, reserved_solver)
     else EVM Chain
-        User->>Connected: createEscrow(intentId, token,<br/>amount, reservedSolver)
+        Requester->>Connected: createEscrow(intentId, token,<br/>amount, reservedSolver)
     end
-    Note right of Connected: Solver specified here<br/>(reserved_solver)
-    Connected->>Connected: Lock assets (MUST be non-revocable)
+    Connected->>Connected: Lock assets
     Connected->>Verifier: OracleLimitOrderEvent/EscrowInitialized(<br/>intent_id, reserved_solver, revocable=false)
 
-    Note over User,Solver: Phase 3: Intent Fulfillment on Hub Chain
-    Solver->>Hub: fulfill_cross_chain_request_intent(<br/>intent, payment_amount)
+    Note over Requester,Solver: Phase 3: Intent Fulfillment on Hub Chain
+    Solver->>Hub: fulfill_inflow_request_intent(<br/>intent, payment_amount)
     Hub->>Verifier: LimitOrderFulfillmentEvent(<br/>intent_id, solver, provided_amount)
 
-    Note over User,Solver: Phase 4: Verifier Validation and Approval
+    Note over Requester,Solver: Phase 4: Verifier Validation and Approval
     Verifier->>Verifier: Match intent_id between<br/>fulfillment and escrow
-    Verifier->>Verifier: Validate escrow.revocable == false<br/>(CRITICAL)
     Verifier->>Verifier: Validate fulfillment<br/>conditions met
     Verifier->>Verifier: Generate approval signature
 
-    Note over User,Solver: Phase 5: Escrow Release on Connected Chain
+    Note over Requester,Solver: Phase 5: Escrow Release on Connected Chain
+    Verifier->>Solver: Delivers approval signature<br/>(Ed25519 for Move, ECDSA for EVM)<br/>Signature itself is the approval
     alt Move Chain
         Note over Solver: Anyone can call<br/>(funds go to reserved_solver)
-        Solver->>Connected: complete_escrow_from_fa(<br/>escrow_intent, payment_amount,<br/>verifier_approval, verifier_signature_bytes)
+        Solver->>Connected: complete_escrow_from_fa(<br/>escrow_intent, payment_amount,<br/>verifier_signature_bytes)
     else EVM Chain
         Note over Solver: Anyone can call<br/>(funds go to reservedSolver)
-        Solver->>Connected: claim(intentId, approvalValue,<br/>signature)
+        Solver->>Connected: claim(intentId, signature)
     end
     Connected->>Connected: Verify signature
     Connected->>Connected: Transfer to reserved_solver
 ```
 
-### Flow Steps
+### Inflow Flow Steps
 
-1. **Hub**: User creates cross-chain request intent using `create_cross_chain_request_intent_entry()` with `intent_id` (emits `LimitOrderEvent` with `source_amount=0`, `revocable=false`). The intent is unreserved, meaning any solver can fulfill it. ⚠️ **TODO**: The request intent should be a reserved intent (include solver parameter).
-2. **Connected**: User creates escrow using `create_escrow_from_fa()` (Move) or `createEscrow()` (EVM) with `intent_id`, verifier public key, and **reserved solver address** (emits `OracleLimitOrderEvent`/`EscrowInitialized`, `revocable=false`). The solver is specified here, not in the hub intent.
-3. **Hub**: Solver fulfills the intent using `fulfill_cross_chain_request_intent()` (emits `LimitOrderFulfillmentEvent`)
-4. **Verifier**: observes fulfillment + escrow, generates approval signature (BCS(u64=1))
-5. **Anyone**: submits `complete_escrow_from_fa()` (Move) or `claim()` (EVM) on connected chain with approval signature. The transaction can be sent by anyone, but funds always transfer to the reserved solver address specified at escrow creation.
+1. **Off-chain (before Hub)**: Requester and solver negotiate using the reserved intent flow:
+   - **Step 1**: Requester creates draft using `create_cross_chain_draft_intent()` with `offered_amount` (amount that will be locked in escrow on connected chain), `offered_chain_id`, and `desired_chain_id`
+   - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
+2. **Hub**: Requester calls `create_inflow_request_intent()` with `offered_amount` (amount that will be locked in escrow on connected chain), `intent_id`, `offered_chain_id`, `desired_chain_id`, `solver` address, and `solver_signature`. The function looks up the solver's public key from the on-chain solver registry, verifies the signature, and creates a reserved intent (emits `LimitOrderEvent` with `offered_amount`, `offered_chain_id`, `desired_chain_id`, `revocable=false`). The intent is **reserved** for the specified solver, ensuring solver commitment across chains.
+
+   **Note**: The solver must be registered in the solver registry before calling this function. The registry stores the solver's Ed25519 public key (for signature verification) and connected chain addresses (for outflow validation). See the [Solver Registry API](../docs/move-intent-framework/api-reference.md#solver-registry-api) for registration details.
+3. **Connected Chain**: Requester creates escrow using `create_escrow_from_fa()` (Move) or `createEscrow()` (EVM) with `intent_id`, verifier public key, and **reserved solver address** (emits `OracleLimitOrderEvent`/`EscrowInitialized`, `revocable=false`).
+4. **Solver**: Observes the request intent on Hub chain (from step 2) and the escrow on Connected Chain (from step 3).
+5. **Hub**: Solver fulfills the intent using `fulfill_inflow_request_intent()` (emits `LimitOrderFulfillmentEvent`)
+6. **Verifier**: observes fulfillment + escrow, signs the `intent_id` to generate approval signature (signature itself is the approval)
+7. **Anyone**: submits `complete_escrow_from_fa()` (Move) or `claim()` (EVM) on connected chain with verifier signature (Ed25519 for Move, ECDSA for EVM). The transaction can be sent by anyone, but funds always transfer to the reserved solver address specified at escrow creation.
 
 **Note**: All escrows must specify a reserved solver address at creation. Funds are always transferred to the reserved solver when the escrow is claimed, regardless of who sends the transaction.
+
+### Outflow Flow
+
+The outflow flow is the reverse of the inflow flow: tokens are locked on the hub chain and desired on the connected chain. The solver transfers tokens on the connected chain first, then receives the locked tokens from the hub as reward.
+
+```mermaid
+sequenceDiagram
+    participant Requester
+    participant Hub as Hub Chain<br/>(Move)
+    participant Verifier as Trusted Verifier<br/>(Rust)
+    participant Connected as Connected Chain<br/>(Move/EVM)
+    participant Solver
+
+    Note over Requester,Solver: Phase 1: Intent Creation on Hub Chain
+    Requester->>Requester: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
+    Requester->>Solver: Send draft
+    Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
+    Solver->>Requester: Returns signature
+    Requester->>Hub: create_outflow_request_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, requester_address_connected_chain,<br/>verifier_public_key, solver, solver_signature)
+    Hub->>Hub: Lock assets on hub
+    Hub->>Verifier: OracleLimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
+
+    Note over Requester,Solver: Phase 2: Solver Transfers on Connected Chain
+    Solver->>Connected: Transfer tokens to requester_address_connected_chain<br/>(standard token transfer, not escrow)
+    Connected->>Connected: Tokens received by requester
+
+    Note over Requester,Solver: Phase 3: Verifier Validation and Approval
+    Solver->>Verifier: POST /validate-outflow-fulfillment<br/>(transaction_hash, chain_type, intent_id)
+    Verifier->>Connected: Query transaction by hash<br/>(verify transfer occurred)
+    Verifier->>Verifier: Validate transfer conditions met
+    Verifier->>Solver: Return approval signature
+
+    Note over Requester,Solver: Phase 4: Intent Fulfillment on Hub Chain
+    Solver->>Hub: fulfill_outflow_request_intent(<br/>intent, verifier_signature_bytes)
+    Hub->>Hub: Verify verifier signature
+    Hub->>Hub: Unlock tokens and transfer to solver
+```
+
+### Outflow Flow Steps
+
+1. **Off-chain (before Hub)**: Requester and solver negotiate using the reserved intent flow:
+   - **Step 1**: Requester creates draft using `create_cross_chain_draft_intent()` with `offered_amount` (amount that will be locked on hub chain), `offered_chain_id` (hub chain), and `desired_chain_id` (connected chain)
+   - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
+2. **Hub**: Requester calls `create_outflow_request_intent()` with `offered_amount` (amount to lock on hub), `intent_id`, `offered_chain_id` (hub), `desired_chain_id` (connected), `requester_address_connected_chain` (where solver should send tokens), `verifier_public_key`, `solver` address, and `solver_signature`. The function locks tokens on the hub and creates an oracle-guarded intent requiring verifier signature (emits `OracleLimitOrderEvent` with `revocable=false`).
+3. **Connected Chain**: Solver transfers tokens directly to `requester_address_connected_chain` using standard token transfer (not an escrow). The transaction must include `intent_id` as metadata for verifier tracking. See [Connected Chain Outflow Fulfillment Transaction Format](#connected-chain-outflow-fulfillment-transaction-format) for exact specification.
+4. **Solver**: Calls the verifier REST API endpoint `POST /validate-outflow-fulfillment` with the transaction hash, chain type, and intent ID.
+5. **Verifier**: Validates the transaction matches the hub intent requirements and generates approval signature by signing the `intent_id`.
+6. **Hub**: Solver calls `fulfill_outflow_request_intent()` with the verifier signature. The function verifies the signature, unlocks the tokens locked on hub, and transfers them to the solver as reward.
+7. **Result**: Requester receives tokens on connected chain, solver receives locked tokens from hub as reward.
+
+**Key Differences from Inflow Flow**:
+
+- Tokens are locked on hub (not connected chain)
+- No escrow on connected chain - solver transfers directly
+- Verifier signature is required for fulfillment (oracle-guarded intent)
+- Solver receives locked tokens from hub as payment for their work
 
 ## Cross-Chain Linking Mechanism
 
@@ -114,7 +178,7 @@ Connected Chain: OracleLimitOrderEvent.intent_id / EscrowInitialized.intentId
 
 **Matching Process**:
 
-1. Verifier observes `LimitOrderEvent` → stores `IntentEvent` with `intent_id`
+1. Verifier observes `LimitOrderEvent` → stores `RequestIntentEvent` with `intent_id`
 2. Verifier observes escrow event → stores `EscrowEvent` with `intent_id`
 3. When `LimitOrderFulfillmentEvent` observed → matches `fulfillment.intent_id` with `escrow.intent_id`
 4. If match found and validation passes → generates approval signature
@@ -166,12 +230,12 @@ For detailed validation logic, see [Trusted Verifier](trusted-verifier/README.md
 
 ⚠️ **CRITICAL**: All escrow intents MUST be created with `revocable = false`.
 
-**Why**: Escrow funds must remain locked until verifier approval or expiry. If escrows were revocable, users could withdraw funds after verifiers trigger actions elsewhere, breaking the protocol's security guarantees.
+**Why**: Escrow funds must remain locked until verifier approval or expiry. If escrows were revocable, requesters could withdraw funds after verifiers trigger actions elsewhere, breaking the protocol's security guarantees.
 
 **Enforcement**:
 
-- Move escrow creation enforces non-revocable: `intent_as_escrow.move:109`
-- Verifier validates before approval: `trusted-verifier/src/validator/mod.rs:99-105`
+- Move escrow creation enforces non-revocable: `move-intent-framework/sources/intent_as_escrow.move` (escrow creation functions validate `revocable = false`)
+- Verifier validates before approval: `trusted-verifier/src/validator/generic.rs` (`CrossChainValidator::validate_request_intent_safety()`)
 - EVM escrows use contract-defined expiry instead of revocation
 
 ### Reserved Solver Address
@@ -187,14 +251,66 @@ All escrows MUST specify a reserved solver address at creation:
 
 ### Cryptographic Operations
 
-**Aptos/Move Chains**:
+**Move VM Chains**:
 
 - Ed25519 signatures for verifier approvals
-- Signature over BCS-encoded `approval_value` (u64 = 1)
+- Signature over BCS-encoded `intent_id` (address) - the signature itself is the approval
 - Public key embedded in escrow creation
 
 **EVM Chains**:
 
 - ECDSA signatures for verifier approvals
-- Message: `keccak256(abi.encodePacked(intentId, approvalValue))`
+- Message: `keccak256(intentId)` - signature itself is the approval
 - Ethereum signed message format
+
+## Connected Chain Outflow Fulfillment Transaction Format
+
+For outflow intents, solvers must transfer tokens on the connected chain using a standardized transaction format that includes `intent_id` metadata for verifier tracking.
+
+### Move VM Connected Chain Format
+
+Use the solver CLI to generate an `aptos move run` command that calls the on-chain `utils::transfer_with_intent_id()` function directly.
+
+```bash
+cargo run --bin connected_chain_tx_template -- \
+  --chain mvm \
+  --recipient 0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
+  --metadata 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef \
+  --amount 25000000 \
+  --intent-id 0x5678123456789012345678901234567890123456789012345678901234567890
+```
+
+The command prints:
+
+1. A summary of the parameters that must match the hub intent (`recipient`, `amount`, `intent_id`)
+2. An `aptos move run` command to call the on-chain `utils::transfer_with_intent_id()` function directly
+3. Instructions for replacing placeholders (`<solver-profile>`, `<module_address>`)
+
+The on-chain `utils::transfer_with_intent_id()` function:
+
+- Transfers tokens from the solver's account to the recipient address
+- Includes `intent_id` as an explicit parameter in the transaction payload
+
+This guarantees that every connected-chain transaction encodes `intent_id`, making it observable via Move VM RPC. The verifier later queries the transaction hash, extracts the function arguments, and matches them against the hub intent requirements.
+
+**Note:** The intent framework module (including `utils::transfer_with_intent_id()`) must be deployed on the connected chain before solvers can use this approach.
+
+### EVM Connected Chain Format
+
+Use the same CLI with `--chain evm` to generate the ERC20 payload that appends `intent_id` after the standard `transfer(to, amount)` arguments.
+
+```bash
+cargo run --bin connected_chain_tx_template -- \
+  --chain evm \
+  --recipient 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb \
+  --amount 1000000000000000000 \
+  --intent-id 0x5678123456789012345678901234567890123456789012345678901234567890
+```
+
+The CLI prints:
+
+1. A summary of the parameters that must match the hub intent (`recipient`, `amount`, `intent_id`)
+2. A `cast send` command example with the complete data payload that includes `intent_id` as extra calldata
+3. Instructions for replacing the `<token_address>` placeholder
+
+The data payload extends the standard ERC20 `transfer(to, amount)` function call with an extra 32-byte `intent_id` word. The ERC20 contract ignores these extra bytes (they don't match any function signature), but they remain in the transaction data for verifier tracking. The verifier reads the appended `intent_id` when it fetches the transaction via `eth_getTransactionByHash`, ensuring it can link the connected-chain transfer back to the hub intent.

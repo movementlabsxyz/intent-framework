@@ -66,9 +66,9 @@ Verifier signature validation failures and escrow claim rejections.
    - EVM: `claim()` verifies ECDSA signature (`IntentEscrow.sol:92-102`)
    - Transaction aborts if signature verification fails
 
-2. **Approval Value Mismatch**:
-   - Verifier must provide approval value >= 1 (`intent_as_escrow.move:93`)
-   - Lower values result in escrow rejection
+2. **Wrong Intent ID**:
+   - Verifier signs the `intent_id` - signature itself is the approval
+   - If signature was created for a different `intent_id`, verification fails
 
 3. **Escrow Already Claimed**:
    - EVM: `isClaimed` flag prevents double-claiming (`IntentEscrow.sol:26`)
@@ -124,8 +124,8 @@ Behavior when source tokens aren't locked on hub chain.
 
 **Implementation** (`fa_intent_cross_chain.move:40-41`):
 
-- `create_cross_chain_request_intent()` withdraws 0 tokens (`primary_fungible_store::withdraw(account, source_metadata, 0)`)
-- Creates intent with `source_amount=0` in `LimitOrderEvent`
+- `create_cross_chain_request_intent()` withdraws 0 tokens (`primary_fungible_store::withdraw(account, offered_metadata, 0)`)
+- Creates intent with `offered_amount=0` in `LimitOrderEvent`
 - Tokens are locked in escrow on connected chain instead
 
 **Use Case**: Enables cross-chain swaps where assets are on different chains, with hub chain serving as coordination layer.
@@ -148,33 +148,37 @@ Race condition prevention mechanisms.
 
 Transferring USD tokens from a connected chain to a hub chain using the intent framework.
 
-**Use Case**: A user wants to transfer USD tokens from Chain 2 (connected chain) to Chain 1 (hub chain). The tokens are locked in an escrow on Chain 2, and a solver provides equivalent tokens on Chain 1. After the solver fulfills the intent on Chain 1, the verifier approves the escrow release on Chain 2, transferring the locked tokens to the solver.
+**Use Case**: A requester wants to transfer USD tokens from Chain 2 (connected chain) to Chain 1 (hub chain). The tokens are locked in an escrow on Chain 2, and a solver provides equivalent tokens on Chain 1. After the solver fulfills the intent on Chain 1, the verifier approves the escrow release on Chain 2, transferring the locked tokens to the solver.
 
 **Flow**:
 
-1. **Hub Chain - Intent Creation** (`testing-infra/e2e-tests-apt/submit-hub-intent.sh`):
-   - User creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
+1. **Hub Chain - Intent Creation** (`testing-infra/e2e-tests-mvm/submit-hub-intent.sh`):
+   - Requester creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
    - Intent specifies desired USD token metadata and amount (e.g., 100M tokens)
-   - Intent uses `source_amount=0` since tokens are locked on connected chain
-   - ⚠️ **Current Implementation Issue**: Intent is unreserved (`option::none()` in `fa_intent_cross_chain.move:49`), meaning any solver can fulfill it. However, the escrow on the connected chain specifies a reserved solver. This creates a mismatch where a solver could fulfill the hub intent but not be able to claim the escrow. See [protocol.md TODO](../../docs/protocol.md#flow-steps) for the planned fix.
+   - Intent uses `offered_amount=0` since tokens are locked on connected chain
+   - Intent is **reserved** for a specific solver: solver must be registered in the solver registry, signs the intent off-chain, and the signature is verified on-chain using the solver's public key from the registry
+   - The solver's public key is looked up from the on-chain solver registry (no need to pass it explicitly)
 
-2. **Connected Chain - Escrow Creation** (`testing-infra/e2e-tests-apt/submit-escrow.sh`):
-   - User locks USD tokens in escrow on connected chain using `create_escrow_from_fa()`
+2. **Connected Chain - Escrow Creation** (`testing-infra/e2e-tests-mvm/submit-escrow.sh`):
+   - Requester locks USD tokens in escrow on connected chain using `create_escrow_from_fa()`
    - Escrow specifies reserved solver address (funds will go to this address when released)
    - Escrow links to hub intent via shared `intent_id`
    - Escrow is non-revocable (`revocable=false`)
 
-3. **Hub Chain - Intent Fulfillment** (`testing-infra/e2e-tests-apt/fulfill-hub-intent.sh`):
+3. **Hub Chain - Intent Fulfillment** (`testing-infra/e2e-tests-mvm/fulfill-hub-intent.sh`):
    - Solver monitors hub chain events and sees the intent
    - Solver provides USD tokens on hub chain using `fulfill_cross_chain_request_intent()`
-   - User receives tokens on hub chain
+   - Requester receives tokens on hub chain
 
-4. **Verifier - Validation and Approval** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
-   - Verifier monitors both chains and matches `intent_id` between fulfillment and escrow
+4. **Verifier - Validation and Approval** (`testing-infra/e2e-tests-mvm/release-escrow.sh`):
+   - Verifier monitors hub chain for request intent events and connected chain (Move VM or EVM) for escrow events
+   - Verifier actively polls connected chains and caches escrows when created (symmetrical for both Move VM and EVM)
    - Verifier validates escrow is non-revocable (critical security check)
-   - Verifier generates approval signature after hub fulfillment is confirmed
+   - Verifier validates solver addresses match (Move VM addresses directly, EVM addresses via solver registry)
+   - Verifier validates `chain_id` matches between intent `offered_chain_id` and escrow `chain_id`
+   - Verifier signs the `intent_id` to generate approval signature after hub fulfillment is confirmed (Ed25519 for Move VM, ECDSA for EVM) - signature itself is the approval
 
-5. **Connected Chain - Escrow Release** (`testing-infra/e2e-tests-apt/release-escrow.sh`):
-   - Anyone can call `complete_escrow_from_fa()` with verifier approval signature
+5. **Connected Chain - Escrow Release** (`testing-infra/e2e-tests-mvm/release-escrow.sh`):
+   - Anyone can call `complete_escrow_from_fa()` with verifier signature (signature itself is the approval)
    - Funds are transferred to the reserved solver address specified at escrow creation
    - Solver receives locked tokens on connected chain

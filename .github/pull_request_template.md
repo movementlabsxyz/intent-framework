@@ -22,7 +22,7 @@
 
 ## Breaking Changes
 
-<!-- If this PR includes breaking changes, describe them here. If no breaking changes are included, remove this section. -->
+<!-- If no breaking changes are included, remove this section. If this PR includes breaking changes, describe them here.  -->
 
 ## Related Issues
 
@@ -46,5 +46,4 @@ Related to #
 ### Testing
 
 - [ ] Unit tests pass
-- [ ] Integration tests pass
 - [ ] E2E tests pass

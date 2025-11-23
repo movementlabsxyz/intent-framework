@@ -1,0 +1,26 @@
+name: "E2E Tests (Connected Move VM Chain) - Outflow"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  e2e-tests-mvm-outflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+      
+      - name: Run E2E tests with connected Move VM chain - outflow
+        run: nix develop --command bash -c './testing-infra/e2e-tests-mvm/run-tests-outflow.sh'
+

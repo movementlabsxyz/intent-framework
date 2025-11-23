@@ -29,7 +29,10 @@ if [ ! -d "node_modules" ]; then
     nix develop -c bash -c "npm install" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
         log_and_echo "   ❌ ERROR: npm install failed"
-        log_and_echo "   Check log file for details: $LOG_FILE"
+        log_and_echo "   Log file contents:"
+        log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+        cat "$LOG_FILE"
+        log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
         exit 1
     fi
     log "   ✅ Dependencies installed"
@@ -82,9 +85,11 @@ for i in {1..180}; do
         fi
         log_and_echo "   Last 50 lines of Hardhat log:"
         if [ -f "$LOG_FILE" ]; then
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             tail -50 "$LOG_FILE" | while IFS= read -r line; do
                 log_and_echo "   $line"
             done
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
         else
             log_and_echo "   Log file not found: $LOG_FILE"
         fi

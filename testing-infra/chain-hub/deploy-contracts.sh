@@ -3,7 +3,7 @@
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
-source "$SCRIPT_DIR/../util_apt.sh"
+source "$SCRIPT_DIR/../util_mvm.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -32,18 +32,26 @@ CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 
 log "   - Deploying to Chain 1 with address: $CHAIN1_ADDRESS"
 cd move-intent-framework
-aptos move publish --dev --profile intent-account-chain1 --named-addresses aptos_intent=$CHAIN1_ADDRESS --assume-yes >> "$LOG_FILE" 2>&1
+aptos move publish --dev --profile intent-account-chain1 --named-addresses mvmt_intent=$CHAIN1_ADDRESS --assume-yes >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "   ✅ Chain 1 deployment successful!"
     log_and_echo "✅ Hub chain contracts deployed"
 else
     log_and_echo "   ❌ Chain 1 deployment failed!"
-    log_and_echo "   See log file for details: $LOG_FILE"
+    log_and_echo "   Log file contents:"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+    cat "$LOG_FILE"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     exit 1
 fi
 
 cd ..
+
+# Initialize solver registry (idempotent - will fail silently if already initialized)
+log ""
+log "🔧 Initializing solver registry..."
+initialize_solver_registry "intent-account-chain1" "$CHAIN1_ADDRESS" "$LOG_FILE"
 
 log ""
 log "🎉 HUB CHAIN DEPLOYMENT COMPLETE!"

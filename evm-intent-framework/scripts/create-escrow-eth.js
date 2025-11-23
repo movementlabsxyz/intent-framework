@@ -1,5 +1,20 @@
+//! ETH escrow creation utility
+//!
+//! This script creates an escrow on the IntentEscrow contract using native ETH.
+//! Uses address(0) to represent ETH as the token address.
+
 const hre = require("hardhat");
 
+/// Creates an ETH escrow for an intent
+///
+/// # Environment Variables
+/// - `ESCROW_ADDRESS`: IntentEscrow contract address
+/// - `INTENT_ID_EVM`: Intent ID in EVM format (uint256, hex with 0x prefix)
+/// - `ETH_AMOUNT_WEI`: Amount of ETH to lock in escrow (wei, decimal string)
+/// - `RESERVED_SOLVER`: Optional solver address (defaults to zero address)
+///
+/// # Returns
+/// Outputs success message with intent ID on success.
 async function main() {
   const escrowAddress = process.env.ESCROW_ADDRESS;
   const intentIdHex = process.env.INTENT_ID_EVM;

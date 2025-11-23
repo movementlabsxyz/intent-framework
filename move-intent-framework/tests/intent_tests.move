@@ -1,10 +1,10 @@
 #[test_only]
-module aptos_intent::intent_tests {
+module mvmt_intent::intent_tests {
     use std::signer;
     use std::option;
     use aptos_framework::timestamp;
     use aptos_framework::object;
-    use aptos_intent::intent;
+    use mvmt_intent::intent;
 
     // ============================================================================
     // HELPER FUNCTIONS
@@ -98,7 +98,7 @@ module aptos_intent::intent_tests {
         aptos_framework = @0x1,
         offerer = @0x123
     )]
-    #[expected_failure(abort_code = 327684, location = aptos_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
+    #[expected_failure(abort_code = 327684, location = mvmt_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
     fun test_revoke_intent_failure(
         aptos_framework: &signer,
         offerer: &signer,

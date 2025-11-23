@@ -22,6 +22,7 @@ describe("IntentEscrow - Integration Tests", function () {
 
   /// Test: Complete Deposit to Claim Workflow
   /// Verifies the full workflow from escrow creation through claim.
+  /// Why: Integration test ensures all components work together correctly in the happy path.
   it("Should complete full deposit to claim workflow", async function () {
     const amount = ethers.parseEther("100");
     
@@ -42,16 +43,16 @@ describe("IntentEscrow - Integration Tests", function () {
     expect(await token.balanceOf(escrow.target)).to.equal(amount);
     
     // Step 4: Generate verifier signature for claim
-    const approvalValue = 1;
+    // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
     
     // Step 5: Claim escrow and verify EscrowClaimed event
     expect(await token.balanceOf(solver.address)).to.equal(0);
-    await expect(escrow.connect(solver).claim(intentId, approvalValue, signature))
+    await expect(escrow.connect(solver).claim(intentId, signature))
       .to.emit(escrow, "EscrowClaimed")
       .withArgs(intentId, solver.address, amount);
     
@@ -66,6 +67,7 @@ describe("IntentEscrow - Integration Tests", function () {
 
   /// Test: Multi-Token Scenarios
   /// Verifies that the escrow works with different ERC20 tokens.
+  /// Why: The escrow must support any ERC20 token, not just a single token type.
   it("Should handle multiple different ERC20 tokens", async function () {
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     const token1 = await MockERC20.deploy("Token One", "TKN1");
@@ -116,6 +118,7 @@ describe("IntentEscrow - Integration Tests", function () {
 
   /// Test: Comprehensive Event Emission
   /// Verifies that all events are emitted with correct parameters.
+  /// Why: Events are critical for off-chain monitoring and indexing. Incorrect events break integrations.
   it("Should emit all events with correct parameters", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
@@ -127,20 +130,21 @@ describe("IntentEscrow - Integration Tests", function () {
       .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
     
     // Test EscrowClaimed event
-    const approvalValue = 1;
+    // Signature is over intentId only (signature itself is the approval)
     const messageHash = ethers.solidityPackedKeccak256(
-      ["uint256", "uint8"],
-      [intentId, approvalValue]
+      ["uint256"],
+      [intentId]
     );
     const signature = await verifierWallet.signMessage(ethers.getBytes(messageHash));
     
-    await expect(escrow.connect(solver).claim(intentId, approvalValue, signature))
+    await expect(escrow.connect(solver).claim(intentId, signature))
       .to.emit(escrow, "EscrowClaimed")
       .withArgs(intentId, solver.address, amount);
   });
 
   /// Test: Complete Cancellation Workflow
   /// Verifies the full workflow from escrow creation through cancellation after expiry.
+  /// Why: Integration test ensures the cancellation flow works end-to-end after expiry.
   it("Should complete full cancellation workflow", async function () {
     const amount = ethers.parseEther("100");
     

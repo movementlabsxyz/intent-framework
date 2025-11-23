@@ -4,35 +4,34 @@ Escrow contract for cross-chain intents that releases funds to solvers when veri
 
 ## Overview
 
-The `IntentEscrow` contract implements a secure escrow system where:
-- **Makers** deposit ERC20 tokens into escrows tied to intent IDs
-- **Solvers** can claim funds after providing a valid verifier signature
-- **Verifiers** sign approval messages off-chain after verifying cross-chain conditions
-- **Makers** can cancel and reclaim funds after expiry
+The `IntentEscrow` contract implements a secure escrow system:
+
+- Makers deposit ERC20 tokens into escrows tied to intent IDs
+- Solvers can claim funds after providing a valid verifier signature
+- Verifiers sign approval messages off-chain after verifying cross-chain conditions
+- Makers can cancel and reclaim funds after expiry
 
 ## Architecture
 
 ECDSA signature verification similar to the Aptos escrow system.
 
-### Flow
+Flow:
 
-1. **Create**: Maker creates an escrow and deposits funds atomically (expiry is contract-defined). Must specify the solver address that will receive funds.
-2. **Verify** (off-chain): Verifier monitors conditions and signs approval
-3. **Claim**: Anyone can provide verifier signature to claim funds. Funds always go to the reserved solver address specified at creation.
-4. **Cancel** (optional): Maker can cancel and reclaim after expiry
+1. Maker creates escrow and deposits funds atomically (must specify solver address)
+2. Verifier monitors conditions and signs approval (off-chain)
+3. Anyone can claim with verifier signature (funds go to reserved solver)
+4. Maker can cancel and reclaim after expiry
 
 ## Signature Verification
 
-The verifier signs a message with the following format:
+The verifier signs the `intent_id` - the signature itself is the approval.
 
-```
-messageHash = keccak256(abi.encodePacked(intentId, approvalValue))
+Message format:
+
+```text
+messageHash = keccak256(intentId)
 ethSignedMessage = keccak256("\x19Ethereum Signed Message:\n32" || messageHash)
 ```
-
-Where:
-- `intentId`: The unique intent identifier (uint256)
-- `approvalValue`: Must be `1` to approve (uint8)
 
 The contract uses `ecrecover()` to verify the signature matches the authorized verifier address.
 
@@ -47,7 +46,8 @@ function createEscrow(uint256 intentId, address token, uint256 amount, address r
 
 // Claim funds with verifier signature
 // Funds always go to reservedSolver address (anyone can send transaction, but recipient is fixed)
-function claim(uint256 intentId, uint8 approvalValue, bytes memory signature) external
+// Signature itself is the approval - verifier signs the intent_id
+function claim(uint256 intentId, bytes memory signature) external
 
 // Cancel escrow and reclaim funds (maker only, after expiry)
 function cancel(uint256 intentId) external
@@ -59,13 +59,13 @@ function getEscrow(uint256 intentId) external view returns (address, address, ui
 ### Events
 
 - `EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver)`
-- `DepositMade(uint256 indexed intentId, address indexed user, uint256 amount, uint256 total)`
+- `DepositMade(uint256 indexed intentId, address indexed requester, uint256 amount, uint256 total)` - `requester` is the requester who created the escrow
 - `EscrowClaimed(uint256 indexed intentId, address indexed recipient, uint256 amount)`
 - `EscrowCancelled(uint256 indexed intentId, address indexed maker, uint256 amount)`
 
 ## Quick Start
 
-For quick start instructions, see the [component README](../../evm-intent-framework/README.md).
+See the [component README](../../evm-intent-framework/README.md) for quick start commands.
 
 ## Usage Example
 
@@ -81,53 +81,32 @@ const escrow = await IntentEscrow.deploy(verifierAddress);
 await token.connect(maker).approve(escrow.address, amount);
 await escrow.connect(maker).createEscrow(intentId, tokenAddress, amount, solverAddress);
 
-// Verifier signs approval (off-chain)
+// Verifier signs the intent_id (off-chain) - signature itself is the approval
 const messageHash = ethers.solidityPackedKeccak256(
-  ["uint256", "uint8"],
-  [intentId, 1]
+  ["uint256"],
+  [intentId]
 );
 const signature = await verifier.signMessage(ethers.getBytes(messageHash));
 
 // Solver claims with signature (anyone can call, but funds go to reserved solver)
-await escrow.connect(solver).claim(intentId, 1, signature);
+await escrow.connect(solver).claim(intentId, signature);
 ```
 
 ## Security Considerations
 
-- **Signature Verification**: Only signatures from the authorized verifier address are accepted
-- **Approval Value**: Must be exactly `1` to approve (prevents replay with rejection signatures)
-- **Reentrancy**: Uses OpenZeppelin's SafeERC20 to prevent reentrancy attacks
-- **Access Control**: Only maker can cancel escrow (after expiry)
-- **Immutable Verifier**: Verifier address is set in constructor and cannot be changed
-- **Solver Reservation**: All escrows must specify a reserved solver at creation, preventing unauthorized fund recipients and signature replay attacks
+- Signature verification: Only authorized verifier signatures accepted
+- Intent ID binding: Prevents signature replay across escrows
+- Reentrancy protection: Uses OpenZeppelin's SafeERC20
+- Access control: Only maker can cancel (after expiry)
+- Immutable verifier: Verifier address set in constructor
+- Solver reservation: Required at creation, prevents unauthorized recipients
 
 ## Testing
 
-Run tests with:
 ```bash
 npx hardhat test
 ```
 
-Tests cover:
-- Escrow initialization
-- Token deposits
-- Claiming with valid/invalid signatures
-- Cancellation by maker (after expiry)
-- Expiry enforcement
-- Error cases (already claimed, unauthorized, etc.)
+Tests cover escrow initialization, deposits, claiming, cancellation, expiry enforcement, and error cases.
 
-### Test Accounts
-
-Hardhat provides 20 test accounts, each with 10000 ETH:
-
-- Account 0 (Deployer/Verifier): `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
-- Account 1 (Alice): `0x70997970C51812dc3A010C7d01b50e0d17dc79C8`
-- Account 2 (Bob): `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC`
-- Private keys are deterministic from mnemonic: `test test test test test test test test test test test junk`
-
-## Differences from Solana Version
-
-1. **Signature Verification**: Added ECDSA signature verification (Solana version doesn't verify signatures)
-2. **ERC20 Support**: Works with any ERC20 token (Solana uses specific token accounts)
-3. **Expiry Handling**: Expiry is contract-defined (1 hour) and enforced on-chain (claims blocked after expiry, cancellation only allowed after expiry)
-
+Test accounts: Hardhat provides 20 accounts (10000 ETH each). Account 0 is deployer/verifier, Account 1 is Alice, Account 2 is Bob. Private keys are deterministic from mnemonic: `test test test test test test test test test test test junk`

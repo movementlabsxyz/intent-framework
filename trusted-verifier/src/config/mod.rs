@@ -1,5 +1,5 @@
 //! Configuration Management Module
-//! 
+//!
 //! This module handles loading and managing configuration for the trusted verifier service.
 //! Configuration includes chain endpoints, verifier keys, API settings, and validation parameters.
 
@@ -10,10 +10,10 @@ use serde::{Deserialize, Serialize};
 // ============================================================================
 
 /// Main configuration structure containing all service settings.
-/// 
+///
 /// This structure holds configuration for:
 /// - Hub chain connection details
-/// - Connected Aptos chain connection details (optional, for Aptos escrow chains)
+/// - Connected Move VM chain connection details (optional, for Move VM escrow chains)
 /// - Connected EVM chain configuration (optional, for EVM escrow chains)
 /// - Verifier cryptographic keys and settings
 /// - API server configuration
@@ -21,9 +21,9 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     /// Hub chain configuration (where intents are created)
     pub hub_chain: ChainConfig,
-    /// Connected Aptos chain configuration (optional, where escrow events occur on Aptos)
+    /// Connected Move VM chain configuration (optional, where escrow events occur on Move VM)
     #[serde(default)]
-    pub connected_chain_apt: Option<ChainConfig>,
+    pub connected_chain_mvm: Option<ChainConfig>,
     /// Connected EVM chain configuration (optional, for escrow on EVM)
     #[serde(default)]
     pub connected_chain_evm: Option<EvmChainConfig>,
@@ -34,7 +34,7 @@ pub struct Config {
 }
 
 /// Configuration for a blockchain connection.
-/// 
+///
 /// Contains all necessary information to connect to and interact with a blockchain,
 /// including RPC endpoints, chain identifiers, and module addresses.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,10 +54,12 @@ pub struct ChainConfig {
 }
 
 /// Configuration for an EVM-compatible chain (Ethereum, Hardhat, etc.)
-/// 
+///
 /// Used when escrows are hosted on EVM chains instead of Move-based chains.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvmChainConfig {
+    /// Human-readable name for the chain
+    pub name: String,
     /// RPC endpoint URL for EVM chain communication
     pub rpc_url: String,
     /// Address of the IntentEscrow contract (single contract, one escrow per intentId)
@@ -69,7 +71,7 @@ pub struct EvmChainConfig {
 }
 
 /// Verifier-specific configuration including cryptographic keys and timing parameters.
-/// 
+///
 /// This configuration is critical for the verifier's operation and security.
 /// The private key must be kept secure and never exposed.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -85,7 +87,7 @@ pub struct VerifierConfig {
 }
 
 /// API server configuration for external communication.
-/// 
+///
 /// Controls how the verifier service exposes its REST API endpoints
 /// and handles cross-origin requests.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,26 +105,76 @@ pub struct ApiConfig {
 // ============================================================================
 
 impl Config {
+    /// Validates the configuration for duplicate chain IDs.
+    ///
+    /// This function ensures that:
+    /// - Hub chain ID is unique
+    /// - Connected MVM chain ID (if present) is unique
+    /// - Connected EVM chain ID (if present) is unique
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(())` - Configuration is valid
+    /// - `Err(anyhow::Error)` - Duplicate chain IDs detected
+    pub fn validate(&self) -> anyhow::Result<()> {
+        let hub_chain_id = self.hub_chain.chain_id;
+
+        // Check hub vs connected_chain_mvm
+        if let Some(ref mvm_config) = self.connected_chain_mvm {
+            if hub_chain_id == mvm_config.chain_id {
+                return Err(anyhow::anyhow!(
+                    "Configuration error: Hub chain and connected MVM chain have the same chain ID {}. Each chain must have a unique chain ID.",
+                    hub_chain_id
+                ));
+            }
+        }
+
+        // Check hub vs connected_chain_evm
+        if let Some(ref evm_config) = self.connected_chain_evm {
+            if hub_chain_id == evm_config.chain_id {
+                return Err(anyhow::anyhow!(
+                    "Configuration error: Hub chain and connected EVM chain have the same chain ID {}. Each chain must have a unique chain ID.",
+                    hub_chain_id
+                ));
+            }
+        }
+
+        // Check connected_chain_mvm vs connected_chain_evm
+        if let (Some(ref mvm_config), Some(ref evm_config)) = (&self.connected_chain_mvm, &self.connected_chain_evm) {
+            if mvm_config.chain_id == evm_config.chain_id {
+                return Err(anyhow::anyhow!(
+                    "Configuration error: Connected MVM chain and connected EVM chain have the same chain ID {}. Each chain must have a unique chain ID.",
+                    mvm_config.chain_id
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
     /// Loads configuration from the TOML file.
-    /// 
+    ///
     /// This function:
     /// 1. Checks if config/verifier.toml exists
     /// 2. If it exists, loads and parses the configuration
-    /// 3. If it doesn't exist, returns an error asking user to copy template
-    /// 
+    /// 3. Validates the configuration for duplicate chain IDs
+    /// 4. If it doesn't exist, returns an error asking user to copy template
+    ///
     /// # Returns
-    /// 
-    /// - `Ok(Config)` - Successfully loaded configuration
-    /// - `Err(anyhow::Error)` - Failed to load configuration or file doesn't exist
+    ///
+    /// - `Ok(Config)` - Successfully loaded and validated configuration
+    /// - `Err(anyhow::Error)` - Failed to load configuration, file doesn't exist, or validation failed
     pub fn load() -> anyhow::Result<Self> {
         // Check for custom config path via environment variable (for tests)
         let config_path = std::env::var("VERIFIER_CONFIG_PATH")
             .unwrap_or_else(|_| "config/verifier.toml".to_string());
-        
+
         if std::path::Path::new(&config_path).exists() {
             // Load existing configuration
             let content = std::fs::read_to_string(&config_path)?;
             let config: Config = toml::from_str(&content)?;
+            // Validate configuration
+            config.validate()?;
             Ok(config)
         } else {
             // Configuration file doesn't exist - user needs to copy template
@@ -134,23 +186,24 @@ impl Config {
             ))
         }
     }
-    
+
     /// Creates a default configuration with placeholder values.
-    /// 
+    ///
     /// This configuration is suitable for local development and testing.
     /// For production use, all placeholder values must be replaced with
     /// actual chain URLs, module addresses, and cryptographic keys.
+    #[allow(dead_code)]
     pub fn default() -> Self {
         Self {
             hub_chain: ChainConfig {
                 name: "Hub Chain".to_string(),
                 rpc_url: "http://127.0.0.1:8080".to_string(),
-                chain_id: 4,
+                chain_id: 1,
                 intent_module_address: "0x123".to_string(),
                 escrow_module_address: None,
                 known_accounts: None, // Should be set in config/verifier.toml
             },
-            connected_chain_apt: None, // Optional connected Aptos chain configuration
+            connected_chain_mvm: None, // Optional connected Move VM chain configuration
             verifier: VerifierConfig {
                 private_key: "REPLACE_WITH_PRIVATE_KEY".to_string(),
                 public_key: "REPLACE_WITH_PUBLIC_KEY".to_string(),

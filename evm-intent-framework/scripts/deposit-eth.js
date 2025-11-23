@@ -1,5 +1,18 @@
+//! ETH deposit utility for existing escrows
+//!
+//! This script deposits additional ETH into an existing escrow on the IntentEscrow contract.
+
 const hre = require("hardhat");
 
+/// Deposits ETH into an existing escrow
+///
+/// # Environment Variables
+/// - `ESCROW_ADDRESS`: IntentEscrow contract address
+/// - `INTENT_ID_EVM`: Intent ID in EVM format (uint256, hex with 0x prefix)
+/// - `ETH_AMOUNT_WEI`: Amount of ETH to deposit (wei, decimal string)
+///
+/// # Returns
+/// Outputs success message with deposited amount on success.
 async function main() {
   const escrowAddress = process.env.ESCROW_ADDRESS;
   const intentIdHex = process.env.INTENT_ID_EVM;

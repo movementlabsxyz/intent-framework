@@ -22,12 +22,14 @@ describe("IntentEscrow - Initialization", function () {
 
   /// Test: Verifier Address Initialization
   /// Verifies that the escrow is deployed with the correct verifier address.
+  /// Why: The verifier address is critical for signature validation. Incorrect initialization would break security.
   it("Should initialize escrow with verifier address", async function () {
     expect(await escrow.verifier()).to.equal(verifier.address);
   });
 
   /// Test: Escrow Creation
   /// Verifies that makers can create a new escrow with funds atomically and expiry is set correctly.
+  /// Why: Escrow creation must be atomic and set expiry correctly to enable time-based cancellation.
   it("Should allow maker to create an escrow", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
@@ -58,6 +60,7 @@ describe("IntentEscrow - Initialization", function () {
 
   /// Test: Duplicate Creation Prevention
   /// Verifies that attempting to create an escrow with an existing intent ID reverts.
+  /// Why: Each intent ID must map to a single escrow to maintain state consistency.
   it("Should revert if escrow already exists", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);

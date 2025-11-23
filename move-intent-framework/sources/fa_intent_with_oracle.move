@@ -4,7 +4,7 @@
 /// Offerers still escrow a single fungible asset, but settlement succeeds only
 /// when the solver supplies a signed report from an authorized oracle whose
 /// reported value meets the threshold chosen by the creator.
-module aptos_intent::fa_intent_with_oracle {
+module mvmt_intent::fa_intent_with_oracle {
     use std::bcs;
     use std::error;
     use std::option::{Self as option, Option};
@@ -13,8 +13,8 @@ module aptos_intent::fa_intent_with_oracle {
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata, FungibleStore};
     use aptos_framework::object::{Self, DeleteRef, ExtendRef, Object};
     use aptos_framework::primary_fungible_store;
-    use aptos_intent::intent::{Self, TradeSession, TradeIntent};
-    use aptos_intent::intent_reservation::{Self, IntentReserved};
+    use mvmt_intent::intent::{Self, TradeSession, TradeIntent};
+    use mvmt_intent::intent_reservation::{Self, IntentReserved};
     use aptos_std::ed25519;
 
     // ============================================================================
@@ -55,9 +55,13 @@ module aptos_intent::fa_intent_with_oracle {
     /// Trading conditions for an oracle-guarded limit order.
     struct OracleGuardedLimitOrder has store, drop {
         desired_metadata: Object<Metadata>,
-        desired_amount: u64,
-        issuer: address,
+        desired_amount: u64, // Original desired amount (for the chain specified by desired_chain_id)
+        desired_chain_id: u64, // Chain ID where desired tokens are located
+        offered_chain_id: u64, // Chain ID where offered tokens are located (used to determine if payment is required on current chain)
+        requester: address,
         requirement: OracleSignatureRequirement,
+        intent_id: address, // Intent ID from hub chain (for escrows) - used for signature verification
+        requester_address_connected_chain: Option<address>, // Address on connected chain where solver should send tokens (for outflow intents)
     }
 
     /// Witness type proving receipt completion after oracle validation.
@@ -76,14 +80,18 @@ module aptos_intent::fa_intent_with_oracle {
     struct OracleLimitOrderEvent has store, drop {
         intent_address: address, // The escrow intent address (on connected chain)
         intent_id: address,      // The original intent ID (from hub chain) - links escrow to hub intent
-        source_metadata: Object<Metadata>,
-        source_amount: u64,
+        offered_metadata: Object<Metadata>,
+        offered_amount: u64,
+        offered_chain_id: u64,  // Chain ID where offered tokens are located
         desired_metadata: Object<Metadata>,
-        desired_amount: u64,
-        issuer: address,
+        desired_amount: u64,    // Original desired amount (for the chain specified by desired_chain_id)
+        desired_chain_id: u64,  // Chain ID where desired tokens are located
+        requester: address,
         expiry_time: u64,
         min_reported_value: u64,
         revocable: bool,
+        reserved_solver: Option<address>, // Solver address if the intent is reserved (None for unreserved intents)
+        requester_address_connected_chain: Option<address>, // Requester address on connected chain (for outflow intents)
     }
 
     // ============================================================================
@@ -118,67 +126,87 @@ module aptos_intent::fa_intent_with_oracle {
     /// oracle threshold) are captured in the intent arguments.
     ///
     /// # Arguments
-    /// - `source_fungible_asset`: The asset being offered by the issuer
-    /// - `desired_metadata`: Metadata handle of the asset the issuer wants to receive
+    /// - `offered_fa`: The asset being offered by the requester
+    /// - `offered_chain_id`: Chain ID where offered tokens are located
+    /// - `desired_metadata`: Metadata handle of the asset the requester wants to receive
     /// - `desired_amount`: Minimum amount of the desired asset that must be paid
+    /// - `desired_chain_id`: Chain ID where desired tokens are located
     /// - `expiry_time`: Unix timestamp after which the intent can no longer be filled
-    /// - `issuer`: Address of the intent creator
+    /// - `requester`: Address of the intent creator
     /// - `requirement`: Oracle public key and minimum reported value used for verification
     /// - `revocable`: Whether the intent can be revoked by the owner
     /// - `intent_id`: The original intent ID from hub chain (for escrows) or same as intent_address (for regular intents)
+    /// - `requester_address_connected_chain`: Optional address on connected chain where solver should send tokens (for outflow intents)
     /// - `reservation`: Optional reservation specifying which solver can claim the escrow
     ///
     /// # Returns
     /// - `Object<TradeIntent<...>>`: Handle to the created oracle-guarded intent
     public fun create_fa_to_fa_intent_with_oracle_requirement(
-        source_fungible_asset: FungibleAsset,
+        offered_fa: FungibleAsset,
+        offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
+        desired_chain_id: u64,
         expiry_time: u64,
-        issuer: address,
+        requester: address,
         requirement: OracleSignatureRequirement,
         revocable: bool,
         intent_id: address,
+        requester_address_connected_chain: Option<address>,
         reservation: Option<IntentReserved>,
     ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         // Capture metadata and amount before depositing
-        let source_metadata = fungible_asset::asset_metadata(&source_fungible_asset);
-        let source_amount = fungible_asset::amount(&source_fungible_asset);
+        let offered_metadata = fungible_asset::asset_metadata(&offered_fa);
+        let offered_amount = fungible_asset::amount(&offered_fa);
         
-        let coin_store_ref = object::create_object(issuer);
+        let coin_store_ref = object::create_object(requester);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
         let delete_ref = object::generate_delete_ref(&coin_store_ref);
         let transfer_ref = object::generate_transfer_ref(&coin_store_ref);
         let linear_ref = object::generate_linear_transfer_ref(&transfer_ref);
         object::transfer_with_ref(linear_ref, object::address_from_constructor_ref(&coin_store_ref));
 
-        fungible_asset::create_store(&coin_store_ref, fungible_asset::metadata_from_asset(&source_fungible_asset));
+        fungible_asset::create_store(&coin_store_ref, fungible_asset::metadata_from_asset(&offered_fa));
         fungible_asset::deposit(
             object::object_from_constructor_ref<FungibleStore>(&coin_store_ref),
-            source_fungible_asset
+            offered_fa
         );
+        
+        // Extract solver from reservation if present (before reservation is moved into create_intent)
+        let reserved_solver = if (option::is_some(&reservation)) {
+            let reservation_ref = option::borrow(&reservation);
+            option::some(intent_reservation::solver(reservation_ref))
+        } else {
+            option::none<address>()
+        };
+        
         let intent_obj = intent::create_intent<FungibleStoreManager, OracleGuardedLimitOrder, OracleGuardedWitness>(
             FungibleStoreManager { extend_ref, delete_ref },
-            OracleGuardedLimitOrder { desired_metadata, desired_amount, issuer, requirement },
+            OracleGuardedLimitOrder { desired_metadata, desired_amount, desired_chain_id, offered_chain_id, requester, requirement, intent_id, requester_address_connected_chain },
             expiry_time,
-            issuer,
+            requester,
             OracleGuardedWitness {},
             reservation,
             revocable,
         );
 
         // Emit event after creating intent so we have the intent address
+        // Use desired_amount directly (which should be the original value for the chain specified by desired_chain_id)
         event::emit(OracleLimitOrderEvent {
             intent_address: object::object_address(&intent_obj),
-            intent_id,  // Pass the intent ID from user (hub chain intent ID for escrows)
-            source_metadata,
-            source_amount,
+            intent_id,  // Pass the intent ID from requester (hub chain intent ID for escrows)
+            offered_metadata,
+            offered_amount,
+            offered_chain_id,
             desired_metadata,
             desired_amount,
-            issuer,
+            desired_chain_id,
+            requester,
             expiry_time,
             min_reported_value: requirement.min_reported_value,
             revocable,
+            reserved_solver,
+            requester_address_connected_chain,
         });
 
         intent_obj
@@ -236,14 +264,22 @@ module aptos_intent::fa_intent_with_oracle {
             fungible_asset::metadata_from_asset(&received_fa) == argument.desired_metadata,
             error::invalid_argument(ENOT_DESIRED_TOKEN)
         );
+        // Payment validation: if desired_chain_id != offered_chain_id, we're on the offered chain
+        // and nothing is desired on this chain, so payment should be 0
+        // Otherwise, use the desired_amount for the chain specified by desired_chain_id
+        let required_payment_amount = if (argument.desired_chain_id == argument.offered_chain_id) {
+            argument.desired_amount // Same chain - payment required
+        } else {
+            0 // Cross-chain - nothing desired on the offered chain
+        };
         assert!(
-            fungible_asset::amount(&received_fa) >= argument.desired_amount,
+            fungible_asset::amount(&received_fa) >= required_payment_amount,
             error::invalid_argument(EAMOUNT_NOT_MEET),
         );
 
         verify_oracle_requirement(argument, &oracle_witness_opt);
 
-        primary_fungible_store::deposit(argument.issuer, received_fa);
+        primary_fungible_store::deposit(argument.requester, received_fa);
         intent::finish_intent_session(session, OracleGuardedWitness {})
     }
 
@@ -270,7 +306,7 @@ module aptos_intent::fa_intent_with_oracle {
     ) {
         if (option::is_some(oracle_witness)) {
             let witness = option::borrow(oracle_witness);
-            verify_oracle_witness(&argument.requirement, witness);
+            verify_oracle_witness(&argument.requirement, witness, argument.intent_id);
         } else {
             abort error::invalid_argument(ESIGNATURE_REQUIRED)
         }
@@ -278,9 +314,13 @@ module aptos_intent::fa_intent_with_oracle {
 
     /// Applies signature and threshold checks against the supplied witness.
     ///
+    /// The verifier signs the intent_id to approve it. The signature itself is the approval.
+    /// We verify that the signature is valid for the intent_id.
+    ///
     /// # Arguments
     /// - `requirement`: Oracle metadata embedded in the intent arguments
     /// - `witness`: Signed report supplied by the solver
+    /// - `intent_id`: Intent ID from hub chain (for escrows) - this is what was signed
     ///
     /// # Aborts
     /// - `EINVALID_SIGNATURE`: Signature verification failed
@@ -288,8 +328,10 @@ module aptos_intent::fa_intent_with_oracle {
     fun verify_oracle_witness(
         requirement: &OracleSignatureRequirement,
         witness: &OracleSignatureWitness,
+        intent_id: address,
     ) {
-        let message = bcs::to_bytes(&witness.reported_value);
+        // Verifier signs the intent_id (BCS-encoded address) - the signature itself is the approval
+        let message = bcs::to_bytes(&intent_id);
         assert!(
             ed25519::signature_verify_strict(&witness.signature, &requirement.public_key, message),
             error::invalid_argument(EINVALID_SIGNATURE)

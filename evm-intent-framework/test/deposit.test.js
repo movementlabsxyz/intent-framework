@@ -20,6 +20,7 @@ describe("IntentEscrow - Create Escrow (Deposit)", function () {
 
   /// Test: Token Escrow Creation
   /// Verifies that makers can create an escrow with ERC20 tokens atomically.
+  /// Why: Escrow creation is the first step in the intent fulfillment flow. Makers must be able to lock funds securely.
   it("Should allow maker to create escrow with tokens", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);
@@ -39,6 +40,7 @@ describe("IntentEscrow - Create Escrow (Deposit)", function () {
 
   /// Test: Escrow Creation After Claim Prevention
   /// Verifies that escrows cannot be created with an intent ID that was already claimed.
+  /// Why: Prevents duplicate escrows and ensures each intent ID maps to a single escrow state.
   it("Should revert if escrow is already claimed", async function () {
     const amount = ethers.parseEther("100");
     await token.mint(maker.address, amount);

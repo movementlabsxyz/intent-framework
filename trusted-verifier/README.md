@@ -6,45 +6,13 @@ Service that monitors chains and provides approval signatures.
 
 ## Quick Start
 
-### Build
-
 ```bash
+# Build
 cargo build
-```
 
-### Configure
-
-```bash
-# Copy the template and edit with your chain URLs and keys
+# Configure (copy template and edit)
 cp config/verifier.template.toml config/verifier.toml
 
-# Generate cryptographic keys (optional)
-cargo run --bin generate_keys
-
-# Edit config/verifier.toml with your actual values
-```
-
-### Run
-
-```bash
+# Run
 cargo run
-```
-
-### Development Commands
-
-```bash
-# Run tests
-cargo test
-
-# Run with logging
-RUST_LOG=debug cargo run
-
-# Generate Ed25519 key pairs
-cargo run --bin generate_keys
-
-# Format code
-cargo fmt
-
-# Check code
-cargo clippy
 ```

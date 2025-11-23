@@ -142,7 +142,7 @@ let oracle_requirement = new_oracle_signature_requirement(
 ```move
 // Create oracle-guarded intent
 let oracle_intent = create_oracle_guarded_intent(
-    source_asset,
+    offered_asset,
     oracle_requirement,
     expiry_time,
     issuer

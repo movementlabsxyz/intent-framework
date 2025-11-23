@@ -1,5 +1,16 @@
+//! MockERC20 token deployment utility
+//!
+//! This script deploys a MockERC20 token contract and mints initial tokens to the deployer.
+
 const hre = require("hardhat");
 
+/// Deploys MockERC20 token and mints initial supply
+///
+/// Deploys a MockERC20 contract with name "Test Token" and symbol "TEST",
+/// then mints 1000000000 tokens (with 18 decimals) to the deployer account.
+///
+/// # Returns
+/// Outputs token address, deployment status, and deployer balance on success.
 async function main() {
   console.log("Deploying MockERC20 token...");
 

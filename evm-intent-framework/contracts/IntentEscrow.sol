@@ -20,7 +20,7 @@ contract IntentEscrow {
 
     /// @notice Escrow data structure
     struct Escrow {
-        address maker;           // User who deposited funds
+        address maker;           // Requester who deposited funds (requester who created the request intent on hub chain)
         address token;           // ERC20 token address
         uint256 amount;          // Amount deposited
         bool isClaimed;          // Whether funds have been claimed
@@ -33,7 +33,7 @@ contract IntentEscrow {
 
     /// @notice Events
     event EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver);
-    event DepositMade(uint256 indexed intentId, address indexed user, uint256 amount, uint256 total);
+    event DepositMade(uint256 indexed intentId, address indexed requester, uint256 amount, uint256 total);
     event EscrowClaimed(uint256 indexed intentId, address indexed recipient, uint256 amount);
     event EscrowCancelled(uint256 indexed intentId, address indexed maker, uint256 amount);
 
@@ -43,7 +43,6 @@ contract IntentEscrow {
     error NoDeposit();
     error UnauthorizedMaker();
     error InvalidSignature();
-    error InvalidApprovalValue();
     error UnauthorizedVerifier();
     error EscrowExpired(); // Escrow has expired (for claim operations)
     error EscrowNotExpiredYet(); // Escrow has not expired yet (for cancel operations)
@@ -108,12 +107,10 @@ contract IntentEscrow {
     /**
      * @notice Claim escrow funds (solver only, requires verifier signature)
      * @param intentId Intent identifier
-     * @param approvalValue Approval value (must be 1 to approve)
-     * @param signature Verifier's ECDSA signature over keccak256(abi.encodePacked(intentId, approvalValue))
+     * @param signature Verifier's ECDSA signature over keccak256(intentId) - signature itself is the approval
      */
     function claim(
         uint256 intentId,
-        uint8 approvalValue,
         bytes memory signature
     ) external {
         Escrow storage escrow = escrows[intentId];
@@ -124,11 +121,10 @@ contract IntentEscrow {
         
         // Enforce expiry: claims are not allowed after expiry
         if (block.timestamp > escrow.expiry) revert EscrowExpired();
-        
-        if (approvalValue != 1) revert InvalidApprovalValue();
 
         // Verify signature
-        bytes32 messageHash = keccak256(abi.encodePacked(intentId, approvalValue));
+        // Verifier signs only the intent_id (symmetric with Aptos - signature itself is the approval)
+        bytes32 messageHash = keccak256(abi.encodePacked(intentId));
         bytes32 ethSignedMessageHash = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
         );

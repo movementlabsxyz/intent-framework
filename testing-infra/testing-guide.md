@@ -113,8 +113,8 @@ pkill -f faucet || true
 rm -rf ~/.aptos/ .aptos/
 
 # 2. Start local testnet (Docker)
-# Multi-chain: ./testing-infra/chain-connected-apt/setup-alice-bob.sh
-# Or chains only: ./testing-infra/chain-connected-apt/setup-chain.sh
+# Multi-chain: ./testing-infra/chain-connected-mvm/setup-alice-bob.sh
+# Or chains only: ./testing-infra/chain-connected-mvm/setup-chain.sh
 
 # 3. Create Alice account (non-interactive)
 printf "\n" | aptos init --profile alice --network local --assume-yes

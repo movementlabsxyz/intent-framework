@@ -77,7 +77,7 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 - Asset custody and fund locking on individual chains
 - Escrow creation with verifier public key
-- Escrow completion with verifier approval
+- Escrow completion with verifier signature (signature itself is the approval)
 - Reserved solver address enforcement
 - Non-revocable requirement enforcement
 
@@ -92,19 +92,19 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 **Public Entry Functions** (Move):
 
 - `create_escrow_from_fa()` - Create escrow from fungible asset
-- `complete_escrow_from_fa()` - Complete escrow with verifier approval
+- `complete_escrow_from_fa()` - Complete escrow with verifier signature (signature itself is the approval)
 
 **Public Functions** (Move):
 
 - `create_escrow()` - Create escrow with verifier requirement
 - `start_escrow_session()` - Start escrow session (solver takes escrowed assets)
-- `complete_escrow()` - Complete escrow with verifier approval
+- `complete_escrow()` - Complete escrow with verifier signature (signature itself is the approval)
 
 **Public Functions** (Solidity):
 
 - `createEscrow(uint256 intentId, address token, uint256 amount, address reservedSolver)` - Create and deposit escrow
 - `deposit(uint256 intentId, address token, uint256 amount)` - Additional deposit to escrow
-- `claim(uint256 intentId, uint8 approvalValue, bytes signature)` - Claim escrow with verifier signature
+- `claim(uint256 intentId, bytes signature)` - Claim escrow with verifier signature (signature itself is the approval)
 - `cancel(uint256 intentId)` - Cancel escrow after expiry
 
 **Events Emitted**:
@@ -163,16 +163,16 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 **Public Entry Functions** (Move):
 
 - `fulfill_cross_chain_request_intent()` - Fulfill cross-chain intent (in fa_intent.move)
-- `complete_escrow_from_fa()` - Complete escrow with approval (in intent_as_escrow_entry.move)
+- `complete_escrow_from_fa()` - Complete escrow with verifier signature (in intent_as_escrow_entry.move) - signature itself is the approval
 
 **Public Functions** (Move):
 
 - `finish_fa_intent_session()` - Complete FA intent session (in fa_intent.move)
-- `complete_escrow()` - Complete escrow with verifier approval (in intent_as_escrow.move)
+- `complete_escrow()` - Complete escrow with verifier signature (in intent_as_escrow.move) - signature itself is the approval
 
 **Public Functions** (Solidity):
 
-- `claim(uint256 intentId, uint8 approvalValue, bytes signature)` - Claim escrow (in IntentEscrow.sol)
+- `claim(uint256 intentId, bytes signature)` - Claim escrow (in IntentEscrow.sol) - signature itself is the approval
 - `cancel(uint256 intentId)` - Cancel escrow after expiry (in IntentEscrow.sol)
 
 ### Settlement: Internal Components
@@ -200,9 +200,10 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 **In Scope**:
 
-- Event monitoring from hub and connected chains
+- Event monitoring from hub and connected chains (Move VM and EVM)
+- Symmetrical monitoring of Move VM and EVM escrows (both cached and validated when created)
 - Cross-chain state validation
-- Approval signature generation
+- Approval signature generation (Ed25519 for Move VM, ECDSA for EVM)
 - Event correlation and matching
 - REST API for external integration
 
@@ -222,30 +223,42 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 - `GET /approvals` - Get cached approval signatures
 - `GET /approvals/:escrow_id` - Get approval for specific escrow
 - `POST /approval` - Manually create approval signature
+- `POST /validate-outflow-fulfillment` - Validate connected chain transaction for outflow intent and return approval signature
+- `POST /validate-inflow-escrow` - Validate escrow deposit for inflow intent
 
 **Public Functions** (Rust):
 
-- `EventMonitor::poll_events()` - Poll blockchain for events
+- `EventMonitor::poll_hub_events()` - Poll hub chain for intent events
+- `EventMonitor::poll_connected_events()` - Poll Move VM connected chain for escrow events
+- `EventMonitor::poll_evm_events()` - Poll EVM connected chain for escrow events
+- `EventMonitor::monitor_hub_chain()` - Monitor hub chain continuously
+- `EventMonitor::monitor_connected_chain()` - Monitor Move VM connected chain continuously
+- `EventMonitor::monitor_evm_chain()` - Monitor EVM connected chain continuously
 - `EventMonitor::get_cached_events()` - Get cached events
 - `CrossChainValidator::validate_intent_safety()` - Validate intent safety
 - `CrossChainValidator::validate_fulfillment()` - Validate fulfillment
-- `CryptoService::sign_approval()` - Generate approval signature
+- `CrossChainValidator::validate_intent_fulfillment()` - Validate escrow fulfills intent
+- `validator::inflow_evm::validate_evm_escrow_solver()` - Validate EVM escrow solver matches registry (standalone function in `validator/inflow_evm.rs`)
+- `CryptoService::create_mvm_approval_signature(intent_id)` - Generate Ed25519 approval signature (Move VM) - signs the `intent_id`
+- `CryptoService::create_evm_approval_signature(intent_id)` - Generate ECDSA approval signature (EVM) - signs the `intent_id`
 
 **Data Structures Exported**:
 
-- `IntentEvent` - Normalized intent event structure
-- `EscrowEvent` - Normalized escrow event structure
+- `RequestIntentEvent` - Normalized request intent event structure
+- `EscrowEvent` - Normalized escrow event structure with `chain_type` field (Mvm, Evm, Svm) set by verifier based on monitor that discovered it
 - `FulfillmentEvent` - Normalized fulfillment event structure
 - `ApprovalSignature` - Approval signature structure
 - `ValidationResult` - Validation result structure
 
 ### Verification: Internal Components
 
-- Event polling and caching mechanisms
+- Event polling and caching mechanisms (symmetrical for Move VM and EVM)
 - Cross-chain event correlation logic (`intent_id` matching)
-- Cryptographic operations (Ed25519 for Aptos, ECDSA for EVM)
+- Chain ID validation (ensures escrow created on correct connected chain)
+- Solver address validation (Move VM addresses directly, EVM addresses via solver registry)
+- Cryptographic operations (Ed25519 for Move VM, ECDSA for EVM)
 - Configuration management
-- Blockchain RPC clients
+- Blockchain RPC clients (MvmClient for Move VM chains, EvmClient for EVM chains)
 
 ### Verification: Data Ownership
 

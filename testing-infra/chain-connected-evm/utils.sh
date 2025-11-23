@@ -139,7 +139,7 @@ extract_escrow_contract_address() {
     echo "$contract_address"
 }
 
-# Convert intent ID from Aptos format to EVM format
+# Convert intent ID from Move VM format to EVM format
 # Usage: convert_intent_id_to_evm <intent_id>
 # Returns: EVM-formatted intent ID (0x-prefixed, 64 hex chars) via stdout
 # Input: intent_id in hex format (0x...)

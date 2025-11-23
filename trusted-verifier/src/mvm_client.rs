@@ -800,129 +800,43 @@ impl MvmClient {
             registry_address.len()
         );
         
-        // Normalize registry address (remove 0x prefix for resource type matching)
-        let registry_addr_normalized = registry_address
-            .strip_prefix("0x")
-            .unwrap_or(registry_address);
-        
-        // Query the SolverRegistry resource directly
-        let resources = self.get_resources(registry_address).await?;
-
-        // Try both formats: with and without 0x prefix (Aptos may return either)
-        let registry_resource_type_with_prefix =
-            format!("0x{}::solver_registry::SolverRegistry", registry_addr_normalized);
-        let registry_resource_type_without_prefix =
-            format!("{}::solver_registry::SolverRegistry", registry_addr_normalized);
-        
-        let solver_addr = solver_address
+        // Normalize solver address for comparison
+        let solver_addr_normalized = solver_address
             .strip_prefix("0x")
             .unwrap_or(solver_address)
             .to_lowercase();
 
         tracing::error!(
-            "DEBUG: Normalized values - solver_address='{}' -> normalized='{}' (len: {}), registry_address='{}' -> normalized='{}' (len: {})",
+            "DEBUG: Normalized solver_address='{}' -> normalized='{}' (len: {})",
             solver_address,
-            solver_addr,
-            solver_addr.len(),
-            registry_address,
-            registry_addr_normalized,
-            registry_addr_normalized.len()
+            solver_addr_normalized,
+            solver_addr_normalized.len()
         );
+        
+        // Query the SolverRegistry resource directly
+        let resources = self.get_resources(registry_address).await?;
 
-        // Find the SolverRegistry resource (try both formats)
-        let registry_resource = resources
-            .iter()
-            .find(|r| {
-                r.resource_type == registry_resource_type_with_prefix
-                    || r.resource_type == registry_resource_type_without_prefix
-            });
-
-        let Some(registry_resource) = registry_resource else {
-            tracing::warn!(
-                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}' and '{}', Available resources: {:?}",
-                registry_address,
-                registry_resource_type_with_prefix,
-                registry_resource_type_without_prefix,
-                resources.iter().map(|r| &r.resource_type).collect::<Vec<_>>()
-            );
-            return Ok(None); // Registry resource not found
-        };
-
-        // Extract solvers map: SimpleMap<address, SolverInfo> is {"data": [{"key": address, "value": SolverInfo}, ...]}
-        let data = match registry_resource.data.as_object() {
-            Some(d) => d,
+        // Find the SolverRegistry resource
+        let registry_resource = match Self::find_solver_registry_resource(&resources, registry_address) {
+            Some(resource) => resource,
             None => return Ok(None),
         };
 
-        let solvers = match data.get("solvers").and_then(|s| s.as_object()) {
-            Some(s) => s,
+        // Extract solvers data array
+        let data_array = match Self::extract_solvers_data_array(registry_resource) {
+            Some(array) => array,
             None => return Ok(None),
         };
 
-        let data_array = match solvers.get("data").and_then(|d| d.as_array()) {
-            Some(d) => d,
+        // Find the solver entry
+        let entry_obj = match Self::find_solver_entry(data_array, solver_address, &solver_addr_normalized) {
+            Some(entry) => entry,
             None => return Ok(None),
         };
 
-        // Find the solver entry with detailed debug output
-        tracing::error!(
-            "DEBUG: Looking for solver in registry. Input solver_address='{}' (type: str), normalized='{}' (type: str, len: {}), registry_address='{}' (type: str)",
-            solver_address,
-            solver_addr,
-            solver_addr.len(),
-            registry_address
-        );
-        
-        // Log all available solver keys with their normalized forms
-        let available_solvers_debug: Vec<(String, String)> = data_array
-            .iter()
-            .filter_map(|entry| {
-                let entry_obj = entry.as_object()?;
-                let key = entry_obj.get("key")?.as_str()?;
-                let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
-                Some((key.to_string(), key_normalized))
-            })
-            .collect();
-        
-        tracing::error!(
-            "DEBUG: Available solvers in registry (original -> normalized): {:?}",
-            available_solvers_debug
-        );
-        
-        let solver_entry = data_array.iter().find_map(|entry| {
-            let entry_obj = entry.as_object()?;
-            let key = entry_obj.get("key")?.as_str()?;
-            let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
-            
-            tracing::error!(
-                "DEBUG: Comparing - Looking for: '{}' (normalized: '{}', len: {}) vs Registry key: '{}' (normalized: '{}', len: {}) -> Match: {}",
-                solver_address,
-                solver_addr,
-                solver_addr.len(),
-                key,
-                key_normalized,
-                key_normalized.len(),
-                key_normalized == solver_addr
-            );
-            
-            (key_normalized == solver_addr).then_some(entry_obj)
-        });
-
-        let Some(entry_obj) = solver_entry else {
-            tracing::error!(
-                "Solver not found in registry. Looking for: '{}' (normalized: '{}', len: {}), Available solvers (original -> normalized): {:?}",
-                solver_address,
-                solver_addr,
-                solver_addr.len(),
-                available_solvers_debug
-            );
-            return Ok(None); // Solver not found in registry
-        };
-
-        // Extract connected_chain_evm_address from SolverInfo
-        // Option<vector<u8>> is serialized as {"vec": [bytes_array]} for Some, {"vec": []} for None
-        let value = match entry_obj.get("value").and_then(|v| v.as_object()) {
-            Some(v) => v,
+        // Extract SolverInfo value
+        let solver_info = match entry_obj.get("value").and_then(|v| v.as_object()) {
+            Some(info) => info,
             None => {
                 let entry_keys = entry_obj.keys().collect::<Vec<_>>();
                 let entry_json = serde_json::to_string(entry_obj).unwrap_or_else(|_| "failed to serialize".to_string());
@@ -936,11 +850,12 @@ impl MvmClient {
             }
         };
 
-        let evm_addr_field = match value.get("connected_chain_evm_address") {
+        // Extract connected_chain_evm_address field
+        let evm_addr_field: &serde_json::Value = match solver_info.get("connected_chain_evm_address") {
             Some(field) => field,
             None => {
-                let solver_info_keys = value.keys().collect::<Vec<_>>();
-                let solver_info_json = serde_json::to_string(value).unwrap_or_else(|_| "failed to serialize".to_string());
+                let solver_info_keys = solver_info.keys().collect::<Vec<_>>();
+                let solver_info_json = serde_json::to_string(solver_info).unwrap_or_else(|_| "failed to serialize".to_string());
                 tracing::error!(
                     "connected_chain_evm_address field not found for solver '{}'. SolverInfo keys: {:?}, Full SolverInfo: {}",
                     solver_address,
@@ -957,6 +872,7 @@ impl MvmClient {
             serde_json::to_string(evm_addr_field).unwrap_or_else(|_| "failed to serialize".to_string())
         );
 
+        // Extract vec array from Option<vector<u8>> structure
         let evm_addr = match evm_addr_field.as_object() {
             Some(obj) => obj,
             None => {
@@ -970,13 +886,13 @@ impl MvmClient {
             }
         };
 
-        let vec_array = match evm_addr.get("vec").and_then(|v| v.as_array()) {
-            Some(v) => v,
+        let vec_array: &serde_json::Value = match evm_addr.get("vec") {
+            Some(vec) => vec,
             None => {
                 let evm_addr_keys = evm_addr.keys().collect::<Vec<_>>();
                 let evm_addr_json = serde_json::to_string(evm_addr).unwrap_or_else(|_| "failed to serialize".to_string());
                 tracing::error!(
-                    "connected_chain_evm_address 'vec' field not found or not an array for solver '{}'. EVM address object keys: {:?}, Full object: {}",
+                    "connected_chain_evm_address 'vec' field not found for solver '{}'. EVM address object keys: {:?}, Full object: {}",
                     solver_address,
                     evm_addr_keys,
                     evm_addr_json
@@ -985,12 +901,156 @@ impl MvmClient {
             }
         };
 
+        // Parse EVM address bytes (handles both array and hex string formats)
+        let evm_bytes = match Self::parse_evm_address_bytes(vec_array, solver_address)? {
+            Some(bytes) => bytes,
+            None => return Ok(None),
+        };
+
+        // Convert bytes to hex string with 0x prefix
+        let hex_string = format!("0x{}", evm_bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>());
+
+        tracing::error!(
+            "DEBUG: Successfully extracted EVM address for solver '{}': {}",
+            solver_address,
+            hex_string
+        );
+
+        Ok(Some(hex_string))
+    }
+
+    /// Find the SolverRegistry resource from the resources list.
+    ///
+    /// Handles both resource type formats (with and without 0x prefix).
+    fn find_solver_registry_resource<'a>(
+        resources: &'a [ResourceData],
+        registry_address: &str,
+    ) -> Option<&'a ResourceData> {
+        let registry_addr_normalized = registry_address
+            .strip_prefix("0x")
+            .unwrap_or(registry_address);
+        
+        let registry_resource_type_with_prefix =
+            format!("0x{}::solver_registry::SolverRegistry", registry_addr_normalized);
+        let registry_resource_type_without_prefix =
+            format!("{}::solver_registry::SolverRegistry", registry_addr_normalized);
+
+        let resource = resources
+            .iter()
+            .find(|r| {
+                r.resource_type == registry_resource_type_with_prefix
+                    || r.resource_type == registry_resource_type_without_prefix
+            });
+
+        if resource.is_none() {
+            tracing::warn!(
+                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}' and '{}', Available resources: {:?}",
+                registry_address,
+                registry_resource_type_with_prefix,
+                registry_resource_type_without_prefix,
+                resources.iter().map(|r| &r.resource_type).collect::<Vec<_>>()
+            );
+        }
+
+        resource
+    }
+
+    /// Extract the solvers data array from the SolverRegistry resource.
+    ///
+    /// SimpleMap<address, SolverInfo> is serialized as {"data": [{"key": address, "value": SolverInfo}, ...]}
+    fn extract_solvers_data_array(
+        registry_resource: &ResourceData,
+    ) -> Option<&serde_json::Value> {
+        let data = registry_resource.data.as_object()?;
+        let solvers = data.get("solvers")?.as_object()?;
+        solvers.get("data")
+    }
+
+    /// Find the solver entry in the data array by matching normalized addresses.
+    fn find_solver_entry<'a>(
+        data_array: &'a serde_json::Value,
+        solver_address: &str,
+        solver_addr_normalized: &str,
+    ) -> Option<&'a serde_json::Map<String, serde_json::Value>> {
+        let data_array = data_array.as_array()?;
+        
+        // Log all available solver keys with their normalized forms
+        let available_solvers_debug: Vec<(String, String)> = data_array
+            .iter()
+            .filter_map(|entry| {
+                let entry_obj = entry.as_object()?;
+                let key = entry_obj.get("key")?.as_str()?;
+                let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+                Some((key.to_string(), key_normalized))
+            })
+            .collect();
+        
+        tracing::error!(
+            "DEBUG: Looking for solver in registry. Input solver_address='{}' (type: str), normalized='{}' (type: str, len: {}), Available solvers (original -> normalized): {:?}",
+            solver_address,
+            solver_addr_normalized,
+            solver_addr_normalized.len(),
+            available_solvers_debug
+        );
+        
+        let solver_entry = data_array.iter().find_map(|entry| {
+            let entry_obj = entry.as_object()?;
+            let key = entry_obj.get("key")?.as_str()?;
+            let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
+            
+            tracing::error!(
+                "DEBUG: Comparing - Looking for: '{}' (normalized: '{}', len: {}) vs Registry key: '{}' (normalized: '{}', len: {}) -> Match: {}",
+                solver_address,
+                solver_addr_normalized,
+                solver_addr_normalized.len(),
+                key,
+                key_normalized,
+                key_normalized.len(),
+                key_normalized == solver_addr_normalized
+            );
+            
+            (key_normalized == solver_addr_normalized).then_some(entry_obj)
+        });
+
+        if solver_entry.is_none() {
+            tracing::error!(
+                "Solver not found in registry. Looking for: '{}' (normalized: '{}', len: {}), Available solvers (original -> normalized): {:?}",
+                solver_address,
+                solver_addr_normalized,
+                solver_addr_normalized.len(),
+                available_solvers_debug
+            );
+        }
+
+        solver_entry
+    }
+
+    /// Parse EVM address bytes from Option<vector<u8>> serialization.
+    ///
+    /// # Important
+    ///
+    /// Aptos can serialize Option<vector<u8>> in two different formats:
+    /// 1. Array format: {"vec": [bytes_array]} where bytes_array is [u64, u64, ...]
+    ///    Example: {"vec": [[60, 68, 205, 221, ...]]}
+    /// 2. Hex string format: {"vec": ["0xhexstring"]} where the hex string is the address
+    ///    Example: {"vec": ["0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"]}
+    ///
+    /// This inconsistency in Aptos serialization caused EVM outflow validation to fail
+    /// when addresses were returned as hex strings. We now handle both formats.
+    fn parse_evm_address_bytes(
+        vec_array: &serde_json::Value,
+        solver_address: &str,
+    ) -> Result<Option<Vec<u8>>> {
+        let vec_array = vec_array.as_array().ok_or_else(|| {
+            anyhow::anyhow!("vec field is not an array")
+        })?;
+
         if vec_array.is_empty() {
             tracing::debug!(
                 "Solver '{}' found but connected_chain_evm_address vec is empty (None)",
                 solver_address
             );
-            return Ok(None); // Solver found but no connected chain EVM address
+            return Ok(None);
         }
 
         tracing::error!(
@@ -1000,17 +1060,6 @@ impl MvmClient {
             serde_json::to_string(vec_array.get(0).unwrap_or(&serde_json::Value::Null)).unwrap_or_else(|_| "failed to serialize".to_string())
         );
 
-        // Extract the first element (the vector<u8>)
-        //
-        // IMPORTANT: Aptos can serialize Option<vector<u8>> in two different formats:
-        // 1. Array format: {"vec": [bytes_array]} where bytes_array is [u64, u64, ...]
-        //    Example: {"vec": [[60, 68, 205, 221, ...]]}
-        // 2. Hex string format: {"vec": ["0xhexstring"]} where the hex string is the address
-        //    Example: {"vec": ["0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"]}
-        //
-        // This inconsistency in Aptos serialization caused EVM outflow validation to fail
-        // when addresses were returned as hex strings. We now handle both formats.
-        //
         let evm_bytes_opt = vec_array.get(0);
         
         let evm_bytes: Vec<u8> = if let Some(bytes_val) = evm_bytes_opt {
@@ -1072,7 +1121,7 @@ impl MvmClient {
         };
 
         if evm_bytes.is_empty() {
-            tracing::warn!(
+            tracing::error!(
                 "Solver '{}' found but connected_chain_evm_address bytes array is empty",
                 solver_address
             );
@@ -1095,25 +1144,7 @@ impl MvmClient {
             evm_bytes.iter().take(5).copied().collect::<Vec<_>>()
         );
 
-        // Convert bytes to hex string with 0x prefix
-        let hex_string = format!("0x{}", evm_bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>());
-
-        if hex_string.len() != 42 {
-            tracing::warn!(
-                "Solver '{}' found but connected_chain_evm_address has invalid length {} (expected 20 bytes = 42 hex chars with 0x prefix)",
-                solver_address,
-                hex_string.len()
-            );
-            return Ok(None);
-        }
-
-        tracing::error!(
-            "DEBUG: Successfully extracted EVM address for solver '{}': {}",
-            solver_address,
-            hex_string
-        );
-
-        Ok(Some(hex_string))
+        Ok(Some(evm_bytes))
     }
 
     /// Calls a view function on the Move VM blockchain.

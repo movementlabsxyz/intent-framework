@@ -148,7 +148,7 @@ Race condition prevention mechanisms.
 
 Transferring USD tokens from a connected chain to a hub chain using the intent framework.
 
-**Use Case**: A requester wants to transfer USD tokens from Chain 2 (connected chain) to Chain 1 (hub chain). The tokens are locked in an escrow on Chain 2, and a solver provides equivalent tokens on Chain 1. After the solver fulfills the intent on Chain 1, the verifier approves the escrow release on Chain 2, transferring the locked tokens to the solver.
+**Use Case**: A requester wants to transfer USD tokens from Chain 2 (connected chain) to Chain 1 (hub chain). The offered tokens are locked in an escrow on Chain 2, and a solver provides desired tokens on Chain 1. After the solver fulfills the intent on Chain 1, the verifier approves the escrow release on Chain 2, transferring the locked tokens to the solver.
 
 **Flow**:
 

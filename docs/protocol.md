@@ -8,7 +8,6 @@ This document specifies the cross-chain intent protocol: how intents, escrows, a
 - [Cross-Chain Flow](#cross-chain-flow)
 - [Cross-Chain Linking Mechanism](#cross-chain-linking-mechanism)
 - [Verifier Validation Protocol](#verifier-validation-protocol)
-- [Security Requirements](#security-requirements)
 
 ## Protocol Overview
 
@@ -185,17 +184,23 @@ Connected Chain: OracleLimitOrderEvent.intent_id / EscrowInitialized.intentId
 
 ## Verifier Validation Protocol
 
-The verifier performs cross-chain validation before generating approvals:
+The verifier performs cross-chain validation before generating approvals. The validation protocol differs between inflow and outflow intents:
 
-### Validation Steps
+### Inflow Validation Protocol
 
-1. **Intent Safety Check**: Validates `escrow.revocable == false` (CRITICAL - see [Security Requirements](#security-requirements))
-2. **Event Matching**: Links escrow events to intent events via `intent_id`
-3. **Fulfillment Verification**: Confirms hub intent fulfillment occurred
-4. **Condition Validation**: Verifies fulfillment meets escrow requirements
-5. **Approval Generation**: Creates cryptographic signature (Ed25519 for Move, ECDSA for EVM)
+For inflow intents (tokens locked in escrow on connected chain), the verifier validates automatically via event monitoring:
 
-### Validation Workflow
+**Validation Steps:**
+
+1. **Event Monitoring**: Continuously polls hub chain for `LimitOrderEvent` (request intent creation) and `LimitOrderFulfillmentEvent` (solver fulfillment)
+2. **Escrow Monitoring**: Continuously polls connected chain for escrow events (`OracleLimitOrderEvent` for Move, `EscrowInitialized` for EVM)
+3. **Intent Safety Check**: Validates `escrow.revocable == false`
+4. **Event Matching**: Links escrow events to intent events via `intent_id`
+5. **Fulfillment Verification**: Confirms hub intent fulfillment occurred (solver provided tokens to requester on hub)
+6. **Condition Validation**: Verifies escrow matches request intent requirements
+7. **Approval Generation**: Creates cryptographic signature (Ed25519 for Move, ECDSA for EVM) by signing `intent_id`
+
+**Validation Workflow:**
 
 ```mermaid
 sequenceDiagram
@@ -210,9 +215,8 @@ sequenceDiagram
         Monitor->>Monitor: Store events in cache
     end
 
-    Note over Monitor,Crypto: Validation and Approval
+    Note over Monitor,Crypto: Automatic Validation and Approval
     Monitor->>Validator: Match events by intent_id
-    Validator->>Validator: Validate escrow.revocable == false
     Validator->>Validator: Validate fulfillment conditions
     alt Validation passed
         Monitor->>Crypto: Generate signature
@@ -222,46 +226,55 @@ sequenceDiagram
     end
 ```
 
+### Outflow Validation Protocol
+
+For outflow intents (tokens locked on hub chain), the verifier validates on-demand via API endpoint:
+
+**Validation Steps:**
+
+1. **Request Intent Monitoring**: Continuously polls hub chain for `OracleLimitOrderEvent` (outflow request intent creation)
+2. **Solver Transaction Submission**: Solver calls `POST /validate-outflow-fulfillment` with transaction hash, chain type, and intent ID
+3. **Transaction Query**: Verifier queries the connected chain transaction by hash
+4. **Transaction Parsing**: Extracts transaction parameters from Move VM or EVM transaction
+5. **Transaction Success Check**: Validates transaction was confirmed and successful
+6. **Condition Validation**: Verifies transaction matches request intent requirements
+7. **Approval Generation**: Creates Ed25519 signature by signing `intent_id` (hub chain is always Move VM)
+
+**Validation Workflow:**
+
+```mermaid
+sequenceDiagram
+    participant Solver
+    participant API as Verifier API
+    participant Validator as Cross-Chain Validator
+    participant Connected as Connected Chain
+    participant Crypto as Crypto Service
+
+    Note over Solver,Crypto: On-Demand Validation via API
+    Solver->>API: POST /validate-outflow-fulfillment<br/>(transaction_hash, chain_type, intent_id)
+    API->>Connected: Query transaction by hash
+    Connected->>API: Return transaction data
+    API->>Validator: Extract transaction parameters
+    Validator->>Validator: Validation checks
+    alt Validation passed
+        API->>Crypto: Generate signature
+        Crypto->>API: Return approval signature
+        API->>Solver: Return validation result + signature
+    else Validation failed
+        API->>Solver: Return validation error
+    end
+```
+
+**Key Differences:**
+
+- **Inflow**: Automatic validation via event monitoring, validates escrow against intent
+- **Outflow**: On-demand validation via API, validates transaction against intent
+- **Inflow**: Validates escrow safety (`revocable == false`)
+- **Outflow**: Validates transaction success and parameter matching
+- **Inflow**: Solver address validation via escrow `reserved_solver` field
+- **Outflow**: Solver address validation via solver registry lookup (requires connected chain address registration)
+
 For detailed validation logic, see [Trusted Verifier](trusted-verifier/README.md).
-
-## Security Requirements
-
-### Non-Revocable Escrow Validation
-
-⚠️ **CRITICAL**: All escrow intents MUST be created with `revocable = false`.
-
-**Why**: Escrow funds must remain locked until verifier approval or expiry. If escrows were revocable, requesters could withdraw funds after verifiers trigger actions elsewhere, breaking the protocol's security guarantees.
-
-**Enforcement**:
-
-- Move escrow creation enforces non-revocable: `move-intent-framework/sources/intent_as_escrow.move` (escrow creation functions validate `revocable = false`)
-- Verifier validates before approval: `trusted-verifier/src/validator/generic.rs` (`CrossChainValidator::validate_request_intent_safety()`)
-- EVM escrows use contract-defined expiry instead of revocation
-
-### Reserved Solver Address
-
-All escrows MUST specify a reserved solver address at creation:
-
-- **Move Escrows**: `reservation: IntentReserved` required
-- **EVM Escrows**: `reservedSolver` parameter required (never `address(0)`)
-- Funds ALWAYS transfer to reserved solver, regardless of transaction sender
-- Prevents signature replay attacks
-
-**Security Benefit**: Even if approval signature is leaked, funds can only go to the authorized solver address.
-
-### Cryptographic Operations
-
-**Move VM Chains**:
-
-- Ed25519 signatures for verifier approvals
-- Signature over BCS-encoded `intent_id` (address) - the signature itself is the approval
-- Public key embedded in escrow creation
-
-**EVM Chains**:
-
-- ECDSA signatures for verifier approvals
-- Message: `keccak256(intentId)` - signature itself is the approval
-- Ethereum signed message format
 
 ## Connected Chain Outflow Fulfillment Transaction Format
 

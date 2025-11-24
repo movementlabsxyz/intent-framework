@@ -6,7 +6,7 @@
 
 This document specifies **requirements** for the Intent Framework—what the system must support and how it should behave. It focuses on requirements not covered in the other taskmaster architecture documents:
 
-- **[Section 2: Cross-Chain Architecture](#2-system-overview)** - Future cross-chain flow requirements (Inflow and Outflow) with sequence diagrams. These flows are not yet implemented; other taskmaster docs describe current implementation.
+- **[Section 2: Cross-Chain Architecture](#2-system-overview)** - Cross-chain flow requirements (Inflow and Outflow) with sequence diagrams. Diagrams show implemented flow with future enhancements marked in bold.
 
 - **[Section 3: Functional Requirements](#3-functional-requirements)** - High-level functional capabilities the system must support.
 
@@ -21,7 +21,6 @@ This document specifies **requirements** for the Intent Framework—what the sys
 - **[Section 8: Constraints and Assumptions](#8-constraints-and-assumptions)** - (Empty)
 
 - **[Section 9: Future Enhancements](#9-future-enhancements)** - (Empty)
-
 
 ## 1. Introduction
 
@@ -55,170 +54,121 @@ The cross-chain intent protocol supports two primary flows: **Inflow** (Connecte
 
 ##### Inflow (Connected Chain → Movement)
 
-This flow enables users to deposit tokens on a connected chain and receive equivalent tokens on Movement (hub chain).
+This flow enables users to deposit offered tokens on a connected chain and receive desired tokens on Movement (hub chain).
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant SolverNetwork as Solver Network
-    participant Connected as Connected Chain<br/>(Solana/Base/Ethereum/Sui/Aptos)
-    participant Verifier as Trusted Verifier
-    participant Movement as Movement<br/>(Hub Chain)
+    participant Requester
+    participant Hub as Hub Chain<br/>(Move)
+    participant Verifier as Trusted Verifier<br/>(Rust)
+    participant Connected as Connected Chain<br/>(Move/EVM)
+    participant Solver
 
-    Note over User,Movement: Phase 1: Off-Chain Intent Request
-    User->>SolverNetwork: Creates unreserved intent, broadcasts to solver network
+    Note over Requester,Solver: Phase 1: Intent Creation on Hub Chain
+    Requester->>Requester: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
+    Requester->>Solver: Send draft
+    Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
+    Solver->>Requester: Returns signature
+    Requester->>Hub: create_inflow_request_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, solver, solver_signature)
+    Hub->>Verifier: LimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
 
-    Note over User,Movement: Phase 2: Solver Offers
-    SolverNetwork->>User: Solvers sign offers and return to user
-
-    Note over User,Movement: Phase 3: User Selection & Deposit
-    User->>User: Selects solver offer, signs it (for hub)
-    alt Bypass Mode
-        User->>Connected: Sends deposit tx with USDC in escrow
-        User->>Movement: Commits intent selection directly
-    else Verifier-Gated Mode
-        User->>Verifier: Sends deposit tx + intent selection
-        Verifier->>Connected: Commits escrow creation
-        Verifier->>Movement: Commits intent selection
+    Note over Requester,Solver: Phase 2: Escrow Creation on Connected Chain
+    alt Move Chain
+        Requester->>Connected: create_escrow_from_fa(<br/>offered_metadata, amount, verifier_pk,<br/>expiry_time, intent_id, reserved_solver)
+    else EVM Chain
+        Requester->>Connected: createEscrow(intentId, token,<br/>amount, reservedSolver)
     end
+    Connected->>Connected: Lock assets
+    Connected->>Verifier: OracleLimitOrderEvent/EscrowInitialized(<br/>intent_id, reserved_solver, revocable=false)
 
-    Note over User,Movement: Phase 4: Solver Detection & Credit
-    SolverNetwork->>Connected: Detects deposit (directly or via trusted monitoring)
-    SolverNetwork->>Movement: Transfers equivalent USDC.e to user's wallet
+    Note over Requester,Solver: Phase 3: Intent Fulfillment on Hub Chain
+    Solver->>Hub: fulfill_inflow_request_intent(<br/>intent, payment_amount)
+    Hub->>Verifier: LimitOrderFulfillmentEvent(<br/>intent_id, solver, provided_amount)
 
-    Note over User,Movement: Phase 5: Solver Fulfillment
-    SolverNetwork->>Movement: Submits fill_intent(intent_id, tx_hash)
+    Note over Requester,Solver: Phase 4: Verifier Validation and Approval
+    Verifier->>Verifier: Validate fulfillment<br/>conditions met
+    Verifier->>Verifier: Generate approval signature
+    Note right of Verifier: [UNIMPLEMENTED] Multi-RPC quorum validation<br/>(≥2 matching receipts)
 
-    Note over User,Movement: Phase 6: Verifier Validation
-    Verifier->>Verifier: Validates in real-time:<br/>- Confirms min_conf finality<br/>- Verifies token = USDC<br/>- Verifies destination & amount<br/>- Uses multi-RPC quorum (≥2 receipts)
-
-    alt Valid
-        Verifier->>Connected: Calls finalize(intent_id, solver)
-        Connected->>SolverNetwork: Transfers escrowed USDC.e → solver (minus fee)
-        Connected->>SolverNetwork: Releases solver's locked collateral
-    else Invalid/Expired
-        Note over Connected: Intent remains OPEN
-        alt Solver claimed but didn't deliver
-            Connected->>SolverNetwork: Slashes 0.5-1% of collateral
-            Connected->>SolverNetwork: Unlocks remainder
-        end
+    Note over Requester,Solver: Phase 5: Escrow Release on Connected Chain
+    Verifier->>Solver: Delivers approval signature<br/>(Ed25519 for Move, ECDSA for EVM)<br/>Signature itself is the approval
+    alt Move Chain
+        Note over Solver: Anyone can call<br/>(funds go to reserved_solver)
+        Solver->>Connected: complete_escrow_from_fa(<br/>escrow_intent, payment_amount,<br/>verifier_signature_bytes)
+    else EVM Chain
+        Note over Solver: Anyone can call<br/>(funds go to reservedSolver)
+        Solver->>Connected: claim(intentId, signature)
     end
+    Connected->>Connected: Verify signature
+    Connected->>Connected: Transfer to reserved_solver
+    Note right of Connected: [UNIMPLEMENTED] Protocol fee deduction
+    Note right of Connected: [UNIMPLEMENTED] Solver collateral release
+
+    Note over Requester,Solver: [UNIMPLEMENTED] Phase 6: Collateral & Slashing
+    Note right of Connected: [UNIMPLEMENTED] If validation fails or expired:<br/>- Slash 0.5-1% of solver collateral<br/>- Unlock remainder
 ```
 
-**Flow Steps**:
+**Implementation Details**: See [Inflow Flow Steps](../../docs/protocol.md#inflow-flow-steps) in `protocol.md` for the complete implemented flow.
 
-1. **User off-chain intent request**: User creates unreserved intent and broadcasts to solver network
+**Future Enhancements (NOT YET IMPLEMENTED)**:
 
-2. **Solvers sign offers**: Solvers respond with signed offers and return to user
-
-3. **User signs offer**: User selects a solver offer, signs it (for hub), and sends deposit transaction with USDC in escrow for connected chain (e.g., Solana, Base, Ethereum, Sui, Aptos) to the verifier
-
-   **Alternative Options**: User/relayer can commit this on-chain directly (bypass mode) or verifier can submit commit (verifier-gated mode)
-
-4. **Verifier commits both actions on-chain**: Verifier commits the user's intent selection and escrow creation
-
-5. **Solver detects the deposit**: Solver detects deposit (directly or via trusted monitoring), then transfers equivalent USDC.e to the user's wallet on Movement
-
-6. **Solver submits fulfillment**: Solver submits `fill_intent(intent_id, tx_hash)` on Movement, referencing the user's original connected-chain transaction
-
-7. **Verifier validates in real-time**:
-   - Confirms minimum confirmation finality (e.g., finalized Solana / 3–12 blocks EVM)
-   - Verifies token = USDC, destination == expected deposit address, and amount ≥ required
-   - Uses multi-RPC quorum (≥2 matching receipts)
-
-8. **If valid → finalize**: `finalize(intent_id, solver)` is called on-chain on connected chain:
-   - Protocol transfers user's escrowed USDC.e → solver (minus protocol fee)
-   - Solver's locked collateral for that claim is released (configurable, may be set to 0 for trusted permissioned solvers)
-
-9. **If invalid or expired → intent remains OPEN**:
-   - If solver claimed but didn't deliver before deadline, a small fraction (0.5–1%) of its locked collateral is slashed; the rest unlocks
-
-This process creates a smooth "deposit → instant credit" UX for users while keeping system risk bounded through solver collateral and partial slashing.
+- **Multi-RPC Quorum**: Verifier uses multiple RPC endpoints with quorum validation (≥2 matching receipts) for enhanced security
+- **Protocol Fees**: Automatic fee deduction from escrow transfers to solver
+- **Solver Collateral**: Solvers lock collateral that can be slashed (0.5-1%) if validation fails or intent expires
+- **Bypass/Verifier-Gated Modes**: Alternative flow modes where verifier commits transactions on behalf of users
 
 ##### Outflow (Movement → Connected Chain)
 
-This flow enables users to withdraw tokens from Movement to a connected chain.
+This flow enables users to lock offered tokens on Movement (hub chain) and receive desired tokens on a connected chain.
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant SolverNetwork as Solver Network
-    participant Movement as Movement<br/>(Hub Chain)
-    participant Verifier as Trusted Verifier
-    participant Connected as Connected Chain<br/>(Destination)
+    participant Requester
+    participant Hub as Hub Chain<br/>(Move)
+    participant Verifier as Trusted Verifier<br/>(Rust)
+    participant Connected as Connected Chain<br/>(Move/EVM)
+    participant Solver
 
-    Note over User,Connected: Phase 1: Off-Chain Intent Request
-    User->>SolverNetwork: Creates unreserved intent, broadcasts to solvers
+    Note over Requester,Solver: Phase 1: Intent Creation on Hub Chain
+    Requester->>Requester: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
+    Requester->>Solver: Send draft
+    Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
+    Solver->>Requester: Returns signature
+    Requester->>Hub: create_outflow_request_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, requester_address_connected_chain,<br/>verifier_public_key, solver, solver_signature)
+    Hub->>Hub: Lock assets on hub
+    Hub->>Verifier: OracleLimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
 
-    Note over User,Connected: Phase 2: Solver Offers
-    SolverNetwork->>User: Solvers sign offers and return to user
+    Note over Requester,Solver: [UNIMPLEMENTED] Phase 1.5: Solver Claims Intent
+    Note right of Hub: [UNIMPLEMENTED] Solver claims intent and locks collateral<br/>(lock_ratio ≈ 10-20%, configurable to 0)
 
-    Note over User,Connected: Phase 3: User Selection & Reserved Intent
-    User->>User: Selects solver offer, signs it
-    alt Bypass Mode
-        User->>Movement: Creates reserved intent directly<br/>(locks USDC.e escrow)
-    else Verifier-Gated Mode
-        User->>Verifier: Sends intent selection + solver offer
-        Verifier->>Movement: Commits reserved intent on-chain
-    end
-    Note right of Movement: Reserved intent parameters:<br/>(amount, dst_chain, dst_token=USDC,<br/>dst_addr, expiry, min_conf_dst,<br/>fee_cap, nonce, selected_quote_id,<br/>solver_offer_sig)
+    Note over Requester,Solver: Phase 2: Solver Transfers on Connected Chain
+    Solver->>Connected: Transfer tokens to requester_address_connected_chain<br/>(standard token transfer, not escrow)
+    Connected->>Connected: Tokens received by requester
 
-    Note over User,Connected: Phase 4: User Posts Intent
-    User->>Movement: Posts intent to withdraw USDC.e<br/>(amount, dst_chain, dst_addr, expiry, min_conf)
+    Note over Requester,Solver: Phase 3: Verifier Validation and Approval
+    Solver->>Verifier: POST /validate-outflow-fulfillment<br/>(transaction_hash, chain_type, intent_id)
+    Verifier->>Connected: Query transaction by hash<br/>(verify transfer occurred)
+    Verifier->>Verifier: Validate transfer conditions met
+    Verifier->>Solver: Return approval signature
 
-    Note over User,Connected: Phase 5: Solver Claims Intent
-    SolverNetwork->>Movement: Claims intent, locks collateral<br/>(lock_ratio ≈ 10-20%, configurable to 0)
+    Note over Requester,Solver: Phase 4: Intent Fulfillment on Hub Chain
+    Solver->>Hub: fulfill_outflow_request_intent(<br/>intent, verifier_signature_bytes)
+    Hub->>Hub: Verify verifier signature
+    Hub->>Hub: Unlock tokens and transfer to solver
+    Note right of Hub: [UNIMPLEMENTED] Protocol fee deduction
 
-    Note over User,Connected: Phase 6: Commit Anchoring
-    alt Bypass Mode
-        Note over Movement: Already committed in Phase 3
-    else Verifier-Gated Mode
-        Verifier->>Movement: Commits reserved intent on-chain
-    end
-
-    Note over User,Connected: Phase 7: Solver Sends USDC
-    SolverNetwork->>Connected: Sends USDC to dst_addr
-    SolverNetwork->>SolverNetwork: Obtains tx_hash
-
-    Note over User,Connected: Phase 8: Solver Submits Fulfillment
-    SolverNetwork->>Movement: Submits fill_intent(intent_id, dst_tx_hash[, block_no, receipt_or_proof])
-
-    Note over User,Connected: Phase 9: Verifier Validation
-    Verifier->>Verifier: Validates transaction
-    alt Valid
-        Verifier->>Movement: Finalizes and transfers user escrow → solver (minus fee)
-        Note over Movement: Alternatively: solver fulfills reserved intent with verifier approval
-    else Invalid/Expired
-        Movement->>SolverNetwork: Triggers collateral penalty (0.5-1%)
-        Movement->>SolverNetwork: Unlocks remainder automatically
-    end
+    Note over Requester,Solver: [UNIMPLEMENTED] Phase 5: Collateral & Slashing
+    Note right of Hub: [UNIMPLEMENTED] If validation fails or expired:<br/>- Trigger collateral penalty (0.5-1%)<br/>- Unlock remainder automatically
 ```
 
-**Flow Steps**:
+**Implementation Details**: See [Outflow Flow Steps](../../docs/protocol.md#outflow-flow-steps) in `protocol.md` for the complete implemented flow.
 
-1. **User off-chain intent request**: User creates unreserved intent and broadcasts to solver network
+**Future Enhancements (NOT YET IMPLEMENTED)**:
 
-2. **Solvers sign offers**: Solvers respond with signed offers and return to user
-
-3. **User selects & signs offer**: User selects a solver offer, signs it, then creates a reserved intent on Movement (locks USDC.e escrow) with parameters: `(amount, dst_chain, dst_token=USDC, dst_addr, expiry, min_conf_dst, fee_cap, nonce, selected_quote_id, solver_offer_sig)`
-
-   **Bypass option**: User/relayer can commit this on-chain directly (since solver offer is attached). If verifier-gated: verifier can submit this commit instead
-
-4. **User posts intent**: User posts an intent on Movement to withdraw USDC.e to a connected chain `(amount, dst_chain, dst_addr, expiry, min_conf)`
-
-5. **Solver claims intent**: Solver claims the intent, locking a portion of its long-term collateral (`lock_ratio ≈ 10–20%`). Note: initially solvers may be permissioned and trusted, requiring configuration to 0 collateral
-
-6. **Commit anchoring** (one of):
-   - **Bypass mode**: Already committed in Step 3 (nothing to do here)
-   - **Verifier-gated mode**: Verifier commits the reserved intent on-chain (mirroring Inflow's "commit both actions")
-
-7. **Solver sends USDC**: Solver sends USDC on destination chain to `dst_addr`, obtains `tx_hash`, and submits it to Movement
-
-8. **Solver submits fulfillment**: Solver submits `fill_intent(intent_id, dst_tx_hash[, block_no, receipt_or_proof])` on Movement
-
-9. **Verifier validates**: Verifier validates the transaction; if correct, finalizes and transfers user escrow → solver (minus fee). Alternatively, solver can fulfill the reserved intent with verifier approval
-
-10. **Failed or expired claims**: Trigger a small collateral penalty (0.5–1%), with remainder unlocked automatically
+- **Solver Claims Intent**: Solver claims the intent, locking a portion of its long-term collateral (`lock_ratio ≈ 10-20%`, configurable to 0)
+- **Protocol Fees**: Automatic fee deduction from hub token transfers to solver
+- **Collateral Penalty**: If validation fails or intent expires, trigger collateral penalty (0.5-1%) and unlock remainder
+- **Bypass/Verifier-Gated Modes**: Alternative flow modes where verifier commits transactions on behalf of users
 
 ### 2.2 Architectural Principles
 

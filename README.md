@@ -43,10 +43,6 @@ nix develop -c bash -c "./testing-infra/e2e-tests-mvm/run-tests-outflow.sh"
 nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests.sh"
 ```
 
-## Requirements
-
-See the product requirements in [requirements](docs/requirements.md).
-
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

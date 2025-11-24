@@ -36,23 +36,32 @@
 
 TBD
 
+```mermaid
 sequenceDiagram
-    User->>Source Chain: Deposit 2001M to escrow
-    User-->>Movement Chain: Create an unreserved intent
-    Movement Chain-)Solver: Detect unreserved intent
-    Solver->>Source Chain: Verify User deposit
-    Solver->>Movement Chain: Lock collateral
-    Solver->>Movement Chain: Reserve intent
-    Destination Chain->>Movement Chain: Verify solver collateral to accept reservation
-    Solver->>Destination Chain: Deposit 2000M to User account
-    Solver->>Movement Chain: Submit filled intent
+    participant User
+    participant Source as Source Chain
+    participant Movement as Movement Chain
+    participant Solver
+    participant Dest as Destination Chain
+    participant Verifier
+
+    User->>Source: Deposit 2001M to escrow
+    User->>Movement: Create an unreserved intent
+    Movement->>Solver: Detect unreserved intent
+    Solver->>Source: Verify User deposit
+    Solver->>Movement: Lock collateral
+    Solver->>Movement: Reserve intent
+    Dest->>Movement: Verify solver collateral to accept reservation
+    Solver->>Dest: Deposit 2000M to User account
+    Solver->>Movement: Submit filled intent
     Note left of Solver: Or call the verifier
     Solver->>Verifier: Submit filled intent
-    Verifier-->>Verifier: Get a filled intent
-    Verifier-->>Destination Chain: Verify the execution
-    Verifier-->>Source Chain: tranfer 2001M from escrow to solver account
-    Verifier-->>Movement Chain: Free solver collateral
-    Verifier-->>Movement&&i Chain: Close the intent.
+    Verifier->>Verifier: Get a filled intent
+    Verifier->>Dest: Verify the execution
+    Verifier->>Source: Transfer 2001M from escrow to solver account
+    Verifier->>Movement: Free solver collateral
+    Verifier->>Movement: Close the intent
+```
 
 ## Scenarios
 

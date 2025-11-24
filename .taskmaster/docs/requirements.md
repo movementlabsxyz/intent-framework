@@ -50,7 +50,7 @@ The verifier ensures that escrow operations on connected chains match the intent
 
 #### Cross-Chain Flows
 
-The cross-chain intent protocol supports two primary flows: **Inflow** (Connected Chain → Movement) and **Outflow** (Movement → Connected Chain). These flows enable smooth "deposit → instant credit" UX while maintaining system security through solver collateral and partial slashing mechanisms.
+The cross-chain intent protocol supports three primary flows: **Inflow** (Connected Chain → Hub), **Outflow** (Hub → Connected Chain), and **Connected → Connected** (Connected Chain → Connected Chain). These flows enable smooth "deposit → instant credit" UX while maintaining system security through solver collateral and partial slashing mechanisms.
 
 ##### Inflow (Connected Chain → Movement)
 
@@ -168,6 +168,78 @@ sequenceDiagram
 - **Solver Claims Intent**: Solver claims the intent, locking a portion of its long-term collateral (`lock_ratio ≈ 10-20%`, configurable to 0)
 - **Protocol Fees**: Automatic fee deduction from hub token transfers to solver
 - **Collateral Penalty**: If validation fails or intent expires, trigger collateral penalty (0.5-1%) and unlock remainder
+- **Bypass/Verifier-Gated Modes**: Alternative flow modes where verifier commits transactions on behalf of users
+
+##### Connected → Connected (Connected Chain → Connected Chain)
+
+This flow enables users to transfer tokens from one connected chain to another connected chain, with tokens locked on the source connected chain and desired on the destination connected chain.
+
+```mermaid
+sequenceDiagram
+    participant Requester
+    participant Hub as Hub Chain<br/>(Move)
+    participant Verifier as Trusted Verifier<br/>(Rust)
+    participant Source as Source Connected Chain<br/>(Move/EVM)
+    participant Dest as Destination Connected Chain<br/>(Move/EVM)
+    participant Solver
+
+    Note over Requester,Solver: Phase 1: Intent Creation on Hub Chain
+    Requester->>Requester: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
+    Requester->>Solver: Send draft
+    Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
+    Solver->>Requester: Returns signature
+    Requester->>Hub: create_cross_chain_request_intent(<br/>offered_metadata, offered_amount, offered_chain_id (source),<br/>desired_metadata, desired_amount, desired_chain_id (dest),<br/>expiry_time, intent_id, requester_address_dest_chain,<br/>verifier_public_key, solver, solver_signature)
+    Hub->>Verifier: CrossChainOrderEvent(intent_id, offered_amount,<br/>offered_chain_id (source), desired_amount,<br/>desired_chain_id (dest), expiry, revocable=false)
+
+    Note over Requester,Solver: Phase 2: Escrow Creation on Source Connected Chain
+    alt Move Chain
+        Requester->>Source: create_escrow_from_fa(<br/>offered_metadata, amount, verifier_pk,<br/>expiry_time, intent_id, reserved_solver)
+    else EVM Chain
+        Requester->>Source: createEscrow(intentId, token,<br/>amount, reservedSolver)
+    end
+    Source->>Source: Lock assets
+    Source->>Verifier: OracleLimitOrderEvent/EscrowInitialized(<br/>intent_id, reserved_solver, revocable=false)
+
+    Note over Requester,Solver: Phase 3: Solver Transfers on Destination Connected Chain
+    Solver->>Dest: Transfer tokens to requester_address_dest_chain<br/>(standard token transfer, not escrow)
+    Dest->>Dest: Tokens received by requester
+
+    Note over Requester,Solver: Phase 4: Verifier Validation and Approval
+    Solver->>Verifier: POST /validate-cross-chain-fulfillment<br/>(source_escrow_intent_id, dest_tx_hash, chain_types, intent_id)
+    Verifier->>Source: Query escrow by intent_id<br/>(verify escrow exists and matches)
+    Verifier->>Dest: Query transaction by hash<br/>(verify transfer occurred)
+    Verifier->>Verifier: Validate fulfillment<br/>conditions met
+    Verifier->>Solver: Return approval signature
+
+    Note over Requester,Solver: Phase 5: Escrow Release on Source Connected Chain
+    Verifier->>Solver: Delivers approval signature<br/>(Ed25519 for Move, ECDSA for EVM)<br/>Signature itself is the approval
+    alt Move Chain
+        Note over Solver: Anyone can call<br/>(funds go to reserved_solver)
+        Solver->>Source: complete_escrow_from_fa(<br/>escrow_intent, payment_amount,<br/>verifier_signature_bytes)
+    else EVM Chain
+        Note over Solver: Anyone can call<br/>(funds go to reservedSolver)
+        Solver->>Source: claim(intentId, signature)
+    end
+    Source->>Source: Verify signature
+    Source->>Source: Transfer to reserved_solver
+    Note right of Source: [UNIMPLEMENTED] Protocol fee deduction
+    Note right of Source: [UNIMPLEMENTED] Solver collateral release
+
+    Note over Requester,Solver: [UNIMPLEMENTED] Phase 6: Collateral & Slashing
+    Note right of Source: [UNIMPLEMENTED] If validation fails or expired:<br/>- Slash 0.5-1% of solver collateral<br/>- Unlock remainder
+```
+
+**Implementation Details**: This flow combines elements of both inflow and outflow:
+
+- **Hub request-intent**: Similar to both inflow and outflow, creates a cross-chain intent on the hub chain
+- **Source connected chain escrow-intent**: Like inflow, tokens are locked in escrow on the source connected chain
+- **Destination connected chain fulfill transaction**: Like outflow, solver transfers tokens directly on the destination connected chain
+
+**Future Enhancements (NOT YET IMPLEMENTED)**:
+
+- **Multi-RPC Quorum**: Verifier uses multiple RPC endpoints with quorum validation (≥2 matching receipts) for enhanced security
+- **Protocol Fees**: Automatic fee deduction from escrow transfers to solver
+- **Solver Collateral**: Solvers lock collateral that can be slashed (0.5-1%) if validation fails or intent expires
 - **Bypass/Verifier-Gated Modes**: Alternative flow modes where verifier commits transactions on behalf of users
 
 ### 2.2 Architectural Principles

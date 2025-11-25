@@ -1,36 +1,41 @@
 # Conception
 
-## Actor
+## Chains
 
-- User : the user that want to swap some USDC from one chain to another using the intent process. One the the chain is always M1 chain.
-- Solver: actor that solve the swap intent. Can be anyone.
-- Mvmt: Represent the Mvmt corporation that operate the intent application. Depending on the protocol but it can be a trusted entity if it runs some part of the protocol like the verifier.
-- Hacker: a malicious actor that want to steal some fund or disturb the system.
+- **M1 chain**: The Movement L1 chain, also referred to as the Hub chain. This is the central chain where request-intents are created and fulfilled.
+- **Connected chain**: Any chain connected to the M1 chain (e.g., EVM chains, other Move VM chains). Tokens are locked in escrow on connected chains for inflow intents.
+
+## Actors
+
+- Requester: the user that wants to swap some USDC from one chain to another using the intent process. One of the chains is always M1 chain.
+- Solver: actor that solves the swap intent. Can be anyone in a permissionless setting.
+- Mvmt: Represents the Mvmt corporation that operates the intent application. Depending on the protocol but it can be a trusted entity if it runs some part of the protocol like the verifier.
+- Adversary: a malicious actor that wants to steal some funds or disturb the system.
 
 ## Use cases
 
 ### Users (Requester)
 
-- As a requester, I want to swap some USDC from a chain A to M1 chain so that I get my USDC on M1 chain fast and with low fee.
+- As a requester, I want to swap some USDC from a connected chain to M1 chain so that I get my USDC on M1 chain fast and with low fee.
 - As a requester, I want to swap some USDC from M1 chain to a chain so that I get my USDC on the destination chain fast and with low fee.
 - As a requester, I want a secure process so that I don't lose any token.
 
 ### Solver
 
-- As a solver, I want to gain some token by participating to the intent system so that it exceed my operational cost.
-- As a solver, I want a reliable solver process so that I don't have to spend time to operate my servers.
-- As a solver, I want to be able to evaluate the benefit of taking an intent so that I don't solve intent that make me lose money.
+- As a solver, I want to gain some tokens by participating in the intent system so that it exceeds my operational cost.
+- As a solver, I want a reliable solver process so that I don't have to spend time operating my servers.
+- As a solver, I want to be able to evaluate the benefit of taking an intent so that I don't solve intents that make me lose money.
 
-### Mvmt
+### Movement (Mvmt)
 
-- As Mvmt I want to have a reliable and secure application so that Solver and user feel confident to use it.
-- As Mvmt I want that User use Move so that it increases the overall M1 chain usage.
+- As Mvmt I want to have a reliable and secure application so that Solver and requester feel confident to use it.
+- As Mvmt I want that Requester use Move so that it increases the overall M1 chain usage.
 - As Mvmt I want to propose an open process where anybody can join so that it can grow without costing more to me.
 
-### Hacker
+### Adversary
 
-- As a Hacker I want to steal some funds from the application to earn more money
-- As a Hacker I want to disturb the process so that it affects its reputation.
+- As an adversary I want to steal some funds from the application to earn more money
+- As an adversary I want to disturb the process so that it affects its reputation.
 
 ## Protocol
 
@@ -73,44 +78,44 @@ sequenceDiagram
 
 ## Scenarios
 
-### A User make a swap from chain A to M1 chain
+### A Requester makes a swap from connected chain to M1 chain
 
-- Given the user owns the USDC that he want to transfer
-- Given the user owns some Move to execute Tx on M1 chain
-- Given the user owns some chain A tokens
-- Given the user can access to the chain and M1 chain RPC
+- Given the requester owns the USDC that they want to transfer
+- Given the requester owns some Move to execute Tx on M1 chain
+- Given the requester owns some connected chain tokens
+- Given the requester can access the connected chain and M1 chain RPC
 
-- When the user want to realize a swap from chain A to M1 chain
-- then the user send a Tx to Chain A to transfer the needed USDC + total fees token to an escrow. ( 1) User deposit protocol step)
-- then the user send a intent Tx request to the M1 chain. ( 2) User initiates intent protocol step)
-- then the user wait for a confirmation of the swap
-- then the user has received the requested amount of USDC in its M1 chain account.
+- When the requester wants to realize a swap from connected chain to M1 chain
+- then the requester sends a Tx to connected chain to transfer the needed USDC + total fees token to an escrow. ( 1) Requester deposit protocol step)
+- then the requester sends a request-intent Tx to the M1 chain. ( 2) Requester initiates intent protocol step)
+- then the requester waits for a confirmation of the swap
+- then the requester has received the requested amount of USDC in their M1 chain account.
 
 #### Possible issues
 
-1. The user initial transfer is too less or too much.
-The user didn't get the right expected amount.
+1. The requester initial transfer is too little or too much.
+The requester didn't get the right expected amount.
 
 Mitigations in the protocol:
 
-1. the contract that create the intent, verify that the escrow transfer amount is the same as the intent.
+1. the contract that creates the intent verifies that the escrow transfer amount is the same as the intent.
 
 #### Question
 
-Does the fee are in USDC or in the chain token ?
+Are the fees in USDC or in the chain token?
 
 ### The Solver resolves an Inflow intent (Connected Chain → Hub)
 
 - Given the solver is registered in the solver registry on Hub chain
 - Given the solver owns some Move to execute Tx on M1 chain
-- Given the solver owns some chain A tokens
+- Given the solver owns some connected chain tokens
 - Given the solver owns enough USDC on M1 chain
-- Given the solver can access to both chain RPC
+- Given the solver can access both chains' RPC
 
 - When the requester creates a draft intent and sends it to the solver
 - Then the solver signs the draft intent off-chain and returns signature
 - When the requester creates the reserved intent on Hub chain
-- Then the solver observes the request intent and escrow events
+- Then the solver observes the request-intent and escrow events
 - Then the solver fulfills the intent on Hub chain (transfers desired tokens to requester)
 - Then the solver waits for verifier validation and approval
 - Then the solver claims the escrow funds on the connected chain
@@ -122,43 +127,43 @@ The solver doesn't receive the correct amount from escrow on connected chain.
 The solver is not notified of new intent request events.
 The solver attempts to fulfill an intent that wasn't reserved for them (on-chain verification prevents this).
 
-### The Hacker steal some fund by doing a swap
+### The adversary steals some funds by doing a swap
 
-- Given the hacker take the user role to so a swap
+- Given the adversary takes the requester role to do a swap
 
-- When the Hacker want to realize a swap from chain A to M1 chain
-- (Optional) Then the Hacker send a Tx to Chain A that transfers too less USDC token to an escrow.
-- Then the Hacker send a intent Tx request to the M1 chain.
-- Then the Hacker get more USDC on the M1 chain than he has provided.
+- When the adversary wants to realize a swap from connected chain to M1 chain
+- (Optional) Then the adversary sends a Tx to connected chain that transfers too little USDC token to an escrow.
+- Then the adversary sends a request-intent Tx to the M1 chain.
+- Then the adversary gets more USDC on the M1 chain than they have provided.
 
 Mitigation:
-The solver verify that the needed intent amount (USDC requested amount + fee) has been transferred to the escrow.
+The solver verifies that the needed intent amount (USDC requested amount + fee) has been transferred to the escrow.
 How to be sure it's the right transfer Tx?
 
-### The Hacker steal some fund by running a solver
+### The adversary steals some funds by running a solver
 
-- Given the hacker take the solver role to resolve an intent
+- Given the adversary takes the solver role to resolve an intent
 
-- When the Hacker is notified of an user intent request Tx
-- Then the Hacker reserve the intent
-- (Optional) Then the hacker transfer less fund than expected to the user account.
-- The Hacker notifies that the intent has been solved.
-- Then the Hacker waits that the intent amount of USDC is transferred to the Hacker account on the chain A
+- When the adversary is notified of a requester intent request Tx
+- Then the adversary reserves the intent
+- (Optional) Then the adversary transfers less funds than expected to the requester account.
+- The adversary notifies that the intent has been solved.
+- Then the adversary waits for the intent amount of USDC to be transferred to the adversary account on the connected chain
 
-### The Hacker steal the fund by been an User and a Solver
+### The adversary steals the funds by being a Requester and a Solver
 
-The Hacker run the too previous scenario to execute a false intent.
+The adversary runs the previous scenario to execute a false intent.
 
 Mitigation:
-The process that release the fund on chain A verify that the User has transferred the fund (USDC + fee) to the escrow and that the solver has transferred the fund to the user (USDC).
+The process that releases the funds on connected chain verifies that the Requester has transferred the funds (USDC + fee) to the escrow and that the solver has transferred the funds to the requester (USDC).
 How to be sure it's the right transfer Txs?
 
 ## Risks
 
-### Stole fund risk
+### Stolen funds risk
 
 - the escrow account can be hacked.
-- the final transfer contract that send the intent USDC amount to the initial chain can be hacked and do false transfers.
+- the final transfer contract that sends the intent USDC amount to the initial chain can be hacked and do false transfers.
 
 ### Disturb the service
 
@@ -169,11 +174,11 @@ How to be sure it's the right transfer Txs?
 
 **TODO : TO BE UPDATED**: This describes the Inflow flow (Connected Chain → Hub). The current implementation uses reserved intents (solver signs off-chain before intent creation). Some steps below describe the conceptual unreserved intent flow, which differs from the current implementation. For details on the current implementation, see [requirements.md](requirements.md).
 
-### 1) User deposit
+### 1) Requester deposit
 
-User deposit to the source chain the amount + fee token to an escrow contract owned by the verifier.
-This deposit need to be tracked by the intent that why a specific smart contract is used to do it.
-The user call the smart contract with the amount of token to swap + the pre-calculated fee.
+Requester deposits to the connected chain the amount + fee token to an escrow contract owned by the verifier.
+This deposit needs to be tracked by the intent which is why a specific smart contract is used to do it.
+The requester calls the smart contract with the amount of token to swap + the pre-calculated fee.
 The contract:
 
 - verify the fee amount
@@ -181,27 +186,27 @@ The contract:
 - use a unique `intent_id` (provided by the requester) to associate the escrow with the intent
 - save the association with the intent_id and the swap amount in a table.
 
-The intent_id allows to associate the request intent with a transfer/escrow on the connected chains to verify that the requester has provided the escrow.
+The intent_id allows to associate the request-intent with a transfer/escrow on the connected chains to verify that the requester has provided the escrow.
 
 Remarks:
-If the bridge transfer fails, how can the user withdraw its tokens?
+If the bridge transfer fails, how can the requester withdraw its tokens?
 
-### 2) User initiates intent
+### 2) Requester initiates intent
 
 **Note**: Current implementation uses reserved intents (solver signs off-chain before intent creation). See [requirements.md](requirements.md) for details.
 
-User call the request-intent on the M1 chain. The call creates an unreserved intent (conceptual - current implementation uses reserved intents).
+Requester calls the request-intent on the M1 chain. The call creates an unreserved intent (conceptual - current implementation uses reserved intents).
 
 Intent Data:
 
-- user public keys for both chains: identify the user on both chains. There's always a M1 chain key in it.
-- source chain nonce (conceptual - current implementation uses intent_id): Come from the initial source chain transfer done by the user. Provided as a parameters of the Tx.
-- Amount: amount of token to transfer on destination chain. Provided as a parameters of the Tx
-- fee: fee of the transfer. Provided as a parameters of the Tx
-- source → destination transfer info, for any connected chain to M1 chain transfer defined by the smart contract init, for M1 chain-> connected chain transfer, provided as a parameters of the Tx.
-- expiry_time: timestamp where the intent will expire. Add by the contract. If no universal timestamp is available on the chain, provided by the Tx.
-- signature of the pub keys (both chains), amount+fee, source→dest, nonce : use to verify the intent is owned by the user.
-- Id (intent_id): Hash of the data without the status: use to identify the intent.
+- requester public keys for both chains: identify the requester on both chains. There's always a M1 chain key in it.
+- source chain nonce (conceptual - current implementation uses intent_id): Comes from the initial connected chain transfer done by the requester. Provided as a parameter of the Tx.
+- Amount: amount of token to transfer on destination chain. Provided as a parameter of the Tx
+- fee: fee of the transfer. Provided as a parameter of the Tx
+- source → destination transfer info, for any connected chain to M1 chain transfer defined by the smart contract init, for M1 chain-> connected chain transfer, provided as a parameter of the Tx.
+- expiry_time: timestamp where the intent will expire. Added by the contract. If no universal timestamp is available on the chain, provided by the Tx.
+- signature of the pub keys (both chains), amount+fee, source→dest, nonce : used to verify the intent is owned by the requester.
+- Id (intent_id): Hash of the data without the status: used to identify the intent.
 - status: Intent status that can be: Unreserved, Reserved, Filled, Closed. Set to Unreserved when created (conceptual - current implementation creates reserved intents).
 
 Verify that the initial Transfer Tx hash hasn't already been used for another intent. Use the nonce/intent_id to get the amount and save the id of the intent with it.
@@ -214,13 +219,13 @@ The solver monitors M1 chain event to detect the unreserved intent creation.
 
 **TODO : TO BE UPDATED**: In current implementation, solver signs off-chain before intent creation, so this step happens earlier.
 
-### 4) Solver verifies the intent and the user's deposit
+### 4) Solver verifies the intent and the requester's deposit
 
-The solver verifies that the user has transferred the correct funds to the Verifier's escrow.
+The solver verifies that the requester has transferred the correct funds to the Verifier's escrow.
 The solver verifies that the intent's data are consistent:  signature, Id.
 
 Remarks:
-How to be sure the User doesn't reuse a Tx already attached to another intent. This verification should be done during the unreserved intent creation.
+How to be sure the Requester doesn't reuse a Tx already attached to another intent. This verification should be done during the unreserved intent creation.
 
 ### 5) Solver lock collaterals
 
@@ -237,24 +242,24 @@ Use a first-come, first-served approach to lock the intent to a server to manage
 
 ### 7) M1 chain verify solver collateral
 
-The M1 chain contract verifies that the solver has enough collateral to fill the request-intent. This verification should take into account all current filled request-intent managed by the solver.
+The M1 chain contract verifies that the solver has enough collateral to fill the request-intent. This verification should take into account all current filled request-intents managed by the solver.
 The Solver M1 chain public key is added to the request-intent, and the status changes to reserved.
 
 Steps 5, 6, and 7 are done in the same M1 chain smart contract call.
 
 **Note**: Current implementation verifies solver signature from solver registry at intent creation time, not collateral.
 
-### 8) Solver deposit user amount on destination chain (= Hub chain)
+### 8) Solver deposit requester amount on destination chain (= Hub chain)
 
-The solver deposits the amount to the User's destination chain account. Can use a specific transfer Tx or a function developed for the intent framework.
+The solver deposits the amount to the Requester's destination chain account. Can use a specific transfer Tx or a function developed for the intent framework.
 The choice will depend on the proof we'll use to determine if the Solver has executed the transfer.
 
-**Note**: In current Inflow flow, solver fulfills the request intent on Hub chain (which is the destination chain), transferring desired tokens to requester.
+**Note**: In current Inflow flow, solver fulfills the request-intent on Hub chain (which is the destination chain), transferring desired tokens to requester.
 
 ### 9) Solver submits intent-filled
 
-The solver submits to the verifier an intent-filled request. This request contains the intent id and the proof of the transfer to the user.
-The Solver submits its account on the source chain to be able to transfer the funds.
+The solver submits to the verifier an intent-filled request. This request contains the intent id and the proof of the transfer to the requester.
+The Solver submits its account on the connected chain to be able to transfer the funds.
 
 Remarks:
 The notification can be done on-chain using the same contract's call as the deposit (Step 8, in this case, the deposit generates an event monitored by the verifier) or call the verifier via a REST entry point.
@@ -271,14 +276,14 @@ We can use the transfer Tx as proof, but we need to have a way to validate that 
 
 In this case, we can develop a function that does the transfer and links it to the intent. So the Solver transfer and the intent filled should be done onchain using a specific function.
 
-So use a direct RPC call to submit the intent filled we need to develop a specific poof generated during the transfer that the solver can use after the tx execution.
+So use a direct RPC call to submit the intent filled we need to develop a specific proof generated during the transfer that the solver can use after the tx execution.
 
 **TODO : TO BE UPDATED**: Current implementation uses on-chain fulfillment transactions that include intent_id in calldata for verification.
 
 ### 10) Verifier verifies the execution of the filled intent
 
-The verifier verifies that the intent has been executed correctly. The amount has been transferred to the user. Use the proof of the filled intent.
-The verifier verifies that the User has transferred its funds to the source chain. Need if the User and solve collude and don't do the initial transfer.
+The verifier verifies that the intent has been executed correctly. The amount has been transferred to the requester. Use the proof of the filled intent.
+The verifier verifies that the Requester has transferred its funds to the connected chain. Need if the Requester and solver collude and don't do the initial transfer.
 
 **TODO : TO BE UPDATED**: Current implementation validates fulfillment conditions including amount, recipient, solver match, and transaction success.
 
@@ -294,7 +299,7 @@ Deducts fixed protocol fee → Treasury
 
 The verifier releases the locked solver's collateral.
 
-**TODO : TO BE UPDATED**: The fulfillment is already sufficient for inflow intents. So the verifier doesn't need to do anything. However the user may never submit the escrow - in order to not keep the collateral hostage, a timeout mechanism (tight) should be used. A verifier action is still not needed.
+**TODO : TO BE UPDATED**: The fulfillment is already sufficient for inflow intents. So the verifier doesn't need to do anything. However the requester may never submit the escrow - in order to not keep the collateral hostage, a timeout mechanism (tight) should be used. A verifier action is still not needed.
 
 ### 13) Verifier closes the intent
 

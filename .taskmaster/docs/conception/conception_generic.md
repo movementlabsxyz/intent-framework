@@ -25,7 +25,7 @@ The framework can also function as an escrow mechanism, allowing funds to be loc
 
 ## Actors
 
-- Requester: the requester that wants to swap some USDC from one chain to another using the intent process. One of the chains is always M1 chain.
+- Requester: the requester that wants to swap some $USDxyz from one chain to another using the intent process. One of the chains is always M1 chain.
 - Solver: actor that solves the swap intent. Can be anyone in a permissionless setting.
 - Movement (Mvmt): Represents the Movement corporation that operates the intent application. Depending on the protocol but it can be a trusted entity if it runs some part of the protocol like the verifier.
 - Adversary: a malicious actor that wants to steal some funds or disturb the system.
@@ -39,6 +39,44 @@ The Intent Framework supports three types of cross-chain flows:
 2. **Outflow** (Hub → Connected Chain): Tokens are locked on the M1 chain and desired on a connected chain. See [conception_outflow.md](conception_outflow.md) for details.
 
 3. **Router Flow** (Connected Chain → Connected Chain): Tokens are locked on a source connected chain and desired on a destination connected chain, with the hub coordinating. See [conception_routerflow.md](conception_routerflow.md) for details.
+
+## Generic Protocol Steps
+
+The following steps are common to all flows (inflow, outflow, router flow). Flow-specific steps follow these generic steps in the respective conception documents.
+
+### 1) Requester initiates draft request-intent and forwards to solver
+
+The requester creates a draft request-intent with the desired swap parameters and forwards it to a solver for off-chain negotiation.
+
+#### Draft Intent Data
+
+The draft request-intent contains the following data:
+
+- **requester public keys for both chains**: identifies the requester on both chains. There's always a M1 chain key in it.
+- **offered_metadata**: metadata of the token type being offered.
+- **offered amount**: amount of token to transfer on source chain by the requester.
+- **offered_chain_id**: chain ID where the escrow is created (source chain).
+- **desired_metadata**: metadata of the desired token type.
+- **desired amount**: amount of token to transfer on destination chain by the solver.
+- **desired_chain_id**: chain ID where the desired tokens are located (destination chain).
+- **fee**: fee of the transfer.
+- **expiry_time**: timestamp where the intent will expire. Set by the requester.
+
+### 2) Solver reviews and signs draft request-intent
+
+The solver reviews the draft request-intent and signs it off-chain, returning the signature to the requester. This signature commits the solver to fulfill the request-intent if it is created on-chain.
+
+### 3) Requester initiates request-intent
+
+Requester creates the request-intent on-chain. The request-intent contains the draft (from step 1) plus the solver's signature (from step 2).
+
+The `intent_id` is generated at this point as a hash of the draft, timestamp, and solver signature. The intent status is set to Reserved when created (since the solver has already signed the draft).
+
+The contract verifies that the solver has enough free collateral on Hub chain to fulfill the intent. The request-intent is rejected if the solver does not have enough collateral.
+
+Generally the status can be: Reserved, Filled, Cancelled, but at this point it is Reserved.
+
+Save the intent data in a table with the `intent_id` as key.
 
 ## Use cases
 
@@ -70,7 +108,7 @@ We list generic use cases applicable to all flows. For flow-specific use cases, 
 ### Stolen funds risk
 
 - the escrow account can be hacked.
-- the final transfer contract that sends the intent USDC amount to the initial chain can be hacked and do false transfers.
+- the final transfer contract that sends the intent $USDxyz amount to the initial chain can be hacked and do false transfers.
 
 ### Disturb the service
 

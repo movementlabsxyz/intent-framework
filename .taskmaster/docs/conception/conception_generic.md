@@ -34,11 +34,24 @@ The framework can also function as an escrow mechanism, allowing funds to be loc
 
 The Intent Framework supports three types of cross-chain flows:
 
+```mermaid
+graph TD
+    CC1[Connected Chain A]
+    Hub[Hub Chain / M1]
+    CC2[Connected Chain B]
+    
+    CC1 -->|Inflow| Hub
+    Hub -->|Outflow| CC2
+    CC1 -->|Router Flow| CC2
+```
+
 1. **Inflow** (Connected Chain → Hub): Tokens are locked in escrow on a connected chain and desired on the M1 chain. See [conception_inflow.md](conception_inflow.md) for details.
 
 2. **Outflow** (Hub → Connected Chain): Tokens are locked on the M1 chain and desired on a connected chain. See [conception_outflow.md](conception_outflow.md) for details.
 
 3. **Router Flow** (Connected Chain → Connected Chain): Tokens are locked on a source connected chain and desired on a destination connected chain, with the hub coordinating. See [conception_routerflow.md](conception_routerflow.md) for details.
+
+The router flow is conceptually a combination of inflow and outflow, where the Hub chain coordinates the swap without holding the tokens.
 
 ## Generic Protocol Steps
 

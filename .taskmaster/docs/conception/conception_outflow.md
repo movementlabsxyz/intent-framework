@@ -20,27 +20,27 @@ sequenceDiagram
     participant Connected as Connected Chain
     participant Solver
 
-    Note over Requester,Solver: Phase 1: Off-chain negotiation
+    Note over Requester,Solver: Off-chain negotiation
     Requester->>Requester: Create draft intent
     Requester->>Solver: Send draft
     Solver->>Solver: Solver signs (off-chain)
     Solver->>Requester: Returns signature
 
-    Note over Requester,Solver: Phase 2: Intent creation and escrow on Hub
+    Note over Requester,Solver: Intent creation and escrow on Hub
     Requester->>Hub: Create reserved intent with escrow (locks tokens)
-    Hub->>Verifier: Intent event
+    Hub->>Verifier: Request-intent event
 
-    Note over Requester,Solver: Phase 3: Solver fulfillment on Connected Chain
+    Note over Requester,Solver: Solver fulfillment on Connected Chain
     Solver->>Connected: Transfer desired tokens to requester
     Connected->>Verifier: Transfer event
 
-    Note over Requester,Solver: Phase 4: Verifier validation and approval
+    Note over Requester,Solver: Verifier validation and approval
     Verifier->>Verifier: Validate fulfillment conditions
     Verifier->>Solver: Generate approval signature
 
-    Note over Requester,Solver: Phase 5: Escrow release on Hub
+    Note over Requester,Solver: Escrow and collateral release on Hub
     Solver->>Hub: Release escrow (with verifier signature)
-    Hub->>Hub: Transfer to reserved solver
+    Hub->>Hub: Transfer to reserved solver + release collateral
 ```
 
 ## Scenarios

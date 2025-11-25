@@ -57,7 +57,7 @@ sequenceDiagram
     Note over Requester,Solver: Phase 4: Verifier Validation and Approval
     Verifier->>Verifier: Match intent_id between<br/>fulfillment and escrow
     Verifier->>Verifier: Validate fulfillment<br/>conditions met
-    Verifier->>Verifier: Generate approval signature
+    Verifier->>Solver: Generate approval signature
 
     Note over Requester,Solver: Phase 5: Escrow Release on Connected Chain
     Verifier->>Solver: Delivers approval signature<br/>(Ed25519 for Move, ECDSA for EVM)<br/>Signature itself is the approval

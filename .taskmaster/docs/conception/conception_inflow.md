@@ -12,15 +12,13 @@ For general use cases applicable to all flows, see [conception_generic.md](conce
 
 ## Protocol
 
-**Note**: This describes the Inflow flow (Connected Chain → Hub). For all three flow types (Inflow, Outflow, Connected → Connected), see [requirements.md](requirements.md). For differences between this conception and the current implementation, see [requirements.md](requirements.md).
-
 ```mermaid
 sequenceDiagram
     participant Requester
-    participant Source as Source Chain
     participant Hub as Hub Chain
-    participant Solver
     participant Verifier
+    participant Connected as Connected Chain
+    participant Solver
 
     Note over Requester,Solver: Phase 1: Off-chain negotiation
     Requester->>Requester: Create draft intent
@@ -32,9 +30,9 @@ sequenceDiagram
     Requester->>Hub: Create reserved intent
     Hub->>Verifier: Intent event
 
-    Note over Requester,Solver: Phase 3: Escrow on Source Chain
-    Requester->>Source: Create escrow (locks tokens)
-    Source->>Verifier: Escrow event
+    Note over Requester,Solver: Phase 3: Escrow on Connected Chain
+    Requester->>Connected: Create escrow (locks tokens)
+    Connected->>Verifier: Escrow event
 
     Note over Requester,Solver: Phase 4: Solver fulfillment
     Solver->>Hub: Fulfill intent
@@ -42,11 +40,11 @@ sequenceDiagram
 
     Note over Requester,Solver: Phase 5: Verifier validation and approval
     Verifier->>Verifier: Validate fulfillment conditions
-    Verifier->>Verifier: Generate approval signature
+    Verifier->>Solver: Generate approval signature
 
     Note over Requester,Solver: Phase 6: Escrow release
-    Solver->>Source: Release escrow (with verifier signature)
-    Source->>Source: Transfer to reserved solver
+    Solver->>Connected: Release escrow (with verifier signature)
+    Connected->>Connected: Transfer to reserved solver
 ```
 
 ## Scenarios
@@ -54,51 +52,52 @@ sequenceDiagram
 ### A Requester makes a swap from connected chain to M1 chain
 
 - Given the requester owns the USDC that they want to transfer
-- Given the requester owns some Move to execute Tx on M1 chain
-- Given the requester owns some connected chain tokens
+- Given the requester owns some MOVE to execute Tx on M1 chain
+- Given the requester owns offered tokens on connected chain
 - Given the requester can access the connected chain and M1 chain RPC
 
 - When the requester wants to realize a swap from connected chain to M1 chain
-- then the requester sends a Tx to connected chain to transfer the needed USDC + total fees token to an escrow. ( 1) Requester deposit protocol step)
+- then the requester requests a signed quote from a solver for the desired intent
 - then the requester sends a request-intent Tx to the M1 chain. ( 2) Requester initiates intent protocol step)
+- then the requester sends a Tx to connected chain to transfer the needed USDC + total fees token to an escrow. ( 1) Requester deposit protocol step)
 - then the requester waits for a confirmation of the swap
 - then the requester has received the requested amount of USDC in their M1 chain account.
 
 #### Possible issues
 
-1. The requester initial transfer is too little or too much.
+1. The requester initial escrow transfer is too little or too much.
 The requester didn't get the right expected amount.
 
-Mitigations in the protocol:
+Mitigation in the protocol:
 
-1. the contract that creates the intent verifies that the escrow transfer amount is the same as the intent.
+1. The verifier verifies that the escrow transfer amount is the same as the request-intent amount.
 
-#### Question
+#### Questions
 
-Are the fees in USDC or in the chain token?
+- Are the fees in USDC or in the chain token?
 
 ### The Solver resolves an Inflow intent (Connected Chain → Hub)
 
 - Given the solver is registered in the solver registry on Hub chain
-- Given the solver owns some Move to execute Tx on M1 chain
-- Given the solver owns some connected chain tokens
+- Given the solver owns some MOVE to execute Tx on M1 chain
 - Given the solver owns enough USDC on M1 chain
 - Given the solver can access both chains' RPC
 
 - When the requester creates a draft intent and sends it to the solver
 - Then the solver signs the draft intent off-chain and returns signature
-- When the requester creates the reserved intent on Hub chain
+
+- When the requester creates the reserved request-intent on Hub chain
 - Then the solver observes the request-intent and escrow events
-- Then the solver fulfills the intent on Hub chain (transfers desired tokens to requester)
+- Then the solver fulfills the request-intent on Hub chain (transfers desired tokens to requester)
 - Then the solver waits for verifier validation and approval
 - Then the solver claims the escrow funds on the connected chain
 
 #### Solver flow issues
 
-The solver doesn't send the right amount of desired tokens to the requester on Hub chain.
-The solver doesn't receive the correct amount from escrow on connected chain.
-The solver is not notified of new intent request events.
-The solver attempts to fulfill an intent that wasn't reserved for them (on-chain verification prevents this).
+- The solver doesn't send the right amount of desired tokens to the requester on Hub chain.
+- The solver doesn't receive the correct amount from escrow on connected chain.
+- The solver is not notified of new intent request events.
+- The solver attempts to fulfill an intent that wasn't reserved for them (on-chain verification prevents this).
 
 ### The adversary steals some funds by doing a swap
 
@@ -109,9 +108,10 @@ The solver attempts to fulfill an intent that wasn't reserved for them (on-chain
 - Then the adversary sends a request-intent Tx to the M1 chain.
 - Then the adversary gets more USDC on the M1 chain than they have provided.
 
-Mitigation:
-The solver verifies that the needed intent amount (USDC requested amount + fee) has been transferred to the escrow.
-How to be sure it's the right transfer Tx?
+Mitigations:
+
+- The solver verifies that the correct offered amount (USDC requested amount + fee) has been transferred to the escrow.
+- (Optional) The verifier verifies that the correct amount has been transferred to the escrow.
 
 ### The adversary steals some funds by running a solver
 

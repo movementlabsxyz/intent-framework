@@ -55,7 +55,7 @@ sequenceDiagram
 
     Note over Requester,Solver: Phase 4: Verifier Validation and Approval
     Verifier->>Verifier: Validate fulfillment<br/>conditions met
-    Verifier->>Verifier: Generate approval signature
+    Verifier->>Solver: Generate approval signature
     Note right of Verifier: [UNIMPLEMENTED] Multi-RPC quorum validation<br/>(≥2 matching receipts)
 
     Note over Requester,Solver: Phase 5: Escrow Release on Connected Chain

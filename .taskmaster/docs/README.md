@@ -61,17 +61,24 @@ Documentation of how the Intent Framework handles specific scenarios in the curr
 - Edge Cases (Non-Revocable Escrow Intents, Reserved Solver Enforcement, Zero-Amount Cross-Chain Swaps, Concurrent Intent Fulfillment)
 - Real-World Usage Patterns (DEX Integration, Cross-Chain Arbitrage, Payment Channels, Escrow Services)
 
-### [Requirements Document](requirements.md)
+### [Conception Documents](conception/)
 
-Working document specifying functional and non-functional requirements for the Intent Framework, including future cross-chain flows (Inflow and Outflow), intent creation capabilities, execution models, and system requirements.
+Documentation describing the conceptual design of the Intent Framework and how it differs from the current implementation.
+
+**Key Documents**:
+
+- [Conception Generic](conception/conception_generic.md) - Introduction, common concepts, actors, terminology, and system components
+- [Conception Inflow](conception/conception_inflow.md) - Inflow flow (Connected Chain → Hub) conception
+- [Conception Outflow](conception/conception_outflow.md) - Outflow flow (Hub → Connected Chain) conception
+- [Conception Router Flow](conception/conception_routerflow.md) - Router flow (Connected Chain → Connected Chain) conception
+- [Architecture Differences](conception/architecture-diff.md) - Cross-chain architecture diagrams showing differences between conception and current implementation
+- [Requirements](conception/requirements.md) - Functional and non-functional requirements for the Intent Framework
 
 **Key Sections**:
 
-- Cross-Chain Flows (Inflow and Outflow with detailed sequence diagrams)
-- Intent Creation Requirements (Unreserved, Reserved, Oracle-Guarded, Escrow)
-- Move On-Chain Intent Execution (session model)
-- Trusted Verifier Service Requirements
-- Non-Functional Requirements (Reliability, Usability, Compatibility)
+- **Conception Generic**: System introduction, components (Move Intent Framework, EVM Intent Framework, Trusted Verifier Service, Solver Tools), chains, actors, flow types, use cases, and risks
+- **Architecture Differences**: Cross-chain flow sequence diagrams (Inflow, Outflow, Connected → Connected) with implementation status markers
+- **Requirements**: Intent creation requirements, cross-chain execution requirements, verifier service requirements, non-functional requirements (reliability, usability, compatibility), testing requirements
 
 ## How to Use These Documents
 
@@ -96,7 +103,7 @@ Working document specifying functional and non-functional requirements for the I
 
 ## Document Relationships
 
-```
+```text
 RPG Methodology Principles
     ↓ (provides methodology)
 Component-to-Domain Mapping
@@ -109,4 +116,3 @@ Protocol Specification (public docs/)
 ```
 
 All architecture documents cross-reference each other and link to public component documentation for implementation details.
-

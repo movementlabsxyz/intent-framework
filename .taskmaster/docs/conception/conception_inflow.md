@@ -49,87 +49,85 @@ sequenceDiagram
 
 ## Scenarios
 
-### A Requester makes a swap from connected chain to M1 chain
+### Requester makes an inflow swap intent
 
-- Given the requester owns the USDC that they want to transfer
-- Given the requester owns some MOVE to execute Tx on M1 chain
-- Given the requester owns offered tokens on connected chain
-- Given the requester can access the connected chain and M1 chain RPC
+0. Given the requester
+   - owns the USDC that they want to transfer
+   - owns some MOVE to execute Tx on M1 chain
+   - owns offered tokens on connected chain
+   - can access the connected chain and M1 chain RPC
 
-- When the requester wants to realize a swap from connected chain to M1 chain
-- then the requester requests a signed quote from a solver for the desired intent
-- then the requester sends a request-intent Tx to the M1 chain. ( 2) Requester initiates intent protocol step)
-- then the requester sends a Tx to connected chain to transfer the needed USDC + total fees token to an escrow. ( 1) Requester deposit protocol step)
-- then the requester waits for a confirmation of the swap
-- then the requester has received the requested amount of USDC in their M1 chain account.
+1. When the requester wants to realize a swap from connected chain to M1 chain
+   - then the requester requests a signed quote from a solver for the desired intent
+   - then the requester sends a request-intent Tx to the M1 chain. ( 2) Requester initiates intent protocol step)
+   - then the requester sends a Tx to connected chain to transfer the needed USDC + total fees token to an escrow. ( 1) Requester deposit protocol step)
+   - then the requester waits for a confirmation of the swap
+   - then the requester has received the requested amount of USDC in their M1 chain account.
 
-#### Possible issues
+#### Possible issues (Requester)
 
 1. The requester initial escrow transfer is too little or too much.
-The requester didn't get the right expected amount.
-
-Mitigation in the protocol:
-
-1. The verifier verifies that the escrow transfer amount is the same as the request-intent amount.
+    - Mitigation: The verifier verifies that the escrow transfer amount is the same as the request-intent offered amount.
+1. The requester didn't get the right expected amount of USDC.
+    - Mitigation: The verifier verifies that the escrow transfer amount is the same as the request-intent amount.
 
 #### Questions
 
 - Are the fees in USDC or in the chain token?
 
-### The Solver resolves an Inflow intent (Connected Chain → Hub)
+### Solver resolves an inflow swap intent
 
-- Given the solver is registered in the solver registry on Hub chain
-- Given the solver owns some MOVE to execute Tx on M1 chain
-- Given the solver owns enough USDC on M1 chain
-- Given the solver can access both chains' RPC
+0. Given the solver
+   - is registered in the solver registry on Hub chain
+   - owns some MOVE to execute Tx on M1 chain
+   - owns enough USDC on M1 chain
+   - can access both chains' RPC
+1. When the requester creates a draft intent and sends it to the solver
+   - Then the solver signs the draft intent off-chain and returns signature
+2. When the requester creates the reserved request-intent on Hub chain
+   - Then the solver observes the request-intent and escrow events
+   - Then the solver fulfills the request-intent on Hub chain (transfers desired tokens to requester)
+   - Then the solver waits for verifier validation and approval
+   - Then the solver claims the escrow funds on the connected chain
 
-- When the requester creates a draft intent and sends it to the solver
-- Then the solver signs the draft intent off-chain and returns signature
-
-- When the requester creates the reserved request-intent on Hub chain
-- Then the solver observes the request-intent and escrow events
-- Then the solver fulfills the request-intent on Hub chain (transfers desired tokens to requester)
-- Then the solver waits for verifier validation and approval
-- Then the solver claims the escrow funds on the connected chain
-
-#### Solver flow issues
+#### Possible issues (Solver)
 
 - The solver doesn't send the right amount of desired tokens to the requester on Hub chain.
+  - Mitigation: The solver submits the amount to the request-intent. The intent reverts if the amount is not the same as the request-intent requested amount.
 - The solver doesn't receive the correct amount from escrow on connected chain.
+  - Mitigation: The solver verifies that the escrow transfer amount is the same as the request-intent offered amount.
+  - Mitigation: The verifier verifies that the escrow offered amount is the same as the request-intent offered amount and informs the solver.
 - The solver is not notified of new intent request events.
+  - Mitigation: The verifier receives intent-requests from the requester and forwards it to the pool of solvers.
 - The solver attempts to fulfill an intent that wasn't reserved for them (on-chain verification prevents this).
+  - Mitigation: The contract rejects the fulfillment if the intent is not reserved for the solver.
 
-### The adversary steals some funds by doing a swap
+### The requeserter is adverse
 
-- Given the adversary takes the requester role to do a swap
+0. Given the adversary takes the requester role to do a swap
+1. When the adversary wants to extract more funds than the adversary has provided
+   - Then the adversary sends a request-intent Tx to the M1 chain.
+   - Then the adversary sends a Tx to the connected chain that transfers too little USDC token to an escrow.
+   - Then the adversary hopes to get more USDC on the M1 chain than they have provided.
+      - Mitigation: The solver verifies that the correct offered amount (USDC requested amount + fee) has been transferred to the escrow.
+      - Mitigation: The verifier verifies that the escrow transfer amount is the same as the request-intent offered amount.
+2. When the adversary attempts to stall the request-intent holding solver funds hostage.
+   - Then the adversary reserves the intent
+   - Then the adversary takes no action
+      - Mitigation: The request-intent is protected by a timeout mechanism. After timeout, the intent is cancelled and the solver has no obligation to fulfill the intent any longer.
 
-- When the adversary wants to realize a swap from connected chain to M1 chain
-- (Optional) Then the adversary sends a Tx to connected chain that transfers too little USDC token to an escrow.
-- Then the adversary sends a request-intent Tx to the M1 chain.
-- Then the adversary gets more USDC on the M1 chain than they have provided.
+### The solver is adverse
 
-Mitigations:
-
-- The solver verifies that the correct offered amount (USDC requested amount + fee) has been transferred to the escrow.
-- (Optional) The verifier verifies that the correct amount has been transferred to the escrow.
-
-### The adversary steals some funds by running a solver
-
-- Given the adversary takes the solver role to resolve an intent
-
-- When the adversary is notified of a requester intent request Tx
-- Then the adversary reserves the intent
-- (Optional) Then the adversary transfers less funds than expected to the requester account.
-- The adversary notifies that the intent has been solved.
-- Then the adversary waits for the intent amount of USDC to be transferred to the adversary account on the connected chain
-
-### The adversary steals the funds by being a Requester and a Solver
-
-The adversary runs the previous scenario to execute a false intent.
-
-Mitigation:
-The process that releases the funds on connected chain verifies that the Requester has transferred the funds (USDC + fee) to the escrow and that the solver has transferred the funds to the requester (USDC).
-How to be sure it's the right transfer Txs?
+0. Given the adversary takes the solver role to resolve an intent
+1. When the adversary attempts to transfer less then the desired amount
+   - Then the adversary reserves the intent
+   - (Optional) Then the adversary transfers less funds than expected to the requester account.
+   - Then the adversary hopes that the intent is fulfilled and the offered amount is transferred to the adversary account on the connected chain.
+      - Mitigation: The smart contract rejects the fulfillment if the amount is less than the request-intent requested amount.
+2. When the adversary attemtps to stall the request-intent.
+   - Then the adversary reserves the intent
+   - Then the adversary takes no action
+      - Mitigation: The request-intent and the escrow is protected by a timeout mechanism. After timeout, the intent and escrow are cancelled and the funds are returned to the requester.
 
 ## Protocol steps details
 

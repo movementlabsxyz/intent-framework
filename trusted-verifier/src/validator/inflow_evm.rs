@@ -9,11 +9,11 @@ use anyhow::{Context, Result};
 /// Validates that an EVM escrow's reserved solver matches the registered solver's EVM address.
 ///
 /// This function checks that the EVM escrow's reservedSolver address matches
-/// the EVM address registered in the solver registry for the hub request intent's solver.
+/// the EVM address registered in the solver registry for the hub request-intent's solver.
 ///
 /// # Arguments
 ///
-/// * `request_intent` - The request intent event from the hub chain (must have a solver)
+/// * `request_intent` - The request-intent event from the hub chain (must have a solver)
 /// * `escrow_reserved_solver` - The reserved solver EVM address from the escrow
 /// * `hub_chain_rpc_url` - RPC URL of the hub chain (to query solver registry)
 /// * `registry_address` - Address where the solver registry is deployed
@@ -28,13 +28,13 @@ pub async fn validate_evm_escrow_solver(
     hub_chain_rpc_url: &str,
     registry_address: &str,
 ) -> Result<ValidationResult> {
-    // Check if request intent has a solver
+    // Check if request-intent has a solver
     let request_intent_solver = match &request_intent.reserved_solver {
         Some(solver) => solver,
         None => {
             return Ok(ValidationResult {
                 valid: false,
-                message: "Hub request intent does not have a reserved solver".to_string(),
+                message: "Hub request-intent does not have a reserved solver".to_string(),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }

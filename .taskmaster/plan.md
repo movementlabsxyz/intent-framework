@@ -4,7 +4,7 @@
 
 This plan defines the cross-chain intent flow and supporting verifier needed to move assets from a connected chain to a hub chain under verifiable conditions.
 
-- **Hub chain**: hosts regular (non-oracle) request intents from users (e.g., Alice).
+- **Hub chain**: hosts regular (non-oracle) request-intents from users (e.g., Alice).
 - **Connected chain**: holds escrows (oracle-based) that lock funds and reference the hub intent via a shared `intent_id`.
 - **Verifier**: observes hub intent creation and fulfillment plus connected-chain escrows, links them by `intent_id`, and produces an approval signature to release escrow after hub fulfillment is observed.
 - **Tooling**: Docker localnets for Aptos chains, Hardhat for EVM chain, Move modules for intents/escrows, Solidity contracts for EVM escrows, and a Rust verifier with REST API and auto-escrow-release integration scripts.

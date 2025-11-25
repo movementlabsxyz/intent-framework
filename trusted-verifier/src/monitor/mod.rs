@@ -1,7 +1,7 @@
 //! Event Monitoring Module
 //!
 //! This module handles monitoring blockchain events from both hub and connected chains.
-//! It listens for request intent creation events on the hub chain and escrow deposit events
+//! It listens for request-intent creation events on the hub chain and escrow deposit events
 //! on the connected chain, providing real-time event processing and caching.
 //!
 //! ## Security Requirements

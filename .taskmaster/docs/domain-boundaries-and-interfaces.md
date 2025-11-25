@@ -25,7 +25,7 @@ This document provides precise definitions of domain boundaries, external interf
 **Public Entry Functions** (Move):
 
 - `create_fa_to_fa_intent_entry()` - Create fungible asset intent
-- `create_cross_chain_request_intent_entry()` - Create cross-chain request intent
+- `create_cross_chain_request_intent_entry()` - Create cross-chain request-intent
 - `fulfill_cross_chain_request_intent()` - Fulfill cross-chain intent
 - `create_reserved_intent()` - Create reserved intent with solver signature
 
@@ -244,7 +244,7 @@ For comprehensive inter-domain interaction patterns, see [Inter-Domain Interacti
 
 **Data Structures Exported**:
 
-- `RequestIntentEvent` - Normalized request intent event structure
+- `RequestIntentEvent` - Normalized request-intent event structure
 - `EscrowEvent` - Normalized escrow event structure with `chain_type` field (Mvm, Evm, Svm) set by verifier based on monitor that discovered it
 - `FulfillmentEvent` - Normalized fulfillment event structure
 - `ApprovalSignature` - Approval signature structure

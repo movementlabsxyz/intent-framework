@@ -6,14 +6,14 @@ The verifier supports two cross-chain flows:
 
 **Outflow (hub → connected chain):**
 
-1. Monitors intent events on the hub chain (request intent creation)
+1. Monitors intent events on the hub chain (request-intent creation)
 2. Validates fulfillment transactions on connected chains (Move VM and EVM)
 3. Validates that transfer conditions match intent requirements
 4. Generates approval signatures for intent fulfillment on hub chain
 
 **Inflow (connected chain → hub):**
 
-1. Monitors intent events on the hub chain (request intent creation)
+1. Monitors intent events on the hub chain (request-intent creation)
 2. Monitors escrow events on connected chains (Move VM and EVM)
 3. Monitors fulfillment events on the hub chain (when solver fulfills)
 4. Validates that fulfillment matches escrow conditions

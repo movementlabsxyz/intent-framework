@@ -153,7 +153,7 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
 **Flow**:
 
 1. **Hub Chain - Intent Creation** (`testing-infra/e2e-tests-mvm/submit-hub-intent.sh`):
-   - Requester creates cross-chain request intent on hub chain using `create_cross_chain_request_intent_entry()`
+   - Requester creates cross-chain request-intent on hub chain using `create_cross_chain_request_intent_entry()`
    - Intent specifies desired USD token metadata and amount (e.g., 100M tokens)
    - Intent uses `offered_amount=0` since tokens are locked on connected chain
    - Intent is **reserved** for a specific solver: solver must be registered in the solver registry, signs the intent off-chain, and the signature is verified on-chain using the solver's public key from the registry
@@ -171,7 +171,7 @@ Transferring USD tokens from a connected chain to a hub chain using the intent f
    - Requester receives tokens on hub chain
 
 4. **Verifier - Validation and Approval** (`testing-infra/e2e-tests-mvm/release-escrow.sh`):
-   - Verifier monitors hub chain for request intent events and connected chain (Move VM or EVM) for escrow events
+   - Verifier monitors hub chain for request-intent events and connected chain (Move VM or EVM) for escrow events
    - Verifier actively polls connected chains and caches escrows when created (symmetrical for both Move VM and EVM)
    - Verifier validates escrow is non-revocable (critical security check)
    - Verifier validates solver addresses match (Move VM addresses directly, EVM addresses via solver registry)

@@ -1,8 +1,8 @@
 //! Hub Chain Move VM-specific monitoring functions
 //!
 //! This module contains Move VM-specific event polling logic
-//! for hub chain request intent events. The hub chain handles
-//! both inflow and outflow request intents.
+//! for hub chain request-intent events. The hub chain handles
+//! both inflow and outflow request-intents.
 
 use anyhow::{Context, Result};
 use tracing::{error, info};
@@ -70,13 +70,13 @@ pub fn parse_amount_with_u64_limit(amount_str: &str, field_name: &str) -> Result
         ))
 }
 
-/// Polls the hub Move VM chain for new request intent events.
+/// Polls the hub Move VM chain for new request-intent events.
 ///
-/// This function queries the hub chain's event logs for new request intent
+/// This function queries the hub chain's event logs for new request-intent
 /// creation events. Since module events are emitted in user transactions,
 /// we query known test accounts for their events.
 ///
-/// Handles both inflow and outflow request intents:
+/// Handles both inflow and outflow request-intents:
 /// - Inflow intents emit `LimitOrderEvent` (from fa_intent)
 /// - Outflow intents emit `OracleLimitOrderEvent` (from fa_intent_with_oracle)
 /// - Both emit `LimitOrderFulfillmentEvent` when fulfilled
@@ -87,7 +87,7 @@ pub fn parse_amount_with_u64_limit(amount_str: &str, field_name: &str) -> Result
 ///
 /// # Returns
 ///
-/// * `Ok(Vec<RequestIntentEvent>)` - List of new request intent events
+/// * `Ok(Vec<RequestIntentEvent>)` - List of new request-intent events
 /// * `Err(anyhow::Error)` - Failed to poll events
 pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntentEvent>> {
     // Create Move VM client for hub chain
@@ -116,7 +116,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
             .context(format!("Failed to fetch events for account {}", account))?;
 
         for event in raw_events {
-            // Parse event type to check if it's a request intent event
+            // Parse event type to check if it's a request-intent event
             let event_type = event.r#type.clone();
 
             // Handle LimitOrderEvent, OracleLimitOrderEvent, and LimitOrderFulfillmentEvent
@@ -157,7 +157,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                         }) {
                             fulfillment_cache.push(fulfillment_event.clone());
                             info!(
-                                "Received fulfillment event for request intent {} by solver {}",
+                                "Received fulfillment event for request-intent {} by solver {}",
                                 data.intent_id, data.solver
                             );
                         } else {
@@ -179,7 +179,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                 }
             } else if event_type.contains("OracleLimitOrderEvent") {
                 // Outflow intents use OracleLimitOrderEvent (from fa_intent_with_oracle)
-                // All outflow request intents MUST have a reserved solver
+                // All outflow request-intents MUST have a reserved solver
                 let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
                     .context("Failed to parse OracleLimitOrderEvent")?;
 
@@ -223,10 +223,10 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request intent offered_amount")?,
+                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request intent desired_amount")?,
+                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
@@ -274,10 +274,10 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request intent offered_amount")?,
+                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request intent desired_amount")?,
+                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
@@ -290,7 +290,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                 });
             } else if event_type.contains("OracleLimitOrderEvent") {
                 // Outflow intents use OracleLimitOrderEvent (from fa_intent_with_oracle)
-                // All outflow request intents MUST have a reserved solver
+                // All outflow request-intents MUST have a reserved solver
                 let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
                     .context("Failed to parse OracleLimitOrderEvent")?;
 
@@ -334,10 +334,10 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request intent offered_amount")?,
+                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request intent desired_amount")?,
+                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()

@@ -115,7 +115,7 @@ async fn test_escrow_chain_id_validation() {
     // We just verify it doesn't fail on connected_chain_id check
 }
 
-/// Test that verifier rejects escrows where offered_amount doesn't match hub request intent's offered amount
+/// Test that verifier rejects escrows where offered_amount doesn't match hub request-intent's offered amount
 /// Why: Verify that escrow amount validation works correctly
 #[tokio::test]
 async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
@@ -179,7 +179,7 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
     );
 }
 
-/// Test that verifier accepts escrows where offered_metadata exactly matches hub request intent's offered_metadata
+/// Test that verifier accepts escrows where offered_metadata exactly matches hub request-intent's offered_metadata
 /// Why: Verify that metadata matching validation works correctly for successful cases
 #[tokio::test]
 async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_success() {
@@ -216,7 +216,7 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_suc
     );
 }
 
-/// Test that verifier rejects escrows where offered_metadata doesn't match hub request intent's offered_metadata
+/// Test that verifier rejects escrows where offered_metadata doesn't match hub request-intent's offered_metadata
 /// Why: Verify that metadata mismatch validation works correctly
 #[tokio::test]
 async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_rejection() {
@@ -522,8 +522,8 @@ async fn test_escrow_desired_amount_must_be_zero_rejection() {
     );
 }
 
-/// Test that verifier rejects escrows when request intent has no connected_chain_id
-/// Why: Verify that request intents must specify connected_chain_id for escrow validation
+/// Test that verifier rejects escrows when request-intent has no connected_chain_id
+/// Why: Verify that request-intents must specify connected_chain_id for escrow validation
 #[tokio::test]
 async fn test_escrow_rejection_when_connected_chain_id_is_none() {
     use test_helpers::build_test_config_with_mvm;
@@ -557,7 +557,7 @@ async fn test_escrow_rejection_when_connected_chain_id_is_none() {
 
     assert!(
         !validation_result.valid,
-        "Validation should fail when request intent has no connected_chain_id"
+        "Validation should fail when request-intent has no connected_chain_id"
     );
     assert!(
         validation_result

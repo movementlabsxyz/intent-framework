@@ -71,7 +71,7 @@ pub fn build_test_config_with_evm() -> Config {
     config
 }
 
-/// Create a base request intent event with default test values for Move VM connected chain.
+/// Create a base request-intent event with default test values for Move VM connected chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
 /// let request_intent = create_base_request_intent_mvm();
@@ -103,7 +103,7 @@ pub fn create_base_request_intent_mvm() -> RequestIntentEvent {
     }
 }
 
-/// Create a base request intent event with default test values for EVM connected chain.
+/// Create a base request-intent event with default test values for EVM connected chain.
 /// This uses `create_base_request_intent_mvm()` as a base and overrides EVM-specific fields.
 /// This can be customized using Rust's struct update syntax:
 /// ```

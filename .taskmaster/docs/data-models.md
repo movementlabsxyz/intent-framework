@@ -46,7 +46,7 @@ Data structures link across chains using `intent_id` fields and event correlatio
 
 The `intent_id` field serves as the primary cross-chain linking mechanism:
 
-- **Hub Chain Intents**: `intent_id` is set to `intent_address` for regular intents, or a shared address for cross-chain request intents
+- **Hub Chain Intents**: `intent_id` is set to `intent_address` for regular intents, or a shared address for cross-chain request-intents
 - **Connected Chain Escrows**: `intent_id` is passed during escrow creation to link back to the hub intent
 - **Event Correlation**: Verifier matches events across chains using `intent_id` field
 

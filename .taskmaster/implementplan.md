@@ -10,7 +10,7 @@ This document outlines the strategy for implementing the **outflow** functionali
 
 **Current implementation:**
 
-1. **Hub Chain**: Requester creates cross-chain request intent (tokens locked on connected chain, desired on hub)
+1. **Hub Chain**: Requester creates cross-chain request-intent (tokens locked on connected chain, desired on hub)
 2. **Connected Chain**: Requester creates escrow with tokens locked
 3. **Hub Chain**: Solver fulfills intent by providing desired tokens to requester on hub
 4. **Verifier**: Validates fulfillment and generates approval signature
@@ -22,7 +22,7 @@ This document outlines the strategy for implementing the **outflow** functionali
 
 **What we need to implement:**
 
-1. **Hub Chain**: Requester creates request intent with tokens **locked on hub** (requester tokens going IN to hub)
+1. **Hub Chain**: Requester creates request-intent with tokens **locked on hub** (requester tokens going IN to hub)
 2. **Connected Chain**: Solver creates **connected_chain_fulfill** transaction that **immediately** transfers desired tokens directly to requester address (connected chain) (single transaction, includes `intent_id` as metadata, no escrow, no verifier involvement)
 3. **Verifier**: Receives transaction hash from solver, queries transaction by hash, extracts `intent_id` and validates transaction matches intent requirements, then generates approval signature
 4. **Hub Chain**: Solver fulfills hub intent using oracle-guarded intent mechanism with verifier signature (unlocks tokens to reserved solver)
@@ -68,7 +68,7 @@ The verifier's role is **only** to:
 - Transfer must be direct (no escrow, no verifier involvement)
 - **Requester takes NO action** - tokens are transferred directly to their address
 - Transaction includes:
-  - `intent_id`: Links to hub request intent (for verifier tracking)
+  - `intent_id`: Links to hub request-intent (for verifier tracking)
   - `desired_amount`: Amount transferred to requester
   - `requester_address_connected_chain`: Recipient address (must match intent)
   - `solver_address`: Solver's address (for verification)
@@ -76,7 +76,7 @@ The verifier's role is **only** to:
 ### Verifier Validation
 
 - Verifier observes:
-  1. Hub request intent with tokens locked
+  1. Hub request-intent with tokens locked
   2. Connected chain transfer event showing tokens were sent to requester
 - Verifier validates:
   - Transfer event on connected chain matches intent requirements
@@ -95,7 +95,7 @@ The verifier's role is **only** to:
 
 #### Current Move Intent Framework Capabilities
 
-- `fa_intent_cross_chain::create_cross_chain_request_intent_entry()`: Creates request intent on hub
+- `fa_intent_cross_chain::create_cross_chain_request_intent_entry()`: Creates request-intent on hub
 - `fa_intent_cross_chain::fulfill_cross_chain_request_intent()`: Solver fulfills on hub
 - `intent_as_escrow::create_escrow_from_fa()`: Creates escrow on connected chain
 - `intent_as_escrow::complete_escrow_from_fa()`: Completes escrow with verifier signature
@@ -173,7 +173,7 @@ The verifier's role is **only** to:
     - `to` address matches requester address (connected chain)
     - `amount` matches desired amount
     - `from` address (solver) matches reserved solver
-    - `intent_id` matches hub request intent
+    - `intent_id` matches hub request-intent
   - Validates transaction was confirmed and transfer completed
 - On **hub chain**: Verifier generates approval signature after validation
 - Anyone with signature can fulfill the hub intent (tokens go to reserved solver)
@@ -193,14 +193,14 @@ The verifier's role is **only** to:
 
 ### Task 1: Analysis and Design
 
-1. **Generalize hub request intent creation**:
+1. **Generalize hub request-intent creation**:
    - Current: `create_cross_chain_request_intent_entry()` creates `FungibleAssetLimitOrder` (inflow - no signature needed)
-   - Needed: Support both inflow and outflow request intents
-   - **Inflow request intent** (current):
+   - Needed: Support both inflow and outflow request-intents
+   - **Inflow request-intent** (current):
      - Uses `fa_intent::create_fa_to_fa_intent()` → creates `FungibleAssetLimitOrder`
      - Withdraws 0 tokens (tokens locked on connected chain)
      - Fulfillment: `fulfill_cross_chain_request_intent()` → no signature required
-   - **Outflow request intent** (new):
+   - **Outflow request-intent** (new):
      - Uses `fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement()` → creates `OracleGuardedLimitOrder`
      - Withdraws actual tokens (tokens locked on hub)
      - Fulfillment: requires verifier signature via `fa_intent_with_oracle::finish_fa_receiving_session_with_oracle()`
@@ -210,7 +210,7 @@ The verifier's role is **only** to:
      - Both call a generalized base function or share common logic
 
 2. **Determine requester address (connected chain) storage**:
-   - Where should `requester_address_connected_chain` be stored in hub request intent?
+   - Where should `requester_address_connected_chain` be stored in hub request-intent?
    - For outflow: Store in `OracleGuardedLimitOrder` struct (extend it)
    - For inflow: Not needed (tokens go to solver on the connected chain, not requester)
    - Or use separate mapping `intent_id -> requester_address_connected_chain`
@@ -231,7 +231,7 @@ The verifier's role is **only** to:
 
 ### Task 2: Move Implementation (Move VM Connected Chain)
 
-1. **Create inflow request intent wrapper function**:
+1. **Create inflow request-intent wrapper function**:
    - New function: `create_inflow_request_intent()` in `fa_intent_cross_chain.move`
    - Wrapper around current `create_cross_chain_request_intent_entry()` for clarity and consistency
    - Creates `FungibleAssetLimitOrder` intent using `fa_intent::create_fa_to_fa_intent()`
@@ -240,7 +240,7 @@ The verifier's role is **only** to:
    - Parameters: Same as current `create_cross_chain_request_intent_entry()`
    - Returns `Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>`
 
-2. **Create outflow request intent wrapper function**:
+2. **Create outflow request-intent wrapper function**:
    - New function: `create_outflow_request_intent()` in `fa_intent_cross_chain.move`
    - Creates oracle-guarded intent using `fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement()`
    - Parameters:
@@ -275,14 +275,14 @@ The verifier's role is **only** to:
 
 6. **Hub fulfillment mechanism**:
    - Use existing oracle-guarded intent mechanism (`fa_intent_with_oracle`)
-   - Hub request intent is created as oracle-guarded intent (requires verifier signature for fulfillment)
+   - Hub request-intent is created as oracle-guarded intent (requires verifier signature for fulfillment)
    - Solver fulfills intent on hub using `finish_fa_receiving_session_with_oracle()` with verifier signature
    - Verifier signature is provided as `OracleSignatureWitness` (signature signs `intent_id`)
    - No new function needed - existing oracle-guarded intent flow handles this
 
 ### Task 3: EVM Implementation
 
-1. **Extend hub request intent** (same as Task 2)
+1. **Extend hub request-intent** (same as Task 2)
 
 2. **Define connected_chain_fulfill transaction format**:
    - Document standard transaction format for EVM
@@ -334,7 +334,7 @@ The verifier's role is **only** to:
      - Extract `intent_id` from transaction metadata/script arguments
      - Extract transfer parameters from transaction payload
    - Validate all parameters match intent requirements:
-     - `intent_id` matches hub request intent
+     - `intent_id` matches hub request-intent
      - `to`/requester address (connected chain) matches intent's requester address (connected chain)
      - `amount` matches intent's desired amount
      - `from`/solver address matches reserved solver
@@ -360,11 +360,11 @@ The verifier's role is **only** to:
 
 **Changes Needed:**
 
-1. **Create inflow request intent wrapper function**:
+1. **Create inflow request-intent wrapper function**:
    - New function: `create_inflow_request_intent()` in `fa_intent_cross_chain.move`
    - Wrapper around current `create_cross_chain_request_intent_entry()` for clarity and consistency
 
-2. **Create outflow request intent wrapper function**:
+2. **Create outflow request-intent wrapper function**:
    - `create_outflow_request_intent()` in `fa_intent_cross_chain.move`
    - Uses `fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement()`
    - Withdraws actual tokens from requester (tokens locked on hub)

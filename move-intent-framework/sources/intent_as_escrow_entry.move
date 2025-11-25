@@ -16,7 +16,7 @@ module mvmt_intent::intent_as_escrow_entry {
     /// Withdraws tokens from the caller's primary FA store and forwards them to create_escrow.
     /// 
     /// # Arguments
-    /// - `requester_signer`: Signer creating the escrow (requester who created the request intent on hub chain)
+    /// - `requester_signer`: Signer creating the escrow (requester who created the request-intent on hub chain)
     /// - `offered_metadata`: Metadata of the token type to lock in escrow
     /// - `offered_amount`: Amount of tokens to lock in escrow
     /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)

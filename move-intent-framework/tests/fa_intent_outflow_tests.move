@@ -20,7 +20,7 @@ module mvmt_intent::fa_intent_outflow_tests {
     // ============================================================================
 
     /// Helper function to set up common test infrastructure (tokens, registry, keys, signed intent).
-    /// Returns all values needed to create an outflow request intent.
+    /// Returns all values needed to create an outflow request-intent.
     /// This helper does NOT create the intent - it only sets up the prerequisites.
     fun setup_outflow_test_infrastructure(
         aptos_framework: &signer,
@@ -101,7 +101,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         )
     }
 
-    /// Helper function to set up an outflow request intent for testing.
+    /// Helper function to set up an outflow request-intent for testing.
     /// Returns the intent object, metadata, verifier signature bytes (for intent_id), and intent_id.
     fun setup_outflow_request_intent(
         aptos_framework: &signer,
@@ -121,7 +121,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         let requester_address_connected_chain = @0x9999; // Address on connected chain
         
-        // Create outflow request intent (returns intent object)
+        // Create outflow request-intent (returns intent object)
         let intent_obj = fa_intent_outflow::create_outflow_request_intent(
             requester_signer,
             offered_metadata,
@@ -157,7 +157,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer = @0xcafe,
         solver_signer = @0xdead
     )]
-    /// Test: Outflow request intent creation
+    /// Test: Outflow request-intent creation
     /// Verifies that create_outflow_request_intent:
     /// 1. Locks actual tokens on hub chain (not 0 tokens like inflow)
     /// 2. Stores requester_address_connected_chain in OracleGuardedLimitOrder struct
@@ -208,7 +208,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer = @0xcafe,
         solver_signer = @0xdead
     )]
-    /// Test: Outflow request intent struct field validation
+    /// Test: Outflow request-intent struct field validation
     /// Verifies that requester_address_connected_chain parameter is accepted and intent is created successfully.
     /// The successful creation of the intent with the requester_address_connected_chain parameter
     /// confirms the struct field is stored correctly (indirect validation).
@@ -291,7 +291,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer = @0xcafe,
         solver_signer = @0xdead
     )]
-    /// Test: Outflow request intent creation and fulfillment end-to-end
+    /// Test: Outflow request-intent creation and fulfillment end-to-end
     /// Verifies that create_outflow_request_intent creates an intent correctly,
     /// and that fulfill_outflow_request_intent can fulfill it.
     fun test_fulfill_outflow_request_intent(
@@ -303,7 +303,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         use mvmt_intent::fa_intent_with_oracle;
         use mvmt_intent::intent::TradeIntent;
         
-        // Set up outflow request intent using shared helper
+        // Set up outflow request-intent using shared helper
         let (intent_obj, offered_metadata, _desired_metadata, verifier_signature_bytes, _intent_id) = setup_outflow_request_intent(
             aptos_framework,
             mvmt_intent,
@@ -356,7 +356,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer: &signer,
         solver_signer: &signer,
     ) {
-        // Set up outflow request intent using shared helper
+        // Set up outflow request-intent using shared helper
         let (intent_obj, _offered_metadata, _desired_metadata, _verifier_signature_bytes, _intent_id) = setup_outflow_request_intent(
             aptos_framework,
             mvmt_intent,
@@ -384,10 +384,10 @@ module mvmt_intent::fa_intent_outflow_tests {
         solver_signer = @0xdead
     )]
     #[expected_failure(abort_code = 0x10003, location = mvmt_intent::fa_intent_outflow)] // error::invalid_argument(EINVALID_REQUESTER_ADDRESS)
-    /// Test: Outflow request intent creation fails with zero address for requester_address_connected_chain
+    /// Test: Outflow request-intent creation fails with zero address for requester_address_connected_chain
     /// Verifies that create_outflow_request_intent rejects zero address (0x0) for requester_address_connected_chain.
     /// 
-    /// What is tested: Attempting to create an outflow request intent with requester_address_connected_chain = @0x0
+    /// What is tested: Attempting to create an outflow request-intent with requester_address_connected_chain = @0x0
     /// should abort with EINVALID_REQUESTER_ADDRESS error.
     /// 
     /// Why: Outflow intents require a valid address on the connected chain where the solver should send tokens.

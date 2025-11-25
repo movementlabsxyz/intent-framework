@@ -1,6 +1,6 @@
 //! Unit tests for validator functions
 //!
-//! These tests verify validation logic including request intent safety checks,
+//! These tests verify validation logic including request-intent safety checks,
 //! fulfillment validation, and expiry time handling.
 
 use trusted_verifier::monitor::{FulfillmentEvent, RequestIntentEvent};
@@ -19,8 +19,8 @@ use test_helpers::{
 // TESTS
 // ============================================================================
 
-/// Test that validate_request_intent_safety rejects request intents with expiry_time in the past
-/// Why: Verify that expired request intents are rejected for safety
+/// Test that validate_request_intent_safety rejects request-intents with expiry_time in the past
+/// Why: Verify that expired request-intents are rejected for safety
 #[tokio::test]
 async fn test_expired_request_intent_rejection_in_validate_request_intent_safety() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -29,7 +29,7 @@ async fn test_expired_request_intent_rejection_in_validate_request_intent_safety
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with expiry_time in the past
+    // Create a request-intent with expiry_time in the past
     let current_time = chrono::Utc::now().timestamp() as u64;
     let past_expiry = current_time - 1000; // Expired 1000 seconds ago
     let request_intent = RequestIntentEvent {
@@ -45,17 +45,17 @@ async fn test_expired_request_intent_rejection_in_validate_request_intent_safety
     let validation_result = result.unwrap();
     assert!(
         !validation_result.valid,
-        "Validation should fail when request intent has expired"
+        "Validation should fail when request-intent has expired"
     );
     assert!(
         validation_result.message.contains("expired")
             || validation_result.message.contains("expiry"),
-        "Error message should indicate request intent expired"
+        "Error message should indicate request-intent expired"
     );
 }
 
-/// Test that validate_request_intent_safety accepts request intents with expiry_time in the future
-/// Why: Verify that non-expired request intents pass validation
+/// Test that validate_request_intent_safety accepts request-intents with expiry_time in the future
+/// Why: Verify that non-expired request-intents pass validation
 #[tokio::test]
 async fn test_non_expired_request_intent_acceptance_in_validate_request_intent_safety() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -64,7 +64,7 @@ async fn test_non_expired_request_intent_acceptance_in_validate_request_intent_s
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with expiry_time in the future
+    // Create a request-intent with expiry_time in the future
     let current_time = chrono::Utc::now().timestamp() as u64;
     let future_expiry = current_time + 1000; // Expires in 1000 seconds
     let request_intent = RequestIntentEvent {
@@ -80,16 +80,16 @@ async fn test_non_expired_request_intent_acceptance_in_validate_request_intent_s
     let validation_result = result.unwrap();
     assert!(
         validation_result.valid,
-        "Validation should pass when request intent has not expired"
+        "Validation should pass when request-intent has not expired"
     );
     assert!(
         validation_result.message.contains("safe")
             || validation_result.message.contains("successful"),
-        "Message should indicate request intent is safe"
+        "Message should indicate request-intent is safe"
     );
 }
 
-/// Test edge case: request intent expires exactly at current time
+/// Test edge case: request-intent expires exactly at current time
 /// Why: Verify behavior when expiry_time equals current timestamp
 #[tokio::test]
 async fn test_request_intent_expires_exactly_at_current_time() {
@@ -99,7 +99,7 @@ async fn test_request_intent_expires_exactly_at_current_time() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with expiry_time exactly at current time
+    // Create a request-intent with expiry_time exactly at current time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let request_intent = RequestIntentEvent {
         expiry_time: current_time,
@@ -135,7 +135,7 @@ async fn test_request_intent_expires_exactly_at_current_time() {
     }
 }
 
-/// Test that validate_fulfillment rejects fulfillments that occur after request intent expiry
+/// Test that validate_fulfillment rejects fulfillments that occur after request-intent expiry
 /// Why: Verify that fulfillments after expiry are rejected
 #[tokio::test]
 async fn test_fulfillment_timestamp_validation_after_expiry() {
@@ -145,7 +145,7 @@ async fn test_fulfillment_timestamp_validation_after_expiry() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with expiry_time
+    // Create a request-intent with expiry_time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 100; // Expires in 100 seconds
     let request_intent = RequestIntentEvent {
@@ -179,7 +179,7 @@ async fn test_fulfillment_timestamp_validation_after_expiry() {
     );
 }
 
-/// Test that validate_fulfillment accepts fulfillments that occur before request intent expiry
+/// Test that validate_fulfillment accepts fulfillments that occur before request-intent expiry
 /// Why: Verify that fulfillments before expiry are accepted
 #[tokio::test]
 async fn test_fulfillment_timestamp_validation_before_expiry() {
@@ -189,7 +189,7 @@ async fn test_fulfillment_timestamp_validation_before_expiry() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with expiry_time
+    // Create a request-intent with expiry_time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
     let request_intent = RequestIntentEvent {
@@ -233,7 +233,7 @@ async fn test_fulfillment_timestamp_validation_at_expiry() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with expiry_time
+    // Create a request-intent with expiry_time
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
     let request_intent = RequestIntentEvent {
@@ -279,7 +279,7 @@ async fn test_fulfillment_validation_success() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with future expiry and custom desired fields
+    // Create a request-intent with future expiry and custom desired fields
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
     let request_intent = RequestIntentEvent {
@@ -325,7 +325,7 @@ async fn test_fulfillment_amount_mismatch_rejection() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with desired_amount
+    // Create a request-intent with desired_amount
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000;
     let request_intent = RequestIntentEvent {
@@ -372,7 +372,7 @@ async fn test_fulfillment_metadata_mismatch_rejection() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent with desired_metadata
+    // Create a request-intent with desired_metadata
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000;
     let request_intent = RequestIntentEvent {
@@ -419,7 +419,7 @@ async fn test_fulfillment_intent_id_mismatch_rejection() {
         .await
         .expect("Failed to create validator");
 
-    // Create a request intent
+    // Create a request-intent
     let current_time = chrono::Utc::now().timestamp() as u64;
     let expiry_time = current_time + 1000;
     let request_intent = RequestIntentEvent {

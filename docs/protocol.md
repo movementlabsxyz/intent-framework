@@ -81,7 +81,7 @@ sequenceDiagram
 
    **Note**: The solver must be registered in the solver registry before calling this function. The registry stores the solver's Ed25519 public key (for signature verification) and connected chain addresses (for outflow validation). See the [Solver Registry API](../docs/move-intent-framework/api-reference.md#solver-registry-api) for registration details.
 3. **Connected Chain**: Requester creates escrow using `create_escrow_from_fa()` (Move) or `createEscrow()` (EVM) with `intent_id`, verifier public key, and **reserved solver address** (emits `OracleLimitOrderEvent`/`EscrowInitialized`, `revocable=false`).
-4. **Solver**: Observes the request intent on Hub chain (from step 2) and the escrow on Connected Chain (from step 3).
+4. **Solver**: Observes the request-intent on Hub chain (from step 2) and the escrow on Connected Chain (from step 3).
 5. **Hub**: Solver fulfills the intent using `fulfill_inflow_request_intent()` (emits `LimitOrderFulfillmentEvent`)
 6. **Verifier**: observes fulfillment + escrow, signs the `intent_id` to generate approval signature (signature itself is the approval)
 7. **Anyone**: submits `complete_escrow_from_fa()` (Move) or `claim()` (EVM) on connected chain with verifier signature (Ed25519 for Move, ECDSA for EVM). The transaction can be sent by anyone, but funds always transfer to the reserved solver address specified at escrow creation.
@@ -192,12 +192,12 @@ For inflow intents (tokens locked in escrow on connected chain), the verifier va
 
 **Validation Steps:**
 
-1. **Event Monitoring**: Continuously polls hub chain for `LimitOrderEvent` (request intent creation) and `LimitOrderFulfillmentEvent` (solver fulfillment)
+1. **Event Monitoring**: Continuously polls hub chain for `LimitOrderEvent` (request-intent creation) and `LimitOrderFulfillmentEvent` (solver fulfillment)
 2. **Escrow Monitoring**: Continuously polls connected chain for escrow events (`OracleLimitOrderEvent` for Move, `EscrowInitialized` for EVM)
 3. **Intent Safety Check**: Validates `escrow.revocable == false`
 4. **Event Matching**: Links escrow events to intent events via `intent_id`
 5. **Fulfillment Verification**: Confirms hub intent fulfillment occurred (solver provided tokens to requester on hub)
-6. **Condition Validation**: Verifies escrow matches request intent requirements
+6. **Condition Validation**: Verifies escrow matches request-intent requirements
 7. **Approval Generation**: Creates cryptographic signature (Ed25519 for Move, ECDSA for EVM) by signing `intent_id`
 
 **Validation Workflow:**
@@ -232,12 +232,12 @@ For outflow intents (tokens locked on hub chain), the verifier validates on-dema
 
 **Validation Steps:**
 
-1. **Request Intent Monitoring**: Continuously polls hub chain for `OracleLimitOrderEvent` (outflow request intent creation)
+1. **Request-intent Monitoring**: Continuously polls hub chain for `OracleLimitOrderEvent` (outflow request-intent creation)
 2. **Solver Transaction Submission**: Solver calls `POST /validate-outflow-fulfillment` with transaction hash, chain type, and intent ID
 3. **Transaction Query**: Verifier queries the connected chain transaction by hash
 4. **Transaction Parsing**: Extracts transaction parameters from Move VM or EVM transaction
 5. **Transaction Success Check**: Validates transaction was confirmed and successful
-6. **Condition Validation**: Verifies transaction matches request intent requirements
+6. **Condition Validation**: Verifies transaction matches request-intent requirements
 7. **Approval Generation**: Creates Ed25519 signature by signing `intent_id` (hub chain is always Move VM)
 
 **Validation Workflow:**

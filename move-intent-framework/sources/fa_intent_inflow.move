@@ -47,7 +47,7 @@ module mvmt_intent::fa_intent_inflow {
     // INFLOW REQUEST INTENT FUNCTIONS
     // ============================================================================
 
-    /// Entry function for solver to fulfill an inflow request intent.
+    /// Entry function for solver to fulfill an inflow request-intent.
     ///
     /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
     /// The solver provides the desired tokens to the requester on the hub chain.
@@ -90,7 +90,7 @@ module mvmt_intent::fa_intent_inflow {
         );
     }
 
-    /// Creates an inflow request intent and returns the intent object.
+    /// Creates an inflow request-intent and returns the intent object.
     ///
     /// This is the core implementation that both the entry function and tests use.
     ///
@@ -164,13 +164,13 @@ module mvmt_intent::fa_intent_inflow {
             expiry_time,
             signer::address_of(account),
             reservation_result, // Reserved for specific solver
-            false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request intent)
+            false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request-intent)
             // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id) // Store the cross-chain intent_id for fulfillment event
         )
     }
 
-    /// Entry function to create an inflow request intent.
+    /// Entry function to create an inflow request-intent.
     ///
     /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
     /// The solver's public key is looked up from the on-chain solver registry.

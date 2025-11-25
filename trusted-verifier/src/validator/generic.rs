@@ -53,7 +53,7 @@ pub fn normalize_address(address: &str, chain_type: ChainType) -> String {
 /// This function compares the provided chain ID against the configured EVM and MVM
 /// chain IDs to determine which type of chain it represents. This is more reliable
 /// than checking which config section is present, as the chain ID comes directly
-/// from the request intent.
+/// from the request-intent.
 ///
 /// # Arguments
 ///
@@ -165,7 +165,7 @@ pub fn validate_address_format(address: &str, chain_type: ChainType) -> Result<(
 // VALIDATION DATA STRUCTURES
 // ============================================================================
 
-/// Result of cross-chain validation between a request intent and escrow event.
+/// Result of cross-chain validation between a request-intent and escrow event.
 ///
 /// This structure contains the validation result and any relevant metadata
 /// for approval or rejection decisions.
@@ -202,11 +202,11 @@ pub struct FulfillmentTransactionParams {
 // CROSS-CHAIN VALIDATOR STRUCTURE
 // ============================================================================
 
-/// Cross-chain validator that ensures escrow deposits fulfill request intent conditions.
+/// Cross-chain validator that ensures escrow deposits fulfill request-intent conditions.
 ///
 /// This validator performs comprehensive checks to ensure that deposits
 /// made on the connected chain properly fulfill the requirements specified
-/// in request intents created on the hub chain. It provides cryptographic approval
+/// in request-intents created on the hub chain. It provides cryptographic approval
 /// signatures for valid fulfillments.
 pub struct CrossChainValidator {
     /// Service configuration
@@ -249,15 +249,15 @@ impl CrossChainValidator {
         })
     }
 
-    /// Validates that a request intent is safe for escrow operations.
+    /// Validates that a request-intent is safe for escrow operations.
     ///
-    /// This function performs critical security checks to ensure that a request intent
+    /// This function performs critical security checks to ensure that a request-intent
     /// can be safely used for escrow operations. The most important check
-    /// is verifying that the request intent is non-revocable.
+    /// is verifying that the request-intent is non-revocable.
     ///
     /// # Arguments
     ///
-    /// * `request_intent` - The request intent event to validate
+    /// * `request_intent` - The request-intent event to validate
     ///
     /// # Returns
     ///
@@ -271,24 +271,24 @@ impl CrossChainValidator {
         use tracing::info;
 
         info!(
-            "Validating request intent safety: {}",
+            "Validating request-intent safety: {}",
             request_intent.intent_id
         );
 
-        // CRITICAL SECURITY CHECK: Verify request intent is non-revocable
+        // CRITICAL SECURITY CHECK: Verify request-intent is non-revocable
         if request_intent.revocable {
             return Ok(ValidationResult {
                 valid: false,
-                message: "Request intent is revocable - NOT safe for escrow operations".to_string(),
+                message: "Request-intent is revocable - NOT safe for escrow operations".to_string(),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
 
-        // Additional safety checks: verify request intent has not expired
+        // Additional safety checks: verify request-intent has not expired
         if request_intent.expiry_time < chrono::Utc::now().timestamp() as u64 {
             return Ok(ValidationResult {
                 valid: false,
-                message: "Request intent has expired".to_string(),
+                message: "Request-intent has expired".to_string(),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
@@ -296,21 +296,21 @@ impl CrossChainValidator {
         // All safety checks passed
         Ok(ValidationResult {
             valid: true,
-            message: "Request intent is safe for escrow operations".to_string(),
+            message: "Request-intent is safe for escrow operations".to_string(),
             timestamp: chrono::Utc::now().timestamp() as u64,
         })
     }
 
-    /// Validates that a fulfillment event satisfies the request intent requirements.
+    /// Validates that a fulfillment event satisfies the request-intent requirements.
     ///
     /// This function checks that:
-    /// 1. The fulfilled amount matches the request intent's desired amount
-    /// 2. The fulfilled metadata matches the request intent's desired metadata
-    /// 3. The fulfillment occurred before the request intent expired
+    /// 1. The fulfilled amount matches the request-intent's desired amount
+    /// 2. The fulfilled metadata matches the request-intent's desired metadata
+    /// 3. The fulfillment occurred before the request-intent expired
     ///
     /// # Arguments
     ///
-    /// * `request_intent` - The request intent event from the hub chain
+    /// * `request_intent` - The request-intent event from the hub chain
     /// * `fulfillment` - The fulfillment event from the hub chain
     ///
     /// # Returns
@@ -326,53 +326,53 @@ impl CrossChainValidator {
         use tracing::info;
 
         info!(
-            "Validating fulfillment for request intent: {}",
+            "Validating fulfillment for request-intent: {}",
             request_intent.intent_id
         );
 
-        // Verify fulfillment is for the same request intent
+        // Verify fulfillment is for the same request-intent
         if fulfillment.intent_id != request_intent.intent_id {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment intent_id {} does not match request intent intent_id {}",
+                    "Fulfillment intent_id {} does not match request-intent intent_id {}",
                     fulfillment.intent_id, request_intent.intent_id
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
 
-        // Validate the fulfillment's provided_amount matches the request intent's desired_amount
+        // Validate the fulfillment's provided_amount matches the request-intent's desired_amount
         // Both are u64 (matching Move contract constraint)
         if fulfillment.provided_amount != request_intent.desired_amount {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment provided amount {} does not match request intent desired amount {}",
+                    "Fulfillment provided amount {} does not match request-intent desired amount {}",
                     fulfillment.provided_amount, request_intent.desired_amount
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
 
-        // Validate the fulfillment's provided_metadata matches the request intent's desired_metadata
+        // Validate the fulfillment's provided_metadata matches the request-intent's desired_metadata
         if fulfillment.provided_metadata != request_intent.desired_metadata {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment provided metadata '{}' does not match request intent desired metadata '{}'",
+                    "Fulfillment provided metadata '{}' does not match request-intent desired metadata '{}'",
                     fulfillment.provided_metadata, request_intent.desired_metadata
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
 
-        // Validate fulfillment occurred before request intent expired
+        // Validate fulfillment occurred before request-intent expired
         if fulfillment.timestamp > request_intent.expiry_time {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment occurred after request intent expiry (fulfillment: {}, expiry: {})",
+                    "Fulfillment occurred after request-intent expiry (fulfillment: {}, expiry: {})",
                     fulfillment.timestamp, request_intent.expiry_time
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,

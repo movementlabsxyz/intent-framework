@@ -121,7 +121,7 @@ async fn setup_mock_server_with_error(
     (mock_server, config, validator)
 }
 
-/// Create a test request intent with the given solver
+/// Create a test request-intent with the given solver
 fn create_test_request_intent(solver: Option<String>) -> RequestIntentEvent {
     RequestIntentEvent {
         offered_metadata: "{}".to_string(),

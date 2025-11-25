@@ -171,7 +171,7 @@ graph TB
 #### Cross-Chain Intent Creation
 
 - **`move-intent-framework/sources/fa_intent_cross_chain.move`**
-  - **Purpose**: Cross-chain request intent creation (tokens locked on different chain)
+  - **Purpose**: Cross-chain request-intent creation (tokens locked on different chain)
   - **Key Functions**: `create_cross_chain_request_intent()`, `create_cross_chain_request_intent_entry()`
   - **Responsibilities**: Creates reserved intents with `intent_id` for cross-chain linking, zero-amount source (tokens on other chain). Uses solver registry to verify solver signatures.
 

@@ -116,7 +116,7 @@ public fun create_inflow_request_intent(
 - `solver`: Address of the solver authorized to fulfill this intent (must be registered in solver registry)
 - `solver_signature`: Ed25519 signature from the solver authorizing this intent
 
-**Note**: This intent has 0 tokens locked on the hub chain because tokens are in escrow elsewhere. The `offered_amount` specifies how much will be locked in escrow on the connected chain. Cross-chain request intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
+**Note**: This intent has 0 tokens locked on the hub chain because tokens are in escrow elsewhere. The `offered_amount` specifies how much will be locked in escrow on the connected chain. Cross-chain request-intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
 
 **Aborts:**
 
@@ -189,7 +189,7 @@ public entry fun fulfill_inflow_request_intent(
 - `intent`: Object reference to the inflow intent to fulfill
 - `payment_amount`: Amount of tokens to provide
 
-**Note**: This function is used to fulfill inflow request intents where tokens are locked on the connected chain (in escrow) and desired on the hub. The solver provides the desired tokens to the requester on the hub chain. No verifier signature is required for inflow intents.
+**Note**: This function is used to fulfill inflow request-intents where tokens are locked on the connected chain (in escrow) and desired on the hub. The solver provides the desired tokens to the requester on the hub chain. No verifier signature is required for inflow intents.
 
 ### Fulfilling an Outflow Request Intent
 
@@ -207,7 +207,7 @@ public entry fun fulfill_outflow_request_intent(
 - `intent`: Object reference to the outflow intent to fulfill
 - `verifier_signature_bytes`: Verifier's Ed25519 signature as bytes (signs the intent_id, proves connected chain transfer)
 
-**Note**: This function is used to fulfill outflow request intents where tokens are locked on the hub chain and desired on the connected chain. The solver must first transfer tokens on the connected chain, then the verifier approves that transaction. The solver receives the locked tokens from the hub as reward. Verifier signature is required - it proves the solver transferred tokens on the connected chain.
+**Note**: This function is used to fulfill outflow request-intents where tokens are locked on the hub chain and desired on the connected chain. The solver must first transfer tokens on the connected chain, then the verifier approves that transaction. The solver receives the locked tokens from the hub as reward. Verifier signature is required - it proves the solver transferred tokens on the connected chain.
 
 ### Starting a Fungible Asset Session
 

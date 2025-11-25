@@ -11,12 +11,12 @@ use super::generic::{
 };
 use crate::monitor::RequestIntentEvent;
 
-/// Validates an outflow fulfillment transaction against a request intent
+/// Validates an outflow fulfillment transaction against a request-intent
 ///
 /// This function validates that a connected chain transaction properly fulfills
-/// an outflow request intent by checking:
+/// an outflow request-intent by checking:
 /// - Transaction was confirmed and successful
-/// - intent_id matches the request intent
+/// - intent_id matches the request-intent
 /// - Recipient address matches requester_address_connected_chain
 /// - Amount matches desired_amount
 /// - Solver address matches reserved solver
@@ -34,7 +34,7 @@ use crate::monitor::RequestIntentEvent;
 /// # Arguments
 ///
 /// * `validator` - The cross-chain validator instance
-/// * `request_intent` - The outflow request intent from the hub chain
+/// * `request_intent` - The outflow request-intent from the hub chain
 /// * `tx_params` - Extracted parameters from the connected chain transaction
 /// * `tx_success` - Whether the transaction was successful
 ///
@@ -67,7 +67,7 @@ pub async fn validate_outflow_fulfillment(
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Transaction intent_id '{}' does not match request intent '{}'",
+                "Transaction intent_id '{}' does not match request-intent '{}'",
                 tx_params.intent_id, request_intent.intent_id
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
@@ -76,13 +76,13 @@ pub async fn validate_outflow_fulfillment(
 
     // Validate recipient matches requester_address_connected_chain (for outflow intents)
     if let Some(ref requester_address) = request_intent.requester_address_connected_chain {
-        // Determine chain type from request intent's connected_chain_id for address validation
+        // Determine chain type from request-intent's connected_chain_id for address validation
         let chain_id = match request_intent.connected_chain_id {
             Some(id) => id,
             None => {
                 return Ok(ValidationResult {
                     valid: false,
-                    message: "Request intent missing connected_chain_id (required for address validation)".to_string(),
+                    message: "Request-intent missing connected_chain_id (required for address validation)".to_string(),
                     timestamp: chrono::Utc::now().timestamp() as u64,
                 });
             }
@@ -122,7 +122,7 @@ pub async fn validate_outflow_fulfillment(
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Request intent requester_address_connected_chain format validation failed: {}",
+                    "Request-intent requester_address_connected_chain format validation failed: {}",
                     e
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
@@ -145,7 +145,7 @@ pub async fn validate_outflow_fulfillment(
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Transaction recipient '{}' does not match request intent requester_address_connected_chain '{}'",
+                    "Transaction recipient '{}' does not match request-intent requester_address_connected_chain '{}'",
                     tx_params.recipient, requester_address
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
@@ -153,7 +153,7 @@ pub async fn validate_outflow_fulfillment(
         }
     } else {
         // For outflow intents, requester_address_connected_chain should be present
-        // An outflow request intent without a requester address on the connected chain is rejected
+        // An outflow request-intent without a requester address on the connected chain is rejected
         // by the Move contract itself (see create_outflow_request_intent which aborts with
         // EINVALID_REQUESTER_ADDRESS if requester_address_connected_chain is zero address).
         // If we receive such an intent with missing requester_address_connected_chain, it indicates
@@ -162,14 +162,14 @@ pub async fn validate_outflow_fulfillment(
         if request_intent.connected_chain_id.is_some() {
             return Ok(ValidationResult {
                 valid: false,
-                message: "Request intent has connected_chain_id but missing requester_address_connected_chain (required for outflow validation)".to_string(),
+                message: "Request-intent has connected_chain_id but missing requester_address_connected_chain (required for outflow validation)".to_string(),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
     }
 
     // Validate amount matches expected amount
-    // For outflow request intents: desired_amount specifies the amount desired on the connected chain
+    // For outflow request-intents: desired_amount specifies the amount desired on the connected chain
     // The event contains the original desired_amount for the connected chain
     // Amounts are u64 (matching Move contract constraint)
     let expected_amount = request_intent.desired_amount;
@@ -178,7 +178,7 @@ pub async fn validate_outflow_fulfillment(
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Request intent desired_amount is 0 - this indicates a bug in the Move code. The event should contain the original desired_amount for the connected chain"
+                "Request-intent desired_amount is 0 - this indicates a bug in the Move code. The event should contain the original desired_amount for the connected chain"
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });
@@ -188,7 +188,7 @@ pub async fn validate_outflow_fulfillment(
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Transaction amount {} does not match request intent desired amount {} (amount desired on connected chain)",
+                "Transaction amount {} does not match request-intent desired amount {} (amount desired on connected chain)",
                 tx_params.amount, expected_amount
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
@@ -206,14 +206,14 @@ pub async fn validate_outflow_fulfillment(
         let hub_registry_address = &validator.config().hub_chain.intent_module_address;
         let hub_client = MvmClient::new(hub_rpc_url)?;
 
-        // Determine chain type from request intent's connected_chain_id
+        // Determine chain type from request-intent's connected_chain_id
         // This is more reliable than checking config, as the intent explicitly specifies the target chain
         let chain_id = match request_intent.connected_chain_id {
             Some(id) => id,
             None => {
                 return Ok(ValidationResult {
                     valid: false,
-                    message: "Request intent missing connected_chain_id (required for outflow validation)".to_string(),
+                    message: "Request-intent missing connected_chain_id (required for outflow validation)".to_string(),
                     timestamp: chrono::Utc::now().timestamp() as u64,
                 });
             }
@@ -341,7 +341,7 @@ pub async fn validate_outflow_fulfillment(
     } else {
         return Ok(ValidationResult {
             valid: false,
-            message: "Request intent has no reserved solver".to_string(),
+            message: "Request-intent has no reserved solver".to_string(),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });
     }

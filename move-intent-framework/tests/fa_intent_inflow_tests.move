@@ -18,7 +18,7 @@ module mvmt_intent::fa_intent_inflow_tests {
     // TEST HELPERS
     // ============================================================================
 
-    /// Helper function to set up an inflow request intent for testing.
+    /// Helper function to set up an inflow request-intent for testing.
     /// Returns the intent object and metadata for verification.
     fun setup_inflow_request_intent(
         aptos_framework: &signer,
@@ -71,7 +71,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let solver_signature = ed25519::sign_arbitrary_bytes(&solver_secret_key, intent_hash);
         let solver_signature_bytes = ed25519::signature_to_bytes(&solver_signature);
         
-        // Step 4: Create inflow request intent (returns intent object)
+        // Step 4: Create inflow request-intent (returns intent object)
         let intent_obj = fa_intent_inflow::create_inflow_request_intent(
             requestor,
             offered_metadata,
@@ -99,7 +99,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Inflow request intent creation
+    /// Test: Inflow request-intent creation
     /// Verifies that create_inflow_request_intent:
     /// 1. Locks 0 tokens on hub chain (unlike outflow which locks actual tokens)
     /// 2. Creates a FungibleAssetLimitOrder intent (no verifier signature required)
@@ -188,8 +188,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Cross-chain request intent fulfillment
-    /// Verifies that a solver can fulfill a cross-chain request intent where the requestor
+    /// Test: Cross-chain request-intent fulfillment
+    /// Verifies that a solver can fulfill a cross-chain request-intent where the requestor
     /// has 0 tokens locked on the hub chain (tokens are in escrow on a different chain).
     /// This is Step 3 of the cross-chain escrow flow.
     fun test_fulfill_cross_chain_request_intent(
@@ -205,7 +205,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let (offered_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
         let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
-        // Requestor creates a cross-chain request intent (has 0 tokens locked)
+        // Requestor creates a cross-chain request-intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
         let dummy_intent_id = @0x1234;
         let solver_address = signer::address_of(solver);
@@ -293,7 +293,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Inflow request intent creation and fulfillment end-to-end
+    /// Test: Inflow request-intent creation and fulfillment end-to-end
     /// Verifies that create_inflow_request_intent creates an intent correctly,
     /// and that fulfill_inflow_request_intent can fulfill it.
     fun test_fulfill_inflow_request_intent(
@@ -302,7 +302,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor: &signer,
         solver: &signer,
     ) {
-        // Set up inflow request intent using shared helper
+        // Set up inflow request-intent using shared helper
         let (intent_obj, _offered_metadata, desired_metadata) = setup_inflow_request_intent(
             aptos_framework,
             mvmt_intent,
@@ -354,7 +354,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         use mvmt_intent::fa_intent_with_oracle;
         use mvmt_intent::intent::TradeIntent;
         
-        // Set up inflow request intent using shared helper
+        // Set up inflow request-intent using shared helper
         let (intent_obj, _offered_metadata, _desired_metadata) = setup_inflow_request_intent(
             aptos_framework,
             mvmt_intent,
@@ -381,7 +381,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 65537, location = mvmt_intent::fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
-    /// Test: Cross-chain request intent fulfillment with insufficient amount
+    /// Test: Cross-chain request-intent fulfillment with insufficient amount
     /// Verifies that fulfillment fails when provided_amount < desired_amount.
     ///
     /// Expected behavior: Fulfillment fails with EAMOUNT_NOT_MEET when provided_amount < desired_amount.
@@ -399,7 +399,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let (offered_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
         let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
-        // Requestor creates a cross-chain request intent wanting 1000 tokens
+        // Requestor creates a cross-chain request-intent wanting 1000 tokens
         let dummy_intent_id = @0x123;
         let solver_address = signer::address_of(solver);
         let expiry_time = timestamp::now_seconds() + 3600;

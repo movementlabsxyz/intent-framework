@@ -256,7 +256,7 @@ async fn test_multiple_concurrent_intents() {
     let approval3 = approval3.unwrap();
     assert_eq!(approval3.intent_id, "0x03");
 
-    // Assert: approvals are independent and signatures are unique per request intent
+    // Assert: approvals are independent and signatures are unique per request-intent
     assert!(
         !approval1.signature.is_empty(),
         "Approval 1 should have signature"
@@ -270,17 +270,17 @@ async fn test_multiple_concurrent_intents() {
         "Approval 3 should have signature"
     );
 
-    // Assert: signatures must be unique per request intent (each signature includes intent_id)
+    // Assert: signatures must be unique per request-intent (each signature includes intent_id)
     let sig1 = approval1.signature;
     let sig2 = approval2.signature;
     let sig3 = approval3.signature;
-    assert_ne!(sig1, sig2, "Signatures should be unique per request intent");
-    assert_ne!(sig2, sig3, "Signatures should be unique per request intent");
-    assert_ne!(sig1, sig3, "Signatures should be unique per request intent");
+    assert_ne!(sig1, sig2, "Signatures should be unique per request-intent");
+    assert_ne!(sig2, sig3, "Signatures should be unique per request-intent");
+    assert_ne!(sig1, sig3, "Signatures should be unique per request-intent");
 }
 
-/// Test that monitor's validate_request_intent_fulfillment rejects escrows when matching request intent has expired
-/// Why: Verify that expired request intents are rejected when validating escrow fulfillment
+/// Test that monitor's validate_request_intent_fulfillment rejects escrows when matching request-intent has expired
+/// Why: Verify that expired request-intents are rejected when validating escrow fulfillment
 #[tokio::test]
 async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -289,7 +289,7 @@ async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillmen
         .await
         .expect("Failed to create monitor");
 
-    // Create an expired request intent
+    // Create an expired request-intent
     let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -302,13 +302,13 @@ async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillmen
         ..create_base_request_intent_mvm()
     };
 
-    // Add expired request intent to cache
+    // Add expired request-intent to cache
     {
         let mut cache = monitor.event_cache.write().await;
         cache.push(expired_request_intent.clone());
     }
 
-    // Create an escrow event that matches the expired request intent
+    // Create an escrow event that matches the expired request-intent
     // The escrow must pass other validations first (amount, metadata, solver)
     // Note: escrow.offered_amount (1000) >= request_intent.desired_amount (0) ✓
     //       escrow.desired_metadata ("{}") == request_intent.desired_metadata ("{}") ✓
@@ -318,24 +318,24 @@ async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillmen
         ..create_base_escrow_event()
     };
 
-    // Verify that validation fails when request intent has expired
+    // Verify that validation fails when request-intent has expired
     let result = monitor
         .validate_request_intent_fulfillment(&escrow_event)
         .await;
     assert!(
         result.is_err(),
-        "Validation should fail when request intent has expired"
+        "Validation should fail when request-intent has expired"
     );
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("expired") || error_msg.contains("expiry"),
-        "Error message should indicate request intent expired: {}",
+        "Error message should indicate request-intent expired: {}",
         error_msg
     );
 }
 
-/// Test that monitor's validate_request_intent_fulfillment passes expiry check for non-expired request intents
-/// Why: Verify that non-expired request intents pass the expiry validation
+/// Test that monitor's validate_request_intent_fulfillment passes expiry check for non-expired request-intents
+/// Why: Verify that non-expired request-intents pass the expiry validation
 #[tokio::test]
 async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -344,7 +344,7 @@ async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillmen
         .await
         .expect("Failed to create monitor");
 
-    // Create a non-expired request intent
+    // Create a non-expired request-intent
     let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -357,13 +357,13 @@ async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillmen
         ..create_base_request_intent_mvm()
     };
 
-    // Add non-expired request intent to cache
+    // Add non-expired request-intent to cache
     {
         let mut cache = monitor.event_cache.write().await;
         cache.push(non_expired_request_intent.clone());
     }
 
-    // Create an escrow event that matches the non-expired request intent
+    // Create an escrow event that matches the non-expired request-intent
     // The escrow must pass all other validations to reach the expiry check:
     // - escrow.offered_amount (1000) >= request_intent.desired_amount (0) ✓
     // - escrow.desired_metadata ("{}") == request_intent.desired_metadata ("{}") ✓
@@ -373,14 +373,14 @@ async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillmen
         ..create_base_escrow_event()
     };
 
-    // Verify that validation passes when request intent has not expired
+    // Verify that validation passes when request-intent has not expired
     // This confirms the expiry check passes for non-expired intents
     let result = monitor
         .validate_request_intent_fulfillment(&valid_escrow)
         .await;
     assert!(
         result.is_ok(),
-        "Validation should pass when request intent has not expired and all other validations pass"
+        "Validation should pass when request-intent has not expired and all other validations pass"
     );
 }
 

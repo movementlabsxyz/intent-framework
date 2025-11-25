@@ -170,7 +170,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
     );
     assert_eq!(
         matched.requester, evm_escrow.issuer,
-        "Request intent requester should match escrow issuer"
+        "Request-intent requester should match escrow issuer"
     );
 
     // Verify EVM-specific behavior: escrow_id equals intent_id

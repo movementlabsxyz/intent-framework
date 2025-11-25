@@ -10,20 +10,20 @@ use super::generic::{CrossChainValidator, ValidationResult};
 use super::inflow_evm;
 use crate::monitor::{ChainType, EscrowEvent, RequestIntentEvent};
 
-/// Validates fulfillment of request intent conditions on the connected chain.
+/// Validates fulfillment of request-intent conditions on the connected chain.
 ///
 /// This function performs comprehensive validation to ensure that:
-/// 1. The request intent has a connected_chain_id (required for escrow validation)
-/// 2. The escrow's offered_amount matches the hub request intent's offered_amount
-/// 3. The escrow's offered_metadata matches the hub request intent's offered_metadata
-/// 4. The escrow's chain_id matches the hub request intent's connected_chain_id
-/// 5. The escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request intent)
-/// 6. The escrow's reserved_solver matches the hub request intent's solver (with chain-specific validation)
+/// 1. The request-intent has a connected_chain_id (required for escrow validation)
+/// 2. The escrow's offered_amount matches the hub request-intent's offered_amount
+/// 3. The escrow's offered_metadata matches the hub request-intent's offered_metadata
+/// 4. The escrow's chain_id matches the hub request-intent's connected_chain_id
+/// 5. The escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request-intent)
+/// 6. The escrow's reserved_solver matches the hub request-intent's solver (with chain-specific validation)
 ///
 /// # Arguments
 ///
 /// * `validator` - The cross-chain validator instance
-/// * `request_intent_event` - The request intent event from the hub chain
+/// * `request_intent_event` - The request-intent event from the hub chain
 /// * `escrow_event` - The escrow event from the connected chain
 ///
 /// # Returns
@@ -36,46 +36,46 @@ pub async fn validate_request_intent_fulfillment(
     escrow_event: &EscrowEvent,
 ) -> Result<ValidationResult> {
     info!(
-        "Validating request intent fulfillment for request intent: {}, escrow: {}",
+        "Validating request-intent fulfillment for request-intent: {}, escrow: {}",
         request_intent_event.intent_id, escrow_event.escrow_id
     );
 
-    // Validate that request intent has connected_chain_id (required for escrow validation)
+    // Validate that request-intent has connected_chain_id (required for escrow validation)
     if request_intent_event.connected_chain_id.is_none() {
         return Ok(ValidationResult {
             valid: false,
-            message: "Request intent must specify connected_chain_id for escrow validation"
+            message: "Request-intent must specify connected_chain_id for escrow validation"
                 .to_string(),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });
     }
 
-    // Validate the escrow's offered_amount matches the specified offered_amount in the hub request intent
+    // Validate the escrow's offered_amount matches the specified offered_amount in the hub request-intent
     // Amounts are u64 (matching Move contract constraint)
     if escrow_event.offered_amount != request_intent_event.offered_amount {
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Escrow offered amount {} does not match hub request intent offered amount {}",
+                "Escrow offered amount {} does not match hub request-intent offered amount {}",
                 escrow_event.offered_amount, request_intent_event.offered_amount
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });
     }
 
-    // Validate the escrow's offered_metadata matches the specified offered_metadata in the hub request intent
+    // Validate the escrow's offered_metadata matches the specified offered_metadata in the hub request-intent
     if escrow_event.offered_metadata != request_intent_event.offered_metadata {
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Escrow offered metadata '{}' does not match hub request intent offered metadata '{}'",
+                "Escrow offered metadata '{}' does not match hub request-intent offered metadata '{}'",
                 escrow_event.offered_metadata, request_intent_event.offered_metadata
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });
     }
 
-    // Validate the escrow's chain_id matches the specified offered_chain_id in the hub request intent
+    // Validate the escrow's chain_id matches the specified offered_chain_id in the hub request-intent
     // Note: offered_chain_id from Move event is stored as connected_chain_id in RequestIntentEvent.
     // The escrow_event.chain_id is set by the verifier based on which monitor discovered it (from config),
     // so we can trust it for validation.
@@ -84,7 +84,7 @@ pub async fn validate_request_intent_fulfillment(
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Escrow chain_id {} does not match hub request intent offered_chain_id {}. Escrow was discovered on chain {} but intent specifies chain {}",
+                    "Escrow chain_id {} does not match hub request-intent offered_chain_id {}. Escrow was discovered on chain {} but intent specifies chain {}",
                     escrow_event.chain_id, intent_offered_chain_id, escrow_event.chain_id, intent_offered_chain_id
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
@@ -92,13 +92,13 @@ pub async fn validate_request_intent_fulfillment(
         }
     }
 
-    // Validate that escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request intent)
+    // Validate that escrow's desired_amount is 0 (escrow only holds offered funds, requirement is in hub request-intent)
     // Amounts are u64 (matching Move contract constraint)
     if escrow_event.desired_amount != 0 {
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Escrow desired amount must be 0, but got {}. Escrow only holds offered funds; the actual requirement is specified in the hub request intent",
+                "Escrow desired amount must be 0, but got {}. Escrow only holds offered funds; the actual requirement is specified in the hub request-intent",
                 escrow_event.desired_amount
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
@@ -106,11 +106,11 @@ pub async fn validate_request_intent_fulfillment(
     }
 
     // Note: We don't validate escrow's desired_metadata because it's a placeholder.
-    // The actual requirement is the hub request intent's desired_metadata, which the solver
+    // The actual requirement is the hub request-intent's desired_metadata, which the solver
     // must fulfill on the hub chain before the verifier approves escrow release
 
-    // Validate solver addresses match between escrow and request intent
-    // For Move VM escrows: Check if escrow's reserved_solver (Move VM address) matches hub request intent's solver (Move VM address)
+    // Validate solver addresses match between escrow and request-intent
+    // For Move VM escrows: Check if escrow's reserved_solver (Move VM address) matches hub request-intent's solver (Move VM address)
     // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
     if let (Some(escrow_solver), Some(request_intent_solver)) = (
         &escrow_event.reserved_solver,
@@ -143,7 +143,7 @@ pub async fn validate_request_intent_fulfillment(
                 return Ok(ValidationResult {
                     valid: false,
                     message: format!(
-                        "Escrow reserved solver '{}' does not match hub request intent solver '{}'",
+                        "Escrow reserved solver '{}' does not match hub request-intent solver '{}'",
                         escrow_solver, request_intent_solver
                     ),
                     timestamp: chrono::Utc::now().timestamp() as u64,
@@ -157,7 +157,7 @@ pub async fn validate_request_intent_fulfillment(
         return Ok(ValidationResult {
             valid: false,
             message: format!(
-                "Escrow and request intent reservation mismatch: escrow reserved_solver={:?}, request intent solver={:?}",
+                "Escrow and request-intent reservation mismatch: escrow reserved_solver={:?}, request-intent solver={:?}",
                 escrow_event.reserved_solver, request_intent_event.reserved_solver
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
@@ -167,7 +167,7 @@ pub async fn validate_request_intent_fulfillment(
     // All validations passed
     Ok(ValidationResult {
         valid: true,
-        message: "Request intent fulfillment validation successful".to_string(),
+        message: "Request-intent fulfillment validation successful".to_string(),
         timestamp: chrono::Utc::now().timestamp() as u64,
     })
 }

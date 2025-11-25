@@ -39,7 +39,7 @@ module mvmt_intent::intent_as_escrow {
     /// Creates a simple escrow with verifier approval requirement
     ///
     /// # Arguments
-    /// - `requester_signer`: Signer of the escrow creator (requester who created the request intent on hub chain)
+    /// - `requester_signer`: Signer of the escrow creator (requester who created the request-intent on hub chain)
     /// - `offered_asset`: Asset to be escrowed
     /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)
     /// - `verifier_public_key`: Public key of authorized verifier

@@ -50,7 +50,7 @@ module mvmt_intent::fa_intent_outflow {
     // OUTFLOW REQUEST INTENT FUNCTIONS
     // ============================================================================
 
-    /// Entry function for solver to fulfill an outflow request intent.
+    /// Entry function for solver to fulfill an outflow request-intent.
     ///
     /// Outflow intents have tokens locked on the hub chain and request tokens on the connected chain.
     /// The solver must first transfer tokens on the connected chain, then the verifier approves that transaction.
@@ -109,7 +109,7 @@ module mvmt_intent::fa_intent_outflow {
         );
     }
 
-    /// Creates an outflow request intent and returns the intent object.
+    /// Creates an outflow request-intent and returns the intent object.
     ///
     /// This is the core implementation that both the entry function and tests use.
     ///
@@ -224,7 +224,7 @@ module mvmt_intent::fa_intent_outflow {
         )
     }
 
-    /// Entry function to create an outflow request intent.
+    /// Entry function to create an outflow request-intent.
     ///
     /// Outflow intents have tokens locked on the hub chain and request tokens on the connected chain.
     /// This function uses `OracleGuardedLimitOrder` (requires verifier signature) and withdraws actual

@@ -45,7 +45,7 @@ pub struct ValidateInflowEscrowRequest {
 /// Handler for the validate-inflow-escrow endpoint.
 ///
 /// This function validates an escrow deposit on the connected chain for an inflow intent.
-/// The validation checks that the escrow matches the hub request intent requirements.
+/// The validation checks that the escrow matches the hub request-intent requirements.
 ///
 /// Note: Inflow validation is typically automatic via the event monitor when hub
 /// fulfillment is observed. This endpoint provides manual validation capability.
@@ -83,7 +83,7 @@ pub async fn handle_inflow_escrow_validation(
         }
     };
 
-    // Validate escrow against request intent
+    // Validate escrow against request-intent
     // This uses the same validation logic as the automatic monitor validation
     match monitor.validate_request_intent_fulfillment(&escrow).await {
         Ok(()) => Ok(warp::reply::json(&ApiResponse {

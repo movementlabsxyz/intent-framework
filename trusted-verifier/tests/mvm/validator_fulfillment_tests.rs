@@ -343,7 +343,7 @@ async fn test_validate_outflow_fulfillment_success() {
     .await;
 
     let request_intent = RequestIntentEvent {
-        desired_amount: 25000000, // For outflow request intents, validation uses desired_amount (amount desired on connected chain)
+        desired_amount: 25000000, // For outflow request-intents, validation uses desired_amount (amount desired on connected chain)
         reserved_solver: Some(solver_address.to_string()),
         ..create_base_request_intent_mvm()
     };
@@ -401,7 +401,7 @@ async fn test_validate_outflow_fulfillment_fails_on_unsuccessful_tx() {
 /// Test that validate_outflow_fulfillment fails when intent_id doesn't match
 ///
 /// What is tested: Validating an outflow fulfillment transaction where the transaction's intent_id
-/// doesn't match the request intent's intent_id should result in validation failure.
+/// doesn't match the request-intent's intent_id should result in validation failure.
 ///
 /// Why: Verify that transactions can only fulfill the specific intent they reference.
 #[tokio::test]
@@ -435,7 +435,7 @@ async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
 /// Test that validate_outflow_fulfillment fails when recipient doesn't match requester_address_connected_chain
 ///
 /// What is tested: Validating an outflow fulfillment transaction where the transaction's recipient
-/// doesn't match the request intent's requester_address_connected_chain should result in validation failure.
+/// doesn't match the request-intent's requester_address_connected_chain should result in validation failure.
 ///
 /// Why: Verify that tokens are sent to the correct recipient address on the connected chain.
 #[tokio::test]
@@ -470,7 +470,7 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
 /// Test that validate_outflow_fulfillment fails when amount doesn't match desired_amount
 ///
 /// What is tested: Validating an outflow fulfillment transaction where the transaction's amount
-/// doesn't match the request intent's desired_amount should result in validation failure.
+/// doesn't match the request-intent's desired_amount should result in validation failure.
 ///
 /// Why: Verify that the correct amount of tokens is transferred.
 #[tokio::test]

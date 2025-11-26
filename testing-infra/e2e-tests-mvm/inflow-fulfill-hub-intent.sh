@@ -21,6 +21,8 @@ fi
 # SECTION 2: GET ADDRESSES AND CONFIGURATION
 # ============================================================================
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 
 log ""
@@ -34,8 +36,8 @@ log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 # ============================================================================
@@ -44,7 +46,7 @@ log_and_echo ""
 log ""
 log "   Fulfilling request intent on hub chain..."
 log "   - Solver (Bob) sees request intent with ID: $INTENT_ID"
-log "   - Solver (Bob) provides 1 APT on hub chain to fulfill the request intent"
+log "   - Solver (Bob) provides 1000 USDxyz on hub chain to fulfill the request intent"
 
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
 
@@ -57,7 +59,7 @@ log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
 
 aptos move run --profile bob-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::fulfill_inflow_request_intent" \
-    --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
+    --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000000" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS
@@ -78,8 +80,8 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 log ""

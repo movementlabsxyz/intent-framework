@@ -22,6 +22,8 @@ fi
 # ============================================================================
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
@@ -77,17 +79,21 @@ log "   Expiry time: $EXPIRY_TIME"
 log "   Intent ID: $INTENT_ID"
 
 log ""
-log "   - Getting APT metadata on Chain 2..."
-APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+log "   - Getting USDxyz metadata on Chain 2..."
+USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
+if [ -z "$USDXYZ_METADATA_CHAIN2" ]; then
+    log_and_echo "❌ Failed to get USDxyz metadata on Chain 2"
+    exit 1
+fi
+log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
+OFFERED_FA_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 # ============================================================================
@@ -95,7 +101,7 @@ log_and_echo ""
 # ============================================================================
 log ""
 log "   Creating escrow on connected chain..."
-log "   - Requester (Alice) locks 1 APT in escrow on Chain 2 (connected chain)"
+log "   - Requester (Alice) locks 1000 USDxyz in escrow on Chain 2 (connected chain)"
 log "   - Using intent_id from hub chain: $INTENT_ID"
 
 log "   - Creating escrow intent on Chain 2..."
@@ -104,7 +110,7 @@ log "     Reserved solver (Bob): $BOB_CHAIN2_ADDRESS"
 
 aptos move run --profile alice-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
-    --args "address:${OFFERED_FA_METADATA_CHAIN2}" "u64:100000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_FA_METADATA_CHAIN2}" "u64:100000000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS
@@ -149,11 +155,11 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 
-    if [ "$LOCKED_AMOUNT" = "100000000" ]; then
-        log "     ✅ Escrow has correct locked amount (1 APT)"
+    if [ "$LOCKED_AMOUNT" = "100000000000" ]; then
+        log "     ✅ Escrow has correct locked amount (1000 USDxyz)"
     else
         log_and_echo "❌ ERROR: Escrow has unexpected locked amount: $LOCKED_AMOUNT"
-        log_and_echo "   Expected: 100000000 (1 APT)"
+        log_and_echo "   Expected: 100000000000 (1000 USDxyz)"
         exit 1
     fi
 
@@ -171,8 +177,8 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 log ""

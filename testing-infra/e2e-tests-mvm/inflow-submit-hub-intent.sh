@@ -22,6 +22,8 @@ INTENT_ID="0x$(openssl rand -hex 32)"
 CONNECTED_CHAIN_ID=2
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
 ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
@@ -37,9 +39,9 @@ log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
 log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-# Bob gets funded with 200000000 Octas (2 APT), so half is 100000000 Octas (1 APT)
-OFFERED_AMOUNT="100000000"  # 1 APT (half of Bob's 200000000 Octas)
-DESIRED_AMOUNT="100000000"  # 1 APT (half of Bob's 200000000 Octas)
+# Alice and Bob get funded with 1000 USDxyz each
+OFFERED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
+DESIRED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID
 DESIRED_CHAIN_ID=1
 HUB_CHAIN_ID=1
@@ -49,28 +51,36 @@ log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
-log "   Offered amount: $OFFERED_AMOUNT Octas (1 APT)"
-log "   Desired amount: $DESIRED_AMOUNT Octas (1 APT)"
+log "   Offered amount: $OFFERED_AMOUNT (1000 USDxyz)"
+log "   Desired amount: $DESIRED_AMOUNT (1000 USDxyz)"
 
 log ""
-log "   - Getting APT metadata addresses..."
-log "     Getting APT metadata on Chain 1..."
-APT_METADATA_CHAIN1=$(extract_apt_metadata "alice-chain1" "$CHAIN1_ADDRESS" "$ALICE_CHAIN1_ADDRESS" "1" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
-OFFERED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
-DESIRED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+log "   - Getting USDxyz metadata addresses..."
+log "     Getting USDxyz metadata on Chain 1..."
+USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
+if [ -z "$USDXYZ_METADATA_CHAIN1" ]; then
+    log_and_echo "❌ Failed to get USDxyz metadata on Chain 1"
+    exit 1
+fi
+log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
+OFFERED_FA_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
+DESIRED_FA_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 
-log "     Getting APT metadata on Chain 2..."
-APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
+log "     Getting USDxyz metadata on Chain 2..."
+USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
+if [ -z "$USDXYZ_METADATA_CHAIN2" ]; then
+    log_and_echo "❌ Failed to get USDxyz metadata on Chain 2"
+    exit 1
+fi
+log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 # Check and display initial balances using common function
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 # ============================================================================
@@ -79,7 +89,7 @@ log_and_echo ""
 log ""
 log "   Creating request intent on hub chain..."
 log "   - Requester (Alice) creates request intent on Chain 1 (hub chain)"
-log "   - Request intent requests 1 APT to be provided by solver (Bob)"
+log "   - Request intent requests 1000 USDxyz to be provided by solver (Bob)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."
@@ -163,8 +173,8 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 log ""

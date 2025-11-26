@@ -480,6 +480,32 @@ initialize_solver_registry() {
     fi
 }
 
+# Get USDxyz metadata address
+# Usage: get_usdxyz_metadata <test_tokens_address> <chain_num>
+# Returns the USDxyz metadata object address
+get_usdxyz_metadata() {
+    local test_tokens_addr="$1"
+    local chain_num="$2"
+    
+    local rest_port
+    if [ "$chain_num" = "1" ]; then
+        rest_port="8080"
+    else
+        rest_port="8082"
+    fi
+    
+    # Call the view function to get metadata
+    local metadata=$(curl -s "http://127.0.0.1:${rest_port}/v1/view" \
+        -H 'Content-Type: application/json' \
+        -d "{
+            \"function\": \"${test_tokens_addr}::usdxyz::get_metadata\",
+            \"type_arguments\": [],
+            \"arguments\": []
+        }" 2>/dev/null | jq -r '.[0].inner // empty')
+    
+    echo "$metadata"
+}
+
 # Get USDxyz balance for an account
 # Usage: get_usdxyz_balance <profile> <chain_num> <test_tokens_address>
 # Returns the USDxyz balance for the given profile

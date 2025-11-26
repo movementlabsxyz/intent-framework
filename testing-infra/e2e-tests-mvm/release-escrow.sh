@@ -54,14 +54,15 @@ log "📊 Capturing initial balances for validation..."
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 # We only need to check Bob's balance on Chain 2 (escrow release)
 
-BOB_CHAIN2_ADDRESS_INIT=$(get_profile_address "bob-chain2")
-BOB_CHAIN2_BALANCE_INIT=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
+# Get test-tokens addresses for USDxyz balance checks
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 
-# Remove commas
-BOB_CHAIN2_BALANCE_INIT=$(echo "$BOB_CHAIN2_BALANCE_INIT" | tr -d ',')
+BOB_CHAIN2_ADDRESS_INIT=$(get_profile_address "bob-chain2")
+BOB_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
 log "   Initial balances:"
-log "      Bob Chain 2: $BOB_CHAIN2_BALANCE_INIT Octas"
+log "      Bob Chain 2 USDxyz: $BOB_CHAIN2_USDXYZ_INIT"
 
 log ""
 log "📋 Verifier Status:"
@@ -288,15 +289,13 @@ else
             log "   📦 New approval found for escrow: $ESCROW_ID"
             log "   🔓 Releasing escrow..."
             
-            # Get solver (Bob)'s balance before release (to verify funds were received)
-            log "   - Getting solver (Bob)'s balance before release..."
-            BOB_BALANCE_BEFORE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
-            if [ -z "$BOB_BALANCE_BEFORE" ] || [ "$BOB_BALANCE_BEFORE" = "null" ]; then
-                BOB_BALANCE_BEFORE="0"
+            # Get solver (Bob)'s USDxyz balance before release (to verify funds were received)
+            log "   - Getting solver (Bob)'s USDxyz balance before release..."
+            BOB_BALANCE_USDXYZ_BEFORE=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
+            if [ -z "$BOB_BALANCE_USDXYZ_BEFORE" ] || [ "$BOB_BALANCE_USDXYZ_BEFORE" = "null" ]; then
+                BOB_BALANCE_USDXYZ_BEFORE="0"
             fi
-            # Remove commas from balance if present
-            BOB_BALANCE_BEFORE=$(echo "$BOB_BALANCE_BEFORE" | tr -d ',')
-            log "   - Solver (Bob)'s balance before release: $BOB_BALANCE_BEFORE Octas"
+            log "   - Solver (Bob)'s USDxyz balance before release: $BOB_BALANCE_USDXYZ_BEFORE"
             
             # Decode base64 signature to hex
             SIGNATURE_HEX=$(echo "$SIGNATURE_BASE64" | base64 -d 2>/dev/null | xxd -p -c 1000 | tr -d '\n')
@@ -335,38 +334,36 @@ else
             log "   - Waiting for escrow release transaction to be finalized..."
             sleep 10
             
-            # Get solver (Bob)'s balance after release
-            log "   - Getting solver (Bob)'s balance after release..."
-            BOB_BALANCE_AFTER=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
-            if [ -z "$BOB_BALANCE_AFTER" ] || [ "$BOB_BALANCE_AFTER" = "null" ]; then
-                BOB_BALANCE_AFTER="0"
+            # Get solver (Bob)'s USDxyz balance after release
+            log "   - Getting solver (Bob)'s USDxyz balance after release..."
+            BOB_BALANCE_USDXYZ_AFTER=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
+            if [ -z "$BOB_BALANCE_USDXYZ_AFTER" ] || [ "$BOB_BALANCE_USDXYZ_AFTER" = "null" ]; then
+                BOB_BALANCE_USDXYZ_AFTER="0"
             fi
-            # Remove commas from balance if present
-            BOB_BALANCE_AFTER=$(echo "$BOB_BALANCE_AFTER" | tr -d ',')
-            log "   - Solver (Bob)'s balance after release: $BOB_BALANCE_AFTER Octas"
+            log "   - Solver (Bob)'s USDxyz balance after release: $BOB_BALANCE_USDXYZ_AFTER"
             
             # Calculate balance increase
-            BALANCE_INCREASE=$((BOB_BALANCE_AFTER - BOB_BALANCE_BEFORE))
+            BALANCE_USDXYZ_INCREASE=$((BOB_BALANCE_USDXYZ_AFTER - BOB_BALANCE_USDXYZ_BEFORE))
             
-            # Expected amount: 1 APT (locked in escrow) minus gas fees
-            # We expect at least 99% of the locked amount to be received (allowing for gas)
-            EXPECTED_MIN_AMOUNT=99000000  # 99% of 100000000 (1 APT)
+            # Expected amount: 1000 USDxyz (locked in escrow)
+            # USDxyz transfers don't have gas deductions (gas is paid in APT)
+            EXPECTED_MIN_AMOUNT=100000000000  # 1000 USDxyz (8 decimals)
             
             if [ $TX_EXIT_CODE -eq 0 ]; then
                 log "   ✅ Escrow release transaction succeeded!"
                 
                 # Verify solver (Bob) received the funds
-                if [ "$BALANCE_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
+                if [ "$BALANCE_USDXYZ_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
                     log_and_echo "   ❌ ERROR: Solver (Bob) did not receive escrow funds!"
-                    log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
-                    log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (1 APT minus gas)"
-                    log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_BEFORE Octas"
-                    log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_AFTER Octas"
+                    log_and_echo "      Balance increase: $BALANCE_USDXYZ_INCREASE USDxyz"
+                    log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT USDxyz (1000 USDxyz)"
+                    log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_USDXYZ_BEFORE USDxyz"
+                    log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_USDXYZ_AFTER USDxyz"
                     log_and_echo "      Escrow ID: $ESCROW_ID"
                     exit 1
                 fi
                 
-                log "   ✅ Solver (Bob) received $BALANCE_INCREASE Octas (expected ~1 APT minus gas)"
+                log "   ✅ Solver (Bob) received $BALANCE_USDXYZ_INCREASE USDxyz (expected 1000 USDxyz)"
                 RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
             else
                 # Check the log file for error messages
@@ -376,18 +373,18 @@ else
                     log "   ℹ️  Escrow object no longer exists (may already be released)"
                     
                     # Verify solver (Bob) received the funds even though the object doesn't exist
-                    if [ "$BALANCE_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
+                    if [ "$BALANCE_USDXYZ_INCREASE" -lt "$EXPECTED_MIN_AMOUNT" ]; then
                         log_and_echo "   ❌ ERROR: Escrow object doesn't exist but solver (Bob) did NOT receive funds!"
-                        log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
-                        log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas (1 APT minus gas)"
-                        log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_BEFORE Octas"
-                        log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_AFTER Octas"
+                        log_and_echo "      Balance increase: $BALANCE_USDXYZ_INCREASE USDxyz"
+                        log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT USDxyz (1000 USDxyz)"
+                        log_and_echo "      Solver (Bob) balance before: $BOB_BALANCE_USDXYZ_BEFORE USDxyz"
+                        log_and_echo "      Solver (Bob) balance after: $BOB_BALANCE_USDXYZ_AFTER USDxyz"
                         log_and_echo "      Escrow ID: $ESCROW_ID"
                         log_and_echo "      This indicates the escrow was released but funds went to wrong address or were lost"
                         exit 1
                     fi
                     
-                    log "   ✅ Verified: Solver (Bob) received $BALANCE_INCREASE Octas (escrow was already released)"
+                    log "   ✅ Verified: Solver (Bob) received $BALANCE_USDXYZ_INCREASE USDxyz (escrow was already released)"
                     RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
                 else
                     log "   ❌ Failed to release escrow"
@@ -396,8 +393,8 @@ else
                     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                     cat "$LOG_FILE"
                     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
-                    log_and_echo "      Balance increase: $BALANCE_INCREASE Octas"
-                    log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT Octas"
+                    log_and_echo "      Balance increase: $BALANCE_USDXYZ_INCREASE USDxyz"
+                    log_and_echo "      Expected minimum: $EXPECTED_MIN_AMOUNT USDxyz"
                     exit 1
                 fi
             fi
@@ -460,33 +457,29 @@ log "================================================"
 log "   - Waiting for transactions to be fully processed..."
 sleep 10
 
-# Get current balances
+# Get current USDxyz balances
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
-BOB_CHAIN2_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' 2>/dev/null || echo "0")
-
-# Remove commas
-BOB_CHAIN2_BALANCE=$(echo "$BOB_CHAIN2_BALANCE" | tr -d ',')
+BOB_CHAIN2_USDXYZ=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
 # For inflow flow:
-# - Bob on Chain 2 should have received ~1 APT from escrow release
-# We check that balance increased by approximately the expected amount (at least 99% to account for gas)
+# - Bob on Chain 2 should have received 1000 USDxyz from escrow release
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 
-EXPECTED_ESCROW_AMOUNT=100000000
-MIN_EXPECTED_AMOUNT=99000000  # 99% to account for gas
+EXPECTED_ESCROW_AMOUNT=100000000000  # 1000 USDxyz (8 decimals)
+MIN_EXPECTED_AMOUNT=100000000000  # 1000 USDxyz (no gas deduction for token transfers)
 
 # Calculate balance increase
-BOB_CHAIN2_BALANCE_INCREASE=$((BOB_CHAIN2_BALANCE - BOB_CHAIN2_BALANCE_INIT))
+BOB_CHAIN2_USDXYZ_INCREASE=$((BOB_CHAIN2_USDXYZ - BOB_CHAIN2_USDXYZ_INIT))
 
 # Check if escrow was released (Bob on Chain 2 should have received funds)
-# Bob's balance on Chain 2 should have increased by at least MIN_EXPECTED_AMOUNT
-if [ "$BOB_CHAIN2_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
-    log_and_echo "❌ ERROR: Bob on Chain 2 balance did not increase by expected amount!"
-    log_and_echo "   Initial balance: $BOB_CHAIN2_BALANCE_INIT Octas"
-    log_and_echo "   Final balance: $BOB_CHAIN2_BALANCE Octas"
-    log_and_echo "   Balance increase: $BOB_CHAIN2_BALANCE_INCREASE Octas"
-    log_and_echo "   Expected increase: at least $MIN_EXPECTED_AMOUNT Octas (after escrow release)"
+# Bob's USDxyz balance on Chain 2 should have increased by at least MIN_EXPECTED_AMOUNT
+if [ "$BOB_CHAIN2_USDXYZ_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
+    log_and_echo "❌ ERROR: Bob on Chain 2 USDxyz balance did not increase by expected amount!"
+    log_and_echo "   Initial balance: $BOB_CHAIN2_USDXYZ_INIT USDxyz"
+    log_and_echo "   Final balance: $BOB_CHAIN2_USDXYZ USDxyz"
+    log_and_echo "   Balance increase: $BOB_CHAIN2_USDXYZ_INCREASE USDxyz"
+    log_and_echo "   Expected increase: at least $MIN_EXPECTED_AMOUNT USDxyz (after escrow release)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     log ""
     log "🔍 Diagnostic Information:"
@@ -506,15 +499,15 @@ if [ "$BOB_CHAIN2_BALANCE_INCREASE" -lt "$MIN_EXPECTED_AMOUNT" ]; then
 fi
 
 log "   ✅ Final balances validated:"
-log "      Bob Chain 2: $BOB_CHAIN2_BALANCE_INIT → $BOB_CHAIN2_BALANCE Octas (+$BOB_CHAIN2_BALANCE_INCREASE, escrow released)"
+log "      Bob Chain 2 USDxyz: $BOB_CHAIN2_USDXYZ_INIT → $BOB_CHAIN2_USDXYZ (+$BOB_CHAIN2_USDXYZ_INCREASE, escrow released)"
 log "      Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)"
 
 # ============================================================================
 # SECTION 7: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 log ""

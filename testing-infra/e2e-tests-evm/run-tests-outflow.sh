@@ -31,10 +31,10 @@ log_and_echo ""
 log_and_echo "🚀 Step 2: Setting up chains and deploying contracts..."
 log_and_echo "======================================================"
 ./testing-infra/chain-connected-evm/setup-chain.sh
-./testing-infra/chain-connected-evm/setup-alice-bob.sh
+./testing-infra/chain-connected-evm/setup-requester-solver.sh
 ./testing-infra/chain-connected-evm/deploy-contract.sh
 ./testing-infra/chain-hub/setup-chain.sh
-./testing-infra/chain-hub/setup-alice-bob.sh
+./testing-infra/chain-hub/setup-requester-solver.sh
 ./testing-infra/chain-hub/deploy-contracts.sh
 
 log_and_echo ""

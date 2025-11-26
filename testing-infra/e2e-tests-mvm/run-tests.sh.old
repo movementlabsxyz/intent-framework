@@ -23,10 +23,10 @@ echo "================================================================"
 echo "🚀 Step 2: Setting up chains, deploying contracts, funding accounts"
 echo "===================================================================="
 ./testing-infra/chain-hub/setup-chain.sh
-./testing-infra/chain-hub/setup-alice-bob.sh
+./testing-infra/chain-hub/setup-requester-solver.sh
 ./testing-infra/chain-hub/deploy-contracts.sh
 ./testing-infra/chain-connected-mvm/setup-chain.sh
-./testing-infra/chain-connected-mvm/setup-alice-bob.sh
+./testing-infra/chain-connected-mvm/setup-requester-solver.sh
 ./testing-infra/chain-connected-mvm/deploy-contracts.sh
 
 echo "🚀 Step 3: Testing INFLOW intents (connected chain → hub chain)..."

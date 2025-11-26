@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - real-main
 
 jobs:
   mvm-chain-inflow:

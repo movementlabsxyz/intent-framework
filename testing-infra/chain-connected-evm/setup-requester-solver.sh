@@ -75,8 +75,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-ALICE_BALANCE=$(echo "$BALANCES_OUTPUT" | grep "^ALICE_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
-BOB_BALANCE=$(echo "$BALANCES_OUTPUT" | grep "^BOB_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
+ALICE_BALANCE=$(echo "$BALANCES_OUTPUT" | grep "^REQUESTER_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
+BOB_BALANCE=$(echo "$BALANCES_OUTPUT" | grep "^SOLVER_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
 
 cd ..
 
@@ -140,8 +140,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-ALICE_FINAL_BALANCE=$(echo "$FINAL_BALANCES_OUTPUT" | grep "^ALICE_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
-BOB_FINAL_BALANCE=$(echo "$FINAL_BALANCES_OUTPUT" | grep "^BOB_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
+ALICE_FINAL_BALANCE=$(echo "$FINAL_BALANCES_OUTPUT" | grep "^REQUESTER_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
+BOB_FINAL_BALANCE=$(echo "$FINAL_BALANCES_OUTPUT" | grep "^SOLVER_BALANCE=" | cut -d'=' -f2 | tr -d '\n')
 
 cd ..
 

@@ -1,0 +1,18 @@
+name: "E2E Tests (EVM)"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  inflow:
+    uses: ./.github/workflows/e2e-reusable.yml
+    with:
+      script: "./testing-infra/e2e-tests-evm/run-tests-inflow.sh"
+
+  outflow:
+    uses: ./.github/workflows/e2e-reusable.yml
+    with:
+      script: "./testing-infra/e2e-tests-evm/run-tests-outflow.sh"
+

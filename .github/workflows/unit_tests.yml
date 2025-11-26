@@ -1,0 +1,29 @@
+name: "Unit Tests"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - real-main
+
+jobs:
+  move:
+    uses: ./.github/workflows/unit-tests-reusable.yml
+    with:
+      script: "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123"
+
+  evm:
+    uses: ./.github/workflows/unit-tests-reusable.yml
+    with:
+      script: "cd evm-intent-framework && npm install && npm test"
+
+  solver:
+    uses: ./.github/workflows/unit-tests-reusable.yml
+    with:
+      script: "cd solver && cargo test"
+
+  verifier:
+    uses: ./.github/workflows/unit-tests-reusable.yml
+    with:
+      script: "cd trusted-verifier && cargo test"
+

@@ -1,0 +1,24 @@
+name: Unit Tests Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      script:
+        required: true
+        type: string
+        description: "Command to run in nix develop"
+
+jobs:
+  run-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      
+      - name: Run tests
+        run: nix develop --command bash -c '${{ inputs.script }}'
+

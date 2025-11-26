@@ -1,0 +1,30 @@
+name: E2E Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      script:
+        required: true
+        type: string
+        description: "Path to the test script to run"
+
+jobs:
+  run-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+      
+      - name: Run E2E test
+        run: nix develop --command bash -c '${{ inputs.script }}'
+

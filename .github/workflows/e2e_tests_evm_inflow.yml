@@ -1,4 +1,4 @@
-name: "E2E Tests (Connected EVM Chain) - Inflow"
+name: "E2E Tests (EVM) - Inflow"
 on:
   pull_request:
   push:
@@ -22,5 +22,5 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
       
       - name: Run E2E tests with connected EVM chain - inflow
-        run: nix develop --command bash -c './testing-infra/e2e-tests-evm/run-tests.sh'
+        run: nix develop --command bash -c './testing-infra/e2e-tests-evm/run-tests-inflow.sh'
 

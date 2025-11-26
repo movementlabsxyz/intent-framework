@@ -4,7 +4,7 @@
       "id": 1,
       "title": "Deploy USDxyz token on MVM chains",
       "description": "Create and deploy USDxyz fungible asset on Chain 1 and Chain 2. Mint tokens to Alice and Bob. Display USDxyz balances in test output. Keep APT for gas only.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [],
       "subtasks": [
@@ -12,25 +12,25 @@
           "id": 1,
           "title": "Create USDxyz fungible asset module",
           "description": "Create a simple FA module for USDxyz token that can be deployed on MVM chains",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Add USDxyz deployment to chain setup scripts",
           "description": "Update setup-chain.sh or deploy-contracts.sh to deploy USDxyz on both chains",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 3,
           "title": "Mint USDxyz to Alice and Bob",
           "description": "Add minting step in setup-alice-bob.sh to give Alice and Bob USDxyz tokens",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 4,
           "title": "Display USDxyz balances in test output",
           "description": "Update test scripts to show USDxyz balances alongside APT balances",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 5,
@@ -44,7 +44,7 @@
       "id": 2,
       "title": "Deploy USDxyz token on EVM chain",
       "description": "Create and deploy USDxyz ERC20 token on EVM Chain 3. Mint tokens to test accounts. Display USDxyz balances in test output. Keep ETH for gas only.",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [1],
       "subtasks": [
@@ -52,25 +52,25 @@
           "id": 1,
           "title": "Create USDxyz ERC20 contract",
           "description": "Create a simple ERC20 contract for USDxyz token (can extend MockERC20)",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Add USDxyz deployment to EVM setup scripts",
           "description": "Update EVM chain setup to deploy USDxyz ERC20",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 3,
           "title": "Mint USDxyz to test accounts",
           "description": "Add minting step to give test accounts USDxyz tokens",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 4,
           "title": "Display USDxyz balances in test output",
           "description": "Update EVM test scripts to show USDxyz balances alongside ETH balances",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 5,
@@ -201,8 +201,8 @@
   ],
   "metadata": {
     "version": "1.0.0",
-    "lastModified": "2025-11-26T10:30:00.000Z",
+    "lastModified": "2025-11-26T12:00:00.000Z",
     "taskCount": 6,
-    "completedCount": 0
+    "completedCount": 2
   }
 }

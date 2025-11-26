@@ -1,4 +1,4 @@
-name: "E2E Tests (Connected Move VM Chain) - Inflow"
+name: "E2E Tests (MVM) - Inflow"
 on:
   pull_request:
   push:

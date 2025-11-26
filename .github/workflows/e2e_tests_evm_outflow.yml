@@ -1,4 +1,4 @@
-name: "E2E Tests (Connected EVM Chain) - Outflow"
+name: "E2E Tests (EVM) - Outflow"
 on:
   pull_request:
   push:

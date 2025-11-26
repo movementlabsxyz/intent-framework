@@ -23,13 +23,13 @@ async function main() {
   }
 
   const signers = await hre.ethers.getSigners();
+  const requester = signers[1]; // Requester is signer[1]
   const escrow = await hre.ethers.getContractAt("IntentEscrow", escrowAddress);
   const intentId = BigInt(intentIdHex);
   const amount = BigInt(amountWei);
   
   // Deposit ETH (pass value in transaction)
-  // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
-  const tx = await escrow.connect(signers[1]).deposit(intentId, amount, { value: amount });
+  const tx = await escrow.connect(requester).deposit(intentId, amount, { value: amount });
   await tx.wait();
   console.log("Deposited", amount.toString(), "wei (ETH) into escrow");
 }
@@ -40,4 +40,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

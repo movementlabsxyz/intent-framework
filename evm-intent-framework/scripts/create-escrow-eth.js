@@ -26,6 +26,7 @@ async function main() {
   }
 
   const signers = await hre.ethers.getSigners();
+  const requester = signers[1]; // Requester is signer[1]
   const escrow = await hre.ethers.getContractAt("IntentEscrow", escrowAddress);
   const intentId = BigInt(intentIdHex);
   const amount = BigInt(amountWei);
@@ -33,7 +34,7 @@ async function main() {
   // Use address(0) for ETH
   const ethAddress = "0x0000000000000000000000000000000000000000";
   
-  await escrow.connect(signers[1]).createEscrow(intentId, ethAddress, amount, reservedSolver, { value: amount });
+  await escrow.connect(requester).createEscrow(intentId, ethAddress, amount, reservedSolver, { value: amount });
   console.log("Escrow created for intent (ETH):", intentId.toString());
 }
 
@@ -43,4 +44,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

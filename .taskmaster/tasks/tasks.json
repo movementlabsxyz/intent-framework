@@ -152,21 +152,21 @@
       "id": 5,
       "title": "Update EVM inflow tests to use USDxyz",
       "description": "Modify EVM inflow E2E tests to swap USDxyz (ERC20) instead of ETH.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "medium",
       "dependencies": [2],
       "subtasks": [
         {
           "id": 1,
           "title": "Update EVM escrow to support ERC20",
-          "description": "Modify IntentEscrow.sol to handle ERC20 tokens (or create separate escrow)",
-          "status": "pending"
+          "description": "IntentEscrow.sol already supports ERC20, created create-escrow-erc20.js script",
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Update EVM inflow tests to use USDxyz",
           "description": "Modify EVM test scripts to use USDxyz ERC20 for swaps",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 3,

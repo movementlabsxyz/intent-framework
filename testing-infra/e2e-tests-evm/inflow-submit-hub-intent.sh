@@ -46,22 +46,23 @@ log_and_echo ""
 log ""
 log "   Creating intent on hub chain..."
 log "   - Alice creates intent on Chain 1 (hub chain)"
-log "   - Intent requests 1 APT to be provided by solver (on hub chain)"
+log "   - Intent requests 1000 USDxyz to be provided by solver (on hub chain)"
 log "   - Using intent_id: $INTENT_ID"
 log "   - Connected chain: EVM (Chain ID: 31337)"
 
-# Get APT metadata addresses for Chain 1
-log "   - Getting APT metadata addresses..."
+# Get USDxyz metadata addresses
+log "   - Getting USDxyz metadata addresses..."
 
-# Get APT metadata on Chain 1
-log "     Getting APT metadata on Chain 1..."
-APT_METADATA_CHAIN1=$(extract_apt_metadata "alice-chain1" "$CHAIN1_ADDRESS" "$ALICE_CHAIN1_ADDRESS" "1" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
-OFFERED_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
-DESIRED_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+# Get USDxyz metadata on Chain 1 (hub)
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+log "     Getting USDxyz metadata on Chain 1..."
+USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
+log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
+DESIRED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 
-# In EVM mode, use Chain 1 metadata for both (since escrow is on EVM, not Chain 2)
-OFFERED_METADATA_CHAIN2="$APT_METADATA_CHAIN1"
+# In EVM mode, use Chain 1 metadata for signature generation (escrow is on EVM)
+OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN1"
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
 # NOTE: Cross-chain request intents must be reserved. This requires:
@@ -84,8 +85,8 @@ log "     Generating solver signature..."
 
 # Generate solver signature using helper function
 # For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
-OFFERED_AMOUNT="1000000000000000000"  # 1 ETH (on EVM chain)
-DESIRED_AMOUNT="100000000"  # 1 APT (on hub chain Chain 1)
+OFFERED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals, on EVM chain)
+DESIRED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals, on hub chain Chain 1)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (31337 for EVM)
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \

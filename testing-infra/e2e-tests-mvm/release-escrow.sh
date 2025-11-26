@@ -345,16 +345,16 @@ else
             # Calculate balance increase
             CHAIN2_USDXYZ_INCREASE=$((BOB_CHAIN2_USDXYZ_AFTER - BOB_CHAIN2_USDXYZ_BEFORE))
             
-            MIN_USDXYZ_EXPECTED=100000000000  # 1000 USDxyz (8 decimals)
+            BOB_CHAIN2_USDXYZ_MIN_EXPECTED=100000000000  # 1000 USDxyz (8 decimals)
             
             if [ $TX_EXIT_CODE -eq 0 ]; then
                 log "   ✅ Escrow release transaction succeeded!"
                 
                 # Verify solver (Bob) received the funds
-                if [ "$CHAIN2_USDXYZ_INCREASE" -lt "$MIN_USDXYZ_EXPECTED" ]; then
+                if [ "$CHAIN2_USDXYZ_INCREASE" -lt "$BOB_CHAIN2_USDXYZ_MIN_EXPECTED" ]; then
                     log_and_echo "   ❌ ERROR: Solver (Bob) did not receive escrow funds!"
                     log_and_echo "      Chain 2 USDxyz increase: $CHAIN2_USDXYZ_INCREASE"
-                    log_and_echo "      Expected minimum: $MIN_USDXYZ_EXPECTED USDxyz"
+                    log_and_echo "      Expected minimum: $BOB_CHAIN2_USDXYZ_MIN_EXPECTED USDxyz"
                     log_and_echo "      Solver (Bob) Chain 2 balance before: $BOB_CHAIN2_USDXYZ_BEFORE USDxyz"
                     log_and_echo "      Solver (Bob) Chain 2 balance after: $BOB_CHAIN2_USDXYZ_AFTER USDxyz"
                     log_and_echo "      Escrow ID: $ESCROW_ID"
@@ -371,10 +371,10 @@ else
                     log "   ℹ️  Escrow object no longer exists (may already be released)"
                     
                     # Verify solver (Bob) received the funds even though the object doesn't exist
-                    if [ "$CHAIN2_USDXYZ_INCREASE" -lt "$MIN_USDXYZ_EXPECTED" ]; then
+                    if [ "$CHAIN2_USDXYZ_INCREASE" -lt "$BOB_CHAIN2_USDXYZ_MIN_EXPECTED" ]; then
                         log_and_echo "   ❌ ERROR: Escrow object doesn't exist but solver (Bob) did NOT receive funds!"
                         log_and_echo "      Chain 2 USDxyz increase: $CHAIN2_USDXYZ_INCREASE"
-                        log_and_echo "      Expected minimum: $MIN_USDXYZ_EXPECTED USDxyz"
+                        log_and_echo "      Expected minimum: $BOB_CHAIN2_USDXYZ_MIN_EXPECTED USDxyz"
                         log_and_echo "      Solver (Bob) Chain 2 balance before: $BOB_CHAIN2_USDXYZ_BEFORE USDxyz"
                         log_and_echo "      Solver (Bob) Chain 2 balance after: $BOB_CHAIN2_USDXYZ_AFTER USDxyz"
                         log_and_echo "      Escrow ID: $ESCROW_ID"
@@ -392,7 +392,7 @@ else
                     cat "$LOG_FILE"
                     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                     log_and_echo "      Chain 2 USDxyz increase: $CHAIN2_USDXYZ_INCREASE"
-                    log_and_echo "      Expected minimum: $MIN_USDXYZ_EXPECTED USDxyz"
+                    log_and_echo "      Expected minimum: $BOB_CHAIN2_USDXYZ_MIN_EXPECTED USDxyz"
                     exit 1
                 fi
             fi
@@ -465,19 +465,19 @@ BOB_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CH
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 
 ESCROW_USDXYZ_AMOUNT=100000000000  # 1000 USDxyz (8 decimals)
-MIN_USDXYZ_EXPECTED=100000000000  # 1000 USDxyz (no deduction, desired_amount=0)
+BOB_CHAIN2_USDXYZ_MIN_EXPECTED=100000000000  # 1000 USDxyz (no deduction, desired_amount=0)
 
 # Calculate balance increase
 BOB_CHAIN2_USDXYZ_GAIN=$((BOB_CHAIN2_USDXYZ_FINAL - BOB_CHAIN2_USDXYZ_INIT))
 
 # Check if escrow was released (Bob on Chain 2 should have received funds)
-# Bob's USDxyz balance on Chain 2 should have increased by at least MIN_USDXYZ_EXPECTED
-if [ "$BOB_CHAIN2_USDXYZ_GAIN" -lt "$MIN_USDXYZ_EXPECTED" ]; then
+# Bob's USDxyz balance on Chain 2 should have increased by at least BOB_CHAIN2_USDXYZ_MIN_EXPECTED
+if [ "$BOB_CHAIN2_USDXYZ_GAIN" -lt "$BOB_CHAIN2_USDXYZ_MIN_EXPECTED" ]; then
     log_and_echo "❌ ERROR: Bob on Chain 2 USDxyz balance did not increase by expected amount!"
     log_and_echo "   Chain 2 initial balance: $BOB_CHAIN2_USDXYZ_INIT USDxyz"
     log_and_echo "   Chain 2 final balance: $BOB_CHAIN2_USDXYZ_FINAL USDxyz"
     log_and_echo "   Chain 2 balance increase: $BOB_CHAIN2_USDXYZ_GAIN USDxyz"
-    log_and_echo "   Expected increase: at least $MIN_USDXYZ_EXPECTED USDxyz (after escrow release)"
+    log_and_echo "   Expected increase: at least $BOB_CHAIN2_USDXYZ_MIN_EXPECTED USDxyz (after escrow release)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     log ""
     log "🔍 Diagnostic Information:"

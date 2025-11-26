@@ -8,13 +8,13 @@ const hre = require("hardhat");
 ///
 /// # Environment Variables or Arguments
 /// - `ACCOUNT_INDEX`: Account index (0-based) or command line argument
-///   Defaults to 0 if not provided
+///   Defaults to 0 (deployer) if not provided
 ///
 /// # Returns
 /// Outputs the Ethereum address (0x-prefixed hex) for the specified account on success.
 async function main() {
   // Get account index from environment variable or command line argument
-  // Defaults to 0 (Alice) if not provided
+  // Defaults to 0 (deployer) if not provided
   const accountIndex = process.env.ACCOUNT_INDEX 
     ? parseInt(process.env.ACCOUNT_INDEX, 10)
     : (process.argv[2] ? parseInt(process.argv[2], 10) : 0);
@@ -40,4 +40,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

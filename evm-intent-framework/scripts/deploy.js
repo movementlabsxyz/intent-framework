@@ -26,11 +26,10 @@ async function main() {
     verifierAddr = verifierAddress;
     console.log("Using verifier address from config:", verifierAddr);
   } else {
-    // Fallback to Hardhat account 0 (Deployer is the verifier)
-    // Account 0 = deployer/verifier, Account 1 = Alice, Account 2 = Bob
-    const [deployer] = await hre.ethers.getSigners();
+    // Fallback to deployer as verifier
+    // Account 0 = deployer/verifier, Account 1 = requester, Account 2 = solver
     verifierAddr = deployer.address;
-    console.log("Using Hardhat account 0 (deployer) as verifier:", verifierAddr);
+    console.log("Using deployer as verifier:", verifierAddr);
   }
   
   console.log("Deploying with account:", deployer.address);
@@ -64,4 +63,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

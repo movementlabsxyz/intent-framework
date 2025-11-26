@@ -24,13 +24,13 @@ async function main() {
   }
 
   const signers = await hre.ethers.getSigners();
+  const solver = signers[2]; // Solver is signer[2]
   const escrow = await hre.ethers.getContractAt("IntentEscrow", escrowAddress);
   const intentId = BigInt(intentIdHex);
   const signature = `0x${signatureHex}`;
   
   try {
-    // Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
-    const tx = await escrow.connect(signers[2]).claim(intentId, signature);
+    const tx = await escrow.connect(solver).claim(intentId, signature);
     const receipt = await tx.wait();
     console.log("Claim transaction hash:", receipt.hash);
     console.log("Escrow released successfully!");
@@ -46,4 +46,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

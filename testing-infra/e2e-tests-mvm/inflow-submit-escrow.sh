@@ -86,7 +86,7 @@ if [ -z "$USDXYZ_METADATA_CHAIN2" ]; then
     exit 1
 fi
 log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
-OFFERED_FA_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
+OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
@@ -105,12 +105,12 @@ log "   - Requester (Alice) locks 1000 USDxyz in escrow on Chain 2 (connected ch
 log "   - Using intent_id from hub chain: $INTENT_ID"
 
 log "   - Creating escrow intent on Chain 2..."
-log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN2"
+log "     Offered metadata: $OFFERED_METADATA_CHAIN2"
 log "     Reserved solver (Bob): $BOB_CHAIN2_ADDRESS"
 
 aptos move run --profile alice-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
-    --args "address:${OFFERED_FA_METADATA_CHAIN2}" "u64:100000000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN2}" "u64:100000000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS

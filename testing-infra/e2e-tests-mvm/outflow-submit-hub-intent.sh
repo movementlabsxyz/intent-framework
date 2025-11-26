@@ -87,12 +87,12 @@ log "   - Getting APT metadata addresses..."
 log "     Getting APT metadata on Chain 1..."
 APT_METADATA_CHAIN1=$(extract_apt_metadata "alice-chain1" "$CHAIN1_ADDRESS" "$ALICE_CHAIN1_ADDRESS" "1" "$LOG_FILE")
 log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
-OFFERED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
 
 log "     Getting APT metadata on Chain 2..."
 APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
 log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-DESIRED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+DESIRED_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
@@ -116,10 +116,10 @@ log "   - Generating solver signature..."
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
     "$CHAIN1_ADDRESS" \
-    "$OFFERED_FA_METADATA_CHAIN1" \
+    "$OFFERED_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
     "$OFFERED_CHAIN_ID" \
-    "$DESIRED_FA_METADATA_CHAIN2" \
+    "$DESIRED_METADATA_CHAIN2" \
     "$DESIRED_AMOUNT" \
     "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
@@ -156,8 +156,8 @@ log "   - Verifying solver registration..."
 verify_solver_registered "bob-chain1" "$CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "$LOG_FILE"
 
 log "   - Creating outflow request intent on Chain 1..."
-log "     Offered FA metadata (hub): $OFFERED_FA_METADATA_CHAIN1"
-log "     Desired FA metadata (connected): $DESIRED_FA_METADATA_CHAIN2"
+log "     Offered metadata (hub): $OFFERED_METADATA_CHAIN1"
+log "     Desired metadata (connected): $DESIRED_METADATA_CHAIN2"
 log "     Solver (Bob) address: $BOB_CHAIN1_ADDRESS"
 log "     Requester address on connected chain: $ALICE_CHAIN2_ADDRESS"
 
@@ -166,7 +166,7 @@ VERIFIER_PUBLIC_KEY_HEX="${VERIFIER_PUBLIC_KEY#0x}"
 
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_outflow::create_outflow_request_intent_entry" \
-    --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN2}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${ALICE_CHAIN2_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN2}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${ALICE_CHAIN2_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS

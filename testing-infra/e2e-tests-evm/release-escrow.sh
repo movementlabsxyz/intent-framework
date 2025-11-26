@@ -50,18 +50,18 @@ log "📊 Capturing initial balances for validation..."
 
 # Get Bob's initial balance on EVM Chain 3
 cd evm-intent-framework
-BOB_BALANCE_INIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-BOB_BALANCE_INIT=$(echo "$BOB_BALANCE_INIT_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
+BOB_CHAIN3_ETH_INIT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+BOB_CHAIN3_ETH_INIT=$(echo "$BOB_CHAIN3_ETH_INIT_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
 cd ..
 
-if [ -z "$BOB_BALANCE_INIT" ]; then
-    log_and_echo "   ⚠️  WARNING: Failed to get Bob's initial balance on EVM"
-    log_and_echo "   Balance output: $BOB_BALANCE_INIT_OUTPUT"
-    BOB_BALANCE_INIT="0"
+if [ -z "$BOB_CHAIN3_ETH_INIT" ]; then
+    log_and_echo "   ⚠️  WARNING: Failed to get Bob's initial balance on Chain 3 (EVM)"
+    log_and_echo "   Balance output: $BOB_CHAIN3_ETH_INIT_OUTPUT"
+    BOB_CHAIN3_ETH_INIT="0"
 fi
 
 log "   Initial balances:"
-log "      Bob EVM Chain 3: $BOB_BALANCE_INIT wei"
+log "      Bob EVM Chain 3: $BOB_CHAIN3_ETH_INIT wei"
 
 # Track released escrows to avoid duplicate attempts
 RELEASED_ESCROWS=""
@@ -124,19 +124,19 @@ check_and_release_escrows() {
         fi
         
         # Get Bob's balance before claiming (to verify funds were received)
-        log "   - Getting Bob's balance before claim..."
+        log "   - Getting Bob's Chain 3 balance before claim..."
         cd evm-intent-framework
-        BOB_BALANCE_BEFORE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-        BOB_BALANCE_BEFORE=$(echo "$BOB_BALANCE_BEFORE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
+        BOB_CHAIN3_ETH_BEFORE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+        BOB_CHAIN3_ETH_BEFORE=$(echo "$BOB_CHAIN3_ETH_BEFORE_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
         cd ..
         
-        if [ -z "$BOB_BALANCE_BEFORE" ]; then
-            log_and_echo "   ❌ ERROR: Failed to get Bob's balance before claim"
-            log_and_echo "   Balance output: $BOB_BALANCE_BEFORE_OUTPUT"
+        if [ -z "$BOB_CHAIN3_ETH_BEFORE" ]; then
+            log_and_echo "   ❌ ERROR: Failed to get Bob's Chain 3 balance before claim"
+            log_and_echo "   Balance output: $BOB_CHAIN3_ETH_BEFORE_OUTPUT"
             exit 1
         fi
         
-        log "   - Bob's balance before claim: $BOB_BALANCE_BEFORE wei"
+        log "   - Bob's Chain 3 balance before claim: $BOB_CHAIN3_ETH_BEFORE wei"
         
         # Submit escrow release transaction on EVM
         cd evm-intent-framework
@@ -169,39 +169,39 @@ check_and_release_escrows() {
         sleep 2
         
         # Get Bob's balance after claiming (to verify funds were received)
-        log "   - Getting Bob's balance after claim..."
+        log "   - Getting Bob's Chain 3 balance after claim..."
         cd evm-intent-framework
-        BOB_BALANCE_AFTER_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-        BOB_BALANCE_AFTER=$(echo "$BOB_BALANCE_AFTER_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
+        BOB_CHAIN3_ETH_AFTER_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+        BOB_CHAIN3_ETH_AFTER=$(echo "$BOB_CHAIN3_ETH_AFTER_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
         cd ..
         
-        if [ -z "$BOB_BALANCE_AFTER" ]; then
-            log_and_echo "   ❌ ERROR: Failed to get Bob's balance after claim"
-            log_and_echo "   Balance output: $BOB_BALANCE_AFTER_OUTPUT"
+        if [ -z "$BOB_CHAIN3_ETH_AFTER" ]; then
+            log_and_echo "   ❌ ERROR: Failed to get Bob's Chain 3 balance after claim"
+            log_and_echo "   Balance output: $BOB_CHAIN3_ETH_AFTER_OUTPUT"
             exit 1
         fi
         
-        log "   - Bob's balance after claim: $BOB_BALANCE_AFTER wei"
+        log "   - Bob's Chain 3 balance after claim: $BOB_CHAIN3_ETH_AFTER wei"
         
         # Calculate balance increase
         # Expected: Bob should receive 1 ETH (matches request intent offered_amount, minus gas fees)
         EXPECTED_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request intent offered_amount)
-        BALANCE_INCREASE=$(echo "$BOB_BALANCE_AFTER $BOB_BALANCE_BEFORE" | awk '{print $1 - $2}')
+        CHAIN3_ETH_INCREASE=$(echo "$BOB_CHAIN3_ETH_AFTER $BOB_CHAIN3_ETH_BEFORE" | awk '{print $1 - $2}')
         
-        log "   - Balance increase: $BALANCE_INCREASE wei"
+        log "   - Balance increase: $CHAIN3_ETH_INCREASE wei"
         log "   - Expected: ~$EXPECTED_AMOUNT_WEI wei (matches request intent offered_amount, minus gas)"
         
         # Check if balance increased by at least 99% of expected (allowing for gas fees)
         MIN_EXPECTED=$(echo "$EXPECTED_AMOUNT_WEI" | awk '{print int($1 * 0.99)}')
         
         # Use awk for numeric comparison
-        SUFFICIENT_INCREASE=$(echo "$BALANCE_INCREASE $MIN_EXPECTED" | awk '{if ($1 >= $2) print "1"; else print "0"}')
+        SUFFICIENT_INCREASE=$(echo "$CHAIN3_ETH_INCREASE $MIN_EXPECTED" | awk '{if ($1 >= $2) print "1"; else print "0"}')
         
-        if [ "$SUFFICIENT_INCREASE" = "0" ] || [ -z "$BALANCE_INCREASE" ] || [ "$BALANCE_INCREASE" = "0" ]; then
+        if [ "$SUFFICIENT_INCREASE" = "0" ] || [ -z "$CHAIN3_ETH_INCREASE" ] || [ "$CHAIN3_ETH_INCREASE" = "0" ]; then
             log_and_echo "   ❌ ERROR: Bob did not receive the escrow funds!"
-            log_and_echo "   Bob's balance before: $BOB_BALANCE_BEFORE wei"
-            log_and_echo "   Bob's balance after:  $BOB_BALANCE_AFTER wei"
-            log_and_echo "   Balance increase:    $BALANCE_INCREASE wei"
+            log_and_echo "   Bob's Chain 3 balance before: $BOB_CHAIN3_ETH_BEFORE wei"
+            log_and_echo "   Bob's Chain 3 balance after:  $BOB_CHAIN3_ETH_AFTER wei"
+            log_and_echo "   Balance increase:    $CHAIN3_ETH_INCREASE wei"
             log_and_echo "   Expected increase:   ~$EXPECTED_AMOUNT_WEI wei (matches request intent offered_amount)"
             log_and_echo "   Minimum expected:     $MIN_EXPECTED wei (99% of escrow amount)"
             log_and_echo "   Escrow release FAILED - Bob did not receive funds!"
@@ -209,7 +209,7 @@ check_and_release_escrows() {
         fi
         
         log "   ✅ Escrow released successfully on EVM chain!"
-        log "   ✅ Bob received $BALANCE_INCREASE wei (expected ~$EXPECTED_AMOUNT_WEI wei)"
+        log "   ✅ Bob received $CHAIN3_ETH_INCREASE wei (expected ~$EXPECTED_AMOUNT_WEI wei)"
         RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
     done
 }
@@ -304,13 +304,13 @@ sleep 5
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh
 
 cd evm-intent-framework
-BOB_BALANCE_FINAL_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-BOB_BALANCE_FINAL=$(echo "$BOB_BALANCE_FINAL_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
+BOB_CHAIN3_ETH_FINAL_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+BOB_CHAIN3_ETH_FINAL=$(echo "$BOB_CHAIN3_ETH_FINAL_OUTPUT" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
 cd ..
 
-if [ -z "$BOB_BALANCE_FINAL" ]; then
-    log_and_echo "   ❌ ERROR: Failed to get Bob's final balance on EVM"
-    log_and_echo "   Balance output: $BOB_BALANCE_FINAL_OUTPUT"
+if [ -z "$BOB_CHAIN3_ETH_FINAL" ]; then
+    log_and_echo "   ❌ ERROR: Failed to get Bob's final balance on Chain 3 (EVM)"
+    log_and_echo "   Balance output: $BOB_CHAIN3_ETH_FINAL_OUTPUT"
     exit 1
 fi
 
@@ -323,23 +323,23 @@ EXPECTED_BOB_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request intent o
 MIN_EXPECTED_BOB_WEI=$(echo "$EXPECTED_BOB_AMOUNT_WEI" | awk '{print int($1 * 0.99)}')
 
 # Calculate balance increase for Bob on EVM Chain 3
-BOB_BALANCE_INCREASE=$(echo "$BOB_BALANCE_FINAL $BOB_BALANCE_INIT" | awk '{print $1 - $2}')
+BOB_CHAIN3_ETH_GAIN=$(echo "$BOB_CHAIN3_ETH_FINAL $BOB_CHAIN3_ETH_INIT" | awk '{print $1 - $2}')
 
 # Check if escrow was released (Bob on EVM Chain 3 should have received funds)
-SUFFICIENT_BOB_INCREASE=$(echo "$BOB_BALANCE_INCREASE $MIN_EXPECTED_BOB_WEI" | awk '{if ($1 >= $2) print "1"; else print "0"}')
+SUFFICIENT_BOB_INCREASE=$(echo "$BOB_CHAIN3_ETH_GAIN $MIN_EXPECTED_BOB_WEI" | awk '{if ($1 >= $2) print "1"; else print "0"}')
 
-if [ "$SUFFICIENT_BOB_INCREASE" = "0" ] || [ -z "$BOB_BALANCE_INCREASE" ] || [ "$BOB_BALANCE_INCREASE" = "0" ]; then
+if [ "$SUFFICIENT_BOB_INCREASE" = "0" ] || [ -z "$BOB_CHAIN3_ETH_GAIN" ] || [ "$BOB_CHAIN3_ETH_GAIN" = "0" ]; then
     log_and_echo "❌ ERROR: Bob on EVM Chain 3 balance did not increase by expected amount!"
-    log_and_echo "   Initial balance: $BOB_BALANCE_INIT wei"
-    log_and_echo "   Final balance: $BOB_BALANCE_FINAL wei"
-    log_and_echo "   Balance increase: $BOB_BALANCE_INCREASE wei"
+    log_and_echo "   Initial balance: $BOB_CHAIN3_ETH_INIT wei"
+    log_and_echo "   Final balance: $BOB_CHAIN3_ETH_FINAL wei"
+    log_and_echo "   Balance increase: $BOB_CHAIN3_ETH_GAIN wei"
     log_and_echo "   Expected increase: at least $MIN_EXPECTED_BOB_WEI wei (99% of escrow amount, after escrow release)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     exit 1
 fi
 
 log "   ✅ Final balances validated:"
-log "      Bob EVM Chain 3: $BOB_BALANCE_INIT → $BOB_BALANCE_FINAL wei (+$BOB_BALANCE_INCREASE, escrow released)"
+log "      Bob EVM Chain 3: $BOB_CHAIN3_ETH_INIT → $BOB_CHAIN3_ETH_FINAL wei (+$BOB_CHAIN3_ETH_GAIN, escrow released)"
 
 log ""
 log "📝 Useful commands:"

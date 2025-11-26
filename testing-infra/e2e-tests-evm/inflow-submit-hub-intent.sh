@@ -57,11 +57,11 @@ log "   - Getting APT metadata addresses..."
 log "     Getting APT metadata on Chain 1..."
 APT_METADATA_CHAIN1=$(extract_apt_metadata "alice-chain1" "$CHAIN1_ADDRESS" "$ALICE_CHAIN1_ADDRESS" "1" "$LOG_FILE")
 log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
-OFFERED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
-DESIRED_FA_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+DESIRED_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
 
 # In EVM mode, use Chain 1 metadata for both (since escrow is on EVM, not Chain 2)
-OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN2="$APT_METADATA_CHAIN1"
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
 # NOTE: Cross-chain request intents must be reserved. This requires:
@@ -77,8 +77,8 @@ OFFERED_FA_METADATA_CHAIN2="$APT_METADATA_CHAIN1"
 # 4. Use the signature in create_inflow_request_intent (solver must be registered in registry)
 #
 log "   - Creating cross-chain request intent on Chain 1..."
-log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN1"
-log "     Desired FA metadata: $DESIRED_FA_METADATA_CHAIN1"
+log "     Offered metadata: $OFFERED_METADATA_CHAIN1"
+log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
 log "     Solver (Bob) address: $BOB_CHAIN1_ADDRESS"
 log "     Generating solver signature..."
 
@@ -91,10 +91,10 @@ DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
     "$CHAIN1_ADDRESS" \
-    "$OFFERED_FA_METADATA_CHAIN1" \
+    "$OFFERED_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
     "$OFFERED_CHAIN_ID" \
-    "$DESIRED_FA_METADATA_CHAIN1" \
+    "$DESIRED_METADATA_CHAIN1" \
     "$DESIRED_AMOUNT" \
     "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
@@ -136,7 +136,7 @@ SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
 HUB_CHAIN_ID=1
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
-    --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"

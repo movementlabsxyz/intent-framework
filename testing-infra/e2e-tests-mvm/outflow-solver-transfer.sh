@@ -55,11 +55,11 @@ log ""
 display_balances_connected_mvm
 log_and_echo ""
 
-ALICE_INITIAL_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-BOB_INITIAL_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+ALICE_CHAIN2_APT_INIT=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+BOB_CHAIN2_APT_INIT=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
 
-log "   Alice Chain 2 initial balance: $ALICE_INITIAL_BALANCE Octas"
-log "   Bob Chain 2 initial balance: $BOB_INITIAL_BALANCE Octas"
+log "   Alice Chain 2 initial balance: $ALICE_CHAIN2_APT_INIT Octas"
+log "   Bob Chain 2 initial balance: $BOB_CHAIN2_APT_INIT Octas"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -96,30 +96,30 @@ if [ $? -eq 0 ]; then
     log "     ✅ Transaction hash: $TX_HASH"
 
     log "     - Verifying transfer by checking balances..."
-    ALICE_FINAL_BALANCE=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    BOB_FINAL_BALANCE=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+    ALICE_CHAIN2_APT_FINAL=$(aptos account balance --profile alice-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+    BOB_CHAIN2_APT_FINAL=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
 
-    log "     Alice Chain 2 final balance: $ALICE_FINAL_BALANCE Octas"
-    log "     Bob Chain 2 final balance: $BOB_FINAL_BALANCE Octas"
+    log "     Alice Chain 2 final balance: $ALICE_CHAIN2_APT_FINAL Octas"
+    log "     Bob Chain 2 final balance: $BOB_CHAIN2_APT_FINAL Octas"
 
-    ALICE_EXPECTED=$((ALICE_INITIAL_BALANCE + TRANSFER_AMOUNT))
+    ALICE_EXPECTED=$((ALICE_CHAIN2_APT_INIT + TRANSFER_AMOUNT))
 
-    if [ "$ALICE_FINAL_BALANCE" -eq "$ALICE_EXPECTED" ]; then
+    if [ "$ALICE_CHAIN2_APT_FINAL" -eq "$ALICE_EXPECTED" ]; then
         log "     ✅ Requester (Alice) Chain 2 balance increased by $TRANSFER_AMOUNT as expected"
     else
         log_and_echo "❌ ERROR: Requester (Alice) Chain 2 balance mismatch"
         log_and_echo "   Expected: $ALICE_EXPECTED Octas"
-        log_and_echo "   Got: $ALICE_FINAL_BALANCE Octas"
+        log_and_echo "   Got: $ALICE_CHAIN2_APT_FINAL Octas"
         exit 1
     fi
 
-    if [ "$BOB_FINAL_BALANCE" -le "$((BOB_INITIAL_BALANCE - TRANSFER_AMOUNT))" ]; then
-        BOB_DECREASE=$((BOB_INITIAL_BALANCE - BOB_FINAL_BALANCE))
-        log "     ✅ Solver (Bob) Chain 2 balance decreased by $BOB_DECREASE Octas (transfer + gas)"
+    if [ "$BOB_CHAIN2_APT_FINAL" -le "$((BOB_CHAIN2_APT_INIT - TRANSFER_AMOUNT))" ]; then
+        BOB_CHAIN2_APT_DECREASE=$((BOB_CHAIN2_APT_INIT - BOB_CHAIN2_APT_FINAL))
+        log "     ✅ Solver (Bob) Chain 2 balance decreased by $BOB_CHAIN2_APT_DECREASE Octas (transfer + gas)"
     else
         log_and_echo "❌ ERROR: Solver (Bob) Chain 2 balance did not decrease as expected"
-        log_and_echo "   Initial: $BOB_INITIAL_BALANCE Octas"
-        log_and_echo "   Final: $BOB_FINAL_BALANCE Octas"
+        log_and_echo "   Initial: $BOB_CHAIN2_APT_INIT Octas"
+        log_and_echo "   Final: $BOB_CHAIN2_APT_FINAL Octas"
         exit 1
     fi
 

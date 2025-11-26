@@ -363,7 +363,7 @@ extract_apt_metadata() {
 
 # Generate solver signature for IntentToSign
 # Usage: generate_solver_signature <profile> <chain_address> <offered_metadata> <offered_amount> <offered_chain_id> <desired_metadata> <desired_amount> <desired_chain_id> <expiry_time> <issuer> <solver> <chain_num> [log_file]
-# Example: generate_solver_signature "bob-chain1" "$CHAIN1_ADDRESS" "$OFFERED_FA_METADATA" "100000000" "1" "$DESIRED_FA_METADATA" "100000000" "2" "$EXPIRY_TIME" "$ALICE_CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "1"
+# Example: generate_solver_signature "bob-chain1" "$CHAIN1_ADDRESS" "$OFFERED_METADATA" "100000000" "1" "$DESIRED_METADATA" "100000000" "2" "$EXPIRY_TIME" "$ALICE_CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "1"
 # Returns the signature as hex string (with 0x prefix)
 generate_solver_signature() {
     local profile="$1"

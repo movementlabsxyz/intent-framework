@@ -95,8 +95,8 @@ log ""
 display_balances_hub
 log_and_echo ""
 
-BOB_INITIAL_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-log "   Bob Chain 1 initial balance: $BOB_INITIAL_BALANCE Octas"
+BOB_CHAIN1_APT_INIT=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+log "   Bob Chain 1 initial balance: $BOB_CHAIN1_APT_INIT Octas"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -235,18 +235,18 @@ if [ $? -eq 0 ]; then
     sleep 2
 
     log "     - Verifying solver (Bob) received locked tokens..."
-    BOB_FINAL_BALANCE=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    log "     Bob Chain 1 final balance: $BOB_FINAL_BALANCE Octas"
+    BOB_CHAIN1_APT_FINAL=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
+    log "     Bob Chain 1 final balance: $BOB_CHAIN1_APT_FINAL Octas"
 
-    BALANCE_INCREASE=$((BOB_FINAL_BALANCE - BOB_INITIAL_BALANCE))
+    CHAIN1_APT_INCREASE=$((BOB_CHAIN1_APT_FINAL - BOB_CHAIN1_APT_INIT))
     OFFERED_AMOUNT=100000000  # 1 APT
     EXPECTED_MIN_AMOUNT=$((OFFERED_AMOUNT - 1000000))  # 1 APT - 0.01 APT buffer
 
-    if [ "$BALANCE_INCREASE" -ge "$EXPECTED_MIN_AMOUNT" ]; then
-        log "     ✅ Solver (Bob) received locked tokens: +$BALANCE_INCREASE Octas (expected ~$OFFERED_AMOUNT minus gas)"
+    if [ "$CHAIN1_APT_INCREASE" -ge "$EXPECTED_MIN_AMOUNT" ]; then
+        log "     ✅ Solver (Bob) received locked tokens: +$CHAIN1_APT_INCREASE Octas (expected ~$OFFERED_AMOUNT minus gas)"
     else
-        log_and_echo "❌ ERROR: Solver (Bob)'s balance increase is less than expected"
-        log_and_echo "   Balance increase: $BALANCE_INCREASE Octas"
+        log_and_echo "❌ ERROR: Solver (Bob) Chain 1 balance increase is less than expected"
+        log_and_echo "   Chain 1 APT increase: $CHAIN1_APT_INCREASE Octas"
         log_and_echo "   Expected minimum: $EXPECTED_MIN_AMOUNT Octas"
         exit 1
     fi
@@ -286,7 +286,7 @@ log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
-log "   Solver (Bob)'s balance increase: $BALANCE_INCREASE Octas"
+log "   Solver (Bob) Chain 1 APT increase: $CHAIN1_APT_INCREASE Octas"
 log ""
 log "📖 Outflow Request Intent Summary:"
 log "   1. Requester (Alice) created outflow request intent on hub chain (locked 1 APT)"

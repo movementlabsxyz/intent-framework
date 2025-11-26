@@ -63,8 +63,8 @@ if [ -z "$USDXYZ_METADATA_CHAIN1" ]; then
     exit 1
 fi
 log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
-OFFERED_FA_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
-DESIRED_FA_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
+DESIRED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 
 log "     Getting USDxyz metadata on Chain 2..."
 USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
@@ -96,10 +96,10 @@ log "   - Generating solver signature..."
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "bob-chain1" \
     "$CHAIN1_ADDRESS" \
-    "$OFFERED_FA_METADATA_CHAIN1" \
+    "$OFFERED_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
     "$OFFERED_CHAIN_ID" \
-    "$DESIRED_FA_METADATA_CHAIN1" \
+    "$DESIRED_METADATA_CHAIN1" \
     "$DESIRED_AMOUNT" \
     "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
@@ -133,14 +133,14 @@ log "   - Verifying solver registration..."
 verify_solver_registered "bob-chain1" "$CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "$LOG_FILE"
 
 log "   - Creating cross-chain request intent on Chain 1..."
-log "     Offered FA metadata: $OFFERED_FA_METADATA_CHAIN1"
-log "     Desired FA metadata: $DESIRED_FA_METADATA_CHAIN1"
+log "     Offered metadata: $OFFERED_METADATA_CHAIN1"
+log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
 log "     Solver (Bob) address: $BOB_CHAIN1_ADDRESS"
 
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
 aptos move run --profile alice-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
-    --args "address:${OFFERED_FA_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_FA_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS

@@ -58,6 +58,7 @@ echo "🚀 Step 6: Running Rust integration tests..."
 echo "============================================"
 ./testing-infra/e2e-tests-mvm/verifier-rust-integration-tests.sh
 
+source "$PROJECT_ROOT/testing-infra/util.sh"
 source "$PROJECT_ROOT/testing-infra/util_mvm.sh"
 echo ""
 echo "💰 Final Balance View"

@@ -148,11 +148,11 @@ pub async fn handle_outflow_fulfillment_validation(
 
     // Find matching request-intent (flow-agnostic logic)
     let intent_id = request.intent_id.as_ref().unwrap_or(&tx_params.intent_id);
-    let normalized_intent_id = crate::monitor::generic::normalize_intent_id(intent_id);
+    let normalized_intent_id = crate::monitor::normalize_intent_id(intent_id);
     let intent_cache = monitor.get_cached_events().await;
     let request_intent = match intent_cache
         .iter()
-        .find(|intent| crate::monitor::generic::normalize_intent_id(&intent.intent_id) == normalized_intent_id)
+        .find(|intent| crate::monitor::normalize_intent_id(&intent.intent_id) == normalized_intent_id)
     {
         Some(intent) => intent,
         None => {

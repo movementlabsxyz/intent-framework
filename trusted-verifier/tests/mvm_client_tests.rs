@@ -392,3 +392,159 @@ async fn test_get_solver_evm_address_hex_string_format() {
         "Should return the EVM address when serialized as hex string format"
     );
 }
+
+// ============================================================================
+// LEADING ZERO TESTS
+// ============================================================================
+
+/// Create a mock SolverRegistry resource where the type name has leading zeros stripped
+/// This simulates Move's behavior of stripping leading zeros from addresses in type names
+/// Example: 0x0a4c... becomes 0xa4c... in the resource type
+fn create_solver_registry_resource_with_stripped_zeros(
+    registry_address_in_type: &str,
+    solver_address: &str,
+    connected_chain_mvm_address: Option<&str>,
+) -> serde_json::Value {
+    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": [mvm_addr]},
+                "registered_at": 1234567890
+            }
+        })
+    } else {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": []},
+                "registered_at": 1234567890
+            }
+        })
+    };
+
+    json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address_in_type),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
+        }
+    }])
+}
+
+/// Test that get_solver_connected_chain_mvm_address handles leading zero mismatch
+/// Why: Move strips leading zeros from addresses in type names (e.g., 0x0a4c... becomes 0xa4c...)
+///      but the registry address passed to the function may have leading zeros.
+#[tokio::test]
+async fn test_get_solver_mvm_address_leading_zero_mismatch() {
+    let mock_server = MockServer::start().await;
+
+    // Registry address with leading zero after 0x prefix
+    let registry_address_full = "0x0a4c86da5e0c1ce855d13c1e21025f40fa121e6b4ba8fc09c992f28fb06dc89e";
+    // Same address but Move strips the leading zero in type names
+    let registry_address_stripped = "0xa4c86da5e0c1ce855d13c1e21025f40fa121e6b4ba8fc09c992f28fb06dc89e";
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address =
+        "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
+    // Mock response has the type with stripped leading zero (like Move does)
+    let resources_response = create_solver_registry_resource_with_stripped_zeros(
+        registry_address_stripped,
+        solver_address,
+        Some(connected_chain_mvm_address),
+    );
+
+    // But the API endpoint uses the full address
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/v1/accounts/{}/resources",
+            registry_address_full
+        )))
+        .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    // Query with the full address (with leading zero)
+    let result = client
+        .get_solver_connected_chain_mvm_address(solver_address, registry_address_full)
+        .await;
+
+    assert!(
+        result.is_ok(),
+        "Query should succeed despite leading zero mismatch"
+    );
+    let address = result.unwrap();
+    assert_eq!(
+        address,
+        Some(connected_chain_mvm_address.to_string()),
+        "Should find the SolverRegistry despite leading zero being stripped in type name"
+    );
+}
+
+/// Test that get_solver_evm_address handles leading zero mismatch
+/// Why: Same as above, but for EVM address lookup
+#[tokio::test]
+async fn test_get_solver_evm_address_leading_zero_mismatch() {
+    let mock_server = MockServer::start().await;
+
+    // Registry address with leading zero
+    let registry_address_full = "0x0a4c86da5e0c1ce855d13c1e21025f40fa121e6b4ba8fc09c992f28fb06dc89e";
+    // Move strips the leading zero in type names
+    let registry_address_stripped = "0xa4c86da5e0c1ce855d13c1e21025f40fa121e6b4ba8fc09c992f28fb06dc89e";
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let evm_address = "0x1234567890123456789012345678901234567890";
+
+    // Create mock response with stripped leading zero in type name
+    let solver_entry = json!({
+        "key": solver_address,
+        "value": {
+            "public_key": [1, 2, 3, 4],
+            "connected_chain_evm_address": {"vec": [evm_address]},
+            "connected_chain_mvm_address": {"vec": []},
+            "registered_at": 1234567890
+        }
+    });
+
+    let resources_response = json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address_stripped),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
+        }
+    }]);
+
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/v1/accounts/{}/resources",
+            registry_address_full
+        )))
+        .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    // Query with the full address (with leading zero)
+    let result = client
+        .get_solver_evm_address(solver_address, registry_address_full)
+        .await;
+
+    assert!(
+        result.is_ok(),
+        "Query should succeed despite leading zero mismatch"
+    );
+    let address = result.unwrap();
+    assert_eq!(
+        address,
+        Some(evm_address.to_string()),
+        "Should find the SolverRegistry despite leading zero being stripped in type name"
+    );
+}

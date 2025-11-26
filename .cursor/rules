@@ -9,7 +9,7 @@ For guidance on how to write rules, see [Cursor Rules Documentation](https://cur
 
 ## Commit Message Conventions
 
-After marking a subtask or task as done, create a commit with the changes
+After completing a subtask or task, create a commit with the changes.
 
 ```bash
 git commit -m "<type of change>: <description>
@@ -21,15 +21,34 @@ Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust)
 "
 ```
 
-**IMPORTANT:** All commit messages must be concise and professional.
+**Commit Rules:**
 
-- Do NOT git add anything
-- Keep commit messages brief and to the point
-- Do NOT include advertising, promotional text, or references to Claude/AI assistance
-- Do NOT include phrases like "Generated with Claude Code" or "Co-Authored-By ..."
-- Follow conventional commit format when applicable (e.g., `feat:`, `fix:`, `refactor:`)
-- Focus on what changed and why, not who/what tool made the change
-- **Always include test results** at the end of the commit message in the format: `Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust) <number>`
+- **ALWAYS commit after completing each subtask or task** - ensures incremental progress is saved
+- **CRITICAL: NEVER run `git add` or `git add -A`** - files must already be staged by the user
+- **Run tests before committing** to ensure changes work correctly
+- **Always include test results** in the format: `Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust) <number>`
+- Follow conventional commit format (e.g., `feat:`, `fix:`, `refactor:`, `test:`, `docs:`)
+- Keep commit messages brief and professional
+- Do NOT mention subtask or task IDs in commit messages
+- Do NOT include AI/Claude references or "Co-Authored-By" phrases
+
+### Test Count Commands
+
+Get test counts for each component:
+
+```bash
+# Move tests
+nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep "Total tests:"
+
+# Verifier tests
+nix develop -c bash -c "cd trusted-verifier && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Verifier: " sum " passed"}'
+
+# EVM tests
+nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep "passing"
+
+# Solver tests
+nix develop -c bash -c "cd solver && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Solver: " sum " passed"}'
+```
 
 ## Context Requirements
 
@@ -99,24 +118,6 @@ See [`.cursor/codestandards.md`](.cursor/codestandards.md) for language-specific
 - **E2E tests**: Use shell scripts in `testing-infra/e2e-tests-*/`
 - **Test isolation**: Each test should be independent and clean up after itself
 - **Balance checks**: Use granular balance display functions appropriate for the chain being tested
-
-### Test Count Commands
-
-Get test counts for each component (for commit messages):
-
-```bash
-# Move tests (shows total in output)
-nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep "Total tests:"
-
-# Verifier tests (sum across multiple test binaries)
-nix develop -c bash -c "cd trusted-verifier && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Verifier: " sum " passed"}'
-
-# EVM tests
-nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep "passing"
-
-# Solver tests
-nix develop -c bash -c "cd solver && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Solver: " sum " passed"}'
-```
 
 --------------------------------------------------------------------------------
 

@@ -170,14 +170,7 @@ task-master update-subtask --id=<id> --prompt="implementation notes..."
 # Complete subtasks and tasks
 task-master set-status --id=<id> --status=done
 
-# IMPORTANT: Commit after each subtask and task completion
-
-**Commit Rule:**
-
-- **ALWAYS commit after completing each subtask or task** - This ensures incremental progress is saved
-- **CRITICAL: NEVER run `git add` or `git add -A`** - Files must already be staged by the user before committing. Only run `git commit`, never stage files yourself.
-- Don't mention the subtask or task ID in the commit message.
-- Run tests before committing to ensure the changes work correctly
+# IMPORTANT: See `.cursor/rules` for commit conventions
 
 #### 3. Multi-Claude Workflows
 

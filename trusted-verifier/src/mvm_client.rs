@@ -625,39 +625,49 @@ impl MvmClient {
         solver_address: &str,
         registry_address: &str,
     ) -> Result<Option<String>> {
-        // Normalize registry address (remove 0x prefix for resource type matching)
+        // Normalize registry address (remove 0x prefix and leading zeros for resource type matching)
+        // Move strips leading zeros from addresses in type names (e.g., 0x0a4c... becomes 0xa4c...)
         let registry_addr_normalized = registry_address
             .strip_prefix("0x")
-            .unwrap_or(registry_address);
+            .unwrap_or(registry_address)
+            .trim_start_matches('0');
         
         // Query the SolverRegistry resource directly
         let resources = self.get_resources(registry_address).await?;
 
         // Try both formats: with and without 0x prefix (Aptos may return either)
+        // Also try with the original address (with leading zeros) in case it's stored that way
         let registry_resource_type_with_prefix =
             format!("0x{}::solver_registry::SolverRegistry", registry_addr_normalized);
         let registry_resource_type_without_prefix =
             format!("{}::solver_registry::SolverRegistry", registry_addr_normalized);
+        let registry_addr_with_zeros = registry_address
+            .strip_prefix("0x")
+            .unwrap_or(registry_address);
+        let registry_resource_type_with_zeros =
+            format!("0x{}::solver_registry::SolverRegistry", registry_addr_with_zeros);
         
         let solver_addr = solver_address
             .strip_prefix("0x")
             .unwrap_or(solver_address)
             .to_lowercase();
 
-        // Find the SolverRegistry resource (try both formats)
+        // Find the SolverRegistry resource (try all formats)
         let registry_resource = resources
             .iter()
             .find(|r| {
                 r.resource_type == registry_resource_type_with_prefix
                     || r.resource_type == registry_resource_type_without_prefix
+                    || r.resource_type == registry_resource_type_with_zeros
             });
 
         let Some(registry_resource) = registry_resource else {
             tracing::warn!(
-                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}' and '{}', Available resources: {:?}",
+                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}', '{}', and '{}', Available resources: {:?}",
                 registry_address,
                 registry_resource_type_with_prefix,
                 registry_resource_type_without_prefix,
+                registry_resource_type_with_zeros,
                 resources.iter().map(|r| &r.resource_type).collect::<Vec<_>>()
             );
             return Ok(None); // Registry resource not found
@@ -921,33 +931,45 @@ impl MvmClient {
 
     /// Find the SolverRegistry resource from the resources list.
     ///
-    /// Handles both resource type formats (with and without 0x prefix).
+    /// Handles multiple resource type formats (with/without 0x prefix, with/without leading zeros).
+    /// Move strips leading zeros from addresses in type names (e.g., 0x0a4c... becomes 0xa4c...).
     fn find_solver_registry_resource<'a>(
         resources: &'a [ResourceData],
         registry_address: &str,
     ) -> Option<&'a ResourceData> {
+        // Strip 0x prefix and leading zeros for matching Move's type name format
         let registry_addr_normalized = registry_address
             .strip_prefix("0x")
-            .unwrap_or(registry_address);
+            .unwrap_or(registry_address)
+            .trim_start_matches('0');
         
         let registry_resource_type_with_prefix =
             format!("0x{}::solver_registry::SolverRegistry", registry_addr_normalized);
         let registry_resource_type_without_prefix =
             format!("{}::solver_registry::SolverRegistry", registry_addr_normalized);
+        
+        // Also try with original address (with leading zeros) in case it's stored that way
+        let registry_addr_with_zeros = registry_address
+            .strip_prefix("0x")
+            .unwrap_or(registry_address);
+        let registry_resource_type_with_zeros =
+            format!("0x{}::solver_registry::SolverRegistry", registry_addr_with_zeros);
 
         let resource = resources
             .iter()
             .find(|r| {
                 r.resource_type == registry_resource_type_with_prefix
                     || r.resource_type == registry_resource_type_without_prefix
+                    || r.resource_type == registry_resource_type_with_zeros
             });
 
         if resource.is_none() {
             tracing::warn!(
-                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}' and '{}', Available resources: {:?}",
+                "SolverRegistry resource not found. Registry address: {}, Tried types: '{}', '{}', and '{}', Available resources: {:?}",
                 registry_address,
                 registry_resource_type_with_prefix,
                 registry_resource_type_without_prefix,
+                registry_resource_type_with_zeros,
                 resources.iter().map(|r| &r.resource_type).collect::<Vec<_>>()
             );
         }

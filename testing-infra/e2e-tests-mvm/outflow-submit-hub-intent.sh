@@ -93,10 +93,10 @@ USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
 log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
 OFFERED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 
-log "     Getting USDxyz metadata on Chain 2..."
-USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
-log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
-DESIRED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
+# For outflow, use Chain 1 metadata for desired as well (signature is generated on Chain 1)
+# The actual transfer on Chain 2 uses Chain 2's USDxyz, but the intent stores Chain 1 metadata
+DESIRED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN1"
+log "     Using Chain 1 USDxyz metadata for desired (outflow pattern)"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE

@@ -37,6 +37,7 @@ fi
 # ============================================================================
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 
 log ""
 log "📋 Chain Information:"
@@ -95,8 +96,8 @@ log ""
 display_balances_hub
 log_and_echo ""
 
-BOB_CHAIN1_APT_INIT=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-log "   Bob Chain 1 initial balance: $BOB_CHAIN1_APT_INIT Octas"
+BOB_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "bob-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
+log "   Bob Chain 1 initial USDxyz balance: $BOB_CHAIN1_USDXYZ_INIT"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -234,20 +235,19 @@ if [ $? -eq 0 ]; then
 
     sleep 2
 
-    log "     - Verifying solver (Bob) received locked tokens..."
-    BOB_CHAIN1_APT_FINAL=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    log "     Bob Chain 1 final balance: $BOB_CHAIN1_APT_FINAL Octas"
+    log "     - Verifying solver (Bob) received locked USDxyz tokens..."
+    BOB_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "bob-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
+    log "     Bob Chain 1 final USDxyz balance: $BOB_CHAIN1_USDXYZ_FINAL"
 
-    CHAIN1_APT_INCREASE=$((BOB_CHAIN1_APT_FINAL - BOB_CHAIN1_APT_INIT))
-    OFFERED_AMOUNT=100000000  # 1 APT
-    EXPECTED_MIN_AMOUNT=$((OFFERED_AMOUNT - 1000000))  # 1 APT - 0.01 APT buffer
+    CHAIN1_USDXYZ_INCREASE=$((BOB_CHAIN1_USDXYZ_FINAL - BOB_CHAIN1_USDXYZ_INIT))
+    OFFERED_AMOUNT=100000000000  # 1000 USDxyz
 
-    if [ "$CHAIN1_APT_INCREASE" -ge "$EXPECTED_MIN_AMOUNT" ]; then
-        log "     ✅ Solver (Bob) received locked tokens: +$CHAIN1_APT_INCREASE Octas (expected ~$OFFERED_AMOUNT minus gas)"
+    if [ "$CHAIN1_USDXYZ_INCREASE" -eq "$OFFERED_AMOUNT" ]; then
+        log "     ✅ Solver (Bob) received locked USDxyz tokens: +$CHAIN1_USDXYZ_INCREASE (expected $OFFERED_AMOUNT)"
     else
-        log_and_echo "❌ ERROR: Solver (Bob) Chain 1 balance increase is less than expected"
-        log_and_echo "   Chain 1 APT increase: $CHAIN1_APT_INCREASE Octas"
-        log_and_echo "   Expected minimum: $EXPECTED_MIN_AMOUNT Octas"
+        log_and_echo "❌ ERROR: Solver (Bob) Chain 1 USDxyz balance increase is less than expected"
+        log_and_echo "   Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE"
+        log_and_echo "   Expected: $OFFERED_AMOUNT"
         exit 1
     fi
 
@@ -286,11 +286,11 @@ log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
-log "   Solver (Bob) Chain 1 APT increase: $CHAIN1_APT_INCREASE Octas"
+log "   Solver (Bob) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE"
 log ""
 log "📖 Outflow Request Intent Summary:"
-log "   1. Requester (Alice) created outflow request intent on hub chain (locked 1 APT)"
-log "   2. Solver (Bob) transferred 1 APT to requester (Alice) on connected chain"
+log "   1. Requester (Alice) created outflow request intent on hub chain (locked 1000 USDxyz)"
+log "   2. Solver (Bob) transferred 1000 USDxyz to requester (Alice) on connected chain"
 log "   3. Verifier validated the connected chain transfer"
 log "   4. Solver (Bob) fulfilled hub request intent with verifier signature"
-log "   5. Solver (Bob) received locked tokens as reward on hub chain"
+log "   5. Solver (Bob) received locked USDxyz tokens as reward on hub chain"

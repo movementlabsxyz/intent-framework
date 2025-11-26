@@ -67,9 +67,9 @@ fi
 
 VERIFIER_PUBLIC_KEY="0x${VERIFIER_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-# Bob gets funded with 200000000 Octas (2 APT), so half is 100000000 Octas (1 APT)
-OFFERED_AMOUNT="100000000"  # 1 APT (half of Bob's 200000000 Octas)
-DESIRED_AMOUNT="100000000"  # 1 APT (half of Bob's 200000000 Octas)
+# USDxyz amounts: 1000 USDxyz (8 decimals = 100000000000)
+OFFERED_AMOUNT="100000000000"  # 1000 USDxyz
+DESIRED_AMOUNT="100000000000"  # 1000 USDxyz
 OFFERED_CHAIN_ID=1
 DESIRED_CHAIN_ID=$CONNECTED_CHAIN_ID
 HUB_CHAIN_ID=1
@@ -79,20 +79,24 @@ log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Verifier public key: $VERIFIER_PUBLIC_KEY"
-log "   Offered amount: $OFFERED_AMOUNT Octas (1 APT)"
-log "   Desired amount: $DESIRED_AMOUNT Octas (1 APT)"
+log "   Offered amount: $OFFERED_AMOUNT (1000 USDxyz)"
+log "   Desired amount: $DESIRED_AMOUNT (1000 USDxyz)"
+
+# Get test tokens addresses from profiles
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 
 log ""
-log "   - Getting APT metadata addresses..."
-log "     Getting APT metadata on Chain 1..."
-APT_METADATA_CHAIN1=$(extract_apt_metadata "alice-chain1" "$CHAIN1_ADDRESS" "$ALICE_CHAIN1_ADDRESS" "1" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
-OFFERED_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+log "   - Getting USDxyz metadata addresses..."
+log "     Getting USDxyz metadata on Chain 1..."
+USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
+log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 
-log "     Getting APT metadata on Chain 2..."
-APT_METADATA_CHAIN2=$(extract_apt_metadata "alice-chain2" "$CHAIN2_ADDRESS" "$ALICE_CHAIN2_ADDRESS" "2" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 2: $APT_METADATA_CHAIN2"
-DESIRED_METADATA_CHAIN2="$APT_METADATA_CHAIN2"
+log "     Getting USDxyz metadata on Chain 2..."
+USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
+log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
+DESIRED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
@@ -108,8 +112,8 @@ log_and_echo ""
 log ""
 log "   Creating outflow request intent on hub chain..."
 log "   - Requester (Alice) creates outflow request intent on Chain 1 (hub chain)"
-log "   - Requester (Alice) locks 1 APT on hub chain"
-log "   - Requester (Alice) wants 1 APT on connected chain (Chain 2)"
+log "   - Requester (Alice) locks 1000 USDxyz on hub chain"
+log "   - Requester (Alice) wants 1000 USDxyz on connected chain (Chain 2)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."

@@ -110,7 +110,7 @@
           "id": 4,
           "title": "Verify MVM inflow tests pass with USDxyz",
           "description": "Run full inflow test suite and verify correct USDxyz transfers",
-          "status": "pending"
+          "status": "done"
         }
       ]
     },
@@ -118,7 +118,7 @@
       "id": 4,
       "title": "Update MVM outflow tests to use USDxyz",
       "description": "Modify outflow E2E tests to swap USDxyz instead of APT. Requester sends USDxyz, wants same amount of USDxyz on destination.",
-      "status": "pending",
+      "status": "in-progress",
       "priority": "medium",
       "dependencies": [1],
       "subtasks": [
@@ -126,19 +126,19 @@
           "id": 1,
           "title": "Update outflow intent creation to use USDxyz",
           "description": "Modify outflow-submit-hub-intent.sh to use USDxyz metadata instead of APT",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
           "title": "Update outflow solver transfer to use USDxyz",
           "description": "Modify outflow-solver-transfer.sh to transfer USDxyz",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 3,
           "title": "Update outflow fulfillment to use USDxyz",
           "description": "Modify outflow-validate-and-fulfill.sh to handle USDxyz",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 4,

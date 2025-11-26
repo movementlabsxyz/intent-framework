@@ -40,8 +40,11 @@ log "   Intent ID:              $INTENT_ID"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
-# Get USDxyz token address from deployment logs
-USDXYZ_ADDRESS=$(grep -i "USDxyz token deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+# Get USDxyz token address from chain-info.env
+if [ -f "$PROJECT_ROOT/tmp/chain-info.env" ]; then
+    source "$PROJECT_ROOT/tmp/chain-info.env"
+    USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
+fi
 if [ -z "$USDXYZ_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Could not find USDxyz token address. Please ensure USDxyz is deployed."
     exit 1

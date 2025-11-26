@@ -118,7 +118,7 @@
       "id": 4,
       "title": "Update MVM outflow tests to use USDxyz",
       "description": "Modify outflow E2E tests to swap USDxyz instead of APT. Requester sends USDxyz, wants same amount of USDxyz on destination.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "medium",
       "dependencies": [1],
       "subtasks": [
@@ -144,7 +144,7 @@
           "id": 4,
           "title": "Verify MVM outflow tests pass with USDxyz",
           "description": "Run full outflow test suite and verify correct USDxyz transfers",
-          "status": "pending"
+          "status": "done"
         }
       ]
     },
@@ -152,7 +152,7 @@
       "id": 5,
       "title": "Update EVM inflow tests to use USDxyz",
       "description": "Modify EVM inflow E2E tests to swap USDxyz (ERC20) instead of ETH.",
-      "status": "in-progress",
+      "status": "done",
       "priority": "medium",
       "dependencies": [2],
       "subtasks": [
@@ -172,7 +172,7 @@
           "id": 3,
           "title": "Verify EVM inflow tests pass with USDxyz",
           "description": "Run full EVM inflow test suite and verify correct USDxyz transfers",
-          "status": "pending"
+          "status": "done"
         }
       ]
     },
@@ -188,7 +188,7 @@
           "id": 1,
           "title": "Update EVM outflow tests to use USDxyz",
           "description": "Modify EVM outflow test scripts to use USDxyz ERC20 for swaps",
-          "status": "pending"
+          "status": "done"
         },
         {
           "id": 2,
@@ -203,6 +203,6 @@
     "version": "1.0.0",
     "lastModified": "2025-11-26T13:00:00.000Z",
     "taskCount": 6,
-    "completedCount": 3
+    "completedCount": 5
   }
 }

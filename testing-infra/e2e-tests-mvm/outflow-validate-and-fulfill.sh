@@ -38,6 +38,7 @@ fi
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 
 log ""
 log "📋 Chain Information:"
@@ -93,7 +94,7 @@ fi
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 log ""
-display_balances_hub
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
 log_and_echo ""
 
 SOLVER_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
@@ -265,8 +266,8 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_mvm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 log ""

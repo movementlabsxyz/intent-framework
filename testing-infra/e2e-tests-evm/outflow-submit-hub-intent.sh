@@ -23,12 +23,15 @@ INTENT_ID="0x$(openssl rand -hex 32)"
 # ============================================================================
 CONNECTED_CHAIN_ID=31337
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 
-# Get EVM addresses
+# Get EVM addresses and USDxyz token
 REQUESTER_EVM_ADDRESS=$(get_hardhat_account_address "1")
 SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
+source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 log ""
 log "📋 Chain Information:"
@@ -69,8 +72,8 @@ fi
 
 VERIFIER_PUBLIC_KEY="0x${VERIFIER_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-OFFERED_AMOUNT="100000000"  # 1 APT (on hub chain Chain 1)
-DESIRED_AMOUNT="1000000000000000000"  # 1 ETH = 1_000_000_000_000_000_000 wei
+OFFERED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000 (8 decimals, on hub chain)
+DESIRED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000 (8 decimals, on EVM chain)
 OFFERED_CHAIN_ID=1
 DESIRED_CHAIN_ID=$CONNECTED_CHAIN_ID
 HUB_CHAIN_ID=1
@@ -80,25 +83,24 @@ log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Verifier public key: $VERIFIER_PUBLIC_KEY"
-log "   Offered amount: $OFFERED_AMOUNT Octas (1 APT on hub chain)"
-log "   Desired amount: $DESIRED_AMOUNT wei (1 ETH on EVM chain)"
+log "   Offered amount: $OFFERED_AMOUNT USDxyz.10e8 (1 USDxyz on hub chain)"
+log "   Desired amount: $DESIRED_AMOUNT USDxyz.10e8 (1 USDxyz on EVM chain)"
 
 log ""
-log "   - Getting APT metadata addresses..."
-log "     Getting APT metadata on Chain 1..."
-APT_METADATA_CHAIN1=$(extract_apt_metadata "requester-chain1" "$CHAIN1_ADDRESS" "$REQUESTER_CHAIN1_ADDRESS" "1" "$LOG_FILE")
-log "     ✅ Got APT metadata on Chain 1: $APT_METADATA_CHAIN1"
-OFFERED_METADATA_CHAIN1="$APT_METADATA_CHAIN1"
+log "   - Getting USDxyz metadata addresses..."
+log "     Getting USDxyz metadata on Chain 1..."
+OFFERED_METADATA_CHAIN1=$(get_usdxyz_metadata "requester-chain1" "1" "$LOG_FILE")
+log "     ✅ Got USDxyz metadata on Chain 1: $OFFERED_METADATA_CHAIN1"
 
 # For EVM outflow, we use Chain 1 metadata for desired (since we're transferring on EVM, not Chain 2)
-DESIRED_METADATA_CHAIN2="$APT_METADATA_CHAIN1"
+DESIRED_METADATA_CHAIN1="$OFFERED_METADATA_CHAIN1"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
 # ============================================================================
@@ -107,8 +109,8 @@ log_and_echo ""
 log ""
 log "   Creating outflow request-intent on hub chain..."
 log "   - Requester (Requester) creates outflow request-intent on Chain 1 (hub chain)"
-log "   - Requester (Requester) locks 1 APT on hub chain"
-log "   - Requester (Requester) wants 1 ETH on connected chain (EVM Chain 3)"
+log "   - Requester (Requester) locks 1 USDxyz on hub chain"
+log "   - Requester (Requester) wants 1 USDxyz on connected chain (EVM Chain 3)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."
@@ -118,7 +120,7 @@ SOLVER_SIGNATURE=$(generate_solver_signature \
     "$OFFERED_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
     "$OFFERED_CHAIN_ID" \
-    "$DESIRED_METADATA_CHAIN2" \
+    "$DESIRED_METADATA_CHAIN1" \
     "$DESIRED_AMOUNT" \
     "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
@@ -153,7 +155,7 @@ verify_solver_registered "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_CHAIN1_ADDRE
 
 log "   - Creating outflow request-intent on Chain 1..."
 log "     Offered metadata (hub): $OFFERED_METADATA_CHAIN1"
-log "     Desired metadata (connected): $DESIRED_METADATA_CHAIN2"
+log "     Desired metadata (connected): $DESIRED_METADATA_CHAIN1"
 log "     Solver (Solver) address: $SOLVER_CHAIN1_ADDRESS"
 log "     Requester address on connected chain: $REQUESTER_EVM_ADDRESS"
 
@@ -162,7 +164,7 @@ VERIFIER_PUBLIC_KEY_HEX="${VERIFIER_PUBLIC_KEY#0x}"
 
 aptos move run --profile requester-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_outflow::create_outflow_request_intent_entry" \
-    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN2}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${REQUESTER_EVM_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX}" "address:${SOLVER_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${REQUESTER_EVM_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX}" "address:${SOLVER_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS
@@ -195,8 +197,8 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
 log ""

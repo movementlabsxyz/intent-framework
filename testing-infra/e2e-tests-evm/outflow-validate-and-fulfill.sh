@@ -37,7 +37,12 @@ fi
 # SECTION 2: GET ADDRESSES AND CONFIGURATION
 # ============================================================================
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+
+# Get USDxyz EVM address
+source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 log ""
 log "📋 Chain Information:"
@@ -93,12 +98,15 @@ fi
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
-SOLVER_CHAIN1_APT_INIT=$(aptos account balance --profile solver-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-log "   Solver Chain 1 initial balance: $SOLVER_CHAIN1_APT_INIT Octas"
+# Get USDxyz metadata for balance checks
+TEST_TOKENS_CHAIN1_ADDRESS=$(get_profile_address "test-tokens-chain1")
+SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+SOLVER_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "$SOLVER_CHAIN1_ADDRESS" "$TEST_TOKENS_CHAIN1_ADDRESS" "1")
+log "   Solver Chain 1 initial USDxyz balance: $SOLVER_CHAIN1_USDXYZ_INIT USDxyz.10e8"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -268,20 +276,19 @@ if [ $? -eq 0 ]; then
 
     sleep 2
 
-    log "     - Verifying solver (Solver) received locked tokens..."
-    SOLVER_CHAIN1_APT_FINAL=$(aptos account balance --profile solver-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
-    log "     Solver Chain 1 final balance: $SOLVER_CHAIN1_APT_FINAL Octas"
+    log "     - Verifying solver (Solver) received locked USDxyz tokens..."
+    SOLVER_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "$SOLVER_CHAIN1_ADDRESS" "$TEST_TOKENS_CHAIN1_ADDRESS" "1")
+    log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL USDxyz.10e8"
 
-    CHAIN1_APT_INCREASE=$((SOLVER_CHAIN1_APT_FINAL - SOLVER_CHAIN1_APT_INIT))
-    OFFERED_AMOUNT=100000000
-    EXPECTED_MIN_AMOUNT=$((OFFERED_AMOUNT - 1000000))
+    CHAIN1_USDXYZ_INCREASE=$((SOLVER_CHAIN1_USDXYZ_FINAL - SOLVER_CHAIN1_USDXYZ_INIT))
+    OFFERED_AMOUNT=100000000  # 1 USDxyz = 100_000_000
 
-    if [ "$CHAIN1_APT_INCREASE" -ge "$EXPECTED_MIN_AMOUNT" ]; then
-        log "     ✅ Solver (Solver) received locked tokens: +$CHAIN1_APT_INCREASE Octas (expected ~$OFFERED_AMOUNT minus gas)"
+    if [ "$CHAIN1_USDXYZ_INCREASE" -ge "$OFFERED_AMOUNT" ]; then
+        log "     ✅ Solver (Solver) received locked USDxyz: +$CHAIN1_USDXYZ_INCREASE USDxyz.10e8 (expected $OFFERED_AMOUNT)"
     else
-        log_and_echo "❌ ERROR: Solver (Solver) Chain 1 balance increase is less than expected"
-        log_and_echo "   Chain 1 APT increase: $CHAIN1_APT_INCREASE Octas"
-        log_and_echo "   Expected minimum: $EXPECTED_MIN_AMOUNT Octas"
+        log_and_echo "❌ ERROR: Solver (Solver) Chain 1 USDxyz balance increase is less than expected"
+        log_and_echo "   Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE USDxyz.10e8"
+        log_and_echo "   Expected: $OFFERED_AMOUNT USDxyz.10e8"
         exit 1
     fi
 
@@ -299,8 +306,8 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
 log ""
@@ -320,10 +327,10 @@ log "   Hub Request-intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
-log "   Solver (Solver) Chain 1 APT increase: $CHAIN1_APT_INCREASE Octas"
+log "   Solver (Solver) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE USDxyz.10e8"
 log ""
 log "📖 Outflow Request-intent Summary:"
-log "   1. Requester (Requester) created outflow request-intent on hub chain (locked 1 APT)"
+log "   1. Requester (Requester) created outflow request-intent on hub chain (locked 1 USDxyz)"
 log "   2. Solver (Solver) transferred tokens to requester (Requester) on connected EVM chain (amount matches request-intent desired_amount)"
 log "   3. Verifier validated the connected EVM chain transfer"
 log "   4. Solver (Solver) fulfilled hub request-intent with verifier signature"

@@ -64,8 +64,8 @@ DESIRED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 # In EVM mode, use Chain 1 metadata for signature generation (escrow is on EVM)
 OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN1"
 
-# Create cross-chain request intent on Chain 1 using fa_intent module
-# NOTE: Cross-chain request intents must be reserved. This requires:
+# Create cross-chain request-intent on Chain 1 using fa_intent module
+# NOTE: Cross-chain request-intents must be reserved. This requires:
 # 1. Off-chain negotiation with solver (Solver)
 # 2. Solver signs IntentToSign structure (BCS-encoded)
 # 3. Pass solver address and signature to create_inflow_request_intent
@@ -77,7 +77,7 @@ OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN1"
 # 3. Convert signature to hex format
 # 4. Use the signature in create_inflow_request_intent (solver must be registered in registry)
 #
-log "   - Creating cross-chain request intent on Chain 1..."
+log "   - Creating cross-chain request-intent on Chain 1..."
 log "     Offered metadata: $OFFERED_METADATA_CHAIN1"
 log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
 log "     Solver (Solver) address: $SOLVER_CHAIN1_ADDRESS"

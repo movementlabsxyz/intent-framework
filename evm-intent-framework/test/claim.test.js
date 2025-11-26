@@ -6,7 +6,7 @@ describe("IntentEscrow - Claim", function () {
   let escrow;
   let token;
   let verifierWallet;
-  let maker;
+  let requester;
   let solver;
   let intentId;
   let amount;
@@ -16,14 +16,14 @@ describe("IntentEscrow - Claim", function () {
     escrow = fixtures.escrow;
     token = fixtures.token;
     verifierWallet = fixtures.verifierWallet;
-    maker = fixtures.maker;
+    requester = fixtures.requester;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
 
     amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
+    await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
     
   });
 
@@ -75,9 +75,9 @@ describe("IntentEscrow - Claim", function () {
     // Create a second escrow with a different intent_id
     const intentIdB = intentId + 1n;
     const amountB = ethers.parseEther("50");
-    await token.mint(maker.address, amountB);
-    await token.connect(maker).approve(escrow.target, amountB);
-    await escrow.connect(maker).createEscrow(intentIdB, token.target, amountB, solver.address);
+    await token.mint(requester.address, amountB);
+    await token.connect(requester).approve(escrow.target, amountB);
+    await escrow.connect(requester).createEscrow(intentIdB, token.target, amountB, solver.address);
 
     // Create a VALID signature for intent_id A (the first escrow)
     const messageHashA = ethers.solidityPackedKeccak256(

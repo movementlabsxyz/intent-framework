@@ -195,12 +195,12 @@ check_and_release_escrows() {
         log "   - Solver's Chain 3 balance after claim: $SOLVER_CHAIN3_ETH_AFTER wei"
         
         # Calculate balance increase
-        # Expected: Solver should receive 1 ETH (matches request intent offered_amount, minus gas fees)
-        EXPECTED_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request intent offered_amount)
+        # Expected: Solver should receive 1 ETH (matches request-intent offered_amount, minus gas fees)
+        EXPECTED_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request-intent offered_amount)
         CHAIN3_ETH_INCREASE=$(echo "$SOLVER_CHAIN3_ETH_AFTER $SOLVER_CHAIN3_ETH_BEFORE" | awk '{print $1 - $2}')
         
         log "   - Balance increase: $CHAIN3_ETH_INCREASE wei"
-        log "   - Expected: ~$EXPECTED_AMOUNT_WEI wei (matches request intent offered_amount, minus gas)"
+        log "   - Expected: ~$EXPECTED_AMOUNT_WEI wei (matches request-intent offered_amount, minus gas)"
         
         # Check if balance increased by at least 99% of expected (allowing for gas fees)
         MIN_EXPECTED=$(echo "$EXPECTED_AMOUNT_WEI" | awk '{print int($1 * 0.99)}')
@@ -213,7 +213,7 @@ check_and_release_escrows() {
             log_and_echo "   Solver's Chain 3 balance before: $SOLVER_CHAIN3_ETH_BEFORE wei"
             log_and_echo "   Solver's Chain 3 balance after:  $SOLVER_CHAIN3_ETH_AFTER wei"
             log_and_echo "   Balance increase:    $CHAIN3_ETH_INCREASE wei"
-            log_and_echo "   Expected increase:   ~$EXPECTED_AMOUNT_WEI wei (matches request intent offered_amount)"
+            log_and_echo "   Expected increase:   ~$EXPECTED_AMOUNT_WEI wei (matches request-intent offered_amount)"
             log_and_echo "   Minimum expected:     $MIN_EXPECTED wei (99% of escrow amount)"
             log_and_echo "   Escrow release FAILED - Solver did not receive funds!"
             exit 1
@@ -326,10 +326,10 @@ if [ -z "$SOLVER_CHAIN3_USDXYZ_FINAL" ]; then
 fi
 
 # For inflow flow:
-# - Solver on EVM Chain 3 should have received 1000 USDxyz (matches request intent offered_amount) from escrow release
+# - Solver on EVM Chain 3 should have received 1000 USDxyz (matches request-intent offered_amount) from escrow release
 # Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 
-SOLVER_CHAIN3_USDXYZ_EXPECTED="100000000000"  # 1000 USDxyz (8 decimals, matches request intent offered_amount)
+SOLVER_CHAIN3_USDXYZ_EXPECTED="100000000000"  # 1000 USDxyz (8 decimals, matches request-intent offered_amount)
 
 # Calculate balance increase for Solver on EVM Chain 3
 SOLVER_CHAIN3_USDXYZ_GAIN=$((SOLVER_CHAIN3_USDXYZ_FINAL - SOLVER_CHAIN3_USDXYZ_INIT))

@@ -47,7 +47,7 @@ module mvmt_intent::fa_intent_outflow {
     }
 
     // ============================================================================
-    // OUTFLOW REQUEST INTENT FUNCTIONS
+    // OUTFLOW REQUEST-INTENT FUNCTIONS
     // ============================================================================
 
     /// Entry function for solver to fulfill an outflow request-intent.

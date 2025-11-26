@@ -5,7 +5,7 @@ const { setupIntentEscrowTests, hexToUint256 } = require("./helpers/setup");
 describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
   let escrow;
   let token;
-  let maker;
+  let requester;
   let solver;
   let intentId;
 
@@ -13,7 +13,7 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
     const fixtures = await setupIntentEscrowTests();
     escrow = fixtures.escrow;
     token = fixtures.token;
-    maker = fixtures.maker;
+    requester = fixtures.requester;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
   });
@@ -28,13 +28,13 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
 
     // Create escrow with converted intent ID and deposit atomically
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(evmIntentId, token.target, amount, solver.address);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
+    await escrow.connect(requester).createEscrow(evmIntentId, token.target, amount, solver.address);
 
     // Verify escrow was created correctly
     const escrowData = await escrow.getEscrow(evmIntentId);
-    expect(escrowData.maker).to.equal(maker.address);
+    expect(escrowData.requester).to.equal(requester.address);
     expect(escrowData.token).to.equal(token.target);
     expect(escrowData.amount).to.equal(amount);
 
@@ -46,28 +46,28 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
   /// Why: Intent IDs from different chains may have different formats. Boundary testing ensures compatibility.
   it("Should handle intent ID boundary values", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount * 3n);
-    await token.connect(maker).approve(escrow.target, amount * 3n);
+    await token.mint(requester.address, amount * 3n);
+    await token.connect(requester).approve(escrow.target, amount * 3n);
 
     // Test maximum uint256 value
     const maxIntentId = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-    await escrow.connect(maker).createEscrow(maxIntentId, token.target, amount, solver.address);
+    await escrow.connect(requester).createEscrow(maxIntentId, token.target, amount, solver.address);
     const maxEscrowData = await escrow.getEscrow(maxIntentId);
-    expect(maxEscrowData.maker).to.equal(maker.address);
+    expect(maxEscrowData.requester).to.equal(requester.address);
     expect(maxEscrowData.amount).to.equal(amount);
 
     // Test zero value
     const zeroIntentId = 0n;
-    await escrow.connect(maker).createEscrow(zeroIntentId, token.target, amount, solver.address);
+    await escrow.connect(requester).createEscrow(zeroIntentId, token.target, amount, solver.address);
     const zeroEscrowData = await escrow.getEscrow(zeroIntentId);
-    expect(zeroEscrowData.maker).to.equal(maker.address);
+    expect(zeroEscrowData.requester).to.equal(requester.address);
     expect(zeroEscrowData.amount).to.equal(amount);
 
     // Test edge value (2^128 - 1)
     const edgeIntentId = BigInt("0xffffffffffffffffffffffffffffffff");
-    await escrow.connect(maker).createEscrow(edgeIntentId, token.target, amount, solver.address);
+    await escrow.connect(requester).createEscrow(edgeIntentId, token.target, amount, solver.address);
     const edgeEscrowData = await escrow.getEscrow(edgeIntentId);
-    expect(edgeEscrowData.maker).to.equal(maker.address);
+    expect(edgeEscrowData.requester).to.equal(requester.address);
     expect(edgeEscrowData.amount).to.equal(amount);
   });
 
@@ -86,8 +86,8 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
     ];
 
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount * BigInt(shortHexIds.length));
-    await token.connect(maker).approve(escrow.target, amount * BigInt(shortHexIds.length));
+    await token.mint(requester.address, amount * BigInt(shortHexIds.length));
+    await token.connect(requester).approve(escrow.target, amount * BigInt(shortHexIds.length));
 
     for (const hexId of shortHexIds) {
       const paddedIntentId = hexToUint256(hexId);
@@ -97,9 +97,9 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
       expect(paddedIntentId).to.equal(expectedValue);
 
       // Verify escrow operations work with padded intent ID
-      await escrow.connect(maker).createEscrow(paddedIntentId, token.target, amount, solver.address);
+      await escrow.connect(requester).createEscrow(paddedIntentId, token.target, amount, solver.address);
       const escrowData = await escrow.getEscrow(paddedIntentId);
-      expect(escrowData.maker).to.equal(maker.address);
+      expect(escrowData.requester).to.equal(requester.address);
       expect(escrowData.amount).to.equal(amount);
     }
   });
@@ -118,14 +118,14 @@ describe("IntentEscrow - Cross-Chain Intent ID Conversion", function () {
     ];
 
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount * BigInt(intentIds.length));
-    await token.connect(maker).approve(escrow.target, amount * BigInt(intentIds.length));
+    await token.mint(requester.address, amount * BigInt(intentIds.length));
+    await token.connect(requester).approve(escrow.target, amount * BigInt(intentIds.length));
 
     // Create escrows with different intent ID formats
     for (let i = 0; i < intentIds.length; i++) {
-      await escrow.connect(maker).createEscrow(intentIds[i], token.target, amount, solver.address);
+      await escrow.connect(requester).createEscrow(intentIds[i], token.target, amount, solver.address);
       const escrowData = await escrow.getEscrow(intentIds[i]);
-      expect(escrowData.maker).to.equal(maker.address);
+      expect(escrowData.requester).to.equal(requester.address);
       expect(escrowData.token).to.equal(token.target);
       expect(escrowData.amount).to.equal(amount);
     }

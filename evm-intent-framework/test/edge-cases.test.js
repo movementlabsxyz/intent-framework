@@ -6,7 +6,7 @@ describe("IntentEscrow - Edge Cases", function () {
   let escrow;
   let token;
   let verifierWallet;
-  let maker;
+  let requester;
   let solver;
   let intentId;
 
@@ -15,7 +15,7 @@ describe("IntentEscrow - Edge Cases", function () {
     escrow = fixtures.escrow;
     token = fixtures.token;
     verifierWallet = fixtures.verifierWallet;
-    maker = fixtures.maker;
+    requester = fixtures.requester;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
   });
@@ -28,16 +28,16 @@ describe("IntentEscrow - Edge Cases", function () {
     const maxIntentId = ethers.MaxUint256;
     
     // Mint maximum amount
-    await token.mint(maker.address, maxAmount);
-    await token.connect(maker).approve(escrow.target, maxAmount);
+    await token.mint(requester.address, maxAmount);
+    await token.connect(requester).approve(escrow.target, maxAmount);
 
     // Create escrow with max intent ID and max amount
-    await expect(escrow.connect(maker).createEscrow(maxIntentId, token.target, maxAmount, solver.address))
+    await expect(escrow.connect(requester).createEscrow(maxIntentId, token.target, maxAmount, solver.address))
       .to.emit(escrow, "EscrowInitialized");
     
     const escrowData = await escrow.getEscrow(maxIntentId);
     expect(escrowData.amount).to.equal(maxAmount);
-    expect(escrowData.maker).to.equal(maker.address);
+    expect(escrowData.requester).to.equal(requester.address);
   });
 
   /// Test: Empty Deposit Scenarios
@@ -47,36 +47,36 @@ describe("IntentEscrow - Edge Cases", function () {
     const minAmount = 1n; // 1 wei
     const testIntentId = intentId + 1n;
     
-    await token.mint(maker.address, minAmount);
-    await token.connect(maker).approve(escrow.target, minAmount);
+    await token.mint(requester.address, minAmount);
+    await token.connect(requester).approve(escrow.target, minAmount);
 
-    await expect(escrow.connect(maker).createEscrow(testIntentId, token.target, minAmount, solver.address))
+    await expect(escrow.connect(requester).createEscrow(testIntentId, token.target, minAmount, solver.address))
       .to.emit(escrow, "EscrowInitialized");
     
     const escrowData = await escrow.getEscrow(testIntentId);
     expect(escrowData.amount).to.equal(minAmount);
   });
 
-  /// Test: Multiple Escrows Per Maker
-  /// Verifies that a maker can create multiple escrows with different intent IDs.
-  /// Why: Makers may need multiple concurrent escrows for different intents. State isolation must be maintained.
-  it("Should allow maker to create multiple escrows", async function () {
+  /// Test: Multiple Escrows Per Requester
+  /// Verifies that a requester can create multiple escrows with different intent IDs.
+  /// Why: Requesters may need multiple concurrent escrows for different intents. State isolation must be maintained.
+  it("Should allow requester to create multiple escrows", async function () {
     const numEscrows = 10;
     const amount = ethers.parseEther("100");
     const totalAmount = amount * BigInt(numEscrows);
     
-    await token.mint(maker.address, totalAmount);
-    await token.connect(maker).approve(escrow.target, totalAmount);
+    await token.mint(requester.address, totalAmount);
+    await token.connect(requester).approve(escrow.target, totalAmount);
 
     // Create multiple escrows with sequential intent IDs
     for (let i = 0; i < numEscrows; i++) {
       const testIntentId = intentId + BigInt(i);
-      await expect(escrow.connect(maker).createEscrow(testIntentId, token.target, amount, solver.address))
+      await expect(escrow.connect(requester).createEscrow(testIntentId, token.target, amount, solver.address))
         .to.emit(escrow, "EscrowInitialized");
       
       const escrowData = await escrow.getEscrow(testIntentId);
       expect(escrowData.amount).to.equal(amount);
-      expect(escrowData.maker).to.equal(maker.address);
+      expect(escrowData.requester).to.equal(requester.address);
     }
   });
 
@@ -88,14 +88,14 @@ describe("IntentEscrow - Edge Cases", function () {
     const amount = ethers.parseEther("1000");
     const totalAmount = amount * BigInt(numEscrows);
     
-    await token.mint(maker.address, totalAmount);
-    await token.connect(maker).approve(escrow.target, totalAmount);
+    await token.mint(requester.address, totalAmount);
+    await token.connect(requester).approve(escrow.target, totalAmount);
 
     // Create multiple escrows and measure gas
     const gasEstimates = [];
     for (let i = 0; i < numEscrows; i++) {
       const testIntentId = intentId + BigInt(i);
-      const tx = await escrow.connect(maker).createEscrow(testIntentId, token.target, amount, solver.address);
+      const tx = await escrow.connect(requester).createEscrow(testIntentId, token.target, amount, solver.address);
       const receipt = await tx.wait();
       gasEstimates.push(receipt.gasUsed);
     }
@@ -116,14 +116,14 @@ describe("IntentEscrow - Edge Cases", function () {
     const amount = ethers.parseEther("100");
     const totalAmount = amount * BigInt(numEscrows);
     
-    await token.mint(maker.address, totalAmount);
-    await token.connect(maker).approve(escrow.target, totalAmount);
+    await token.mint(requester.address, totalAmount);
+    await token.connect(requester).approve(escrow.target, totalAmount);
 
     // Create multiple escrows concurrently (all in same block)
     const promises = [];
     for (let i = 0; i < numEscrows; i++) {
       const testIntentId = intentId + BigInt(i);
-      promises.push(escrow.connect(maker).createEscrow(testIntentId, token.target, amount, solver.address));
+      promises.push(escrow.connect(requester).createEscrow(testIntentId, token.target, amount, solver.address));
     }
 
     // Wait for all transactions
@@ -137,7 +137,7 @@ describe("IntentEscrow - Edge Cases", function () {
       const testIntentId = intentId + BigInt(i);
       const escrowData = await escrow.getEscrow(testIntentId);
       expect(escrowData.amount).to.equal(amount);
-      expect(escrowData.maker).to.equal(maker.address);
+      expect(escrowData.requester).to.equal(requester.address);
     }
   });
 });

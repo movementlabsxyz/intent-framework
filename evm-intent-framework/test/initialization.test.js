@@ -6,7 +6,7 @@ describe("IntentEscrow - Initialization", function () {
   let escrow;
   let token;
   let verifier;
-  let maker;
+  let requester;
   let solver;
   let intentId;
 
@@ -15,7 +15,7 @@ describe("IntentEscrow - Initialization", function () {
     escrow = fixtures.escrow;
     token = fixtures.token;
     verifier = fixtures.verifier;
-    maker = fixtures.maker;
+    requester = fixtures.requester;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
   });
@@ -28,27 +28,27 @@ describe("IntentEscrow - Initialization", function () {
   });
 
   /// Test: Escrow Creation
-  /// Verifies that makers can create a new escrow with funds atomically and expiry is set correctly.
+  /// Verifies that requesters can create a new escrow with funds atomically and expiry is set correctly.
   /// Why: Escrow creation must be atomic and set expiry correctly to enable time-based cancellation.
-  it("Should allow maker to create an escrow", async function () {
+  it("Should allow requester to create an escrow", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
     
-    const tx = await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
+    const tx = await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
     const receipt = await tx.wait();
     const block = await ethers.provider.getBlock(receipt.blockNumber);
     
     await expect(tx)
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
     
     await expect(tx)
       .to.emit(escrow, "DepositMade")
-      .withArgs(intentId, maker.address, amount, amount);
+      .withArgs(intentId, requester.address, amount, amount);
 
     const escrowData = await escrow.getEscrow(intentId);
-    expect(escrowData.maker).to.equal(maker.address);
+    expect(escrowData.requester).to.equal(requester.address);
     expect(escrowData.token).to.equal(token.target);
     expect(escrowData.amount).to.equal(amount);
     expect(escrowData.isClaimed).to.equal(false);
@@ -63,12 +63,12 @@ describe("IntentEscrow - Initialization", function () {
   /// Why: Each intent ID must map to a single escrow to maintain state consistency.
   it("Should revert if escrow already exists", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
+    await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
     
     await expect(
-      escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address)
+      escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address)
     ).to.be.revertedWith("Escrow already exists");
   });
 });

@@ -44,7 +44,7 @@ module mvmt_intent::fa_intent_inflow {
     }
 
     // ============================================================================
-    // INFLOW REQUEST INTENT FUNCTIONS
+    // INFLOW REQUEST-INTENT FUNCTIONS
     // ============================================================================
 
     /// Entry function for solver to fulfill an inflow request-intent.

@@ -20,11 +20,11 @@ contract IntentEscrow {
 
     /// @notice Escrow data structure
     struct Escrow {
-        address maker;           // Requester who deposited funds (requester who created the request-intent on hub chain)
+        address requester;           // Requester who deposited funds (requester who created the request-intent on hub chain)
         address token;           // ERC20 token address
         uint256 amount;          // Amount deposited
         bool isClaimed;          // Whether funds have been claimed
-        uint256 expiry;          // Expiry timestamp (contract-defined). After expiry, claims are blocked but maker can cancel
+        uint256 expiry;          // Expiry timestamp (contract-defined). After expiry, claims are blocked but requester can cancel
         address reservedSolver;  // Solver address that receives funds when escrow is claimed (always set, never address(0))
     }
 
@@ -32,16 +32,16 @@ contract IntentEscrow {
     mapping(uint256 => Escrow) public escrows;
 
     /// @notice Events
-    event EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver);
+    event EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver);
     event DepositMade(uint256 indexed intentId, address indexed requester, uint256 amount, uint256 total);
     event EscrowClaimed(uint256 indexed intentId, address indexed recipient, uint256 amount);
-    event EscrowCancelled(uint256 indexed intentId, address indexed maker, uint256 amount);
+    event EscrowCancelled(uint256 indexed intentId, address indexed requester, uint256 amount);
 
     /// @notice Errors
     error EscrowAlreadyClaimed();
     error EscrowDoesNotExist();
     error NoDeposit();
-    error UnauthorizedMaker();
+    error UnauthorizedRequester();
     error InvalidSignature();
     error UnauthorizedVerifier();
     error EscrowExpired(); // Escrow has expired (for claim operations)
@@ -72,13 +72,13 @@ contract IntentEscrow {
         uint256 amount,
         address reservedSolver
     ) external payable {
-        require(escrows[intentId].maker == address(0), "Escrow already exists");
+        require(escrows[intentId].requester == address(0), "Escrow already exists");
         require(amount > 0, "Amount must be greater than 0");
         require(reservedSolver != address(0), "Reserved solver must be specified");
 
         // Create escrow
         escrows[intentId] = Escrow({
-            maker: msg.sender,
+            requester: msg.sender,
             token: token,
             amount: 0,
             isClaimed: false,
@@ -115,7 +115,7 @@ contract IntentEscrow {
     ) external {
         Escrow storage escrow = escrows[intentId];
         
-        if (escrow.maker == address(0)) revert EscrowDoesNotExist();
+        if (escrow.requester == address(0)) revert EscrowDoesNotExist();
         if (escrow.isClaimed) revert EscrowAlreadyClaimed();
         if (escrow.amount == 0) revert NoDeposit();
         
@@ -156,17 +156,17 @@ contract IntentEscrow {
     }
 
     /**
-     * @notice Cancel escrow and return funds to maker (only after expiry)
-     * @dev Maker must wait until expiry before canceling to prevent premature withdrawal
+     * @notice Cancel escrow and return funds to requester (only after expiry)
+     * @dev Requester must wait until expiry before canceling to prevent premature withdrawal
      * @param intentId Intent identifier
      */
     function cancel(uint256 intentId) external {
         Escrow storage escrow = escrows[intentId];
         
-        if (escrow.maker == address(0)) revert EscrowDoesNotExist();
+        if (escrow.requester == address(0)) revert EscrowDoesNotExist();
         if (escrow.isClaimed) revert EscrowAlreadyClaimed();
         if (escrow.amount == 0) revert NoDeposit();
-        if (msg.sender != escrow.maker) revert UnauthorizedMaker();
+        if (msg.sender != escrow.requester) revert UnauthorizedRequester();
         
         // Enforce expiry: cancellation is only allowed after expiry
         // This ensures funds remain locked until the contract-defined expiry period
@@ -179,16 +179,16 @@ contract IntentEscrow {
         escrow.amount = 0;
         escrow.isClaimed = true;
         
-        // Transfer tokens or ETH back to maker
+        // Transfer tokens or ETH back to requester
         if (token == address(0)) {
             // ETH transfer
-            payable(escrow.maker).transfer(amount);
+            payable(escrow.requester).transfer(amount);
         } else {
             // ERC20 token transfer
-            IERC20(token).safeTransfer(escrow.maker, amount);
+            IERC20(token).safeTransfer(escrow.requester, amount);
         }
         
-        emit EscrowCancelled(intentId, escrow.maker, amount);
+        emit EscrowCancelled(intentId, escrow.requester, amount);
     }
 
     /**
@@ -224,7 +224,7 @@ contract IntentEscrow {
     /**
      * @notice Get escrow data for an intent
      * @param intentId Intent identifier
-     * @return maker Maker address
+     * @return requester Requester address
      * @return token Token address
      * @return amount Amount deposited
      * @return isClaimed Whether escrow is claimed
@@ -235,7 +235,7 @@ contract IntentEscrow {
         external
         view
         returns (
-            address maker,
+            address requester,
             address token,
             uint256 amount,
             bool isClaimed,
@@ -244,7 +244,7 @@ contract IntentEscrow {
         )
     {
         Escrow memory escrow = escrows[intentId];
-        return (escrow.maker, escrow.token, escrow.amount, escrow.isClaimed, escrow.expiry, escrow.reservedSolver);
+        return (escrow.requester, escrow.token, escrow.amount, escrow.isClaimed, escrow.expiry, escrow.reservedSolver);
     }
 }
 

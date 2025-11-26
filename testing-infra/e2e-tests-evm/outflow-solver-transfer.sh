@@ -30,14 +30,14 @@ log "📋 Chain Information:"
 log "   Requester EVM (connected): $REQUESTER_EVM_ADDRESS"
 log "   Solver EVM (connected): $SOLVER_EVM_ADDRESS"
 
-# Transfer amount must match the request intent's desired_amount (1 ETH)
+# Transfer amount must match the request-intent's desired_amount (1 ETH)
 # This is the amount the requester specified they want on the connected chain
-TRANSFER_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request intent desired_amount)
+TRANSFER_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request-intent desired_amount)
 
 log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
-log "   Transfer Amount: $TRANSFER_AMOUNT_WEI wei (matches request intent desired_amount)"
+log "   Transfer Amount: $TRANSFER_AMOUNT_WEI wei (matches request-intent desired_amount)"
 
 # Get or deploy token address
 cd evm-intent-framework
@@ -95,7 +95,7 @@ log "   Executing solver transfer on connected EVM chain..."
 log "   - Solver (Solver) transfers tokens directly to requester (Requester) on EVM chain"
 log "   - This is a DIRECT TRANSFER, not an escrow"
 log "   - Requester (Requester) receives tokens immediately on EVM chain"
-log "   - Amount: $TRANSFER_AMOUNT_WEI wei (matches request intent desired_amount)"
+log "   - Amount: $TRANSFER_AMOUNT_WEI wei (matches request-intent desired_amount)"
 log "   - Intent ID included in transaction calldata for verifier tracking"
 
 cd evm-intent-framework
@@ -197,7 +197,7 @@ log ""
 log "📋 Transfer Details:"
 log "   Intent ID: $INTENT_ID"
 log "   Transaction Hash: $TX_HASH"
-log "   Amount Transferred: $TRANSFER_AMOUNT_WEI wei (matches request intent desired_amount)"
+log "   Amount Transferred: $TRANSFER_AMOUNT_WEI wei (matches request-intent desired_amount)"
 log "   Recipient: $REQUESTER_EVM_ADDRESS"
 log "   Token Address: $TOKEN_ADDRESS"
 

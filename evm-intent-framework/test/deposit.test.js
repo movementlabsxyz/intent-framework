@@ -5,7 +5,7 @@ const { setupIntentEscrowTests } = require("./helpers/setup");
 describe("IntentEscrow - Create Escrow (Deposit)", function () {
   let escrow;
   let token;
-  let maker;
+  let requester;
   let solver;
   let intentId;
 
@@ -13,24 +13,24 @@ describe("IntentEscrow - Create Escrow (Deposit)", function () {
     const fixtures = await setupIntentEscrowTests();
     escrow = fixtures.escrow;
     token = fixtures.token;
-    maker = fixtures.maker;
+    requester = fixtures.requester;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
   });
 
   /// Test: Token Escrow Creation
-  /// Verifies that makers can create an escrow with ERC20 tokens atomically.
-  /// Why: Escrow creation is the first step in the intent fulfillment flow. Makers must be able to lock funds securely.
-  it("Should allow maker to create escrow with tokens", async function () {
+  /// Verifies that requesters can create an escrow with ERC20 tokens atomically.
+  /// Why: Escrow creation is the first step in the intent fulfillment flow. Requesters must be able to lock funds securely.
+  it("Should allow requester to create escrow with tokens", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
 
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address))
+    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address)
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address)
       .and.to.emit(escrow, "DepositMade")
-      .withArgs(intentId, maker.address, amount, amount);
+      .withArgs(intentId, requester.address, amount, amount);
 
     expect(await token.balanceOf(escrow.target)).to.equal(amount);
     
@@ -43,14 +43,14 @@ describe("IntentEscrow - Create Escrow (Deposit)", function () {
   /// Why: Prevents duplicate escrows and ensures each intent ID maps to a single escrow state.
   it("Should revert if escrow is already claimed", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
+    await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
 
     // This test is covered in claim.test.js - escrow creation with same intentId will fail
     // because escrow already exists, not because it's claimed
     await expect(
-      escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address)
+      escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address)
     ).to.be.revertedWith("Escrow already exists");
   });
 });

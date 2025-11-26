@@ -6,7 +6,7 @@ describe("IntentEscrow - Integration Tests", function () {
   let escrow;
   let token;
   let verifierWallet;
-  let maker;
+  let requester;
   let solver;
   let intentId;
 
@@ -15,7 +15,7 @@ describe("IntentEscrow - Integration Tests", function () {
     escrow = fixtures.escrow;
     token = fixtures.token;
     verifierWallet = fixtures.verifierWallet;
-    maker = fixtures.maker;
+    requester = fixtures.requester;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
   });
@@ -27,17 +27,17 @@ describe("IntentEscrow - Integration Tests", function () {
     const amount = ethers.parseEther("100");
     
     // Step 1: Mint tokens and approve
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
     
     // Step 2: Create escrow and verify EscrowInitialized event
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address))
+    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
     
     // Step 3: Verify escrow state
     const escrowDataBefore = await escrow.getEscrow(intentId);
-    expect(escrowDataBefore.maker).to.equal(maker.address);
+    expect(escrowDataBefore.requester).to.equal(requester.address);
     expect(escrowDataBefore.amount).to.equal(amount);
     expect(escrowDataBefore.isClaimed).to.equal(false);
     expect(await token.balanceOf(escrow.target)).to.equal(amount);
@@ -62,7 +62,7 @@ describe("IntentEscrow - Integration Tests", function () {
     expect(escrowDataAfter.amount).to.equal(0);
     expect(await token.balanceOf(solver.address)).to.equal(amount);
     expect(await token.balanceOf(escrow.target)).to.equal(0);
-    expect(await token.balanceOf(maker.address)).to.equal(0);
+    expect(await token.balanceOf(requester.address)).to.equal(0);
   });
 
   /// Test: Multi-Token Scenarios
@@ -86,17 +86,17 @@ describe("IntentEscrow - Integration Tests", function () {
     const intentId3 = intentId + 2n;
     
     // Create escrows with different tokens
-    await token1.mint(maker.address, amount1);
-    await token1.connect(maker).approve(escrow.target, amount1);
-    await escrow.connect(maker).createEscrow(intentId1, token1.target, amount1, solver.address);
+    await token1.mint(requester.address, amount1);
+    await token1.connect(requester).approve(escrow.target, amount1);
+    await escrow.connect(requester).createEscrow(intentId1, token1.target, amount1, solver.address);
     
-    await token2.mint(maker.address, amount2);
-    await token2.connect(maker).approve(escrow.target, amount2);
-    await escrow.connect(maker).createEscrow(intentId2, token2.target, amount2, solver.address);
+    await token2.mint(requester.address, amount2);
+    await token2.connect(requester).approve(escrow.target, amount2);
+    await escrow.connect(requester).createEscrow(intentId2, token2.target, amount2, solver.address);
     
-    await token3.mint(maker.address, amount3);
-    await token3.connect(maker).approve(escrow.target, amount3);
-    await escrow.connect(maker).createEscrow(intentId3, token3.target, amount3, solver.address);
+    await token3.mint(requester.address, amount3);
+    await token3.connect(requester).approve(escrow.target, amount3);
+    await escrow.connect(requester).createEscrow(intentId3, token3.target, amount3, solver.address);
     
     // Verify all escrows were created correctly
     const escrow1 = await escrow.getEscrow(intentId1);
@@ -121,13 +121,13 @@ describe("IntentEscrow - Integration Tests", function () {
   /// Why: Events are critical for off-chain monitoring and indexing. Incorrect events break integrations.
   it("Should emit all events with correct parameters", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
     
     // Test EscrowInitialized event
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address))
+    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
     
     // Test EscrowClaimed event
     // Signature is over intentId only (signature itself is the approval)
@@ -149,16 +149,16 @@ describe("IntentEscrow - Integration Tests", function () {
     const amount = ethers.parseEther("100");
     
     // Step 1: Create escrow
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
     
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address))
+    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, token.target, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
     
     // Step 2: Verify escrow state before expiry
     const escrowDataBefore = await escrow.getEscrow(intentId);
-    expect(escrowDataBefore.maker).to.equal(maker.address);
+    expect(escrowDataBefore.requester).to.equal(requester.address);
     expect(escrowDataBefore.amount).to.equal(amount);
     expect(escrowDataBefore.isClaimed).to.equal(false);
     expect(await token.balanceOf(escrow.target)).to.equal(amount);
@@ -167,14 +167,14 @@ describe("IntentEscrow - Integration Tests", function () {
     await advanceTime(3601);
     
     // Step 4: Cancel escrow and verify EscrowCancelled event
-    await expect(escrow.connect(maker).cancel(intentId))
+    await expect(escrow.connect(requester).cancel(intentId))
       .to.emit(escrow, "EscrowCancelled")
-      .withArgs(intentId, maker.address, amount);
+      .withArgs(intentId, requester.address, amount);
     
     // Step 5: Verify final state
     const escrowDataAfter = await escrow.getEscrow(intentId);
     expect(escrowDataAfter.amount).to.equal(0);
-    expect(await token.balanceOf(maker.address)).to.equal(amount);
+    expect(await token.balanceOf(requester.address)).to.equal(amount);
     expect(await token.balanceOf(escrow.target)).to.equal(0);
   });
 });

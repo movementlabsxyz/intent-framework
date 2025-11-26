@@ -87,9 +87,9 @@ log_and_echo ""
 # SECTION 4: EXECUTE MAIN OPERATION
 # ============================================================================
 log ""
-log "   Creating request intent on hub chain..."
-log "   - Requester (Requester) creates request intent on Chain 1 (hub chain)"
-log "   - Request intent requests 1000 USDxyz to be provided by solver (Solver)"
+log "   Creating request-intent on hub chain..."
+log "   - Requester (Requester) creates request-intent on Chain 1 (hub chain)"
+log "   - Request-intent requests 1000 USDxyz to be provided by solver (Solver)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."
@@ -132,7 +132,7 @@ sleep 5
 log "   - Verifying solver registration..."
 verify_solver_registered "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_CHAIN1_ADDRESS" "$LOG_FILE"
 
-log "   - Creating cross-chain request intent on Chain 1..."
+log "   - Creating cross-chain request-intent on Chain 1..."
 log "     Offered metadata: $OFFERED_METADATA_CHAIN1"
 log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
 log "     Solver (Solver) address: $SOLVER_CHAIN1_ADDRESS"
@@ -146,22 +146,22 @@ aptos move run --profile requester-chain1 --assume-yes \
 # SECTION 5: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
-    log "     ✅ Request intent created on Chain 1!"
+    log "     ✅ Request-intent created on Chain 1!"
 
     sleep 2
-    log "     - Verifying request intent stored on-chain..."
+    log "     - Verifying request-intent stored on-chain..."
     HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${REQUESTER_CHAIN1_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("LimitOrderEvent")) | .data.intent_address' | head -n 1)
 
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-        log "     ✅ Hub request intent stored at: $HUB_INTENT_ADDRESS"
-        log_and_echo "✅ Request intent created"
+        log "     ✅ Hub request-intent stored at: $HUB_INTENT_ADDRESS"
+        log_and_echo "✅ Request-intent created"
     else
-        log_and_echo "❌ ERROR: Could not verify hub request intent address"
+        log_and_echo "❌ ERROR: Could not verify hub request-intent address"
         exit 1
     fi
 else
-    log_and_echo "❌ Request intent creation failed on Chain 1!"
+    log_and_echo "❌ Request-intent creation failed on Chain 1!"
     log_and_echo "   Log file contents:"
     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"
@@ -182,12 +182,12 @@ log "🎉 INFLOW - HUB CHAIN INTENT CREATION COMPLETE!"
 log "================================================"
 log ""
 log "✅ Step completed successfully:"
-log "   1. Request intent created on Chain 1 (hub chain)"
+log "   1. Request-intent created on Chain 1 (hub chain)"
 log ""
-log "📋 Request Intent Details:"
+log "📋 Request-intent Details:"
 log "   Intent ID: $INTENT_ID"
 if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-    log "   Chain 1 Hub Request Intent: $HUB_INTENT_ADDRESS"
+    log "   Chain 1 Hub Request-intent: $HUB_INTENT_ADDRESS"
 fi
 
 save_intent_info "$INTENT_ID" "$HUB_INTENT_ADDRESS"

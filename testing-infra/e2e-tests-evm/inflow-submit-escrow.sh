@@ -52,7 +52,7 @@ log "🔑 Configuration:"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Intent ID (for escrow): $INTENT_ID"
 log "   USDxyz token address: $USDXYZ_ADDRESS"
-log "   Escrow amount: 1000 USDxyz (matches request intent offered_amount)"
+log "   Escrow amount: 1000 USDxyz (matches request-intent offered_amount)"
 
 # Check and display initial balances using common function
 log ""
@@ -65,7 +65,7 @@ log "   Creating escrow on EVM chain..."
 log "   - Requester locks 1000 USDxyz in escrow on Chain 3 (EVM)"
 log "   - Requester provides hub chain intent_id when creating escrow"
 log "   - Using intent_id from hub chain: $INTENT_ID"
-log "   - Amount matches request intent offered_amount"
+log "   - Amount matches request-intent offered_amount"
 
 cd evm-intent-framework
 
@@ -77,8 +77,8 @@ log "     Intent ID (EVM): $INTENT_ID_EVM"
 log "   - Creating escrow for intent (USDxyz ERC20 escrow) with funds..."
 # Reserved solver: Solver - funds will go to Solver when escrow is claimed
 SOLVER_ADDRESS=$(get_hardhat_account_address "2")
-# Escrow amount must match the request intent's offered_amount (1000 USDxyz)
-USDXYZ_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals, matches request intent offered_amount)
+# Escrow amount must match the request-intent's offered_amount (1000 USDxyz)
+USDXYZ_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals, matches request-intent offered_amount)
 CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' TOKEN_ADDRESS='$USDXYZ_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' AMOUNT='$USDXYZ_AMOUNT' RESERVED_SOLVER='$SOLVER_ADDRESS' npx hardhat run scripts/create-escrow-erc20.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 CREATE_EXIT_CODE=$?
 
@@ -116,7 +116,7 @@ log ""
 log "📋 Escrow Details:"
 log "   Intent ID: $INTENT_ID"
 log "   Escrow Address: $ESCROW_ADDRESS"
-log "   Locked Amount: 1 ETH (matches request intent offered_amount)"
+log "   Locked Amount: 1 ETH (matches request-intent offered_amount)"
 
 # Check final balances using common function
 display_balances_hub

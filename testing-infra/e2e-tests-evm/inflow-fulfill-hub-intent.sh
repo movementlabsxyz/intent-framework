@@ -29,7 +29,7 @@ log "📋 Chain Information:"
 log "   Hub Chain Module Address (Chain 1):     $CHAIN1_ADDRESS"
 log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
 log "   Intent ID:               $INTENT_ID"
-log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
+log "   Hub Request-intent Address: $HUB_INTENT_ADDRESS"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
@@ -43,9 +43,9 @@ log_and_echo ""
 # SECTION 4: EXECUTE MAIN OPERATION
 # ============================================================================
 log ""
-log "   Fulfilling request intent on hub chain..."
-log "   - Solver (Solver) sees request intent with ID: $INTENT_ID"
-log "   - Solver (Solver) provides 1000 USDxyz on hub chain to fulfill the request intent"
+log "   Fulfilling request-intent on hub chain..."
+log "   - Solver (Solver) sees request-intent with ID: $INTENT_ID"
+log "   - Solver (Solver) provides 1000 USDxyz on hub chain to fulfill the request-intent"
 
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
 
@@ -65,10 +65,10 @@ aptos move run --profile solver-chain1 --assume-yes \
 # SECTION 5: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
-    log "     ✅ Solver (Solver) successfully fulfilled the request intent!"
-    log_and_echo "✅ Request intent fulfilled"
+    log "     ✅ Solver (Solver) successfully fulfilled the request-intent!"
+    log_and_echo "✅ Request-intent fulfilled"
 else
-    log_and_echo "❌ Request intent fulfillment failed!"
+    log_and_echo "❌ Request-intent fulfillment failed!"
     log_and_echo "   Log file contents:"
     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"
@@ -89,9 +89,9 @@ log "🎉 INFLOW - HUB CHAIN INTENT FULFILLMENT COMPLETE!"
 log "=================================================="
 log ""
 log "✅ Step completed successfully:"
-log "   1. Request intent fulfilled on Chain 1 by solver (Solver)"
+log "   1. Request-intent fulfilled on Chain 1 by solver (Solver)"
 log ""
-log "📋 Request Intent Details:"
+log "📋 Request-intent Details:"
 log "   Intent ID: $INTENT_ID"
-log "   Chain 1 Hub Request Intent: $HUB_INTENT_ADDRESS"
+log "   Chain 1 Hub Request-intent: $HUB_INTENT_ADDRESS"
 

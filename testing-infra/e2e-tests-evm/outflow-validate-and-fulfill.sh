@@ -44,7 +44,7 @@ log "📋 Chain Information:"
 log "   Hub Chain Module Address (Chain 1):     $CHAIN1_ADDRESS"
 log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
 log "   Intent ID:               $INTENT_ID"
-log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
+log "   Hub Request-intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash:        $CONNECTED_CHAIN_TX_HASH"
 log "   Chain Type:              evm (Ethereum Virtual Machine)"
 
@@ -58,10 +58,10 @@ if ! curl -s "http://127.0.0.1:3333/health" > /dev/null 2>&1; then
 fi
 log "   ✅ Verifier is running"
 
-# Wait for verifier to poll and cache the request intent
-# The verifier polls every 2 seconds, so wait for it to discover the request intent
+# Wait for verifier to poll and cache the request-intent
+# The verifier polls every 2 seconds, so wait for it to discover the request-intent
 log ""
-log "   - Waiting for verifier to poll and cache request intent..."
+log "   - Waiting for verifier to poll and cache request-intent..."
 MAX_WAIT=30  # Maximum wait time in seconds (should be enough for several poll cycles)
 WAIT_INTERVAL=2  # Check every 2 seconds (matches polling interval)
 ELAPSED=0
@@ -80,9 +80,9 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
 done
 
 if [ "$INTENT_FOUND" = true ]; then
-    log "     ✅ Verifier has cached the request intent"
+    log "     ✅ Verifier has cached the request-intent"
 else
-    log_and_echo "❌ ERROR: Verifier did not cache the request intent within ${MAX_WAIT} seconds"
+    log_and_echo "❌ ERROR: Verifier did not cache the request-intent within ${MAX_WAIT} seconds"
     log_and_echo "   Intent ID: $INTENT_ID"
     log_and_echo "   Verifier events:"
     curl -s "http://127.0.0.1:3333/events" | jq '.data.intent_events' 2>/dev/null || log "   (Unable to query events)"
@@ -227,7 +227,7 @@ log "   Signature type: $SIGNATURE_TYPE"
 log "   Signature (first 20 chars): ${APPROVAL_SIGNATURE:0:20}..."
 
 log ""
-log "🔓 Fulfilling hub request intent with verifier signature..."
+log "🔓 Fulfilling hub request-intent with verifier signature..."
 log "========================================================="
 
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
@@ -264,7 +264,7 @@ aptos move run --profile solver-chain1 --assume-yes \
 # SECTION 5: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
-    log "     ✅ Solver (Solver) successfully fulfilled the outflow request intent!"
+    log "     ✅ Solver (Solver) successfully fulfilled the outflow request-intent!"
 
     sleep 2
 
@@ -285,9 +285,9 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 
-    log_and_echo "✅ Outflow request intent fulfilled"
+    log_and_echo "✅ Outflow request-intent fulfilled"
 else
-    log_and_echo "❌ Outflow request intent fulfillment failed!"
+    log_and_echo "❌ Outflow request-intent fulfillment failed!"
     log_and_echo "   Log file contents:"
     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"
@@ -311,21 +311,21 @@ log "✅ Steps completed successfully:"
 log "   1. Verifier queried connected EVM chain transaction"
 log "   2. Transaction validated against intent requirements"
 log "   3. Approval signature generated for hub fulfillment"
-log "   4. Solver (Solver) fulfilled hub request intent with verifier signature"
+log "   4. Solver (Solver) fulfilled hub request-intent with verifier signature"
 log "   5. Locked tokens released to solver (Solver) on hub chain"
 log ""
 log "📋 Details:"
 log "   Intent ID: $INTENT_ID"
-log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
+log "   Hub Request-intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
 log "   Solver (Solver) Chain 1 APT increase: $CHAIN1_APT_INCREASE Octas"
 log ""
-log "📖 Outflow Request Intent Summary:"
-log "   1. Requester (Requester) created outflow request intent on hub chain (locked 1 APT)"
-log "   2. Solver (Solver) transferred tokens to requester (Requester) on connected EVM chain (amount matches request intent desired_amount)"
+log "📖 Outflow Request-intent Summary:"
+log "   1. Requester (Requester) created outflow request-intent on hub chain (locked 1 APT)"
+log "   2. Solver (Solver) transferred tokens to requester (Requester) on connected EVM chain (amount matches request-intent desired_amount)"
 log "   3. Verifier validated the connected EVM chain transfer"
-log "   4. Solver (Solver) fulfilled hub request intent with verifier signature"
+log "   4. Solver (Solver) fulfilled hub request-intent with verifier signature"
 log "   5. Solver (Solver) received locked tokens as reward on hub chain"
 

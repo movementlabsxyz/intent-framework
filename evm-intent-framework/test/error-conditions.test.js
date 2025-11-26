@@ -6,7 +6,7 @@ describe("IntentEscrow - Error Conditions", function () {
   let escrow;
   let token;
   let verifierWallet;
-  let maker;
+  let requester;
   let solver;
   let intentId;
 
@@ -15,7 +15,7 @@ describe("IntentEscrow - Error Conditions", function () {
     escrow = fixtures.escrow;
     token = fixtures.token;
     verifierWallet = fixtures.verifierWallet;
-    maker = fixtures.maker;
+    requester = fixtures.requester;
     solver = fixtures.solver;
     intentId = fixtures.intentId;
   });
@@ -25,25 +25,25 @@ describe("IntentEscrow - Error Conditions", function () {
   /// Why: Zero-amount escrows are meaningless and could cause accounting issues.
   it("Should revert with zero amount in createEscrow", async function () {
     await expect(
-      escrow.connect(maker).createEscrow(intentId, token.target, 0, solver.address)
+      escrow.connect(requester).createEscrow(intentId, token.target, 0, solver.address)
     ).to.be.revertedWith("Amount must be greater than 0");
   });
 
   /// Test: Insufficient Allowance Rejection
   /// Verifies that createEscrow reverts when ERC20 allowance is insufficient.
   /// Why: ERC20 transfers require explicit approval. Insufficient allowance must be rejected to prevent failed transfers.
-  /// We mint tokens to ensure the maker has balance, then approve less than needed to test specifically the allowance check, not the balance check.
+  /// We mint tokens to ensure the requester has balance, then approve less than needed to test specifically the allowance check, not the balance check.
   it("Should revert with insufficient ERC20 allowance", async function () {
     const amount = ethers.parseEther("100");
     const insufficientAllowance = ethers.parseEther("50");
     
-    // Mint tokens so maker has balance (required for transfer)
-    await token.mint(maker.address, amount);
+    // Mint tokens so requester has balance (required for transfer)
+    await token.mint(requester.address, amount);
     // Approve less than amount to test allowance failure
-    await token.connect(maker).approve(escrow.target, insufficientAllowance);
+    await token.connect(requester).approve(escrow.target, insufficientAllowance);
 
     await expect(
-      escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address)
+      escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address)
     ).to.be.reverted;
   });
 
@@ -54,11 +54,11 @@ describe("IntentEscrow - Error Conditions", function () {
     const maxAmount = ethers.MaxUint256;
     
     // Mint maximum amount (this might fail in practice, but tests the contract logic)
-    await token.mint(maker.address, maxAmount);
-    await token.connect(maker).approve(escrow.target, maxAmount);
+    await token.mint(requester.address, maxAmount);
+    await token.connect(requester).approve(escrow.target, maxAmount);
 
     // This should succeed if we have enough balance
-    await expect(escrow.connect(maker).createEscrow(intentId, token.target, maxAmount, solver.address))
+    await expect(escrow.connect(requester).createEscrow(intentId, token.target, maxAmount, solver.address))
       .to.emit(escrow, "EscrowInitialized");
     
     const escrowData = await escrow.getEscrow(intentId);
@@ -72,9 +72,9 @@ describe("IntentEscrow - Error Conditions", function () {
     const amount = ethers.parseEther("1");
     
     await expect(
-      escrow.connect(maker).createEscrow(intentId, ethers.ZeroAddress, amount, solver.address, { value: amount })
+      escrow.connect(requester).createEscrow(intentId, ethers.ZeroAddress, amount, solver.address, { value: amount })
     ).to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, maker.address, ethers.ZeroAddress, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, ethers.ZeroAddress, solver.address);
     
     const escrowData = await escrow.getEscrow(intentId);
     expect(escrowData.token).to.equal(ethers.ZeroAddress);
@@ -89,7 +89,7 @@ describe("IntentEscrow - Error Conditions", function () {
     const wrongValue = ethers.parseEther("0.5");
 
     await expect(
-      escrow.connect(maker).createEscrow(intentId, ethers.ZeroAddress, amount, solver.address, { value: wrongValue })
+      escrow.connect(requester).createEscrow(intentId, ethers.ZeroAddress, amount, solver.address, { value: wrongValue })
     ).to.be.revertedWith("ETH amount mismatch");
   });
 
@@ -98,11 +98,11 @@ describe("IntentEscrow - Error Conditions", function () {
   /// Why: Prevents confusion between ETH and ERC20 deposits. Token escrows should not accept ETH.
   it("Should revert when ETH sent with token address", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
 
     await expect(
-      escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address, { value: amount })
+      escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address, { value: amount })
     ).to.be.revertedWith("ETH not accepted for token escrow");
   });
 
@@ -111,9 +111,9 @@ describe("IntentEscrow - Error Conditions", function () {
   /// Why: ECDSA signatures must be exactly 65 bytes. Invalid lengths indicate malformed signatures.
   it("Should revert with invalid signature length", async function () {
     const amount = ethers.parseEther("100");
-    await token.mint(maker.address, amount);
-    await token.connect(maker).approve(escrow.target, amount);
-    await escrow.connect(maker).createEscrow(intentId, token.target, amount, solver.address);
+    await token.mint(requester.address, amount);
+    await token.connect(requester).approve(escrow.target, amount);
+    await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
 
     const invalidSignature = "0x1234"; // Too short (not 65 bytes)
 
@@ -129,7 +129,7 @@ describe("IntentEscrow - Error Conditions", function () {
     const nonExistentIntentId = intentId + 1n;
 
     await expect(
-      escrow.connect(maker).cancel(nonExistentIntentId)
+      escrow.connect(requester).cancel(nonExistentIntentId)
     ).to.be.revertedWithCustomError(escrow, "EscrowDoesNotExist");
   });
 });

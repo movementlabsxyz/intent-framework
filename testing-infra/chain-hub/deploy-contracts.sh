@@ -77,39 +77,39 @@ cd "$PROJECT_ROOT"
 echo "TEST_TOKENS_CHAIN1_ADDRESS=$TEST_TOKENS_CHAIN1_ADDRESS" >> "$PROJECT_ROOT/tmp/chain-info.env"
 log "   ✅ USDxyz address saved: $TEST_TOKENS_CHAIN1_ADDRESS"
 
-# Mint USDxyz to Alice and Bob
+# Mint USDxyz to Requester and Solver
 log ""
-log "💵 Minting USDxyz to Alice and Bob on Chain 1..."
+log "💵 Minting USDxyz to Requester and Solver on Chain 1..."
 
-ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
+SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 USDXYZ_MINT_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Alice ($ALICE_CHAIN1_ADDRESS)..."
+log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Requester ($REQUESTER_CHAIN1_ADDRESS)..."
 aptos move run --profile test-tokens-chain1 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
-    --args address:$ALICE_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$REQUESTER_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ Minted USDxyz to Alice"
+    log "   ✅ Minted USDxyz to Requester"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Alice"
+    log_and_echo "   ❌ Failed to mint USDxyz to Requester"
     exit 1
 fi
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Bob ($BOB_CHAIN1_ADDRESS)..."
+log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Solver ($SOLVER_CHAIN1_ADDRESS)..."
 aptos move run --profile test-tokens-chain1 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
-    --args address:$BOB_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$SOLVER_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ Minted USDxyz to Bob"
+    log "   ✅ Minted USDxyz to Solver"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Bob"
+    log_and_echo "   ❌ Failed to mint USDxyz to Solver"
     exit 1
 fi
 
-log_and_echo "✅ USDxyz minted to Alice and Bob on hub chain (1000 USDxyz each)"
+log_and_echo "✅ USDxyz minted to Requester and Solver on hub chain (1000 USDxyz each)"
 
 # Display balances (APT + USDxyz)
 display_balances_hub "$TEST_TOKENS_CHAIN1_ADDRESS"

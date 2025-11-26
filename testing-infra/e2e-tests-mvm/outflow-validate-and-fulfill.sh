@@ -36,13 +36,13 @@ fi
 # SECTION 2: GET ADDRESSES AND CONFIGURATION
 # ============================================================================
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 
 log ""
 log "📋 Chain Information:"
 log "   Hub Chain Module Address (Chain 1):     $CHAIN1_ADDRESS"
-log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
+log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
 log "   Intent ID:               $INTENT_ID"
 log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash:        $CONNECTED_CHAIN_TX_HASH"
@@ -96,8 +96,8 @@ log ""
 display_balances_hub
 log_and_echo ""
 
-BOB_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "bob-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
-log "   Bob Chain 1 initial USDxyz balance: $BOB_CHAIN1_USDXYZ_INIT"
+SOLVER_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
+log "   Solver Chain 1 initial USDxyz balance: $SOLVER_CHAIN1_USDXYZ_INIT"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -165,7 +165,7 @@ if [ "$VALID" != "true" ]; then
     if echo "$MESSAGE" | grep -qi "is not registered in hub chain solver registry"; then
         log_and_echo ""
         log_and_echo "   Available registered solvers:"
-        list_all_solvers "bob-chain1" "$CHAIN1_ADDRESS" "$LOG_FILE"
+        list_all_solvers "solver-chain1" "$CHAIN1_ADDRESS" "$LOG_FILE"
     fi
     
     log_and_echo "   Full response:"
@@ -223,7 +223,7 @@ fi
 log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
 log "   - Calling fulfill_outflow_request_intent with verifier signature"
 
-aptos move run --profile bob-chain1 --assume-yes \
+aptos move run --profile solver-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_outflow::fulfill_outflow_request_intent" \
     --args "address:$INTENT_OBJECT_ADDRESS" "hex:$SIGNATURE_HEX" >> "$LOG_FILE" 2>&1
 
@@ -231,21 +231,21 @@ aptos move run --profile bob-chain1 --assume-yes \
 # SECTION 5: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
-    log "     ✅ Solver (Bob) successfully fulfilled the outflow request intent!"
+    log "     ✅ Solver (Solver) successfully fulfilled the outflow request intent!"
 
     sleep 2
 
-    log "     - Verifying solver (Bob) received locked USDxyz tokens..."
-    BOB_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "bob-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
-    log "     Bob Chain 1 final USDxyz balance: $BOB_CHAIN1_USDXYZ_FINAL"
+    log "     - Verifying solver (Solver) received locked USDxyz tokens..."
+    SOLVER_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
+    log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL"
 
-    CHAIN1_USDXYZ_INCREASE=$((BOB_CHAIN1_USDXYZ_FINAL - BOB_CHAIN1_USDXYZ_INIT))
+    CHAIN1_USDXYZ_INCREASE=$((SOLVER_CHAIN1_USDXYZ_FINAL - SOLVER_CHAIN1_USDXYZ_INIT))
     OFFERED_AMOUNT=100000000000  # 1000 USDxyz
 
     if [ "$CHAIN1_USDXYZ_INCREASE" -eq "$OFFERED_AMOUNT" ]; then
-        log "     ✅ Solver (Bob) received locked USDxyz tokens: +$CHAIN1_USDXYZ_INCREASE (expected $OFFERED_AMOUNT)"
+        log "     ✅ Solver (Solver) received locked USDxyz tokens: +$CHAIN1_USDXYZ_INCREASE (expected $OFFERED_AMOUNT)"
     else
-        log_and_echo "❌ ERROR: Solver (Bob) Chain 1 USDxyz balance increase is less than expected"
+        log_and_echo "❌ ERROR: Solver (Solver) Chain 1 USDxyz balance increase is less than expected"
         log_and_echo "   Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE"
         log_and_echo "   Expected: $OFFERED_AMOUNT"
         exit 1
@@ -277,8 +277,8 @@ log "✅ Steps completed successfully:"
 log "   1. Verifier queried connected chain transaction"
 log "   2. Transaction validated against intent requirements"
 log "   3. Approval signature generated for hub fulfillment"
-log "   4. Solver (Bob) fulfilled hub request intent with verifier signature"
-log "   5. Locked tokens released to solver (Bob) on hub chain"
+log "   4. Solver (Solver) fulfilled hub request intent with verifier signature"
+log "   5. Locked tokens released to solver (Solver) on hub chain"
 log ""
 log "📋 Details:"
 log "   Intent ID: $INTENT_ID"
@@ -286,11 +286,11 @@ log "   Hub Request Intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
-log "   Solver (Bob) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE"
+log "   Solver (Solver) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE"
 log ""
 log "📖 Outflow Request Intent Summary:"
-log "   1. Requester (Alice) created outflow request intent on hub chain (locked 1000 USDxyz)"
-log "   2. Solver (Bob) transferred 1000 USDxyz to requester (Alice) on connected chain"
+log "   1. Requester (Requester) created outflow request intent on hub chain (locked 1000 USDxyz)"
+log "   2. Solver (Solver) transferred 1000 USDxyz to requester (Requester) on connected chain"
 log "   3. Verifier validated the connected chain transfer"
-log "   4. Solver (Bob) fulfilled hub request intent with verifier signature"
-log "   5. Solver (Bob) received locked USDxyz tokens as reward on hub chain"
+log "   4. Solver (Solver) fulfilled hub request intent with verifier signature"
+log "   5. Solver (Solver) received locked USDxyz tokens as reward on hub chain"

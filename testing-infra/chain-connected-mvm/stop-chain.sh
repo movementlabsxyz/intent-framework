@@ -18,8 +18,8 @@ docker-compose -f testing-infra/chain-connected-mvm/docker-compose-connected-cha
 
 log ""
 log "🧹 Cleaning up Chain 2 Aptos CLI profiles..."
-cleanup_aptos_profile "alice-chain2" "$LOG_FILE"
-cleanup_aptos_profile "bob-chain2" "$LOG_FILE"
+cleanup_aptos_profile "requester-chain2" "$LOG_FILE"
+cleanup_aptos_profile "solver-chain2" "$LOG_FILE"
 cleanup_aptos_profile "test-tokens-chain2" "$LOG_FILE"
 cleanup_aptos_profile "intent-account-chain2" "$LOG_FILE"
 

@@ -20,15 +20,15 @@ CONNECTED_CHAIN_ID=31337
 # Get addresses
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 
-# Get Alice and Bob addresses
-ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+# Get Requester and Solver addresses
+REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
+SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 
 log ""
 log "📋 Chain Information:"
 log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
-log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
-log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
+log "   Requester Chain 1 (hub):     $REQUESTER_CHAIN1_ADDRESS"
+log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
@@ -45,7 +45,7 @@ log_and_echo ""
 
 log ""
 log "   Creating intent on hub chain..."
-log "   - Alice creates intent on Chain 1 (hub chain)"
+log "   - Requester creates intent on Chain 1 (hub chain)"
 log "   - Intent requests 1000 USDxyz to be provided by solver (on hub chain)"
 log "   - Using intent_id: $INTENT_ID"
 log "   - Connected chain: EVM (Chain ID: 31337)"
@@ -66,21 +66,21 @@ OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN1"
 
 # Create cross-chain request intent on Chain 1 using fa_intent module
 # NOTE: Cross-chain request intents must be reserved. This requires:
-# 1. Off-chain negotiation with solver (Bob)
+# 1. Off-chain negotiation with solver (Solver)
 # 2. Solver signs IntentToSign structure (BCS-encoded)
 # 3. Pass solver address and signature to create_inflow_request_intent
 #
 # In production, the solver would sign off-chain using their private key.
 # For e2e tests, we can use the utils::get_intent_to_sign_hash function to get the hash:
 # 1. Call utils::get_intent_to_sign_hash() to get the BCS-encoded hash via event
-# 2. Sign the hash with Ed25519 using Bob's private key (requires helper script)
+# 2. Sign the hash with Ed25519 using Solver's private key (requires helper script)
 # 3. Convert signature to hex format
 # 4. Use the signature in create_inflow_request_intent (solver must be registered in registry)
 #
 log "   - Creating cross-chain request intent on Chain 1..."
 log "     Offered metadata: $OFFERED_METADATA_CHAIN1"
 log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
-log "     Solver (Bob) address: $BOB_CHAIN1_ADDRESS"
+log "     Solver (Solver) address: $SOLVER_CHAIN1_ADDRESS"
 log "     Generating solver signature..."
 
 # Generate solver signature using helper function
@@ -90,7 +90,7 @@ DESIRED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals, on hub chain Chain 1)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (31337 for EVM)
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \
-    "bob-chain1" \
+    "solver-chain1" \
     "$CHAIN1_ADDRESS" \
     "$OFFERED_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
@@ -99,8 +99,8 @@ SOLVER_SIGNATURE=$(generate_solver_signature \
     "$DESIRED_AMOUNT" \
     "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
-    "$ALICE_CHAIN1_ADDRESS" \
-    "$BOB_CHAIN1_ADDRESS" \
+    "$REQUESTER_CHAIN1_ADDRESS" \
+    "$SOLVER_CHAIN1_ADDRESS" \
     "1" \
     "$LOG_FILE")
 
@@ -122,30 +122,30 @@ log "     ✅ Solver public key extracted: ${SOLVER_PUBLIC_KEY:0:20}..."
 # Register solver in the solver registry before creating intent
 # Use a simple test EVM address (20 bytes: 0x0000...0001)
 EVM_ADDRESS="0x0000000000000000000000000000000000000001"
-log "     Registering solver (Bob) in solver registry..."
+log "     Registering solver (Solver) in solver registry..."
 # register_solver: profile, chain_address, public_key_hex, evm_address_hex, [connected_chain_mvm_address], [log_file]
-register_solver "bob-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "" "$LOG_FILE"
+register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "" "$LOG_FILE"
 
 log "     - Waiting for solver registration to be confirmed on-chain (5 seconds)..."
 sleep 5
 
 log "     - Verifying solver registration..."
-verify_solver_registered "bob-chain1" "$CHAIN1_ADDRESS" "$BOB_CHAIN1_ADDRESS" "$LOG_FILE"
+verify_solver_registered "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_CHAIN1_ADDRESS" "$LOG_FILE"
 
 # Remove 0x prefix from signature for hex format
 SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
 HUB_CHAIN_ID=1
-aptos move run --profile alice-chain1 --assume-yes \
+aptos move run --profile requester-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
-    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${SOLVER_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "     ✅ Intent created on Chain 1!"
     
-    # Verify intent was stored on-chain by checking Alice's latest transaction
+    # Verify intent was stored on-chain by checking Requester's latest transaction
     sleep 2
     log "     - Verifying intent stored on-chain..."
-    HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${ALICE_CHAIN1_ADDRESS}/transactions?limit=1" | \
+    HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${REQUESTER_CHAIN1_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("LimitOrderEvent")) | .data.intent_address' | head -n 1)
     
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then

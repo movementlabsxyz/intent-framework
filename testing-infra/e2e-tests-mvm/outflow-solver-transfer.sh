@@ -22,19 +22,19 @@ fi
 # ============================================================================
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
-ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
-BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
+REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
+SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+REQUESTER_CHAIN2_ADDRESS=$(get_profile_address "requester-chain2")
+SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
 
 log ""
 log "📋 Chain Information:"
 log "   Hub Chain Module Address (Chain 1):     $CHAIN1_ADDRESS"
 log "   Connected Chain Module Address (Chain 2): $CHAIN2_ADDRESS"
-log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
-log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
-log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
-log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
+log "   Requester Chain 1 (hub):     $REQUESTER_CHAIN1_ADDRESS"
+log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
+log "   Requester Chain 2 (connected): $REQUESTER_CHAIN2_ADDRESS"
+log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
 TRANSFER_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
 
@@ -58,26 +58,26 @@ log ""
 display_balances_connected_mvm
 log_and_echo ""
 
-ALICE_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "alice-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
-BOB_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
+REQUESTER_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
+SOLVER_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
-log "   Alice Chain 2 initial USDxyz balance: $ALICE_CHAIN2_USDXYZ_INIT"
-log "   Bob Chain 2 initial USDxyz balance: $BOB_CHAIN2_USDXYZ_INIT"
+log "   Requester Chain 2 initial USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_INIT"
+log "   Solver Chain 2 initial USDxyz balance: $SOLVER_CHAIN2_USDXYZ_INIT"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
 # ============================================================================
 log ""
 log "   Executing solver transfer on connected chain..."
-log "   - Solver (Bob) transfers USDxyz directly to requester (Alice) on Chain 2"
+log "   - Solver (Solver) transfers USDxyz directly to requester (Requester) on Chain 2"
 log "   - This is a DIRECT TRANSFER, not an escrow"
-log "   - Requester (Alice) receives USDxyz immediately on Chain 2"
+log "   - Requester (Requester) receives USDxyz immediately on Chain 2"
 log "   - Amount: $TRANSFER_AMOUNT (1000 USDxyz)"
 log "   - Intent ID included in transaction for verifier tracking"
 
-aptos move run --profile bob-chain2 --assume-yes \
+aptos move run --profile solver-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::utils::transfer_with_intent_id" \
-    --args "address:${ALICE_CHAIN2_ADDRESS}" "address:${USDXYZ_METADATA_CHAIN2}" "u64:${TRANSFER_AMOUNT}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${REQUESTER_CHAIN2_ADDRESS}" "address:${USDXYZ_METADATA_CHAIN2}" "u64:${TRANSFER_AMOUNT}" "address:${INTENT_ID}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS
@@ -88,7 +88,7 @@ if [ $? -eq 0 ]; then
     sleep 2
 
     log "     - Extracting transaction hash..."
-    TX_HASH=$(curl -s "http://127.0.0.1:8082/v1/accounts/${BOB_CHAIN2_ADDRESS}/transactions?limit=1" | \
+    TX_HASH=$(curl -s "http://127.0.0.1:8082/v1/accounts/${SOLVER_CHAIN2_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].hash' | head -n 1)
 
     if [ -z "$TX_HASH" ] || [ "$TX_HASH" = "null" ]; then
@@ -99,30 +99,30 @@ if [ $? -eq 0 ]; then
     log "     ✅ Transaction hash: $TX_HASH"
 
     log "     - Verifying transfer by checking USDxyz balances..."
-    ALICE_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "alice-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
-    BOB_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
+    REQUESTER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
+    SOLVER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
-    log "     Alice Chain 2 final USDxyz balance: $ALICE_CHAIN2_USDXYZ_FINAL"
-    log "     Bob Chain 2 final USDxyz balance: $BOB_CHAIN2_USDXYZ_FINAL"
+    log "     Requester Chain 2 final USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_FINAL"
+    log "     Solver Chain 2 final USDxyz balance: $SOLVER_CHAIN2_USDXYZ_FINAL"
 
-    ALICE_CHAIN2_USDXYZ_EXPECTED=$((ALICE_CHAIN2_USDXYZ_INIT + TRANSFER_AMOUNT))
+    REQUESTER_CHAIN2_USDXYZ_EXPECTED=$((REQUESTER_CHAIN2_USDXYZ_INIT + TRANSFER_AMOUNT))
 
-    if [ "$ALICE_CHAIN2_USDXYZ_FINAL" -eq "$ALICE_CHAIN2_USDXYZ_EXPECTED" ]; then
-        log "     ✅ Requester (Alice) Chain 2 USDxyz balance increased by $TRANSFER_AMOUNT as expected"
+    if [ "$REQUESTER_CHAIN2_USDXYZ_FINAL" -eq "$REQUESTER_CHAIN2_USDXYZ_EXPECTED" ]; then
+        log "     ✅ Requester (Requester) Chain 2 USDxyz balance increased by $TRANSFER_AMOUNT as expected"
     else
-        log_and_echo "❌ ERROR: Requester (Alice) Chain 2 USDxyz balance mismatch"
-        log_and_echo "   Expected: $ALICE_CHAIN2_USDXYZ_EXPECTED"
-        log_and_echo "   Got: $ALICE_CHAIN2_USDXYZ_FINAL"
+        log_and_echo "❌ ERROR: Requester (Requester) Chain 2 USDxyz balance mismatch"
+        log_and_echo "   Expected: $REQUESTER_CHAIN2_USDXYZ_EXPECTED"
+        log_and_echo "   Got: $REQUESTER_CHAIN2_USDXYZ_FINAL"
         exit 1
     fi
 
-    BOB_CHAIN2_USDXYZ_DECREASE=$((BOB_CHAIN2_USDXYZ_INIT - BOB_CHAIN2_USDXYZ_FINAL))
-    if [ "$BOB_CHAIN2_USDXYZ_DECREASE" -eq "$TRANSFER_AMOUNT" ]; then
-        log "     ✅ Solver (Bob) Chain 2 USDxyz balance decreased by $BOB_CHAIN2_USDXYZ_DECREASE as expected"
+    SOLVER_CHAIN2_USDXYZ_DECREASE=$((SOLVER_CHAIN2_USDXYZ_INIT - SOLVER_CHAIN2_USDXYZ_FINAL))
+    if [ "$SOLVER_CHAIN2_USDXYZ_DECREASE" -eq "$TRANSFER_AMOUNT" ]; then
+        log "     ✅ Solver (Solver) Chain 2 USDxyz balance decreased by $SOLVER_CHAIN2_USDXYZ_DECREASE as expected"
     else
-        log_and_echo "❌ ERROR: Solver (Bob) Chain 2 USDxyz balance did not decrease as expected"
-        log_and_echo "   Initial: $BOB_CHAIN2_USDXYZ_INIT"
-        log_and_echo "   Final: $BOB_CHAIN2_USDXYZ_FINAL"
+        log_and_echo "❌ ERROR: Solver (Solver) Chain 2 USDxyz balance did not decrease as expected"
+        log_and_echo "   Initial: $SOLVER_CHAIN2_USDXYZ_INIT"
+        log_and_echo "   Final: $SOLVER_CHAIN2_USDXYZ_FINAL"
         exit 1
     fi
 
@@ -154,7 +154,7 @@ log "🎉 OUTFLOW - SOLVER TRANSFER COMPLETE!"
 log "======================================="
 log ""
 log "✅ Step completed successfully:"
-log "   1. Solver (Bob) transferred tokens to requester (Alice) on Chain 2"
+log "   1. Solver (Solver) transferred tokens to requester (Requester) on Chain 2"
 log "   2. Transfer verified by balance checks"
 log "   3. Transaction hash captured for verifier"
 log ""
@@ -162,5 +162,5 @@ log "📋 Transfer Details:"
 log "   Intent ID: $INTENT_ID"
 log "   Transaction Hash: $TX_HASH"
 log "   Amount Transferred: $TRANSFER_AMOUNT Octas"
-log "   Recipient: $ALICE_CHAIN2_ADDRESS"
+log "   Recipient: $REQUESTER_CHAIN2_ADDRESS"
 

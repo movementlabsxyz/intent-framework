@@ -37,11 +37,11 @@ setup_verifier_config
 sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN2_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
-# Get Alice address and update known_accounts
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
+# Get Requester address and update known_accounts
+REQUESTER_CHAIN2_ADDRESS=$(get_profile_address "requester-chain2")
 
-if [ -n "$ALICE_CHAIN2_ADDRESS" ]; then
-    sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+if [ -n "$REQUESTER_CHAIN2_ADDRESS" ]; then
+    sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|known_accounts = .*|known_accounts = [\"$REQUESTER_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 fi
 
 log_and_echo "✅ Updated verifier_testing.toml with Connected Move VM Chain addresses"

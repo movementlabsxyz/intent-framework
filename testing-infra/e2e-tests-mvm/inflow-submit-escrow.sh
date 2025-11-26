@@ -24,19 +24,19 @@ CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 CHAIN2_ADDRESS=$(get_profile_address "intent-account-chain2")
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
-ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
-BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
+REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
+SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+REQUESTER_CHAIN2_ADDRESS=$(get_profile_address "requester-chain2")
+SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
 
 log ""
 log "📋 Chain Information:"
 log "   Hub Chain Module Address (Chain 1):     $CHAIN1_ADDRESS"
 log "   Connected Chain Module Address (Chain 2): $CHAIN2_ADDRESS"
-log "   Alice Chain 1 (hub):     $ALICE_CHAIN1_ADDRESS"
-log "   Bob Chain 1 (hub):       $BOB_CHAIN1_ADDRESS"
-log "   Alice Chain 2 (connected): $ALICE_CHAIN2_ADDRESS"
-log "   Bob Chain 2 (connected): $BOB_CHAIN2_ADDRESS"
+log "   Requester Chain 1 (hub):     $REQUESTER_CHAIN1_ADDRESS"
+log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
+log "   Requester Chain 2 (connected): $REQUESTER_CHAIN2_ADDRESS"
+log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
 VERIFIER_TESTING_CONFIG="${PROJECT_ROOT}/trusted-verifier/config/verifier_testing.toml"
 
@@ -101,16 +101,16 @@ log_and_echo ""
 # ============================================================================
 log ""
 log "   Creating escrow on connected chain..."
-log "   - Requester (Alice) locks 1000 USDxyz in escrow on Chain 2 (connected chain)"
+log "   - Requester (Requester) locks 1000 USDxyz in escrow on Chain 2 (connected chain)"
 log "   - Using intent_id from hub chain: $INTENT_ID"
 
 log "   - Creating escrow intent on Chain 2..."
 log "     Offered metadata: $OFFERED_METADATA_CHAIN2"
-log "     Reserved solver (Bob): $BOB_CHAIN2_ADDRESS"
+log "     Reserved solver (Solver): $SOLVER_CHAIN2_ADDRESS"
 
-aptos move run --profile alice-chain2 --assume-yes \
+aptos move run --profile requester-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
-    --args "address:${OFFERED_METADATA_CHAIN2}" "u64:100000000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${BOB_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN2}" "u64:100000000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${SOLVER_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS
@@ -121,13 +121,13 @@ if [ $? -eq 0 ]; then
     sleep 2
     log "     - Verifying escrow stored on-chain with locked tokens..."
 
-    ESCROW_ADDRESS=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
+    ESCROW_ADDRESS=$(curl -s "http://127.0.0.1:8082/v1/accounts/${REQUESTER_CHAIN2_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_address' | head -n 1)
-    ESCROW_INTENT_ID=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
+    ESCROW_INTENT_ID=$(curl -s "http://127.0.0.1:8082/v1/accounts/${REQUESTER_CHAIN2_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_id' | head -n 1)
-    LOCKED_AMOUNT=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
+    LOCKED_AMOUNT=$(curl -s "http://127.0.0.1:8082/v1/accounts/${REQUESTER_CHAIN2_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.offered_amount' | head -n 1)
-    DESIRED_AMOUNT=$(curl -s "http://127.0.0.1:8082/v1/accounts/${ALICE_CHAIN2_ADDRESS}/transactions?limit=1" | \
+    DESIRED_AMOUNT=$(curl -s "http://127.0.0.1:8082/v1/accounts/${REQUESTER_CHAIN2_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.desired_amount' | head -n 1)
 
     if [ -z "$ESCROW_ADDRESS" ] || [ "$ESCROW_ADDRESS" = "null" ]; then

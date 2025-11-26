@@ -27,7 +27,7 @@ get_usdxyz_balance_evm() {
 
 # Display balances for Chain 3 (Connected EVM)
 # Usage: display_balances_connected_evm [usdxyz_token_address]
-# Fetches and displays Alice and Bob balances on the Connected EVM chain
+# Fetches and displays Requester and Solver balances on the Connected EVM chain
 # If usdxyz_token_address is provided, also displays USDxyz balances
 # Only displays if EVM chain is running (skips silently if it's not)
 display_balances_connected_evm() {
@@ -48,41 +48,41 @@ display_balances_connected_evm() {
     cd "$PROJECT_ROOT/evm-intent-framework"
     
     # Use the actual script files instead of inline heredoc (Hardhat doesn't support inline scripts)
-    # Account 0 = deployer, Account 1 = Alice, Account 2 = Bob
-    local alice_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
-    local alice_evm=$(echo "$alice_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
+    # Account 0 = deployer, Account 1 = Requester, Account 2 = Solver
+    local requester_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
+    local requester_evm=$(echo "$requester_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
     
     local solver_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
     local solver_evm=$(echo "$solver_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
     
     # Get account addresses for USDxyz balance lookup
-    local alice_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
-    local bob_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
+    local requester_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
+    local solver_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
     
     cd "$PROJECT_ROOT"
     
     log_and_echo "   Chain 3 (Connected EVM):"
     
     # Format EVM balances
-    local alice_eth="0"
-    local bob_eth="0"
+    local requester_eth="0"
+    local solver_eth="0"
     
-    if [ "$alice_evm" != "0" ] && [ -n "$alice_evm" ]; then
-        alice_eth=$(echo "scale=4; $alice_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
+    if [ "$requester_evm" != "0" ] && [ -n "$requester_evm" ]; then
+        requester_eth=$(echo "scale=4; $requester_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
     fi
     
     if [ "$solver_evm" != "0" ] && [ -n "$solver_evm" ]; then
-        bob_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
+        solver_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
     fi
     
-    if [ -n "$usdxyz_addr" ] && [ -n "$alice_addr" ] && [ -n "$bob_addr" ]; then
-        local alice_usdxyz=$(get_usdxyz_balance_evm "$alice_addr" "$usdxyz_addr")
-        local bob_usdxyz=$(get_usdxyz_balance_evm "$bob_addr" "$usdxyz_addr")
-        log_and_echo "      Alice (Acc 1): ${alice_eth} ETH, $alice_usdxyz USDxyz"
-        log_and_echo "      Bob (Acc 2): ${bob_eth} ETH, $bob_usdxyz USDxyz"
+    if [ -n "$usdxyz_addr" ] && [ -n "$requester_addr" ] && [ -n "$solver_addr" ]; then
+        local requester_usdxyz=$(get_usdxyz_balance_evm "$requester_addr" "$usdxyz_addr")
+        local solver_usdxyz=$(get_usdxyz_balance_evm "$solver_addr" "$usdxyz_addr")
+        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdxyz USDxyz"
+        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdxyz USDxyz"
     else
-        log_and_echo "      Alice (Acc 1): ${alice_eth} ETH"
-        log_and_echo "      Bob (Acc 2): ${bob_eth} ETH"
+        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH"
+        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH"
     fi
 }
 

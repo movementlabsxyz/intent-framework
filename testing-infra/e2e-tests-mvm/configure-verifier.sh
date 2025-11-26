@@ -3,7 +3,7 @@
 # Configure Verifier for E2E Tests
 # 
 # This script updates the verifier_testing.toml configuration with the current
-# Alice, Bob, and deployer addresses for both hub and connected chains.
+# Requester, Solver, and deployer addresses for both hub and connected chains.
 
 set -e
 
@@ -26,19 +26,19 @@ log ""
 # ============================================================================
 # SECTION 1: GET ADDRESSES
 # ============================================================================
-ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
-ALICE_CHAIN2_ADDRESS=$(get_profile_address "alice-chain2")
-BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
-BOB_CHAIN2_ADDRESS=$(get_profile_address "bob-chain2")
+REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
+REQUESTER_CHAIN2_ADDRESS=$(get_profile_address "requester-chain2")
+SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
 CHAIN1_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain1")
 CHAIN2_DEPLOY_ADDRESS=$(get_profile_address "intent-account-chain2")
 
 log ""
 log "📋 Chain Information:"
-log "   Alice Chain 1: $ALICE_CHAIN1_ADDRESS"
-log "   Alice Chain 2: $ALICE_CHAIN2_ADDRESS"
-log "   Bob Chain 1: $BOB_CHAIN1_ADDRESS"
-log "   Bob Chain 2: $BOB_CHAIN2_ADDRESS"
+log "   Requester Chain 1: $REQUESTER_CHAIN1_ADDRESS"
+log "   Requester Chain 2: $REQUESTER_CHAIN2_ADDRESS"
+log "   Solver Chain 1: $SOLVER_CHAIN1_ADDRESS"
+log "   Solver Chain 2: $SOLVER_CHAIN2_ADDRESS"
 log "   Chain 1 Deployer: $CHAIN1_DEPLOY_ADDRESS"
 log "   Chain 2 Deployer: $CHAIN2_DEPLOY_ADDRESS"
 
@@ -58,11 +58,11 @@ sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|intent_module_address = .*|in
 # Update connected_chain_mvm escrow_module_address (same as intent_module_address)
 sed -i "/\[connected_chain_mvm\]/,/\[verifier\]/ s|escrow_module_address = .*|escrow_module_address = \"0x$CHAIN2_DEPLOY_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
 
-# Update hub_chain known_accounts (include both requester (Alice) and solver (Bob) - solver (Bob) fulfills intents)
-sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN1_ADDRESS\", \"$BOB_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+# Update hub_chain known_accounts (include both requester (Requester) and solver (Solver) - solver (Solver) fulfills intents)
+sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|known_accounts = .*|known_accounts = [\"$REQUESTER_CHAIN1_ADDRESS\", \"$SOLVER_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 
 # Update connected_chain_mvm known_accounts
-sed -i "/\[connected_chain_mvm\]/,/\[connected_chain_evm\]/ s|known_accounts = .*|known_accounts = [\"$ALICE_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+sed -i "/\[connected_chain_mvm\]/,/\[connected_chain_evm\]/ s|known_accounts = .*|known_accounts = [\"$REQUESTER_CHAIN2_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
 
 # Comment out EVM chain configuration for MVM-only tests
 # This prevents the verifier from trying to connect to EVM chain
@@ -76,8 +76,8 @@ log "   ✅ Updated verifier_testing.toml with:"
 log "      Chain 1 intent_module_address: 0x$CHAIN1_DEPLOY_ADDRESS"
 log "      Chain 2 intent_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
 log "      Chain 2 escrow_module_address: 0x$CHAIN2_DEPLOY_ADDRESS"
-log "      Chain 1 known_accounts: [$ALICE_CHAIN1_ADDRESS, $BOB_CHAIN1_ADDRESS]"
-log "      Chain 2 known_accounts: $ALICE_CHAIN2_ADDRESS"
+log "      Chain 1 known_accounts: [$REQUESTER_CHAIN1_ADDRESS, $SOLVER_CHAIN1_ADDRESS]"
+log "      Chain 2 known_accounts: $REQUESTER_CHAIN2_ADDRESS"
 log "      EVM chain configuration: commented out (MVM-only test)"
 
 log ""

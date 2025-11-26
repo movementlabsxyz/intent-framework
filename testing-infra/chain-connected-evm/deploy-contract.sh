@@ -92,33 +92,33 @@ log "   ✅ USDxyz deployed to: $USDXYZ_ADDRESS"
 # Save USDxyz address for other scripts
 echo "USDXYZ_EVM_ADDRESS=$USDXYZ_ADDRESS" >> "$PROJECT_ROOT/tmp/chain-info.env"
 
-# Mint USDxyz to Alice and Bob (accounts 1 and 2)
+# Mint USDxyz to Requester and Solver (accounts 1 and 2)
 log ""
-log "💵 Minting USDxyz to Alice and Bob on EVM chain..."
+log "💵 Minting USDxyz to Requester and Solver on EVM chain..."
 
-ALICE_EVM_ADDRESS=$(get_hardhat_account_address "1")
-BOB_EVM_ADDRESS=$(get_hardhat_account_address "2")
+REQUESTER_EVM_ADDRESS=$(get_hardhat_account_address "1")
+SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
 USDXYZ_MINT_AMOUNT="100000000000000000000000"  # 100000 USDxyz (18 decimals, same as 1000 with 8 decimals scaled)
 
-log "   - Minting USDxyz to Alice ($ALICE_EVM_ADDRESS)..."
-MINT_OUTPUT=$(run_hardhat_command "npx hardhat run scripts/mint-token.js --network localhost" "TOKEN_ADDRESS='$USDXYZ_ADDRESS' RECIPIENT='$ALICE_EVM_ADDRESS' AMOUNT='$USDXYZ_MINT_AMOUNT'" 2>&1 | tee -a "$LOG_FILE")
+log "   - Minting USDxyz to Requester ($REQUESTER_EVM_ADDRESS)..."
+MINT_OUTPUT=$(run_hardhat_command "npx hardhat run scripts/mint-token.js --network localhost" "TOKEN_ADDRESS='$USDXYZ_ADDRESS' RECIPIENT='$REQUESTER_EVM_ADDRESS' AMOUNT='$USDXYZ_MINT_AMOUNT'" 2>&1 | tee -a "$LOG_FILE")
 if echo "$MINT_OUTPUT" | grep -q "SUCCESS"; then
-    log "   ✅ Minted USDxyz to Alice"
+    log "   ✅ Minted USDxyz to Requester"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Alice"
+    log_and_echo "   ❌ Failed to mint USDxyz to Requester"
     exit 1
 fi
 
-log "   - Minting USDxyz to Bob ($BOB_EVM_ADDRESS)..."
-MINT_OUTPUT=$(run_hardhat_command "npx hardhat run scripts/mint-token.js --network localhost" "TOKEN_ADDRESS='$USDXYZ_ADDRESS' RECIPIENT='$BOB_EVM_ADDRESS' AMOUNT='$USDXYZ_MINT_AMOUNT'" 2>&1 | tee -a "$LOG_FILE")
+log "   - Minting USDxyz to Solver ($SOLVER_EVM_ADDRESS)..."
+MINT_OUTPUT=$(run_hardhat_command "npx hardhat run scripts/mint-token.js --network localhost" "TOKEN_ADDRESS='$USDXYZ_ADDRESS' RECIPIENT='$SOLVER_EVM_ADDRESS' AMOUNT='$USDXYZ_MINT_AMOUNT'" 2>&1 | tee -a "$LOG_FILE")
 if echo "$MINT_OUTPUT" | grep -q "SUCCESS"; then
-    log "   ✅ Minted USDxyz to Bob"
+    log "   ✅ Minted USDxyz to Solver"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Bob"
+    log_and_echo "   ❌ Failed to mint USDxyz to Solver"
     exit 1
 fi
 
-log_and_echo "✅ USDxyz minted to Alice and Bob on EVM chain"
+log_and_echo "✅ USDxyz minted to Requester and Solver on EVM chain"
 
 # Display balances (ETH + USDxyz)
 display_balances_connected_evm "$USDXYZ_ADDRESS"

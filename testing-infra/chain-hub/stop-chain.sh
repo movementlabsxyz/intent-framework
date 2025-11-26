@@ -18,8 +18,8 @@ docker-compose -f testing-infra/chain-hub/docker-compose-hub-chain.yml -p aptos-
 
 log ""
 log "🧹 Cleaning up Chain 1 Aptos CLI profiles..."
-cleanup_aptos_profile "alice-chain1" "$LOG_FILE"
-cleanup_aptos_profile "bob-chain1" "$LOG_FILE"
+cleanup_aptos_profile "requester-chain1" "$LOG_FILE"
+cleanup_aptos_profile "solver-chain1" "$LOG_FILE"
 cleanup_aptos_profile "test-tokens-chain1" "$LOG_FILE"
 cleanup_aptos_profile "intent-account-chain1" "$LOG_FILE"
 

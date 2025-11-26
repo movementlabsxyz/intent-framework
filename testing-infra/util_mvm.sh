@@ -528,7 +528,8 @@ get_usdxyz_balance() {
         rest_port="8082"
     fi
     
-    local account_addr=$(get_profile_address "$profile")
+    # Use || true to prevent set -e from exiting before PANIC check
+    local account_addr=$(get_profile_address "$profile" 2>/dev/null) || true
     if [ -z "$account_addr" ]; then
         echo "❌ PANIC: get_usdxyz_balance failed to get address for profile '$profile'" >&2
         exit 1
@@ -630,12 +631,13 @@ display_balances_connected_mvm() {
 # Validates test token profiles exist and displays balances for Hub and Connected MVM chains
 # Usage: balance_check_mvm
 balance_check_mvm() {
-    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
+    # Use || true to prevent set -e from exiting before PANIC check
+    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1" 2>/dev/null) || true
     if [ -z "$test_tokens_chain1" ]; then
         echo "❌ PANIC: test-tokens-chain1 profile not found"
         exit 1
     fi
-    local test_tokens_chain2=$(get_profile_address "test-tokens-chain2")
+    local test_tokens_chain2=$(get_profile_address "test-tokens-chain2" 2>/dev/null) || true
     if [ -z "$test_tokens_chain2" ]; then
         echo "❌ PANIC: test-tokens-chain2 profile not found"
         exit 1

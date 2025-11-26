@@ -124,7 +124,8 @@ display_balances_connected_evm() {
 # Usage: balance_check_evm
 # Note: Requires PROJECT_ROOT to be set
 balance_check_evm() {
-    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
+    # Use || true to prevent set -e from exiting before PANIC check
+    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1" 2>/dev/null) || true
     if [ -z "$test_tokens_chain1" ]; then
         log_and_echo "❌ PANIC: test-tokens-chain1 profile not found"
         exit 1

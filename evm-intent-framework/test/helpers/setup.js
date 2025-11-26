@@ -8,7 +8,7 @@ async function setupIntentEscrowTests() {
 
   // Deploy mock ERC20 token
   const MockERC20 = await ethers.getContractFactory("MockERC20");
-  const token = await MockERC20.deploy("Test Token", "TEST");
+  const token = await MockERC20.deploy("Test Token", "TEST", 18);
   await token.waitForDeployment();
 
   // Deploy escrow with verifier address

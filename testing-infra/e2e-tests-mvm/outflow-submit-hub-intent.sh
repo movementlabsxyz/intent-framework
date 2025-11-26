@@ -67,9 +67,9 @@ fi
 
 VERIFIER_PUBLIC_KEY="0x${VERIFIER_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-# USDxyz amounts: 1000 USDxyz (8 decimals = 100000000000)
-OFFERED_AMOUNT="100000000000"  # 1000 USDxyz
-DESIRED_AMOUNT="100000000000"  # 1000 USDxyz
+# USDxyz amounts: 1 USDxyz (8 decimals = 100_000_000)
+OFFERED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000
+DESIRED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000
 OFFERED_CHAIN_ID=1
 DESIRED_CHAIN_ID=$CONNECTED_CHAIN_ID
 HUB_CHAIN_ID=1
@@ -79,8 +79,8 @@ log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Verifier public key: $VERIFIER_PUBLIC_KEY"
-log "   Offered amount: $OFFERED_AMOUNT (1000 USDxyz)"
-log "   Desired amount: $DESIRED_AMOUNT (1000 USDxyz)"
+log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz)"
+log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz)"
 
 # Get test tokens addresses from profiles
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
@@ -112,8 +112,8 @@ log_and_echo ""
 log ""
 log "   Creating outflow request-intent on hub chain..."
 log "   - Requester (Requester) creates outflow request-intent on Chain 1 (hub chain)"
-log "   - Requester (Requester) locks 1000 USDxyz on hub chain"
-log "   - Requester (Requester) wants 1000 USDxyz on connected chain (Chain 2)"
+log "   - Requester (Requester) locks 1 USDxyz on hub chain"
+log "   - Requester (Requester) wants 1 USDxyz on connected chain (Chain 2)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."

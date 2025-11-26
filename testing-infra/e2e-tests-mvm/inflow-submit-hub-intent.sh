@@ -39,9 +39,9 @@ log "   Requester Chain 2 (connected): $REQUESTER_CHAIN2_ADDRESS"
 log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-# Requester and Solver get funded with 1000 USDxyz each
-OFFERED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
-DESIRED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
+# Requester and Solver get funded with 1 USDxyz each, transfer 1 USDxyz
+OFFERED_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
+DESIRED_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID
 DESIRED_CHAIN_ID=1
 HUB_CHAIN_ID=1
@@ -51,8 +51,8 @@ log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
-log "   Offered amount: $OFFERED_AMOUNT (1000 USDxyz)"
-log "   Desired amount: $DESIRED_AMOUNT (1000 USDxyz)"
+log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz)"
+log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz)"
 
 log ""
 log "   - Getting USDxyz metadata addresses..."
@@ -89,7 +89,7 @@ log_and_echo ""
 log ""
 log "   Creating request-intent on hub chain..."
 log "   - Requester (Requester) creates request-intent on Chain 1 (hub chain)"
-log "   - Request-intent requests 1000 USDxyz to be provided by solver (Solver)"
+log "   - Request-intent requests 1 USDxyz to be provided by solver (Solver)"
 log "   - Using intent_id: $INTENT_ID"
 
 log "   - Generating solver signature..."

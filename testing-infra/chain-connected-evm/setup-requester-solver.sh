@@ -86,8 +86,8 @@ if [ -z "$REQUESTER_BALANCE" ] || [ -z "$SOLVER_BALANCE" ]; then
     exit 1
 fi
 
-log "   Requester balance: $REQUESTER_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
-log "   Solver balance:   $SOLVER_BALANCE wei (should be 10000 ETH = 10000000000000000000000 wei)"
+log "   Requester balance: $REQUESTER_BALANCE wei (should be 1 ETH = 1_000_000_000_000_000_000 wei)"
+log "   Solver balance:   $SOLVER_BALANCE wei (should be 1 ETH = 1_000_000_000_000_000_000 wei)"
 
 log ""
 log "% - - - - - - - - - - - BURN EXCESS ETH - - - - - - - - - - - -"
@@ -102,7 +102,7 @@ cd evm-intent-framework
 
 # Burn from Requester (Account 1)
 log "   - Burning excess ETH from Requester (Account 1)..."
-KEEP_AMOUNT_WEI="2000000000000000000"  # 2 ETH
+KEEP_AMOUNT_WEI="2000000000000000000"  # 2 ETH = 2_000_000_000_000_000_000 wei
 REQUESTER_BURN_RESULT=$(nix develop -c bash -c "ACCOUNT_INDEX=1 KEEP_AMOUNT_WEI='$KEEP_AMOUNT_WEI' npx hardhat run scripts/burn-excess-eth.js --network localhost" 2>&1)
 
 if echo "$REQUESTER_BURN_RESULT" | grep -q "SUCCESS"; then
@@ -151,8 +151,8 @@ if [ -z "$REQUESTER_FINAL_BALANCE" ] || [ -z "$SOLVER_FINAL_BALANCE" ]; then
     exit 1
 fi
 
-log "   Requester final balance: $REQUESTER_FINAL_BALANCE wei (should be ~2 ETH = 2000000000000000000 wei)"
-log "   Solver final balance:   $SOLVER_FINAL_BALANCE wei (should be ~2 ETH = 2000000000000000000 wei)"
+log "   Requester final balance: $REQUESTER_FINAL_BALANCE wei (should be ~2 ETH = 2_000_000_000_000_000_000 wei)"
+log "   Solver final balance:   $SOLVER_FINAL_BALANCE wei (should be ~2 ETH = 2_000_000_000_000_000_000 wei)"
 
 log ""
 log "% - - - - - - - - - - - TEST TRANSFER - - - - - - - - - - - -"

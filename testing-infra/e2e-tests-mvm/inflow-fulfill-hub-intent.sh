@@ -46,7 +46,7 @@ log_and_echo ""
 log ""
 log "   Fulfilling request-intent on hub chain..."
 log "   - Solver (Solver) sees request-intent with ID: $INTENT_ID"
-log "   - Solver (Solver) provides 1000 USDxyz on hub chain to fulfill the request-intent"
+log "   - Solver (Solver) provides 1 USDxyz on hub chain to fulfill the request-intent"
 
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
 
@@ -59,7 +59,7 @@ log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
 
 aptos move run --profile solver-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::fulfill_inflow_request_intent" \
-    --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000000" >> "$LOG_FILE" 2>&1
+    --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS

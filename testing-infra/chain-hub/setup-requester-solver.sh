@@ -18,7 +18,7 @@ setup_logging "setup-requester-solver-hub"
 cd "$PROJECT_ROOT"
 
 # Expected funding amount in octas
-# Note: aptos init funds accounts with 100000000, then we fund again with 100000000 = 200000000 total
+# Note: aptos init funds accounts with 100_000_000, then we fund again with 100_000_000 = 200_000_000 total
 EXPECTED_FUNDING_AMOUNT=200000000
 
 log "🧪 Requester and Solver Account Setup - HUB CHAIN (Chain 1)"

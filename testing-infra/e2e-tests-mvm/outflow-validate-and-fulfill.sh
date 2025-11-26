@@ -97,7 +97,7 @@ display_balances_hub
 log_and_echo ""
 
 SOLVER_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
-log "   Solver Chain 1 initial USDxyz balance: $SOLVER_CHAIN1_USDXYZ_INIT"
+log "   Solver Chain 1 initial USDxyz balance: $SOLVER_CHAIN1_USDXYZ_INIT USDxyz.10e8"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -237,16 +237,16 @@ if [ $? -eq 0 ]; then
 
     log "     - Verifying solver (Solver) received locked USDxyz tokens..."
     SOLVER_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1")
-    log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL"
+    log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL USDxyz.10e8"
 
     CHAIN1_USDXYZ_INCREASE=$((SOLVER_CHAIN1_USDXYZ_FINAL - SOLVER_CHAIN1_USDXYZ_INIT))
-    OFFERED_AMOUNT=100000000000  # 1000 USDxyz
+    OFFERED_AMOUNT=100000000  # 1 USDxyz = 100_000_000
 
     if [ "$CHAIN1_USDXYZ_INCREASE" -eq "$OFFERED_AMOUNT" ]; then
-        log "     ✅ Solver (Solver) received locked USDxyz tokens: +$CHAIN1_USDXYZ_INCREASE (expected $OFFERED_AMOUNT)"
+        log "     ✅ Solver (Solver) received locked USDxyz tokens: +$CHAIN1_USDXYZ_INCREASE USDxyz.10e8 (expected $OFFERED_AMOUNT USDxyz.10e8)"
     else
         log_and_echo "❌ ERROR: Solver (Solver) Chain 1 USDxyz balance increase is less than expected"
-        log_and_echo "   Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE"
+        log_and_echo "   Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE USDxyz.10e8"
         log_and_echo "   Expected: $OFFERED_AMOUNT"
         exit 1
     fi
@@ -286,11 +286,11 @@ log "   Hub Request-intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
-log "   Solver (Solver) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE"
+log "   Solver (Solver) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE USDxyz.10e8"
 log ""
 log "📖 Outflow Request-intent Summary:"
-log "   1. Requester (Requester) created outflow request-intent on hub chain (locked 1000 USDxyz)"
-log "   2. Solver (Solver) transferred 1000 USDxyz to requester (Requester) on connected chain"
+log "   1. Requester (Requester) created outflow request-intent on hub chain (locked 1 USDxyz)"
+log "   2. Solver (Solver) transferred 1 USDxyz to requester (Requester) on connected chain"
 log "   3. Verifier validated the connected chain transfer"
 log "   4. Solver (Solver) fulfilled hub request-intent with verifier signature"
 log "   5. Solver (Solver) received locked USDxyz tokens as reward on hub chain"

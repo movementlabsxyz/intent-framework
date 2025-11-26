@@ -36,7 +36,7 @@ log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
 log "   Requester Chain 2 (connected): $REQUESTER_CHAIN2_ADDRESS"
 log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
-TRANSFER_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
+TRANSFER_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
 
 # Get test tokens address
 TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
@@ -44,7 +44,7 @@ TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
-log "   Transfer Amount: $TRANSFER_AMOUNT (1000 USDxyz)"
+log "   Transfer Amount: $TRANSFER_AMOUNT (1 USDxyz)"
 
 log ""
 log "   - Getting USDxyz metadata on Chain 2..."
@@ -61,8 +61,8 @@ log_and_echo ""
 REQUESTER_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 SOLVER_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
-log "   Requester Chain 2 initial USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_INIT"
-log "   Solver Chain 2 initial USDxyz balance: $SOLVER_CHAIN2_USDXYZ_INIT"
+log "   Requester Chain 2 initial USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_INIT USDxyz.10e8"
+log "   Solver Chain 2 initial USDxyz balance: $SOLVER_CHAIN2_USDXYZ_INIT USDxyz.10e8"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -72,7 +72,7 @@ log "   Executing solver transfer on connected chain..."
 log "   - Solver (Solver) transfers USDxyz directly to requester (Requester) on Chain 2"
 log "   - This is a DIRECT TRANSFER, not an escrow"
 log "   - Requester (Requester) receives USDxyz immediately on Chain 2"
-log "   - Amount: $TRANSFER_AMOUNT (1000 USDxyz)"
+log "   - Amount: $TRANSFER_AMOUNT (1 USDxyz)"
 log "   - Intent ID included in transaction for verifier tracking"
 
 aptos move run --profile solver-chain2 --assume-yes \
@@ -102,8 +102,8 @@ if [ $? -eq 0 ]; then
     REQUESTER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
     SOLVER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
-    log "     Requester Chain 2 final USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_FINAL"
-    log "     Solver Chain 2 final USDxyz balance: $SOLVER_CHAIN2_USDXYZ_FINAL"
+    log "     Requester Chain 2 final USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
+    log "     Solver Chain 2 final USDxyz balance: $SOLVER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
 
     REQUESTER_CHAIN2_USDXYZ_EXPECTED=$((REQUESTER_CHAIN2_USDXYZ_INIT + TRANSFER_AMOUNT))
 
@@ -111,18 +111,18 @@ if [ $? -eq 0 ]; then
         log "     ✅ Requester (Requester) Chain 2 USDxyz balance increased by $TRANSFER_AMOUNT as expected"
     else
         log_and_echo "❌ ERROR: Requester (Requester) Chain 2 USDxyz balance mismatch"
-        log_and_echo "   Expected: $REQUESTER_CHAIN2_USDXYZ_EXPECTED"
-        log_and_echo "   Got: $REQUESTER_CHAIN2_USDXYZ_FINAL"
+        log_and_echo "   Expected: $REQUESTER_CHAIN2_USDXYZ_EXPECTED USDxyz.10e8"
+        log_and_echo "   Got: $REQUESTER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
         exit 1
     fi
 
     SOLVER_CHAIN2_USDXYZ_DECREASE=$((SOLVER_CHAIN2_USDXYZ_INIT - SOLVER_CHAIN2_USDXYZ_FINAL))
     if [ "$SOLVER_CHAIN2_USDXYZ_DECREASE" -eq "$TRANSFER_AMOUNT" ]; then
-        log "     ✅ Solver (Solver) Chain 2 USDxyz balance decreased by $SOLVER_CHAIN2_USDXYZ_DECREASE as expected"
+        log "     ✅ Solver (Solver) Chain 2 USDxyz balance decreased by $SOLVER_CHAIN2_USDXYZ_DECREASE USDxyz.10e8 as expected"
     else
         log_and_echo "❌ ERROR: Solver (Solver) Chain 2 USDxyz balance did not decrease as expected"
-        log_and_echo "   Initial: $SOLVER_CHAIN2_USDXYZ_INIT"
-        log_and_echo "   Final: $SOLVER_CHAIN2_USDXYZ_FINAL"
+        log_and_echo "   Initial: $SOLVER_CHAIN2_USDXYZ_INIT USDxyz.10e8"
+        log_and_echo "   Final: $SOLVER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
         exit 1
     fi
 

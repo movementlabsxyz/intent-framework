@@ -100,6 +100,24 @@ See [`.cursor/codestandards.md`](.cursor/codestandards.md) for language-specific
 - **Test isolation**: Each test should be independent and clean up after itself
 - **Balance checks**: Use granular balance display functions appropriate for the chain being tested
 
+### Test Count Commands
+
+Get test counts for each component (for commit messages):
+
+```bash
+# Move tests (shows total in output)
+nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep "Total tests:"
+
+# Verifier tests (sum across multiple test binaries)
+nix develop -c bash -c "cd trusted-verifier && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Verifier: " sum " passed"}'
+
+# EVM tests
+nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep "passing"
+
+# Solver tests
+nix develop -c bash -c "cd solver && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Solver: " sum " passed"}'
+```
+
 --------------------------------------------------------------------------------
 
 ## Common Patterns

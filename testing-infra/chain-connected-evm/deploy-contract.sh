@@ -98,7 +98,7 @@ log "💵 Minting USDxyz to Requester and Solver on EVM chain..."
 
 REQUESTER_EVM_ADDRESS=$(get_hardhat_account_address "1")
 SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
-USDXYZ_MINT_AMOUNT="100000000000000000000000"  # 100000 USDxyz (18 decimals, same as 1000 with 8 decimals scaled)
+USDXYZ_MINT_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
 
 log "   - Minting USDxyz to Requester ($REQUESTER_EVM_ADDRESS)..."
 MINT_OUTPUT=$(run_hardhat_command "npx hardhat run scripts/mint-token.js --network localhost" "TOKEN_ADDRESS='$USDXYZ_ADDRESS' RECIPIENT='$REQUESTER_EVM_ADDRESS' AMOUNT='$USDXYZ_MINT_AMOUNT'" 2>&1 | tee -a "$LOG_FILE")

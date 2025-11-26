@@ -83,7 +83,7 @@ log "💵 Minting USDxyz to Requester and Solver on Chain 2..."
 
 REQUESTER_CHAIN2_ADDRESS=$(get_profile_address "requester-chain2")
 SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
-USDXYZ_MINT_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
+USDXYZ_MINT_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
 
 log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Requester ($REQUESTER_CHAIN2_ADDRESS)..."
 aptos move run --profile test-tokens-chain2 --assume-yes \
@@ -109,7 +109,7 @@ else
     exit 1
 fi
 
-log_and_echo "✅ USDxyz minted to Requester and Solver on connected chain (1000 USDxyz each)"
+log_and_echo "✅ USDxyz minted to Requester and Solver on connected chain (1 USDxyz each)"
 
 # Display balances (APT + USDxyz)
 display_balances_connected_mvm "$TEST_TOKENS_CHAIN2_ADDRESS"

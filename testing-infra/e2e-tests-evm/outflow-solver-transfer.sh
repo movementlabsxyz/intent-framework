@@ -32,7 +32,7 @@ log "   Solver EVM (connected): $SOLVER_EVM_ADDRESS"
 
 # Transfer amount must match the request-intent's desired_amount (1 ETH)
 # This is the amount the requester specified they want on the connected chain
-TRANSFER_AMOUNT_WEI="1000000000000000000"  # 1 ETH (matches request-intent desired_amount)
+TRANSFER_AMOUNT_WEI="1000000000000000000"  # 1 ETH = 1_000_000_000_000_000_000 wei
 
 log ""
 log "🔑 Configuration:"
@@ -58,7 +58,7 @@ if [ -z "$TOKEN_ADDRESS" ]; then
     
     # Mint tokens to Solver (Account 2) for the transfer
     log "   - Minting tokens to Solver (solver) on EVM chain..."
-    MINT_AMOUNT="2000000000000000000"  # 2 ETH (enough for transfer + buffer)
+    MINT_AMOUNT="2000000000000000000"  # 2 ETH = 2_000_000_000_000_000_000 wei
     MINT_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$TOKEN_ADDRESS' RECIPIENT='$SOLVER_EVM_ADDRESS' AMOUNT='$MINT_AMOUNT' npx hardhat run scripts/mint-token.js --network localhost" 2>&1 | tee -a "$LOG_FILE" || echo "")
     
     if [ -n "$MINT_OUTPUT" ] && echo "$MINT_OUTPUT" | grep -qi "success\|minted"; then

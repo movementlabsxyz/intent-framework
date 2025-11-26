@@ -46,7 +46,7 @@ log_and_echo ""
 log ""
 log "   Creating intent on hub chain..."
 log "   - Requester creates intent on Chain 1 (hub chain)"
-log "   - Intent requests 1000 USDxyz to be provided by solver (on hub chain)"
+log "   - Intent requests 1 USDxyz to be provided by solver (on hub chain)"
 log "   - Using intent_id: $INTENT_ID"
 log "   - Connected chain: EVM (Chain ID: 31337)"
 
@@ -85,8 +85,8 @@ log "     Generating solver signature..."
 
 # Generate solver signature using helper function
 # For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
-OFFERED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals, on EVM chain)
-DESIRED_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals, on hub chain Chain 1)
+OFFERED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000 (on EVM chain)
+DESIRED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000 (on hub chain)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (31337 for EVM)
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 SOLVER_SIGNATURE=$(generate_solver_signature \

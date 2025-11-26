@@ -46,7 +46,7 @@ describe("EVM Scripts - Utility Functions", function () {
 
     // Deploy MockERC20 token
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    token = await MockERC20.deploy("Test Token", "TEST");
+    token = await MockERC20.deploy("Test Token", "TEST", 18);
     await token.waitForDeployment();
     tokenAddress = await token.getAddress();
   });

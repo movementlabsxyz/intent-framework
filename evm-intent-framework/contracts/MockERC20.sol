@@ -17,10 +17,10 @@ contract MockERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    constructor(string memory _name, string memory _symbol) {
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
         name = _name;
         symbol = _symbol;
-        decimals = 18;
+        decimals = _decimals;
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {

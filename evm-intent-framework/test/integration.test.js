@@ -70,11 +70,11 @@ describe("IntentEscrow - Integration Tests", function () {
   /// Why: The escrow must support any ERC20 token, not just a single token type.
   it("Should handle multiple different ERC20 tokens", async function () {
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    const token1 = await MockERC20.deploy("Token One", "TKN1");
+    const token1 = await MockERC20.deploy("Token One", "TKN1", 18);
     await token1.waitForDeployment();
-    const token2 = await MockERC20.deploy("Token Two", "TKN2");
+    const token2 = await MockERC20.deploy("Token Two", "TKN2", 18);
     await token2.waitForDeployment();
-    const token3 = await MockERC20.deploy("Token Three", "TKN3");
+    const token3 = await MockERC20.deploy("Token Three", "TKN3", 18);
     await token3.waitForDeployment();
     
     const amount1 = ethers.parseEther("100");

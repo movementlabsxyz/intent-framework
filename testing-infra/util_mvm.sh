@@ -514,6 +514,13 @@ get_usdxyz_balance() {
     local chain_num="$2"
     local test_tokens_addr="$3"
     
+    # Validate inputs
+    if [ -z "$profile" ] || [ -z "$chain_num" ] || [ -z "$test_tokens_addr" ]; then
+        echo "❌ PANIC: get_usdxyz_balance requires profile, chain_num, test_tokens_addr" >&2
+        echo "   profile: '$profile', chain_num: '$chain_num', test_tokens_addr: '$test_tokens_addr'" >&2
+        exit 1
+    fi
+    
     local rest_port
     if [ "$chain_num" = "1" ]; then
         rest_port="8080"
@@ -522,6 +529,10 @@ get_usdxyz_balance() {
     fi
     
     local account_addr=$(get_profile_address "$profile")
+    if [ -z "$account_addr" ]; then
+        echo "❌ PANIC: get_usdxyz_balance failed to get address for profile '$profile'" >&2
+        exit 1
+    fi
     
     # Call the view function to get balance
     local balance=$(curl -s "http://127.0.0.1:${rest_port}/v1/view" \
@@ -530,9 +541,15 @@ get_usdxyz_balance() {
             \"function\": \"${test_tokens_addr}::usdxyz::balance\",
             \"type_arguments\": [],
             \"arguments\": [\"${account_addr}\"]
-        }" 2>/dev/null | jq -r '.[0] // "0"')
+        }" 2>/dev/null | jq -r '.[0] // ""')
     
-    echo "${balance:-0}"
+    if [ -z "$balance" ]; then
+        echo "❌ PANIC: get_usdxyz_balance failed to get balance for '$profile' on chain $chain_num" >&2
+        echo "   account_addr: $account_addr, test_tokens_addr: $test_tokens_addr" >&2
+        exit 1
+    fi
+    
+    echo "$balance"
 }
 
 # Display balances for Chain 1 (Hub)

@@ -11,18 +11,33 @@
 # Get USDxyz balance for an EVM account
 # Usage: get_usdxyz_balance_evm <account_address> <usdxyz_token_address>
 # Returns the USDxyz balance for the given account
+# PANICS if inputs are missing or balance lookup fails
 get_usdxyz_balance_evm() {
     local account="$1"
     local token_address="$2"
+    
+    # Validate inputs
+    if [ -z "$account" ] || [ -z "$token_address" ]; then
+        echo "❌ PANIC: get_usdxyz_balance_evm requires account and token_address" >&2
+        echo "   account: '$account', token_address: '$token_address'" >&2
+        exit 1
+    fi
     
     if [ -z "$PROJECT_ROOT" ]; then
         setup_project_root
     fi
     
     local balance_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$token_address' ACCOUNT='$account' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1)
-    local balance=$(echo "$balance_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
+    local balance=$(echo "$balance_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
     
-    echo "${balance:-0}"
+    if [ -z "$balance" ]; then
+        echo "❌ PANIC: get_usdxyz_balance_evm failed to get balance" >&2
+        echo "   account: $account, token_address: $token_address" >&2
+        echo "   output: $balance_output" >&2
+        exit 1
+    fi
+    
+    echo "$balance"
 }
 
 # Display balances for Chain 3 (Connected EVM)

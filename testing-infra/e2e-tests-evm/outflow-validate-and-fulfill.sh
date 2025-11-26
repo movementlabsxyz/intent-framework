@@ -104,8 +104,7 @@ log_and_echo ""
 
 # Get USDxyz metadata for balance checks
 TEST_TOKENS_CHAIN1_ADDRESS=$(get_profile_address "test-tokens-chain1")
-SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
-SOLVER_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "$SOLVER_CHAIN1_ADDRESS" "$TEST_TOKENS_CHAIN1_ADDRESS" "1")
+SOLVER_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1_ADDRESS")
 log "   Solver Chain 1 initial USDxyz balance: $SOLVER_CHAIN1_USDXYZ_INIT USDxyz.10e8"
 
 # ============================================================================
@@ -277,7 +276,7 @@ if [ $? -eq 0 ]; then
     sleep 2
 
     log "     - Verifying solver (Solver) received locked USDxyz tokens..."
-    SOLVER_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "$SOLVER_CHAIN1_ADDRESS" "$TEST_TOKENS_CHAIN1_ADDRESS" "1")
+    SOLVER_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1_ADDRESS")
     log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL USDxyz.10e8"
 
     CHAIN1_USDXYZ_INCREASE=$((SOLVER_CHAIN1_USDXYZ_FINAL - SOLVER_CHAIN1_USDXYZ_INIT))

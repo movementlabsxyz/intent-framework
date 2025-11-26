@@ -75,14 +75,54 @@ display_balances_connected_evm() {
         solver_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
     fi
     
-    if [ -n "$usdxyz_addr" ] && [ -n "$requester_addr" ] && [ -n "$solver_addr" ]; then
+    if [ -n "$usdxyz_addr" ]; then
+        # PANIC if we passed a token address but couldn't get account addresses
+        if [ -z "$requester_addr" ] || [ -z "$solver_addr" ]; then
+            log_and_echo "❌ PANIC: display_balances_connected_evm failed to get account addresses"
+            log_and_echo "   requester_addr: '$requester_addr'"
+            log_and_echo "   solver_addr: '$solver_addr'"
+            exit 1
+        fi
+        
         local requester_usdxyz=$(get_usdxyz_balance_evm "$requester_addr" "$usdxyz_addr")
         local solver_usdxyz=$(get_usdxyz_balance_evm "$solver_addr" "$usdxyz_addr")
+        
+        # PANIC if we passed a token address but couldn't get balances
+        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
+            log_and_echo "❌ PANIC: display_balances_connected_evm failed to get USDxyz balances"
+            log_and_echo "   usdxyz_addr: $usdxyz_addr"
+            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
+            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+            exit 1
+        fi
+        
         log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdxyz USDxyz"
         log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdxyz USDxyz"
     else
         log_and_echo "      Requester (Acc 1): ${requester_eth} ETH"
         log_and_echo "      Solver (Acc 2): ${solver_eth} ETH"
     fi
+}
+
+# Balance check for EVM E2E tests
+# Validates test token profiles exist and displays balances for Hub and Connected EVM chains
+# Usage: balance_check_evm
+# Note: Requires PROJECT_ROOT to be set
+balance_check_evm() {
+    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
+    if [ -z "$test_tokens_chain1" ]; then
+        log_and_echo "❌ PANIC: test-tokens-chain1 profile not found"
+        exit 1
+    fi
+    
+    source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+    local usdxyz_address="$USDXYZ_EVM_ADDRESS"
+    if [ -z "$usdxyz_address" ]; then
+        log_and_echo "❌ PANIC: USDXYZ_EVM_ADDRESS not found in chain-info.env"
+        exit 1
+    fi
+
+    display_balances_hub "0x$test_tokens_chain1"
+    display_balances_connected_evm "$usdxyz_address"
 }
 

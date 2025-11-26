@@ -16,15 +16,15 @@ get_profile_address() {
     local profile="$1"
     
     if [ -z "$profile" ]; then
-        log_and_echo "❌ ERROR: get_profile_address() requires a profile name"
-        exit 1
+        echo "❌ ERROR: get_profile_address() requires a profile name" >&2
+        return 1
     fi
     
     local address=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].account" 2>/dev/null)
     
     if [ -z "$address" ] || [ "$address" = "null" ]; then
-        log_and_echo "❌ ERROR: Could not extract address for profile: $profile"
-        exit 1
+        echo "❌ ERROR: Could not extract address for profile: $profile" >&2
+        return 1
     fi
     
     echo "$address"
@@ -538,7 +538,7 @@ get_usdxyz_balance() {
 # Display balances for Chain 1 (Hub)
 # Usage: display_balances_hub [test_tokens_address]
 # Fetches and displays Requester and Solver balances on the Hub chain
-# If test_tokens_address is provided, also displays USDxyz balances
+# If test_tokens_address is provided, also displays USDxyz balances (PANICS if USDxyz lookup fails)
 # Note: Hub chain is always a Move VM chain, so this uses aptos commands
 display_balances_hub() {
     local test_tokens_addr="$1"
@@ -552,6 +552,16 @@ display_balances_hub() {
     if [ -n "$test_tokens_addr" ]; then
         local requester_usdxyz=$(get_usdxyz_balance "requester-chain1" "1" "$test_tokens_addr")
         local solver_usdxyz=$(get_usdxyz_balance "solver-chain1" "1" "$test_tokens_addr")
+        
+        # PANIC if we passed a token address but couldn't get balances
+        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
+            log_and_echo "❌ PANIC: display_balances_hub failed to get USDxyz balances"
+            log_and_echo "   test_tokens_addr: $test_tokens_addr"
+            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
+            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+            exit 1
+        fi
+        
         log_and_echo "      Requester: $requester1 Octas APT, $requester_usdxyz USDxyz"
         log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdxyz USDxyz"
     else
@@ -563,7 +573,7 @@ display_balances_hub() {
 # Display balances for Chain 2 (Connected Move VM)
 # Usage: display_balances_connected_mvm [test_tokens_address]
 # Fetches and displays Requester and Solver balances on the Connected Move VM chain
-# If test_tokens_address is provided, also displays USDxyz balances
+# If test_tokens_address is provided, also displays USDxyz balances (PANICS if USDxyz lookup fails)
 # Only displays if Chain 2 profiles exist (skips silently if they don't)
 display_balances_connected_mvm() {
     local test_tokens_addr="$1"
@@ -581,12 +591,41 @@ display_balances_connected_mvm() {
     if [ -n "$test_tokens_addr" ]; then
         local requester_usdxyz=$(get_usdxyz_balance "requester-chain2" "2" "$test_tokens_addr")
         local solver_usdxyz=$(get_usdxyz_balance "solver-chain2" "2" "$test_tokens_addr")
+        
+        # PANIC if we passed a token address but couldn't get balances
+        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
+            log_and_echo "❌ PANIC: display_balances_connected_mvm failed to get USDxyz balances"
+            log_and_echo "   test_tokens_addr: $test_tokens_addr"
+            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
+            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+            exit 1
+        fi
+        
         log_and_echo "      Requester: $requester2 Octas APT, $requester_usdxyz USDxyz"
         log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdxyz USDxyz"
     else
         log_and_echo "      Requester: $requester2 Octas"
         log_and_echo "      Solver:   $solver2 Octas"
     fi
+}
+
+# Balance check for MVM E2E tests
+# Validates test token profiles exist and displays balances for Hub and Connected MVM chains
+# Usage: balance_check_mvm
+balance_check_mvm() {
+    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
+    if [ -z "$test_tokens_chain1" ]; then
+        echo "❌ PANIC: test-tokens-chain1 profile not found"
+        exit 1
+    fi
+    local test_tokens_chain2=$(get_profile_address "test-tokens-chain2")
+    if [ -z "$test_tokens_chain2" ]; then
+        echo "❌ PANIC: test-tokens-chain2 profile not found"
+        exit 1
+    fi
+
+    display_balances_hub "0x$test_tokens_chain1"
+    display_balances_connected_mvm "0x$test_tokens_chain2"
 }
 
 # Register solver in the solver registry

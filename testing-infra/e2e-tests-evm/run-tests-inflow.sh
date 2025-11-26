@@ -49,14 +49,10 @@ log_and_echo "==============================================================="
 ./testing-infra/chain-connected-evm/configure-verifier.sh
 ./testing-infra/e2e-tests-evm/release-escrow.sh
 
-# Get test tokens addresses for balance display
-TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
-source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
-USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
-
 log_and_echo ""
-display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_ADDRESS"
+log_and_echo "💰 Final Balance View"
+log_and_echo "=========================================="
+balance_check_evm
 log_and_echo ""
 log_and_echo "✅ E2E test flow completed!"
 

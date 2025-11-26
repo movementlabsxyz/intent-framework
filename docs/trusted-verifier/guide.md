@@ -41,7 +41,7 @@ This script sets up chains, deploys contracts, submits intents, runs integration
 - **Connected Move VM chain**
   - `OracleLimitOrderEvent` (escrow) — escrow deposit with verifier public key and desired amounts
 - **Connected EVM chain**
-  - `EscrowInitialized` — escrow creation (intentId, maker, token, reservedSolver)
+  - `EscrowInitialized` — escrow creation (intentId, requester, token, reservedSolver)
 - **Linking**
   - Shared `intent_id` across chains links hub intents to escrows on connected chains
   - Verifier validates `chain_id` matches between intent `offered_chain_id` and escrow `chain_id`

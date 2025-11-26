@@ -6,10 +6,10 @@ Escrow contract for cross-chain intents that releases funds to solvers when veri
 
 The `IntentEscrow` contract implements a secure escrow system:
 
-- Makers deposit ERC20 tokens into escrows tied to intent IDs
+- Requesters deposit ERC20 tokens into escrows tied to intent IDs
 - Solvers can claim funds after providing a valid verifier signature
 - Verifiers sign approval messages off-chain after verifying cross-chain conditions
-- Makers can cancel and reclaim funds after expiry
+- Requesters can cancel and reclaim funds after expiry
 
 ## Architecture
 
@@ -17,10 +17,10 @@ ECDSA signature verification similar to the Aptos escrow system.
 
 Flow:
 
-1. Maker creates escrow and deposits funds atomically (must specify solver address)
+1. Requester creates escrow and deposits funds atomically (must specify solver address)
 2. Verifier monitors conditions and signs approval (off-chain)
 3. Anyone can claim with verifier signature (funds go to reserved solver)
-4. Maker can cancel and reclaim after expiry
+4. Requester can cancel and reclaim after expiry
 
 ## Signature Verification
 
@@ -49,7 +49,7 @@ function createEscrow(uint256 intentId, address token, uint256 amount, address r
 // Signature itself is the approval - verifier signs the intent_id
 function claim(uint256 intentId, bytes memory signature) external
 
-// Cancel escrow and reclaim funds (maker only, after expiry)
+// Cancel escrow and reclaim funds (requester only, after expiry)
 function cancel(uint256 intentId) external
 
 // Get escrow data
@@ -58,10 +58,10 @@ function getEscrow(uint256 intentId) external view returns (address, address, ui
 
 ### Events
 
-- `EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver)`
+- `EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver)`
 - `DepositMade(uint256 indexed intentId, address indexed requester, uint256 amount, uint256 total)` - `requester` is the requester who created the escrow
 - `EscrowClaimed(uint256 indexed intentId, address indexed recipient, uint256 amount)`
-- `EscrowCancelled(uint256 indexed intentId, address indexed maker, uint256 amount)`
+- `EscrowCancelled(uint256 indexed intentId, address indexed requester, uint256 amount)`
 
 ## Quick Start
 
@@ -76,10 +76,10 @@ const { ethers } = require("hardhat");
 const IntentEscrow = await ethers.getContractFactory("IntentEscrow");
 const escrow = await IntentEscrow.deploy(verifierAddress);
 
-// Maker creates escrow and deposits tokens atomically (expiry is contract-defined)
+// Requester creates escrow and deposits tokens atomically (expiry is contract-defined)
 // Must specify solver address that will receive funds:
-await token.connect(maker).approve(escrow.address, amount);
-await escrow.connect(maker).createEscrow(intentId, tokenAddress, amount, solverAddress);
+await token.connect(requester).approve(escrow.address, amount);
+await escrow.connect(requester).createEscrow(intentId, tokenAddress, amount, solverAddress);
 
 // Verifier signs the intent_id (off-chain) - signature itself is the approval
 const messageHash = ethers.solidityPackedKeccak256(
@@ -97,7 +97,7 @@ await escrow.connect(solver).claim(intentId, signature);
 - Signature verification: Only authorized verifier signatures accepted
 - Intent ID binding: Prevents signature replay across escrows
 - Reentrancy protection: Uses OpenZeppelin's SafeERC20
-- Access control: Only maker can cancel (after expiry)
+- Access control: Only requester can cancel (after expiry)
 - Immutable verifier: Verifier address set in constructor
 - Solver reservation: Required at creation, prevents unauthorized recipients
 

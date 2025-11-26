@@ -257,7 +257,7 @@ graph TB
 
 - **`evm-intent-framework/contracts/IntentEscrow.sol`** (cancel function)
   - **Key Functions**: `cancel()`
-  - **Responsibilities**: Returns funds to maker after expiry
+  - **Responsibilities**: Returns funds to requester after expiry
 
 ---
 
@@ -380,7 +380,7 @@ This section documents comprehensive communication patterns between domains, inc
   - Purpose: Verifier monitors Move VM escrow creation and validates safety
   - Monitoring: Verifier actively polls Move VM connected chain and caches escrows when created
 - `EscrowInitialized` (EVM): Emitted when escrow is created (`IntentEscrow.sol`)
-  - Contains: `intentId`, `maker`, `token`, `reservedSolver`
+  - Contains: `intentId`, `requester`, `token`, `reservedSolver`
   - Purpose: Verifier monitors EVM escrow creation and validates safety
   - Monitoring: Verifier actively polls EVM connected chain and caches escrows when created (symmetrical with Move VM)
 - `EscrowClaimed`, `EscrowCancelled` (EVM): Emitted on escrow completion/cancellation
@@ -468,7 +468,7 @@ This section documents comprehensive communication patterns between domains, inc
 
 - Intent Management: Rejects fulfillment attempts after `expiry_time`
 - Settlement: Cannot fulfill expired intents
-- Escrow: Can be cancelled after expiry (EVM only), returns funds to maker
+- Escrow: Can be cancelled after expiry (EVM only), returns funds to requester
 
 **Invalid Verifier Signature**:
 

@@ -66,8 +66,8 @@ pub struct EscrowInitializedEvent {
     pub intent_id: String,
     /// Escrow contract address (indexed, second topic)
     pub escrow: String,
-    /// Maker address (indexed, third topic)
-    pub maker: String,
+    /// Requester address (indexed, third topic) - the escrow creator
+    pub requester: String,
     /// Token address (from data)
     pub token: String,
     /// Reserved solver address (from data)
@@ -171,7 +171,7 @@ impl EvmClient {
     ) -> Result<Vec<EscrowInitializedEvent>> {
         // EscrowInitialized event signature: keccak256("EscrowInitialized(uint256,address,address,address,address)")
         // Note: indexed parameters don't affect the signature, only the types matter
-        // Event: EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver)
+        // Event: EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver)
         // Signature string: "EscrowInitialized(uint256,address,address,address,address)"
         let signature_string = "EscrowInitialized(uint256,address,address,address,address)";
         let mut hasher = Keccak256::new();
@@ -230,11 +230,11 @@ impl EvmClient {
         let mut events = Vec::new();
 
         for log in logs {
-            // EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed maker, address token, address reservedSolver)
+            // EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver)
             // topics[0] = event signature
             // topics[1] = intentId (uint256, padded to 32 bytes)
             // topics[2] = escrow (address, padded to 32 bytes)
-            // topics[3] = maker (address, padded to 32 bytes)
+            // topics[3] = requester (address, padded to 32 bytes)
             // data = abi.encode(token, reservedSolver) - two addresses (64 bytes total)
 
             if log.topics.len() < 4 {
@@ -243,7 +243,7 @@ impl EvmClient {
 
             let intent_id = log.topics[1].clone();
             let escrow = format!("0x{}", &log.topics[2][26..]); // Extract address from padded topic
-            let maker = format!("0x{}", &log.topics[3][26..]); // Extract address from padded topic
+            let requester = format!("0x{}", &log.topics[3][26..]); // Extract address from padded topic
 
             // Parse data: two addresses (64 hex chars = 32 bytes each)
             let data = log.data.strip_prefix("0x").unwrap_or(&log.data);
@@ -257,7 +257,7 @@ impl EvmClient {
             events.push(EscrowInitializedEvent {
                 intent_id,
                 escrow,
-                maker,
+                requester,
                 token,
                 reserved_solver,
                 block_number: log.block_number,

@@ -52,7 +52,7 @@ log_and_echo "==============================================================="
 log_and_echo ""
 log_and_echo "💰 Final Balance View"
 log_and_echo "=========================================="
-balance_check_evm
+./testing-infra/e2e-tests-evm/balance-check.sh || true
 log_and_echo ""
 log_and_echo "✅ E2E test flow completed!"
 

@@ -118,27 +118,3 @@ display_balances_connected_evm() {
         log_and_echo "      Solver (Acc 2): ${solver_eth} ETH"
     fi
 }
-
-# Balance check for EVM E2E tests
-# Validates test token profiles exist and displays balances for Hub and Connected EVM chains
-# Usage: balance_check_evm
-# Note: Requires PROJECT_ROOT to be set
-balance_check_evm() {
-    # Use || true to prevent set -e from exiting before PANIC check
-    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1" 2>/dev/null) || true
-    if [ -z "$test_tokens_chain1" ]; then
-        log_and_echo "❌ PANIC: test-tokens-chain1 profile not found"
-        exit 1
-    fi
-    
-    source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
-    local usdxyz_address="$USDXYZ_EVM_ADDRESS"
-    if [ -z "$usdxyz_address" ]; then
-        log_and_echo "❌ PANIC: USDXYZ_EVM_ADDRESS not found in chain-info.env"
-        exit 1
-    fi
-
-    display_balances_hub "0x$test_tokens_chain1"
-    display_balances_connected_evm "$usdxyz_address"
-}
-

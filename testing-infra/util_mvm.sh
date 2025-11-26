@@ -528,7 +528,7 @@ get_usdxyz_balance() {
         rest_port="8082"
     fi
     
-    # Use || true to prevent set -e from exiting before PANIC check
+    # Use || true to allow PANIC check to run if get_profile_address fails
     local account_addr=$(get_profile_address "$profile" 2>/dev/null) || true
     if [ -z "$account_addr" ]; then
         echo "❌ PANIC: get_usdxyz_balance failed to get address for profile '$profile'" >&2
@@ -625,26 +625,6 @@ display_balances_connected_mvm() {
         log_and_echo "      Requester: $requester2 Octas"
         log_and_echo "      Solver:   $solver2 Octas"
     fi
-}
-
-# Balance check for MVM E2E tests
-# Validates test token profiles exist and displays balances for Hub and Connected MVM chains
-# Usage: balance_check_mvm
-balance_check_mvm() {
-    # Use || true to prevent set -e from exiting before PANIC check
-    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1" 2>/dev/null) || true
-    if [ -z "$test_tokens_chain1" ]; then
-        echo "❌ PANIC: test-tokens-chain1 profile not found"
-        exit 1
-    fi
-    local test_tokens_chain2=$(get_profile_address "test-tokens-chain2" 2>/dev/null) || true
-    if [ -z "$test_tokens_chain2" ]; then
-        echo "❌ PANIC: test-tokens-chain2 profile not found"
-        exit 1
-    fi
-
-    display_balances_hub "0x$test_tokens_chain1"
-    display_balances_connected_mvm "0x$test_tokens_chain2"
 }
 
 # Register solver in the solver registry

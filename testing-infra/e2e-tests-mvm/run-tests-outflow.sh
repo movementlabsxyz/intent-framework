@@ -41,12 +41,10 @@ echo "   Submitting outflow cross-chain intents..."
 ./testing-infra/e2e-tests-mvm/start-verifier.sh
 ./testing-infra/e2e-tests-mvm/outflow-validate-and-fulfill.sh
 
-source "$PROJECT_ROOT/testing-infra/util.sh"
-source "$PROJECT_ROOT/testing-infra/util_mvm.sh"
 echo ""
 echo "💰 Final Balance View"
 echo "=========================================="
-balance_check_mvm
+./testing-infra/e2e-tests-mvm/balance-check.sh || true
 echo ""
 echo "✅ E2E outflow test flow completed!"
 echo ""

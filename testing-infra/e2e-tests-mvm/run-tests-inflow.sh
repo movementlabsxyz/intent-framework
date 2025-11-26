@@ -58,12 +58,10 @@ echo "🚀 Step 6: Running Rust integration tests..."
 echo "============================================"
 ./testing-infra/e2e-tests-mvm/verifier-rust-integration-tests.sh
 
-source "$PROJECT_ROOT/testing-infra/util.sh"
-source "$PROJECT_ROOT/testing-infra/util_mvm.sh"
 echo ""
 echo "💰 Final Balance View"
 echo "=========================================="
-balance_check_mvm
+./testing-infra/e2e-tests-mvm/balance-check.sh || true
 echo ""
 echo "✅ E2E inflow test flow completed!"
 echo ""

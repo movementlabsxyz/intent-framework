@@ -26,7 +26,7 @@ See [conception_inflow.md](conception_inflow.md) for the conceptual design.
 | Step | Function | Description |
 |------|----------|-------------|
 | Request-Intent Creation | `create_inflow_request_intent(offered_metadata, offered_amount, offered_chain_id, desired_metadata, desired_amount, desired_chain_id, expiry_time, intent_id, solver, solver_signature)` | Creates reserved intent on Hub |
-| Escrow (Move) | `create_escrow_from_fa(offered_metadata, amount, verifier_pk, expiry_time, intent_id, reserved_solver)` | Creates escrow on Move connected chain |
+| Escrow (Move) | `create_escrow_from_fa(offered_metadata, offered_amount, offered_chain_id, verifier_public_key, expiry_time, intent_id, reserved_solver, desired_chain_id)` | Creates escrow on Move connected chain |
 | Escrow (EVM) | `createEscrow(intentId, token, amount, reservedSolver)` | Creates escrow on EVM connected chain |
 | Fulfillment | `fulfill_inflow_request_intent(intent, payment_amount)` | Solver fulfills intent on Hub |
 | Escrow Release (Move) | `complete_escrow_from_fa(escrow_intent, payment_amount, verifier_signature_bytes)` | Releases escrow on Move chain |
@@ -105,7 +105,7 @@ sequenceDiagram
 
     Note over Requester,Solver: Phase 2: Escrow Creation on Source Connected Chain
     alt Move Chain
-        Requester->>Source: create_escrow_from_fa(<br/>offered_metadata, amount, verifier_pk,<br/>expiry_time, intent_id, reserved_solver)
+        Requester->>Source: create_escrow_from_fa(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>verifier_public_key, expiry_time, intent_id,<br/>reserved_solver, desired_chain_id)
     else EVM Chain
         Requester->>Source: createEscrow(intentId, token,<br/>amount, reservedSolver)
     end

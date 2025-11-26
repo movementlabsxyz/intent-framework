@@ -43,7 +43,7 @@ sequenceDiagram
 
     Note over Requester,Solver: Phase 2: Escrow Creation on Connected Chain
     alt Move Chain
-        Requester->>Connected: create_escrow_from_fa(<br/>offered_metadata, amount, verifier_pk,<br/>expiry_time, intent_id, reserved_solver)
+        Requester->>Connected: create_escrow_from_fa(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>verifier_public_key, expiry_time, intent_id,<br/>reserved_solver, desired_chain_id)
     else EVM Chain
         Requester->>Connected: createEscrow(intentId, token,<br/>amount, reservedSolver)
     end

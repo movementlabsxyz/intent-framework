@@ -43,7 +43,7 @@ The test suite includes:
 - **Reservation Tests**: [`intent_reservation_tests.move`](../../move-intent-framework/tests/intent_reservation_tests.move) - Tests for the reservation system
 - **Oracle Tests**: [`fa_intent_with_oracle_tests.move`](../../move-intent-framework/tests/fa_intent_with_oracle_tests.move) - Tests for oracle-based intents
 - **Entry Flow Tests**: [`fa_entryflow_tests.move`](../../move-intent-framework/tests/fa_entryflow_tests.move) - Tests for complete intent flows
-- **Test Utilities**: [`fa_test_utils.move`](../../move-intent-framework/tests/fa_test_utils.move) - Shared test helper functions
+- **Test Utilities**: [`test_utils.move`](../../move-intent-framework/tests/test_utils.move) - Shared test helper functions
 
 ### Test Categories
 

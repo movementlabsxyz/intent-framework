@@ -47,10 +47,14 @@ Trading conditions for an oracle-guarded limit order:
 
 ```move
 struct OracleGuardedLimitOrder has store, drop {
-    desired_metadata: Object<Metadata>,         // Desired asset metadata
-    desired_amount: u64,                        // Desired asset amount
-    issuer: address,                            // Intent creator
-    requirement: OracleSignatureRequirement,    // Oracle requirements
+    desired_metadata: Object<Metadata>,
+    desired_amount: u64,
+    desired_chain_id: u64,
+    offered_chain_id: u64,
+    requester: address,
+    requirement: OracleSignatureRequirement,
+    intent_id: address,
+    requester_address_connected_chain: Option<address>,
 }
 ```
 

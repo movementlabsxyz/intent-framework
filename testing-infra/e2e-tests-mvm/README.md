@@ -5,7 +5,11 @@ Tests Move VM-only cross-chain intent framework: intents on Chain 1 (hub) and es
 ## Quick Start
 
 ```bash
-./testing-infra/e2e-tests-mvm/run-tests.sh
+# Inflow tests (Connected Chain → Hub)
+./testing-infra/e2e-tests-mvm/run-tests-inflow.sh
+
+# Outflow tests (Hub → Connected Chain)
+./testing-infra/e2e-tests-mvm/run-tests-outflow.sh
 ```
 
 ## What's Tested

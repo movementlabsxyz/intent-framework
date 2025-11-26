@@ -247,10 +247,12 @@ public fun finish_fa_receiving_session(
 public fun create_draft_intent(
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
+    offered_chain_id: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
+    desired_chain_id: u64,
     expiry_time: u64,
-    offerer_address: address,
+    requester: address,
 ): IntentDraft
 ```
 
@@ -258,10 +260,12 @@ public fun create_draft_intent(
 
 - `offered_metadata`: Metadata of the asset being offered
 - `offered_amount`: Amount of the asset being offered
+- `offered_chain_id`: Chain ID where offered tokens are located
 - `desired_metadata`: Metadata of the desired asset
 - `desired_amount`: Amount of the desired asset
+- `desired_chain_id`: Chain ID where desired tokens are located
 - `expiry_time`: Unix timestamp when the intent expires
-- `offerer_address`: Address of the intent creator
+- `requester`: Address of the intent creator
 
 **Returns:** A draft intent for off-chain sharing
 
@@ -486,31 +490,41 @@ The registry provides view functions to query solver information:
 Emitted when a fungible asset intent is created:
 
 ```move
-struct LimitOrderEvent has drop, store {
-    intent_id: Object<TradeIntent<FungibleAsset, FungibleAssetLimitOrder>>,
+struct LimitOrderEvent has store, drop {
+    intent_address: address,
+    intent_id: address,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
+    offered_chain_id: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
+    desired_chain_id: u64,
+    requester: address,
     expiry_time: u64,
-    offerer: address,
-    solver: address,
+    revocable: bool,
 }
 ```
 
 ### OracleLimitOrderEvent
 
-Emitted when an oracle-guarded intent is created:
+Emitted when an oracle-guarded intent or escrow is created:
 
 ```move
 struct OracleLimitOrderEvent has store, drop {
+    intent_address: address,
+    intent_id: address,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
+    offered_chain_id: u64,
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
-    issuer: address,
+    desired_chain_id: u64,
+    requester: address,
     expiry_time: u64,
     min_reported_value: u64,
+    revocable: bool,
+    reserved_solver: Option<address>,
+    requester_address_connected_chain: Option<address>,
 }
 ```
 
@@ -531,22 +545,24 @@ struct OracleLimitOrderEvent has store, drop {
 ### TradeIntent
 
 ```move
-struct TradeIntent<Source: store, Args: store + drop> has key {
+struct TradeIntent<Source, Args> has key {
     offered_resource: Source,
     argument: Args,
+    self_delete_ref: DeleteRef,
     expiry_time: u64,
-    issuer: address,
+    witness_type: TypeInfo,
     reservation: Option<IntentReserved>,
+    revocable: bool,
 }
 ```
 
 ### TradeSession
 
 ```move
-struct TradeSession<Args: store + drop> has store {
+struct TradeSession<Args> {
     argument: Args,
-    expiry_time: u64,
-    issuer: address,
+    witness_type: TypeInfo,
+    reservation: Option<IntentReserved>,
 }
 ```
 
@@ -554,8 +570,12 @@ struct TradeSession<Args: store + drop> has store {
 
 ```move
 struct FungibleAssetLimitOrder has store, drop {
-    wanted_metadata: Object<Metadata>,
-    wanted_amount: u64,
+    desired_metadata: Object<Metadata>,
+    desired_amount: u64,
+    requester: address,
+    intent_id: Option<address>,
+    offered_chain_id: u64,
+    desired_chain_id: u64,
 }
 ```
 
@@ -574,8 +594,12 @@ struct OracleSignatureRequirement has store, drop {
 struct OracleGuardedLimitOrder has store, drop {
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
-    issuer: address,
+    desired_chain_id: u64,
+    offered_chain_id: u64,
+    requester: address,
     requirement: OracleSignatureRequirement,
+    intent_id: address,
+    requester_address_connected_chain: Option<address>,
 }
 ```
 

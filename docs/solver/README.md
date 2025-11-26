@@ -60,9 +60,12 @@ Generate a signature for an intent:
 cargo run --bin sign_intent -- \
   --profile bob-chain1 \
   --chain-address 0x123 \
-  --source-metadata 0xabc \
+  --offered-metadata 0xabc \
+  --offered-amount 100000000 \
+  --offered-chain-id 1 \
   --desired-metadata 0xdef \
   --desired-amount 100000000 \
+  --desired-chain-id 2 \
   --expiry-time 1234567890 \
   --issuer 0xalice \
   --solver 0xbob \

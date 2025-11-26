@@ -116,6 +116,33 @@ We list generic use cases applicable to all flows. For flow-specific use cases, 
 - As an adversary I want to steal some funds from the application to earn more money
 - As an adversary I want to disturb the process so that it affects its reputation.
 
+## Security Properties
+
+### Non-Revocable Escrows
+
+All escrow intents MUST have `revocable = false`. This is a critical security requirement.
+
+**Rationale:** Escrow funds must remain locked until verifier approval or expiry. If escrows were revocable, users could withdraw funds after verifiers trigger actions elsewhere (e.g., after solver has already fulfilled on another chain), breaking protocol security guarantees.
+
+### Reserved Solver Enforcement
+
+Funds always transfer to the reserved solver regardless of who submits the transaction.
+
+**Rationale:** Prevents unauthorized fund recipients and signature replay attacks. Ensures funds go to the solver who committed resources on other chains, not to whoever happens to call the release function.
+
+### Concurrent Fulfillment Prevention
+
+Only one solver can fulfill an intent, even if multiple solvers attempt simultaneously.
+
+**Rationale:** The intent is consumed during fulfillment (session-based pattern). Once a solver starts the fulfillment session, the intent is locked and other solvers cannot access it. This prevents race conditions and double-fulfillment.
+
+## Error Cases
+
+**TODO:** Document error cases for the generic protocol steps.
+
+- **Intent Expiry**: Intent cannot be fulfilled after `expiry_time`. The fulfillment transaction aborts.
+- **Invalid Witness**: Wrong witness type provided during intent fulfillment. The intent system uses type-safe witnesses to ensure only the correct completion mechanism can finalize an intent.
+
 ## Risks
 
 ### Stolen funds risk

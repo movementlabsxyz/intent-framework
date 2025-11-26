@@ -50,48 +50,26 @@ Comprehensive reference for all data structures used across the Intent Framework
 - Verification Domain (Rust normalized event structures)
 - Cross-Chain Data Linking patterns
 
-### [Use Cases and Scenarios Documentation](use-cases.md)
-
-Documentation of how the Intent Framework handles specific scenarios in the current implementation, including happy path flows, error cases, edge cases, and real-world usage patterns.
-
-**Key Sections**:
-
-- Happy Path Use Cases (Standard Cross-Chain Swap, Oracle-Guarded Intent, Intent-as-Escrow, Reserved Intent)
-- Error Cases (Intent Expiry, Invalid Witness, Unauthorized Access, Cross-Chain Failures, Token Type Mismatches)
-- Edge Cases (Non-Revocable Escrow Intents, Reserved Solver Enforcement, Zero-Amount Cross-Chain Swaps, Concurrent Intent Fulfillment)
-- Real-World Usage Patterns (DEX Integration, Cross-Chain Arbitrage, Payment Channels, Escrow Services)
-
 ### [Conception Documents](conception/)
 
-Documentation describing the conceptual design of the Intent Framework and how it differs from the current implementation.
+Documentation describing the conceptual design of the Intent Framework, including flows, scenarios, error cases, and security properties.
 
 **Key Documents**:
 
-- [Conception Generic](conception/conception_generic.md) - Introduction, common concepts, actors, terminology, and system components
-- [Conception Inflow](conception/conception_inflow.md) - Inflow flow (Connected Chain → Hub) conception
-- [Conception Outflow](conception/conception_outflow.md) - Outflow flow (Hub → Connected Chain) conception
-- [Conception Router Flow](conception/conception_routerflow.md) - Router flow (Connected Chain → Connected Chain) conception
-- [Architecture Differences](conception/architecture-diff.md) - Cross-chain architecture diagrams showing differences between conception and current implementation
-- [Requirements](conception/requirements.md) - Functional and non-functional requirements for the Intent Framework
-
-**Key Sections**:
-
-- **Conception Generic**: System introduction, components (Move Intent Framework, EVM Intent Framework, Trusted Verifier Service, Solver Tools), chains, actors, flow types, use cases, and risks
-- **Architecture Differences**: Cross-chain flow sequence diagrams (Inflow, Outflow, Connected → Connected) with implementation status markers
-- **Requirements**: Intent creation requirements, cross-chain execution requirements, verifier service requirements, non-functional requirements (reliability, usability, compatibility), testing requirements
+- [Conception Generic](conception/conception_generic.md) - Introduction, actors, flow types, generic protocol steps, security properties, error cases, and risks
+- [Conception Inflow](conception/conception_inflow.md) - Inflow flow (Connected Chain → Hub): use cases, protocol, scenarios, and protocol steps
+- [Conception Outflow](conception/conception_outflow.md) - Outflow flow (Hub → Connected Chain): use cases, protocol, scenarios, and protocol steps
+- [Conception Router Flow](conception/conception_routerflow.md) - Router flow (Connected Chain → Connected Chain): use cases, protocol, scenarios, and protocol steps
+- [Architecture Differences](conception/architecture-diff.md) - Implementation status, function signatures, and differences from conception
+- [Requirements](conception/requirements.md) - Functional and non-functional requirements
 
 ## How to Use These Documents
 
 1. **New to the codebase?** Start with [Component-to-Domain Mapping](architecture-component-mapping.md) to understand how components are organized into domains.
-
 2. **Need precise interface definitions?** See [Domain Boundaries and Interfaces](domain-boundaries-and-interfaces.md) for detailed boundary specifications.
-
 3. **Understanding the design philosophy?** Read [RPG Methodology Principles](rpg-methodology.md) to understand why the architecture is organized this way.
-
 4. **Need data structure details?** See [Data Models Documentation](data-models.md) for field-by-field documentation of all data structures.
-
-5. **Understanding system behavior?** See [Use Cases and Scenarios Documentation](use-cases.md) for how the system handles specific scenarios.
-
+5. **Understanding system behavior?** See [Conception Documents](conception/) for flows, scenarios, and error cases.
 6. **Planning implementation?** Use the Topological Order sections to understand build dependencies and implementation sequence.
 
 ## Related Documentation

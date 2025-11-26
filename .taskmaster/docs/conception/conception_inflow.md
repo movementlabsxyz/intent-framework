@@ -106,6 +106,10 @@ sequenceDiagram
   - _Mitigation: The verifier receives intent-requests from the requester and forwards it to the pool of solvers._
 - The solver attempts to fulfill an intent that wasn't reserved for them (on-chain verification prevents this).
   - _Mitigation: The contract rejects the fulfillment if the intent is not reserved for the solver._
+- The solver provides the wrong token type on Hub chain.
+  - _Mitigation: The contract verifies that the token metadata matches the desired_metadata. The fulfillment transaction aborts if the token type is incorrect._
+- The verifier signature verification fails during escrow release.
+  - _Mitigation: The escrow contract verifies the verifier signature. If verification fails, the release transaction aborts and funds remain locked until a valid signature is provided or the escrow expires._
 
 ### The requeserter is adverse
 
@@ -133,6 +137,10 @@ sequenceDiagram
    - Then the adversary reserves the intent
    - Then the adversary takes no action
       - _Mitigation: The request-intent and the escrow is protected by a timeout mechanism. After timeout, the intent and escrow are cancelled and the funds are returned to the requester._
+
+## Error Cases
+
+**TODO:** Document error cases specific to inflow.
 
 ## Protocol steps details
 

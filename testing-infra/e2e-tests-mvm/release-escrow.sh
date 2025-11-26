@@ -311,14 +311,14 @@ else
             fi
             DESIRED_AMOUNT=$(echo "$EVENTS_RESPONSE" | jq -r ".data.escrow_events[] | select(.escrow_id == \"$ESCROW_ID\") | .desired_amount" 2>/dev/null | head -1)
             
-            if [ -z "$DESIRED_AMOUNT" ] || [ "$DESIRED_AMOUNT" = "null" ] || [ "$DESIRED_AMOUNT" = "0" ]; then
+            if [ -z "$DESIRED_AMOUNT" ] || [ "$DESIRED_AMOUNT" = "null" ]; then
                 log "   ❌ ERROR: Could not determine desired_amount for escrow $ESCROW_ID"
                 log "   ❌ Cannot complete escrow without knowing the required payment amount"
                 exit 1
             fi
             
             PAYMENT_AMOUNT="$DESIRED_AMOUNT"
-            log "   - Payment amount: $PAYMENT_AMOUNT (from escrow desired_amount)"
+            log "   - Payment amount: $PAYMENT_AMOUNT (from escrow desired_amount, 0 = no payment required)"
             
             # Submit escrow release transaction
             # Using bob-chain2 as solver (Bob) (needs to have APT for payment)

@@ -89,7 +89,7 @@ log "   Desired amount: $DESIRED_AMOUNT USDxyz.10e8 (1 USDxyz on EVM chain)"
 log ""
 log "   - Getting USDxyz metadata addresses..."
 log "     Getting USDxyz metadata on Chain 1..."
-OFFERED_METADATA_CHAIN1=$(get_usdxyz_metadata "requester-chain1" "1" "$LOG_FILE")
+OFFERED_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
 log "     ✅ Got USDxyz metadata on Chain 1: $OFFERED_METADATA_CHAIN1"
 
 # For EVM outflow, we use Chain 1 metadata for desired (since we're transferring on EVM, not Chain 2)
@@ -129,8 +129,9 @@ SOLVER_SIGNATURE=$(generate_solver_signature \
     "1" \
     "$LOG_FILE")
 
-if [ -z "$SOLVER_SIGNATURE" ]; then
+if [ -z "$SOLVER_SIGNATURE" ] || [[ ! "$SOLVER_SIGNATURE" =~ ^0x[0-9a-fA-F]+$ ]]; then
     log_and_echo "❌ Failed to generate solver signature"
+    log_and_echo "   Output was: $SOLVER_SIGNATURE"
     exit 1
 fi
 

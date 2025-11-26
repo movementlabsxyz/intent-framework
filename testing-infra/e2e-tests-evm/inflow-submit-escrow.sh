@@ -50,6 +50,9 @@ if [ -z "$USDXYZ_ADDRESS" ]; then
     exit 1
 fi
 
+# Get test tokens address for balance display
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
+
 log ""
 log "🔑 Configuration:"
 log "   Expiry time: $EXPIRY_TIME"
@@ -59,8 +62,8 @@ log "   Escrow amount: 1 USDxyz (matches request-intent offered_amount)"
 
 # Check and display initial balances using common function
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
 log ""
@@ -122,8 +125,8 @@ log "   Escrow Address: $ESCROW_ADDRESS"
 log "   Locked Amount: 1 USDxyz (matches request-intent offered_amount)"
 
 # Check final balances using common function
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
 

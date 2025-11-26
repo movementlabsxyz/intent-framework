@@ -49,15 +49,15 @@ This script sets up chains, deploys contracts, submits intents, runs integration
 
 ## Cross‑Chain Flow
 
-1) Hub: Alice creates regular (non‑oracle) intent
-2) Connected: Alice creates escrow (non‑revocable), includes verifier public key, links `intent_id`
-3) Hub: Bob fulfills the intent
+1) Hub: Requester creates regular (non‑oracle) intent
+2) Connected: Requester creates escrow (non‑revocable), includes verifier public key, links `intent_id`
+3) Hub: Solver fulfills the intent
 4) Verifier: observes fulfillment + escrow, generates approval (signature over BCS(u64=1))
 5) Script: submits `complete_escrow_from_fa` on connected chain with approval
 
 ## Balances and Debugging
 
-- The integration script prints initial and final balances for Alice/Bob on both chains
+- The integration script prints initial and final balances for Requester/Solver on both chains
 - For APT, CLI coin balance is not the FA store balance; scripts focus on consistent before/after checks
 - Useful commands:
   - `curl -s http://127.0.0.1:3333/health`

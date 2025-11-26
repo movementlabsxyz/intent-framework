@@ -109,4 +109,4 @@ npx hardhat test
 
 Tests cover escrow initialization, deposits, claiming, cancellation, expiry enforcement, and error cases.
 
-Test accounts: Hardhat provides 20 accounts (10000 ETH each). Account 0 is deployer/verifier, Account 1 is Alice, Account 2 is Bob. Private keys are deterministic from mnemonic: `test test test test test test test test test test test junk`
+Test accounts: Hardhat provides 20 accounts (10000 ETH each). Account 0 is deployer/verifier, Account 1 is requester, Account 2 is solver. Private keys are deterministic from mnemonic: `test test test test test test test test test test test junk`

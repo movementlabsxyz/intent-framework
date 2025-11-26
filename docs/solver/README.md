@@ -58,7 +58,7 @@ Generate a signature for an intent:
 
 ```bash
 cargo run --bin sign_intent -- \
-  --profile bob-chain1 \
+  --profile solver-chain1 \
   --chain-address 0x123 \
   --offered-metadata 0xabc \
   --offered-amount 100000000 \
@@ -67,8 +67,8 @@ cargo run --bin sign_intent -- \
   --desired-amount 100000000 \
   --desired-chain-id 2 \
   --expiry-time 1234567890 \
-  --issuer 0xalice \
-  --solver 0xbob \
+  --issuer 0xrequester \
+  --solver 0xsolver \
   --chain-num 1
 ```
 

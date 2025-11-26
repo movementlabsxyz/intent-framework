@@ -179,7 +179,7 @@ In the integration script this is automated:
 # Convert base64 signature to hex (Ed25519 signature is 64 bytes = 128 hex chars)
 SIGNATURE_HEX=$(echo "$APPROVAL_SIGNATURE" | base64 -d | xxd -p -c 1000 | tr -d '\n')
 
-aptos move run --profile bob-chain1 --assume-yes \
+aptos move run --profile solver-chain1 --assume-yes \
   --function-id "0x<hub_module_address>::fa_intent_outflow::fulfill_outflow_request_intent" \
   --args "address:<intent_object_address>" "hex:<signature_hex>"
 ```
@@ -195,13 +195,13 @@ aptos move run --profile bob-chain1 --assume-yes \
 1) Poll `/approvals` until an approval with your `escrow_id` appears
 2) Submit connected‑chain entry: `complete_escrow_from_fa(escrow_id, payment_amount, signature)`
 
-In the integration script this is automated (bob‑chain2 profile):
+In the integration script this is automated (solver-chain2 profile):
 
 ```bash
 # Convert base64 signature to hex
 SIGNATURE_HEX=$(echo "$SIGNATURE_BASE64" | base64 -d | xxd -p -c 1000 | tr -d '\n')
 
-aptos move run --profile bob-chain2 --assume-yes \
+aptos move run --profile solver-chain2 --assume-yes \
   --function-id "0x<connected_module_address>::intent_as_escrow_entry::complete_escrow_from_fa" \
   --args "address:<escrow_id>" "u64:<payment_amount>" "hex:<signature_hex>"
 ```

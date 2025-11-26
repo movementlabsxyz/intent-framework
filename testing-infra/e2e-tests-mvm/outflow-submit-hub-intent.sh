@@ -134,8 +134,9 @@ SOLVER_SIGNATURE=$(generate_solver_signature \
     "1" \
     "$LOG_FILE")
 
-if [ -z "$SOLVER_SIGNATURE" ]; then
+if [ -z "$SOLVER_SIGNATURE" ] || [[ ! "$SOLVER_SIGNATURE" =~ ^0x[0-9a-fA-F]+$ ]]; then
     log_and_echo "❌ Failed to generate solver signature"
+    log_and_echo "   Output was: $SOLVER_SIGNATURE"
     exit 1
 fi
 

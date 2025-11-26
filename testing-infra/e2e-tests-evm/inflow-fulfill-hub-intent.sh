@@ -22,7 +22,12 @@ fi
 # SECTION 2: GET ADDRESSES AND CONFIGURATION
 # ============================================================================
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+
+# Get USDxyz EVM address
+source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 log ""
 log "📋 Chain Information:"
@@ -35,8 +40,8 @@ log "   Hub Request-intent Address: $HUB_INTENT_ADDRESS"
 # SECTION 3: DISPLAY INITIAL STATE
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
 # ============================================================================
@@ -80,8 +85,8 @@ fi
 # SECTION 6: FINAL SUMMARY
 # ============================================================================
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_ADDRESS"
 log_and_echo ""
 
 log ""

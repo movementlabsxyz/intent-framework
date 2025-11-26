@@ -19,10 +19,15 @@ CONNECTED_CHAIN_ID=31337
 
 # Get addresses
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
+TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 
 # Get Requester and Solver addresses
 REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+
+# Get USDxyz EVM address
+source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+USDXYZ_EVM_ADDRESS="${USDXYZ_EVM_ADDRESS:-}"
 
 log ""
 log "📋 Chain Information:"
@@ -39,8 +44,8 @@ log "   Expiry time: $EXPIRY_TIME"
 
 # Check and display initial balances using common function
 log ""
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_EVM_ADDRESS"
 log_and_echo ""
 
 log ""
@@ -54,7 +59,6 @@ log "   - Connected chain: EVM (Chain ID: 31337)"
 log "   - Getting USDxyz metadata addresses..."
 
 # Get USDxyz metadata on Chain 1 (hub)
-TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 log "     Getting USDxyz metadata on Chain 1..."
 USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
 log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
@@ -104,8 +108,9 @@ SOLVER_SIGNATURE=$(generate_solver_signature \
     "1" \
     "$LOG_FILE")
 
-if [ -z "$SOLVER_SIGNATURE" ]; then
+if [ -z "$SOLVER_SIGNATURE" ] || [[ ! "$SOLVER_SIGNATURE" =~ ^0x[0-9a-fA-F]+$ ]]; then
     log_and_echo "     ❌ Failed to generate solver signature"
+    log_and_echo "     Output was: $SOLVER_SIGNATURE"
     exit 1
 fi
 
@@ -181,7 +186,7 @@ fi
 save_intent_info "$INTENT_ID" "$HUB_INTENT_ADDRESS"
 
 # Check final balances using common function
-display_balances_hub
-display_balances_connected_evm
+display_balances_hub "0x$TEST_TOKENS_CHAIN1"
+display_balances_connected_evm "$USDXYZ_EVM_ADDRESS"
 log_and_echo ""
 

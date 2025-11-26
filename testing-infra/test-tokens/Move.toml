@@ -1,0 +1,15 @@
+[package]
+name = "test-tokens"
+version = "1.0.0"
+authors = []
+
+[addresses]
+test_tokens = "_"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "a10a3c02f16a2114ad065db6b4a525f0382e96a6"
+subdir = "aptos-framework"
+

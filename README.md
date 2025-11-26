@@ -40,7 +40,7 @@ Run from project root:
 ```bash
 nix develop -c bash -c "./testing-infra/e2e-tests-mvm/run-tests-inflow.sh"
 nix develop -c bash -c "./testing-infra/e2e-tests-mvm/run-tests-outflow.sh"
-nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests.sh"
+nix develop -c bash -c "./testing-infra/e2e-tests-evm/run-tests-inflow.sh"
 ```
 
 ## License

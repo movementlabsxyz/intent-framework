@@ -3,6 +3,7 @@
 # Cleanup for E2E Tests
 # 
 # This script stops all chains and verifier processes.
+# Profile cleanup is handled by individual stop-chain.sh scripts.
 # Used by both Aptos and EVM e2e tests.
 
 set -e

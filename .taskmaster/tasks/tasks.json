@@ -1,14 +1,208 @@
 {
-  "master": {
-    "tasks": [],
-    "metadata": {
-      "version": "1.0.0",
-      "lastModified": "2025-11-20T07:45:00.000Z",
-      "taskCount": 0,
-      "completedCount": 0,
-      "tags": [
-        "master"
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Deploy USDxyz token on MVM chains",
+      "description": "Create and deploy USDxyz fungible asset on Chain 1 and Chain 2. Mint tokens to Alice and Bob. Display USDxyz balances in test output. Keep APT for gas only.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create USDxyz fungible asset module",
+          "description": "Create a simple FA module for USDxyz token that can be deployed on MVM chains",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Add USDxyz deployment to chain setup scripts",
+          "description": "Update setup-chain.sh or deploy-contracts.sh to deploy USDxyz on both chains",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Mint USDxyz to Alice and Bob",
+          "description": "Add minting step in setup-alice-bob.sh to give Alice and Bob USDxyz tokens",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Display USDxyz balances in test output",
+          "description": "Update test scripts to show USDxyz balances alongside APT balances",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Verify existing tests still pass",
+          "description": "Run MVM E2E tests to ensure adding USDxyz doesn't break anything",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Deploy USDxyz token on EVM chain",
+      "description": "Create and deploy USDxyz ERC20 token on EVM Chain 3. Mint tokens to test accounts. Display USDxyz balances in test output. Keep ETH for gas only.",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [1],
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create USDxyz ERC20 contract",
+          "description": "Create a simple ERC20 contract for USDxyz token (can extend MockERC20)",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Add USDxyz deployment to EVM setup scripts",
+          "description": "Update EVM chain setup to deploy USDxyz ERC20",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Mint USDxyz to test accounts",
+          "description": "Add minting step to give test accounts USDxyz tokens",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Display USDxyz balances in test output",
+          "description": "Update EVM test scripts to show USDxyz balances alongside ETH balances",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Verify existing EVM tests still pass",
+          "description": "Run EVM E2E tests to ensure adding USDxyz doesn't break anything",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Update MVM inflow tests to use USDxyz",
+      "description": "Modify inflow E2E tests to swap USDxyz instead of APT. Requester sends USDxyz, wants same amount of USDxyz on destination.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [1],
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Update inflow intent creation to use USDxyz",
+          "description": "Modify inflow-submit-hub-intent.sh to use USDxyz metadata instead of APT",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Update inflow escrow creation to use USDxyz",
+          "description": "Modify inflow-submit-escrow.sh to lock USDxyz instead of APT",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Update inflow fulfillment to use USDxyz",
+          "description": "Modify inflow-fulfill-hub-intent.sh to transfer USDxyz",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Verify MVM inflow tests pass with USDxyz",
+          "description": "Run full inflow test suite and verify correct USDxyz transfers",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Update MVM outflow tests to use USDxyz",
+      "description": "Modify outflow E2E tests to swap USDxyz instead of APT. Requester sends USDxyz, wants same amount of USDxyz on destination.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [1],
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Update outflow intent creation to use USDxyz",
+          "description": "Modify outflow-submit-hub-intent.sh to use USDxyz metadata instead of APT",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Update outflow solver transfer to use USDxyz",
+          "description": "Modify outflow-solver-transfer.sh to transfer USDxyz",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Update outflow fulfillment to use USDxyz",
+          "description": "Modify outflow-validate-and-fulfill.sh to handle USDxyz",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Verify MVM outflow tests pass with USDxyz",
+          "description": "Run full outflow test suite and verify correct USDxyz transfers",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Update EVM inflow tests to use USDxyz",
+      "description": "Modify EVM inflow E2E tests to swap USDxyz (ERC20) instead of ETH.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [2],
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Update EVM escrow to support ERC20",
+          "description": "Modify IntentEscrow.sol to handle ERC20 tokens (or create separate escrow)",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Update EVM inflow tests to use USDxyz",
+          "description": "Modify EVM test scripts to use USDxyz ERC20 for swaps",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Verify EVM inflow tests pass with USDxyz",
+          "description": "Run full EVM inflow test suite and verify correct USDxyz transfers",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Update EVM outflow tests to use USDxyz",
+      "description": "Modify EVM outflow E2E tests to swap USDxyz (ERC20) instead of ETH.",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [2],
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Update EVM outflow tests to use USDxyz",
+          "description": "Modify EVM outflow test scripts to use USDxyz ERC20 for swaps",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Verify EVM outflow tests pass with USDxyz",
+          "description": "Run full EVM outflow test suite and verify correct USDxyz transfers",
+          "status": "pending"
+        }
       ]
     }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "lastModified": "2025-11-26T10:30:00.000Z",
+    "taskCount": 6,
+    "completedCount": 0
   }
 }

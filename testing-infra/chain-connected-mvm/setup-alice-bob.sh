@@ -41,6 +41,10 @@ init_aptos_profile "alice-chain2" "2" "$LOG_FILE"
 log "Creating bob-chain2 account for Chain 2..."
 init_aptos_profile "bob-chain2" "2" "$LOG_FILE"
 
+# Create test-tokens account for Chain 2 (for USDxyz deployment)
+log "Creating test-tokens-chain2 account for Chain 2..."
+init_aptos_profile "test-tokens-chain2" "2" "$LOG_FILE"
+
 log ""
 log "% - - - - - - - - - - - FUNDING - - - - - - - - - - - -"
 log "% - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"

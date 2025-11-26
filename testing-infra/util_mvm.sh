@@ -480,25 +480,68 @@ initialize_solver_registry() {
     fi
 }
 
+# Get USDxyz balance for an account
+# Usage: get_usdxyz_balance <profile> <chain_num> <test_tokens_address>
+# Returns the USDxyz balance for the given profile
+get_usdxyz_balance() {
+    local profile="$1"
+    local chain_num="$2"
+    local test_tokens_addr="$3"
+    
+    local rest_port
+    if [ "$chain_num" = "1" ]; then
+        rest_port="8080"
+    else
+        rest_port="8082"
+    fi
+    
+    local account_addr=$(get_profile_address "$profile")
+    
+    # Call the view function to get balance
+    local balance=$(curl -s "http://127.0.0.1:${rest_port}/v1/view" \
+        -H 'Content-Type: application/json' \
+        -d "{
+            \"function\": \"${test_tokens_addr}::usdxyz::balance\",
+            \"type_arguments\": [],
+            \"arguments\": [\"${account_addr}\"]
+        }" 2>/dev/null | jq -r '.[0] // "0"')
+    
+    echo "${balance:-0}"
+}
+
 # Display balances for Chain 1 (Hub)
-# Usage: display_balances_hub
+# Usage: display_balances_hub [test_tokens_address]
 # Fetches and displays Alice and Bob balances on the Hub chain
+# If test_tokens_address is provided, also displays USDxyz balances
 # Note: Hub chain is always a Move VM chain, so this uses aptos commands
 display_balances_hub() {
+    local test_tokens_addr="$1"
+    
     local alice1=$(aptos account balance --profile alice-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
     local bob1=$(aptos account balance --profile bob-chain1 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
     
     log_and_echo ""
     log_and_echo "   Chain 1 (Hub):"
-    log_and_echo "      Alice: $alice1 Octas"
-    log_and_echo "      Bob:   $bob1 Octas"
+    
+    if [ -n "$test_tokens_addr" ]; then
+        local alice_usdxyz=$(get_usdxyz_balance "alice-chain1" "1" "$test_tokens_addr")
+        local bob_usdxyz=$(get_usdxyz_balance "bob-chain1" "1" "$test_tokens_addr")
+        log_and_echo "      Alice: $alice1 Octas APT, $alice_usdxyz USDxyz"
+        log_and_echo "      Bob:   $bob1 Octas APT, $bob_usdxyz USDxyz"
+    else
+        log_and_echo "      Alice: $alice1 Octas"
+        log_and_echo "      Bob:   $bob1 Octas"
+    fi
 }
 
 # Display balances for Chain 2 (Connected Move VM)
-# Usage: display_balances_connected_mvm
+# Usage: display_balances_connected_mvm [test_tokens_address]
 # Fetches and displays Alice and Bob balances on the Connected Move VM chain
+# If test_tokens_address is provided, also displays USDxyz balances
 # Only displays if Chain 2 profiles exist (skips silently if they don't)
 display_balances_connected_mvm() {
+    local test_tokens_addr="$1"
+    
     # Check if Chain 2 profiles exist
     if ! aptos config show-profiles 2>/dev/null | jq -r ".[\"Result\"][\"alice-chain2\"]" 2>/dev/null | grep -q "."; then
         return 0  # Silently skip if profiles don't exist
@@ -508,8 +551,16 @@ display_balances_connected_mvm() {
     local bob2=$(aptos account balance --profile bob-chain2 2>/dev/null | jq -r '.Result[0].balance // 0' || echo "0")
     
     log_and_echo "   Chain 2 (Connected MVM):"
-    log_and_echo "      Alice: $alice2 Octas"
-    log_and_echo "      Bob:   $bob2 Octas"
+    
+    if [ -n "$test_tokens_addr" ]; then
+        local alice_usdxyz=$(get_usdxyz_balance "alice-chain2" "2" "$test_tokens_addr")
+        local bob_usdxyz=$(get_usdxyz_balance "bob-chain2" "2" "$test_tokens_addr")
+        log_and_echo "      Alice: $alice2 Octas APT, $alice_usdxyz USDxyz"
+        log_and_echo "      Bob:   $bob2 Octas APT, $bob_usdxyz USDxyz"
+    else
+        log_and_echo "      Alice: $alice2 Octas"
+        log_and_echo "      Bob:   $bob2 Octas"
+    fi
 }
 
 # Register solver in the solver registry
@@ -803,4 +854,3 @@ list_all_solvers() {
         fi
     done
 }
-

@@ -53,6 +53,67 @@ log ""
 log "🔧 Initializing solver registry..."
 initialize_solver_registry "intent-account-chain1" "$CHAIN1_ADDRESS" "$LOG_FILE"
 
+# Deploy USDxyz test token
+log ""
+log "💵 Deploying USDxyz test token to Chain 1..."
+
+TEST_TOKENS_CHAIN1_ADDRESS=$(get_profile_address "test-tokens-chain1")
+
+log "   - Deploying USDxyz with address: $TEST_TOKENS_CHAIN1_ADDRESS"
+cd testing-infra/test-tokens
+aptos move publish --profile test-tokens-chain1 --named-addresses test_tokens=$TEST_TOKENS_CHAIN1_ADDRESS --assume-yes >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    log "   ✅ USDxyz deployment successful on Chain 1!"
+    log_and_echo "✅ USDxyz test token deployed on hub chain"
+else
+    log_and_echo "   ❌ USDxyz deployment failed on Chain 1!"
+    exit 1
+fi
+
+cd "$PROJECT_ROOT"
+
+# Export USDxyz address for other scripts
+echo "TEST_TOKENS_CHAIN1_ADDRESS=$TEST_TOKENS_CHAIN1_ADDRESS" >> "$PROJECT_ROOT/tmp/chain-info.env"
+log "   ✅ USDxyz address saved: $TEST_TOKENS_CHAIN1_ADDRESS"
+
+# Mint USDxyz to Alice and Bob
+log ""
+log "💵 Minting USDxyz to Alice and Bob on Chain 1..."
+
+ALICE_CHAIN1_ADDRESS=$(get_profile_address "alice-chain1")
+BOB_CHAIN1_ADDRESS=$(get_profile_address "bob-chain1")
+USDXYZ_MINT_AMOUNT="100000000000"  # 1000 USDxyz (8 decimals)
+
+log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Alice ($ALICE_CHAIN1_ADDRESS)..."
+aptos move run --profile test-tokens-chain1 --assume-yes \
+    --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
+    --args address:$ALICE_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    log "   ✅ Minted USDxyz to Alice"
+else
+    log_and_echo "   ❌ Failed to mint USDxyz to Alice"
+    exit 1
+fi
+
+log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Bob ($BOB_CHAIN1_ADDRESS)..."
+aptos move run --profile test-tokens-chain1 --assume-yes \
+    --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
+    --args address:$BOB_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    log "   ✅ Minted USDxyz to Bob"
+else
+    log_and_echo "   ❌ Failed to mint USDxyz to Bob"
+    exit 1
+fi
+
+log_and_echo "✅ USDxyz minted to Alice and Bob on hub chain (1000 USDxyz each)"
+
+# Display balances (APT + USDxyz)
+display_balances_hub "$TEST_TOKENS_CHAIN1_ADDRESS"
+
 log ""
 log "🎉 HUB CHAIN DEPLOYMENT COMPLETE!"
 log "=================================="

@@ -5,7 +5,7 @@ Tests mixed-chain intent framework: intents on Move VM Chain 1 (hub) and escrows
 ## Quick Start
 
 ```bash
-./testing-infra/e2e-tests-evm/run-tests.sh
+./testing-infra/e2e-tests-evm/run-tests-inflow.sh
 ```
 
 ## What's Tested

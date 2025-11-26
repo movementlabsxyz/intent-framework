@@ -62,7 +62,7 @@ log "   ✅ Verifier is running"
 # The verifier polls every 2 seconds, so wait for it to discover the request intent
 log ""
 log "   - Waiting for verifier to poll and cache request intent..."
-MAX_WAIT=10  # Maximum wait time in seconds (should be enough for 2-3 poll cycles)
+MAX_WAIT=30  # Maximum wait time in seconds (should be enough for several poll cycles)
 WAIT_INTERVAL=2  # Check every 2 seconds (matches polling interval)
 ELAPSED=0
 INTENT_FOUND=false

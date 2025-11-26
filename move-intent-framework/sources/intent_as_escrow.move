@@ -74,7 +74,7 @@ module mvmt_intent::intent_as_escrow {
         // Create the verifier-guarded intent with placeholder values
         // Note: desired_metadata and desired_amount are placeholders since actual logic is off-chain
         let placeholder_metadata = fungible_asset::asset_metadata(&offered_asset); // Use same metadata as placeholder
-        let placeholder_amount = 1; // Minimal placeholder amount
+        let placeholder_amount = 0; // Placeholder (escrow validation is done off-chain by verifier)
 
         fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
             offered_asset,

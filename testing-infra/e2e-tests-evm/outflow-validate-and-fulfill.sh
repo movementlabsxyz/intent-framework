@@ -69,7 +69,9 @@ INTENT_FOUND=false
 
 while [ $ELAPSED -lt $MAX_WAIT ]; do
     EVENTS_RESPONSE=$(curl -s "http://127.0.0.1:3333/events" 2>/dev/null)
-    if [ $? -eq 0 ] && echo "$EVENTS_RESPONSE" | jq -e '.data.intent_events[] | select(.intent_id | ascii_downcase | gsub("0x"; "") == "'"$(echo "$INTENT_ID" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//')"'")' > /dev/null 2>&1; then
+    # Normalize intent_id by removing 0x prefix and leading zeros for comparison
+    NORMALIZED_INTENT_ID=$(echo "$INTENT_ID" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//' | sed 's/^0*//')
+    if [ $? -eq 0 ] && echo "$EVENTS_RESPONSE" | jq -e '.data.intent_events[] | select(.intent_id | ascii_downcase | gsub("^0x"; "") | gsub("^0+"; "") == "'"$NORMALIZED_INTENT_ID"'")' > /dev/null 2>&1; then
         INTENT_FOUND=true
         break
     fi

@@ -345,8 +345,6 @@ else
             # Calculate balance increase
             BALANCE_USDXYZ_INCREASE=$((BOB_BALANCE_USDXYZ_AFTER - BOB_BALANCE_USDXYZ_BEFORE))
             
-            # Expected amount: 1000 USDxyz (locked in escrow)
-            # USDxyz transfers don't have gas deductions (gas is paid in APT)
             EXPECTED_MIN_AMOUNT=100000000000  # 1000 USDxyz (8 decimals)
             
             if [ $TX_EXIT_CODE -eq 0 ]; then
@@ -467,7 +465,7 @@ BOB_CHAIN2_USDXYZ=$(get_usdxyz_balance "bob-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 # Note: Alice's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 
 EXPECTED_ESCROW_AMOUNT=100000000000  # 1000 USDxyz (8 decimals)
-MIN_EXPECTED_AMOUNT=100000000000  # 1000 USDxyz (no gas deduction for token transfers)
+MIN_EXPECTED_AMOUNT=100000000000  # 1000 USDxyz (no deduction, desired_amount=0)
 
 # Calculate balance increase
 BOB_CHAIN2_USDXYZ_INCREASE=$((BOB_CHAIN2_USDXYZ - BOB_CHAIN2_USDXYZ_INIT))

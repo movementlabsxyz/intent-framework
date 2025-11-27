@@ -7,13 +7,13 @@ authors = []
 mvmt_intent = "_"
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-framework.git"
-rev = "a10a3c02f16a2114ad065db6b4a525f0382e96a6"
-subdir = "aptos-framework"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "d71b74a45a52d41ef03c3e4b0ec927c14f392c05"
+subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
 
 [dev-dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-framework.git"
-rev = "a10a3c02f16a2114ad065db6b4a525f0382e96a6"
-subdir = "aptos-framework"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "d71b74a45a52d41ef03c3e4b0ec927c14f392c05"
+subdir = "aptos-move/framework/aptos-framework"

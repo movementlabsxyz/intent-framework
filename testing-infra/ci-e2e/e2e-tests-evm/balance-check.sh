@@ -3,13 +3,14 @@
 # Balance Check Script for EVM E2E Tests
 # Displays final balances for Hub (Chain 1) and Connected EVM (Chain 3)
 
-# Get the project root
+# Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+source "$SCRIPT_DIR/../util.sh"
+source "$SCRIPT_DIR/../util_mvm.sh"
+source "$SCRIPT_DIR/../util_evm.sh"
 
-source "$PROJECT_ROOT/testing-infra/ci-e2e/util.sh"
-source "$PROJECT_ROOT/testing-infra/ci-e2e/util_mvm.sh"
-source "$PROJECT_ROOT/testing-infra/ci-e2e/util_evm.sh"
+# Setup project root
+setup_project_root
 
 # Get test tokens addresses
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1" 2>/dev/null) || true

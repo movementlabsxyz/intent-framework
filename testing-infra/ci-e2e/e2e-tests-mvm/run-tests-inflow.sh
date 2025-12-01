@@ -7,9 +7,12 @@
 
 set -e
 
-# Get the project root
+# Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+source "$SCRIPT_DIR/../util.sh"
+
+# Setup project root
+setup_project_root
 cd "$PROJECT_ROOT"
 
 echo "🧪 E2E Test with Connected Move VM Chain - INFLOW"

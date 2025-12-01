@@ -75,7 +75,7 @@ The [`Move.toml`](../Move.toml) file contains:
 
 ```toml
 [package]
-name = "aptos-intent"
+name = "movement-intent"
 version = "1.0.0"
 authors = []
 
@@ -92,7 +92,7 @@ subdir = "aptos-framework"
 ```
 
 **Key Configuration:**
-- **Package Name**: `aptos-intent`
+- **Package Name**: `movement-intent`
 - **Address**: Uses `_` for deployment flexibility
 - **Dev Address**: `0x123` for testing
 - **Dependencies**: Aptos Framework pinned to a specific commit (see `Move.toml` for the exact commit hash)

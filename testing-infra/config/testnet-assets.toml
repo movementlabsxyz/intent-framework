@@ -1,0 +1,71 @@
+# Testnet Assets Configuration
+# 
+# This file contains contract addresses for supported assets on testnets.
+# This is a public configuration file that can be committed to the repository.
+#
+# Format:
+#   [chain_name]
+#   asset_name = "contract_address"
+#   asset_name_decimals = 6  # Optional: specify decimals if different from standard
+
+# =============================================================================
+# MOVEMENT BARDOCK TESTNET
+# =============================================================================
+
+[movement_bardock_testnet]
+chain_id = 250
+rpc_url = "https://testnet.movementnetwork.xyz/v1"
+
+# Native token (MOVE/APT)
+# No address needed - use 0x1::aptos_coin::AptosCoin
+native_token = "MOVE"
+native_token_decimals = 8
+
+# USDC on Movement Testnet
+# TODO: Update with actual USDC deployment address once deployed
+# usdc = "0x..."
+# usdc_decimals = 6
+
+# pyUSD on Movement Testnet (Paxos USD)
+# TODO: Update with actual pyUSD deployment address once deployed
+# pyusd = "0x..."
+# pyusd_decimals = 6
+
+# =============================================================================
+# ETHEREUM SEPOLIA TESTNET
+# =============================================================================
+
+[ethereum_sepolia]
+chain_id = 11155111
+# RPC URL with API key placeholder - script will substitute ALCHEMY_ETH_SEPOLIA_API_KEY
+rpc_url = "https://eth-sepolia.g.alchemy.com/v2/ALCHEMY_API_KEY"
+
+# Native token (ETH)
+native_token = "ETH"
+native_token_decimals = 18
+
+# USDC on Ethereum Sepolia
+usdc = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+usdc_decimals = 6
+
+# =============================================================================
+# BASE SEPOLIA TESTNET
+# =============================================================================
+
+[base_sepolia]
+chain_id = 84532
+rpc_url = "https://sepolia.base.org"
+
+# Native token (ETH)
+native_token = "ETH"
+native_token_decimals = 18
+
+# USDC on Base Sepolia
+usdc = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+usdc_decimals = 6
+
+# pyUSD on Base Sepolia (Paxos USD)
+# TODO: Update with actual pyUSD deployment address if available
+# pyusd = "0x..."
+# pyusd_decimals = 6
+

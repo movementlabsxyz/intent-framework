@@ -137,7 +137,7 @@ Deploy the Intent Framework to a local Move VM network:
 
 ```bash
 # 1. Setup local chain (optional)
-./testing-infra/chain-connected-mvm/setup-chain.sh
+./testing-infra/ci-e2e/chain-connected-mvm/setup-chain.sh
 
 # 2. Configure Aptos CLI to use local chain (port 8080)
 aptos init --profile local --network local

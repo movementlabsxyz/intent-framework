@@ -116,7 +116,7 @@ See [`.cursor/codestandards.md`](.cursor/codestandards.md) for language-specific
 
 - **Move tests**: Place in `move-intent-framework/tests/` with `*_tests.move` naming
 - **Solidity tests**: Place in `evm-intent-framework/test/` with `*.test.js` naming
-- **E2E tests**: Use shell scripts in `testing-infra/e2e-tests-*/`
+- **E2E tests**: Use shell scripts in `testing-infra/ci-e2e/e2e-tests-*/`
 - **Test isolation**: Each test should be independent and clean up after itself
 - **Balance checks**: Use granular balance display functions appropriate for the chain being tested
 

@@ -10,20 +10,20 @@ jobs:
   mvm-chain-inflow:
     uses: ./.github/workflows/e2e-reusable.yml
     with:
-      script: "./testing-infra/e2e-tests-mvm/run-tests-inflow.sh"
+      script: "./testing-infra/ci-e2e/e2e-tests-mvm/run-tests-inflow.sh"
 
   mvm-chain-outflow:
     uses: ./.github/workflows/e2e-reusable.yml
     with:
-      script: "./testing-infra/e2e-tests-mvm/run-tests-outflow.sh"
+      script: "./testing-infra/ci-e2e/e2e-tests-mvm/run-tests-outflow.sh"
 
   evm-chain-inflow:
     uses: ./.github/workflows/e2e-reusable.yml
     with:
-      script: "./testing-infra/e2e-tests-evm/run-tests-inflow.sh"
+      script: "./testing-infra/ci-e2e/e2e-tests-evm/run-tests-inflow.sh"
 
   evm-chain-outflow:
     uses: ./.github/workflows/e2e-reusable.yml
     with:
-      script: "./testing-infra/e2e-tests-evm/run-tests-outflow.sh"
+      script: "./testing-infra/ci-e2e/e2e-tests-evm/run-tests-outflow.sh"
 

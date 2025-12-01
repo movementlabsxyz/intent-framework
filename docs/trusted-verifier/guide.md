@@ -28,7 +28,7 @@ Keys
 Run the full E2E test flow:
 
 ```
-./testing-infra/e2e-tests-mvm/run-tests.sh
+./testing-infra/ci-e2e/e2e-tests-mvm/run-tests-inflow.sh
 ```
 
 This script sets up chains, deploys contracts, submits intents, runs integration tests, starts the verifier, and releases escrow.

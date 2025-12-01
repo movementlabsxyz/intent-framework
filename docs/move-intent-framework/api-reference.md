@@ -301,7 +301,7 @@ public fun verify_and_create_reservation(
 
 **Returns:** An optional reservation if verification succeeds
 
-**Note**: This function extracts the public key from the solver's authentication key on-chain. It only works for accounts with the old authentication key format (33 bytes with 0x00 prefix). For cross-chain intents or accounts created with `aptos init` (new format, 32 bytes), solvers must be registered in the solver registry and use `verify_and_create_reservation_from_registry` instead.
+**Note**: This function extracts the public key from the solver's authentication key on-chain. It only works for accounts with the old authentication key format (33 bytes with 0x00 prefix). For cross-chain intents or accounts created with `movement init` or `aptos init` (new format, 32 bytes), solvers must be registered in the solver registry and use `verify_and_create_reservation_from_registry` instead.
 
 **Aborts:**
 
@@ -325,7 +325,7 @@ public fun verify_and_create_reservation_from_registry(
 
 **Returns:** An optional reservation if verification succeeds
 
-**Note**: This function looks up the solver's public key from the on-chain solver registry. The solver must be registered in the registry before calling this function. This is the recommended approach for cross-chain intents and accounts created with `aptos init` (new format, 32 bytes) where the public key cannot be extracted from the authentication key.
+**Note**: This function looks up the solver's public key from the on-chain solver registry. The solver must be registered in the registry before calling this function. This is the recommended approach for cross-chain intents and accounts created with `movement init` or `aptos init` (new format, 32 bytes) where the public key cannot be extracted from the authentication key.
 
 **Aborts:**
 
@@ -458,9 +458,9 @@ For outflow intents, the verifier validates that the transaction solver on the c
 - `E_EVM_ADDRESS_LENGTH_INVALID`: EVM address is not 20 bytes (if provided)
 - `E_INVALID_PUBLIC_KEY`: Public key is not a valid Ed25519 public key
 
-**Usage with Aptos CLI:**
+**Usage with Movement CLI:**
 
-When calling `register_solver` via `aptos move run`, Option types cannot be passed as "null". Use placeholder values instead:
+When calling `register_solver` via `movement move run`, Option types cannot be passed as "null". Use placeholder values instead:
 
 - For `connected_chain_evm_address`: Use `0x0000000000000000000000000000000000000000` (20 bytes of zeros) if not applicable
 - For `connected_chain_mvm_address`: Use `0x0` (zero address) if not applicable
@@ -468,7 +468,7 @@ When calling `register_solver` via `aptos move run`, Option types cannot be pass
 Example:
 
 ```bash
-aptos move run --profile solver-profile \
+movement move run --profile solver-profile \
   --function-id 0x<module_address>::solver_registry::register_solver \
   --args hex:<public_key> hex:<evm_address> address:<mvm_address>
 ```

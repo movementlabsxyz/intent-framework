@@ -21,7 +21,7 @@ Components:
 
 - Signature Generator: Creates Ed25519 signatures for `IntentToSign` structures
 - Transaction Template Generator: Produces Move/EVM templates with embedded `intent_id`
-- Key Management: Reads solver private keys from Aptos configuration
+- Key Management: Reads solver private keys from Movement/Aptos configuration
 
 ## Project Structure
 
@@ -45,12 +45,12 @@ Signature generation process:
 
 1. Calls `utils::get_intent_to_sign_hash()` to construct and hash the `IntentToSign` structure
 2. Extracts the hash from the transaction event
-3. Reads the solver's private key from Aptos config
+3. Reads the solver's private key from Movement/Aptos config
 4. Signs the hash with Ed25519
 5. Outputs signature (hex with `0x` prefix) to stdout
 6. Outputs public key (hex with `0x` prefix) to stderr with `PUBLIC_KEY:` prefix
 
-**Note**: For accounts created with `aptos init` (new authentication key format), the public key must be passed explicitly to the Move contract. The script extracts the public key from stderr output.
+**Note**: For accounts created with `movement init` or `aptos init` (new authentication key format), the public key must be passed explicitly to the Move contract. The script extracts the public key from stderr output.
 
 ### Usage Example
 

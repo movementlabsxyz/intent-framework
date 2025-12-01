@@ -282,7 +282,7 @@ For outflow intents, solvers must transfer tokens on the connected chain using a
 
 ### Move VM Connected Chain Format
 
-Use the solver CLI to generate an `aptos move run` command that calls the on-chain `utils::transfer_with_intent_id()` function directly.
+Use the solver CLI to generate a `movement move run` command that calls the on-chain `utils::transfer_with_intent_id()` function directly.
 
 ```bash
 cargo run --bin connected_chain_tx_template -- \
@@ -296,7 +296,7 @@ cargo run --bin connected_chain_tx_template -- \
 The command prints:
 
 1. A summary of the parameters that must match the hub intent (`recipient`, `amount`, `intent_id`)
-2. An `aptos move run` command to call the on-chain `utils::transfer_with_intent_id()` function directly
+2. A `movement move run` command to call the on-chain `utils::transfer_with_intent_id()` function directly
 3. Instructions for replacing placeholders (`<solver-profile>`, `<module_address>`)
 
 The on-chain `utils::transfer_with_intent_id()` function:

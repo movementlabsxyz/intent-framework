@@ -71,11 +71,11 @@ cp env.testnet.example .env.testnet
 ### 4. Development Tools
 
 ```bash
-# Enter nix development shell (provides Aptos CLI, Node.js, Rust)
+# Enter nix development shell (provides Movement CLI, Node.js, Rust)
 nix develop
 
 # Or install manually:
-# - Aptos CLI (for Movement deployment)
+# - Movement CLI (for Movement testnet deployment)
 # - Node.js 18+ (for Hardhat/EVM deployment)
 # - Rust (for Trusted Verifier)
 ```
@@ -242,22 +242,22 @@ cors_origins = ["*"]
 
 ## Phase 2: Deploy Move Intent Framework (Movement)
 
-### 2.1 Configure Aptos CLI for Movement
+### 2.1 Configure Movement CLI for Movement Testnet
 
 ```bash
 # Initialize profile for Movement Bardock
-aptos init --profile movement-testnet --network custom \
+movement init --profile movement-testnet --network custom \
   --rest-url https://testnet.movementnetwork.xyz/v1 \
   --faucet-url https://faucet.movementnetwork.xyz/
 
-# Fund account if needed
-aptos account fund-with-faucet --profile movement-testnet --amount 100000000
+# Fund account if needed (or use the faucet UI)
+movement account fund-with-faucet --profile movement-testnet --amount 100000000
 ```
 
 ### 2.2 Get Deployer Address
 
 ```bash
-export DEPLOYER_ADDRESS=$(aptos config show-profiles --profile movement-testnet | jq -r '.Result["movement-testnet"].account')
+export DEPLOYER_ADDRESS=$(movement config show-profiles --profile movement-testnet | jq -r '.Result["movement-testnet"].account')
 echo "Deployer address: 0x$DEPLOYER_ADDRESS"
 ```
 
@@ -267,12 +267,12 @@ echo "Deployer address: 0x$DEPLOYER_ADDRESS"
 cd move-intent-framework
 
 # Compile first
-aptos move compile \
+movement move compile \
   --named-addresses mvmt_intent=0x$DEPLOYER_ADDRESS \
   --skip-fetch-latest-git-deps
 
 # Deploy
-aptos move publish \
+movement move publish \
   --profile movement-testnet \
   --named-addresses mvmt_intent=0x$DEPLOYER_ADDRESS \
   --skip-fetch-latest-git-deps \
@@ -283,7 +283,7 @@ aptos move publish \
 
 ```bash
 # Check modules are deployed
-aptos move view \
+movement move view \
   --profile movement-testnet \
   --function-id 0x$DEPLOYER_ADDRESS::intent::get_intent_count \
   --args address:0x$DEPLOYER_ADDRESS
@@ -464,13 +464,13 @@ jobs:
         run: |
           nix develop -c bash -c "
             cd move-intent-framework
-            aptos init --profile testnet --network custom \
+            movement init --profile testnet --network custom \
               --rest-url $MOVEMENT_RPC_URL \
               --private-key \${{ secrets.MOVEMENT_PRIVATE_KEY }}
             
-            ADDR=\$(aptos config show-profiles --profile testnet | jq -r '.Result.testnet.account')
+            ADDR=\$(movement config show-profiles --profile testnet | jq -r '.Result.testnet.account')
             
-            aptos move publish \
+            movement move publish \
               --profile testnet \
               --named-addresses mvmt_intent=0x\$ADDR \
               --skip-fetch-latest-git-deps \

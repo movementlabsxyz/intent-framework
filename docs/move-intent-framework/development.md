@@ -7,7 +7,7 @@ This document covers development setup, testing, configuration, and dependencies
 ### Prerequisites
 
 - [Nix](https://nixos.org/download.html) package manager
-- CLI tools (automatically provided via [aptos.nix](../../aptos.nix))
+- CLI tools (automatically provided via nix - see [`flake.nix`](../../flake.nix))
 
 ### Getting Started
 
@@ -22,7 +22,7 @@ This document covers development setup, testing, configuration, and dependencies
 
    ```bash
    # From project root
-   nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123"
+   nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123"
    ```
 
 ## Testing
@@ -31,7 +31,7 @@ This document covers development setup, testing, configuration, and dependencies
 
 Run all tests with:
 ```bash
-aptos move test --dev --named-addresses mvmt_intent=0x123
+movement move test --dev --named-addresses mvmt_intent=0x123
 ```
 
 ### Test Structure
@@ -58,13 +58,13 @@ The test suite includes:
 
 ```bash
 # Run only intent tests
-aptos move test --dev --named-addresses mvmt_intent=0x123 --filter intent_tests
+movement move test --dev --named-addresses mvmt_intent=0x123 --filter intent_tests
 
 # Run only fungible asset tests
-aptos move test --dev --named-addresses mvmt_intent=0x123 --filter fa_tests
+movement move test --dev --named-addresses mvmt_intent=0x123 --filter fa_tests
 
 # Run only reservation tests
-aptos move test --dev --named-addresses mvmt_intent=0x123 --filter intent_reservation_tests
+movement move test --dev --named-addresses mvmt_intent=0x123 --filter intent_reservation_tests
 ```
 
 ## Configuration
@@ -86,9 +86,9 @@ mvmt_intent = "_"
 mvmt_intent = "0x123"
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-framework.git"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
 rev = "<commit-hash>"  # See Move.toml for the actual pinned commit
-subdir = "aptos-framework"
+subdir = "aptos-move/framework/aptos-framework"
 ```
 
 **Key Configuration:**
@@ -101,7 +101,8 @@ subdir = "aptos-framework"
 
 The development environment is provided via the root [`flake.nix`](../../flake.nix), which includes:
 - Rust toolchain
-- Aptos CLI (via [`aptos.nix`](../../aptos.nix))
+- Movement CLI (via [`movement.nix`](../../movement.nix)) - for testnet deployments
+- Aptos CLI (via [`aptos.nix`](../../aptos.nix)) - for local Docker testing
 - Node.js and npm
 - Other development tools
 
@@ -111,14 +112,19 @@ Enter the environment with `nix develop` from the project root.
 
 ### Aptos Framework
 
-- **Source**: [Aptos Framework](https://github.com/aptos-labs/aptos-framework)
+- **Source**: [Movement Labs fork of aptos-core](https://github.com/movementlabsxyz/aptos-core)
 - **Version**: Pinned to a specific commit hash (see `Move.toml` for the exact commit)
 - **Purpose**: Core blockchain functionality, fungible assets, cryptography
+
+### Movement CLI
+
+- **Source**: Defined in [movement.nix](../../movement.nix) (version is managed there)
+- **Purpose**: Testing, and testnet deployment
 
 ### Aptos CLI
 
 - **Source**: Defined in [aptos.nix](../../aptos.nix) (version is managed there)
-- **Purpose**: Development, testing, and deployment
+- **Purpose**: Local Docker-based E2E testing
 
 ### Key Framework Modules Used
 
@@ -133,17 +139,17 @@ Enter the environment with `nix develop` from the project root.
 
 ### Local Chain Setup
 
-Deploy the Intent Framework to a local Move VM network:
+Deploy the Intent Framework to a local Move VM network (for Docker-based E2E testing):
 
 ```bash
 # 1. Setup local chain (optional)
 ./testing-infra/ci-e2e/chain-connected-mvm/setup-chain.sh
 
-# 2. Configure Aptos CLI to use local chain (port 8080)
-aptos init --profile local --network local
-
-# 3. Enter dev environment (from project root)
+# 2. Enter dev environment (from project root)
 nix develop
+
+# 3. Configure Aptos CLI to use local chain (port 8080)
+aptos init --profile local --network local
 
 # 4. Deploy to current network
 # Get your account address
@@ -152,14 +158,14 @@ INTENT=$(aptos config show-profiles | jq -r '.Result.default.account')
 aptos move publish --named-addresses mvmt_intent=0x$INTENT --skip-fetch-latest-git-deps
 
 # 5. Verify deployment
-aptos move test --dev --named-addresses mvmt_intent=0x123
+movement move test --dev --named-addresses mvmt_intent=0x123
 ```
 
-**Note**: The deploy command publishes to whatever network your Aptos CLI is configured for. For local development, you must first configure Aptos CLI to point to your local Docker chain (port 8080) using `aptos init --profile local --network local`.
+**Note**: For local Docker testing, use the `aptos` CLI to configure and deploy. For testnet deployment, use the `movement` CLI instead.
 
-### Multiple Chains
+### Multiple Local Chains
 
-If you have multiple chains running (e.g., port 8080 and 8082), you can create separate profiles:
+If you have multiple local chains running (e.g., port 8080 and 8082), you can create separate profiles:
 
 ```bash
 # Chain 1 (port 8080)
@@ -173,7 +179,7 @@ aptos move publish --profile local --named-addresses mvmt_intent=0x<your_address
 aptos move publish --profile local2 --named-addresses mvmt_intent=0x<your_address>
 ```
 
-### Manual Deployment
+### Manual Local Deployment
 
 ```bash
 # Get your account address
@@ -182,6 +188,10 @@ aptos config show-profiles | jq -r '.Result.default.account'
 # Deploy with your address
 aptos move publish --named-addresses mvmt_intent=0x<your_address> --skip-fetch-latest-git-deps
 ```
+
+### Testnet Deployment
+
+For deploying to Movement Bardock Testnet, see the testnet deployment scripts in `testing-infra/testnet/`.
 
 ## Development Workflow
 
@@ -204,7 +214,7 @@ aptos move publish --named-addresses mvmt_intent=0x<your_address> --skip-fetch-l
 ### 3. Debugging
 
 - **Test Failures**: Check test output for specific error messages
-- **Compilation Errors**: Use `aptos move compile` to check syntax
+- **Compilation Errors**: Use `movement move compile` to check syntax
 - **Runtime Errors**: Add debug prints or use Move debugger
 - **Signature Issues**: Verify signature format and verification logic
 

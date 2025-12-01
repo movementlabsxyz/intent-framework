@@ -7,7 +7,7 @@
    - Event confirms `provided_amount: 100,000,000` was transferred
    - But Bob's balance only decreases by ~99.9M (less than 100M, not 100M + gas)
    - Possible causes: Coin vs FA balance accounting; initial capture timing; gas treatment
-   - Investigate how `aptos account balance` relates to FA operations and why loss < transfer amount
+   - Investigate how `movement account balance` relates to FA operations and why loss < transfer amount
    - Location: `testing-infra/ci-e2e/e2e-tests-mvm/fulfill-hub-intent.sh`
 
 2. **Test Improvements**

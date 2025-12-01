@@ -7,15 +7,15 @@
 #   - Base Sepolia (ETH, USDC)
 #   - Ethereum Sepolia (ETH, USDC)
 # 
-# Asset addresses are read from testing-infra/config/testnet-assets.toml
+# Asset addresses are read from testing-infra/testnet/config/testnet-assets.toml
 
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 export PROJECT_ROOT
 
 # Source utilities (for error handling only, not logging)
-source "$SCRIPT_DIR/../ci-e2e/util.sh" 2>/dev/null || true
+source "$PROJECT_ROOT/testing-infra/ci-e2e/util.sh" 2>/dev/null || true
 
 echo "🔍 Checking Testnet Balances"
 echo "============================"
@@ -34,11 +34,11 @@ fi
 source "$TESTNET_KEYS_FILE"
 
 # Load assets configuration
-ASSETS_CONFIG_FILE="$PROJECT_ROOT/testing-infra/config/testnet-assets.toml"
+ASSETS_CONFIG_FILE="$PROJECT_ROOT/testing-infra/testnet/config/testnet-assets.toml"
 
 if [ ! -f "$ASSETS_CONFIG_FILE" ]; then
     echo "❌ ERROR: testnet-assets.toml not found at $ASSETS_CONFIG_FILE"
-    echo "   Asset addresses must be configured in testing-infra/config/testnet-assets.toml"
+    echo "   Asset addresses must be configured in testing-infra/testnet/config/testnet-assets.toml"
     exit 1
 fi
 
@@ -278,6 +278,7 @@ format_balance() {
 # Check Movement balances
 echo "📊 Movement Bardock Testnet"
 echo "----------------------------"
+echo "   RPC: $MOVEMENT_RPC_URL"
 
 if [ -z "$MOVEMENT_DEPLOYER_ADDRESS" ]; then
     echo "⚠️  MOVEMENT_DEPLOYER_ADDRESS not set in .testnet-keys.env"
@@ -285,11 +286,12 @@ else
     balance=$(get_movement_balance "$MOVEMENT_DEPLOYER_ADDRESS")
     formatted=$(format_balance "$balance" "$MOVEMENT_NATIVE_DECIMALS")
     usdc_balance=$(get_movement_usdc_balance "$MOVEMENT_DEPLOYER_ADDRESS")
+    echo "   Deployer  ($MOVEMENT_DEPLOYER_ADDRESS)"
     if [ -n "$MOVEMENT_USDC_ADDRESS" ]; then
         usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC")
-        echo "   Deployer:  $formatted, $usdc_formatted"
+        echo "             $formatted, $usdc_formatted"
     else
-        echo "   Deployer:  $formatted (USDC address not configured)"
+        echo "             $formatted (USDC n/a)"
     fi
 fi
 
@@ -299,11 +301,12 @@ else
     balance=$(get_movement_balance "$MOVEMENT_REQUESTER_ADDRESS")
     formatted=$(format_balance "$balance" "$MOVEMENT_NATIVE_DECIMALS")
     usdc_balance=$(get_movement_usdc_balance "$MOVEMENT_REQUESTER_ADDRESS")
+    echo "   Requester ($MOVEMENT_REQUESTER_ADDRESS)"
     if [ -n "$MOVEMENT_USDC_ADDRESS" ]; then
         usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC")
-        echo "   Requester: $formatted, $usdc_formatted"
+        echo "             $formatted, $usdc_formatted"
     else
-        echo "   Requester: $formatted (USDC address not configured)"
+        echo "             $formatted (USDC n/a)"
     fi
 fi
 
@@ -313,11 +316,12 @@ else
     balance=$(get_movement_balance "$MOVEMENT_SOLVER_ADDRESS")
     formatted=$(format_balance "$balance" "$MOVEMENT_NATIVE_DECIMALS")
     usdc_balance=$(get_movement_usdc_balance "$MOVEMENT_SOLVER_ADDRESS")
+    echo "   Solver    ($MOVEMENT_SOLVER_ADDRESS)"
     if [ -n "$MOVEMENT_USDC_ADDRESS" ]; then
         usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC")
-        echo "   Solver:    $formatted, $usdc_formatted"
+        echo "             $formatted, $usdc_formatted"
     else
-        echo "   Solver:    $formatted (USDC address not configured)"
+        echo "             $formatted (USDC n/a)"
     fi
 fi
 
@@ -326,18 +330,20 @@ echo ""
 # Check Base Sepolia balances
 echo "📊 Base Sepolia"
 echo "---------------"
+echo "   RPC: $BASE_RPC_URL"
 
 if [ -z "$BASE_DEPLOYER_ADDRESS" ]; then
     echo "⚠️  BASE_DEPLOYER_ADDRESS not set in .testnet-keys.env"
 else
     eth_balance=$(get_base_eth_balance "$BASE_DEPLOYER_ADDRESS")
     eth_formatted=$(format_balance "$eth_balance" "$BASE_NATIVE_DECIMALS")
+    echo "   Deployer  ($BASE_DEPLOYER_ADDRESS)"
     if [ -n "$BASE_USDC_ADDRESS" ]; then
         usdc_balance=$(get_base_token_balance "$BASE_DEPLOYER_ADDRESS" "$BASE_USDC_ADDRESS")
         usdc_formatted=$(format_balance "$usdc_balance" "$BASE_USDC_DECIMALS" "USDC")
-        echo "   Deployer:  $eth_formatted, $usdc_formatted"
+        echo "             $eth_formatted, $usdc_formatted"
     else
-        echo "   Deployer:  $eth_formatted (USDC address not configured)"
+        echo "             $eth_formatted (USDC n/a)"
     fi
 fi
 
@@ -346,12 +352,13 @@ if [ -z "$BASE_REQUESTER_ADDRESS" ]; then
 else
     eth_balance=$(get_base_eth_balance "$BASE_REQUESTER_ADDRESS")
     eth_formatted=$(format_balance "$eth_balance" "$BASE_NATIVE_DECIMALS")
+    echo "   Requester ($BASE_REQUESTER_ADDRESS)"
     if [ -n "$BASE_USDC_ADDRESS" ]; then
         usdc_balance=$(get_base_token_balance "$BASE_REQUESTER_ADDRESS" "$BASE_USDC_ADDRESS")
         usdc_formatted=$(format_balance "$usdc_balance" "$BASE_USDC_DECIMALS" "USDC")
-        echo "   Requester: $eth_formatted, $usdc_formatted"
+        echo "             $eth_formatted, $usdc_formatted"
     else
-        echo "   Requester: $eth_formatted (USDC address not configured)"
+        echo "             $eth_formatted (USDC n/a)"
     fi
 fi
 
@@ -360,12 +367,13 @@ if [ -z "$BASE_SOLVER_ADDRESS" ]; then
 else
     eth_balance=$(get_base_eth_balance "$BASE_SOLVER_ADDRESS")
     eth_formatted=$(format_balance "$eth_balance" "$BASE_NATIVE_DECIMALS")
+    echo "   Solver    ($BASE_SOLVER_ADDRESS)"
     if [ -n "$BASE_USDC_ADDRESS" ]; then
         usdc_balance=$(get_base_token_balance "$BASE_SOLVER_ADDRESS" "$BASE_USDC_ADDRESS")
         usdc_formatted=$(format_balance "$usdc_balance" "$BASE_USDC_DECIMALS" "USDC")
-        echo "   Solver:    $eth_formatted, $usdc_formatted"
+        echo "             $eth_formatted, $usdc_formatted"
     else
-        echo "   Solver:    $eth_formatted (USDC address not configured)"
+        echo "             $eth_formatted (USDC n/a)"
     fi
 fi
 
@@ -374,6 +382,7 @@ echo ""
 # Check Ethereum Sepolia balances (using same addresses as Base - EVM addresses work across chains)
 echo "📊 Ethereum Sepolia"
 echo "-------------------"
+echo "   RPC: $SEPOLIA_RPC_URL"
 echo "   (Using same addresses as Base Sepolia)"
 
 if [ -z "$BASE_DEPLOYER_ADDRESS" ]; then
@@ -381,12 +390,13 @@ if [ -z "$BASE_DEPLOYER_ADDRESS" ]; then
 else
     eth_balance=$(get_evm_eth_balance "$BASE_DEPLOYER_ADDRESS" "$SEPOLIA_RPC_URL")
     eth_formatted=$(format_balance "$eth_balance" "$SEPOLIA_NATIVE_DECIMALS")
+    echo "   Deployer  ($BASE_DEPLOYER_ADDRESS)"
     if [ -n "$SEPOLIA_USDC_ADDRESS" ]; then
         usdc_balance=$(get_evm_token_balance "$BASE_DEPLOYER_ADDRESS" "$SEPOLIA_USDC_ADDRESS" "$SEPOLIA_RPC_URL")
         usdc_formatted=$(format_balance "$usdc_balance" "$SEPOLIA_USDC_DECIMALS" "USDC")
-        echo "   Deployer:  $eth_formatted, $usdc_formatted"
+        echo "             $eth_formatted, $usdc_formatted"
     else
-        echo "   Deployer:  $eth_formatted (USDC address not configured)"
+        echo "             $eth_formatted (USDC n/a)"
     fi
 fi
 
@@ -395,12 +405,13 @@ if [ -z "$BASE_REQUESTER_ADDRESS" ]; then
 else
     eth_balance=$(get_evm_eth_balance "$BASE_REQUESTER_ADDRESS" "$SEPOLIA_RPC_URL")
     eth_formatted=$(format_balance "$eth_balance" "$SEPOLIA_NATIVE_DECIMALS")
+    echo "   Requester ($BASE_REQUESTER_ADDRESS)"
     if [ -n "$SEPOLIA_USDC_ADDRESS" ]; then
         usdc_balance=$(get_evm_token_balance "$BASE_REQUESTER_ADDRESS" "$SEPOLIA_USDC_ADDRESS" "$SEPOLIA_RPC_URL")
         usdc_formatted=$(format_balance "$usdc_balance" "$SEPOLIA_USDC_DECIMALS" "USDC")
-        echo "   Requester: $eth_formatted, $usdc_formatted"
+        echo "             $eth_formatted, $usdc_formatted"
     else
-        echo "   Requester: $eth_formatted (USDC address not configured)"
+        echo "             $eth_formatted (USDC n/a)"
     fi
 fi
 
@@ -409,12 +420,13 @@ if [ -z "$BASE_SOLVER_ADDRESS" ]; then
 else
     eth_balance=$(get_evm_eth_balance "$BASE_SOLVER_ADDRESS" "$SEPOLIA_RPC_URL")
     eth_formatted=$(format_balance "$eth_balance" "$SEPOLIA_NATIVE_DECIMALS")
+    echo "   Solver    ($BASE_SOLVER_ADDRESS)"
     if [ -n "$SEPOLIA_USDC_ADDRESS" ]; then
         usdc_balance=$(get_evm_token_balance "$BASE_SOLVER_ADDRESS" "$SEPOLIA_USDC_ADDRESS" "$SEPOLIA_RPC_URL")
         usdc_formatted=$(format_balance "$usdc_balance" "$SEPOLIA_USDC_DECIMALS" "USDC")
-        echo "   Solver:    $eth_formatted, $usdc_formatted"
+        echo "             $eth_formatted, $usdc_formatted"
     else
-        echo "   Solver:    $eth_formatted (USDC address not configured)"
+        echo "             $eth_formatted (USDC n/a)"
     fi
 fi
 

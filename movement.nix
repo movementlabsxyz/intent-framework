@@ -25,7 +25,7 @@ let
     "macos-arm64" = "sha256-lZAnkdRhf7VUz3vRkn/EqkYf20jEsFkyJ4qRIGi+FPg=";
     "macos-x86_64" = lib.fakeSha256;  # TODO: get hash when needed
     "linux-arm64" = lib.fakeSha256;   # TODO: get hash when needed
-    "linux-x86_64" = lib.fakeSha256;  # TODO: get hash when needed
+    "linux-x86_64" = "sha256-R8iOnVPWqnxGh6IiaHH9jA4tx4SjaW9WVZs+CGorVqU=";
   };
 
 in stdenv.mkDerivation rec {

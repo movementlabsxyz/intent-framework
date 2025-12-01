@@ -8,9 +8,9 @@ This document outlines coding standards and conventions for the Intent Framework
 - Use `PascalCase` for struct names
 - Use witness types for type-safe validation
 - Emit events for all state changes that need external monitoring
-- **Formatting**: Use `aptos move fmt` for consistent code formatting (requires `aptos update movefmt` first)
-- **Style Guide**: Follow Aptos style guide: <https://aptos.dev/guides/move-guides/style-guide>
-- **Configuration**: Consider adding `.aptos/config.yaml` for formatting options
+- **Formatting**: Use `movement move fmt` for consistent code formatting
+- **Style Guide**: Follow Move style guide: <https://aptos.dev/guides/move-guides/style-guide>
+- **Configuration**: Consider adding `.movement/config.yaml` for formatting options
 
 ## Solidity
 

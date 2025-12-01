@@ -39,7 +39,7 @@ Get test counts for each component:
 
 ```bash
 # Move tests
-nix develop -c bash -c "cd move-intent-framework && aptos move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep "Total tests:"
+nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep "Total tests:"
 
 # Verifier tests
 nix develop -c bash -c "cd trusted-verifier && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Verifier: " sum " passed"}'

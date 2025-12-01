@@ -61,12 +61,12 @@ cp env.testnet.example .env.testnet
 - [ ] **Verifier Keys**: Generate Ed25519 keypair for verifier service
 - [ ] **Verifier ETH Address**: Derive ECDSA address for EVM signature verification
 
-### 3. Testnet Funds
+### 3. Testnet Funds ✅
 
-- [ ] Movement Testnet MOVE (for gas)
-- [ ] Movement Testnet USDC/pyUSD (for intent creation)
-- [ ] Base Sepolia ETH (for gas)
-- [ ] Base Sepolia USDC/pyUSD (for escrow flow)
+- [x] Movement Testnet MOVE (for gas)
+- [x] Movement Testnet USDC/pyUSD (for intent creation)
+- [x] Base Sepolia ETH (for gas)
+- [x] Base Sepolia USDC/pyUSD (for escrow flow)
 
 ### 4. Development Tools
 
@@ -174,7 +174,7 @@ nix develop -c bash -c "cd trusted-verifier && cargo run --bin get_verifier_eth_
 
 Save to `.testnet-keys.env` → `VERIFIER_ETH_ADDRESS`
 
-### 1.5 Fund All Accounts
+### 1.5 Fund All Accounts ✅
 
 The intent flow is **USDC/pyUSD (Movement) → USDC/pyUSD (Base)**, so we need:
 
@@ -242,7 +242,29 @@ cors_origins = ["*"]
 
 ## Phase 2: Deploy Move Intent Framework (Movement)
 
-### 2.1 Configure Movement CLI for Movement Testnet
+### Quick Start (Automated)
+
+Use the deployment script:
+
+```bash
+./testing-infra/testnet/deploy-movement-testnet.sh
+```
+
+The script will:
+1. Read keys from `.testnet-keys.env`
+2. Configure Movement CLI profile
+3. Compile Move modules
+4. Deploy to Movement Bardock Testnet
+5. Verify deployment
+6. Display the deployed address to save
+
+**Save the displayed address** to `.testnet-keys.env` as `MOVEMENT_INTENT_MODULE_ADDRESS`.
+
+### Manual Deployment (Alternative)
+
+If you prefer to deploy manually:
+
+#### 2.1 Configure Movement CLI for Movement Testnet
 
 ```bash
 # Initialize profile for Movement Bardock
@@ -254,14 +276,14 @@ movement init --profile movement-testnet --network custom \
 movement account fund-with-faucet --profile movement-testnet --amount 100000000
 ```
 
-### 2.2 Get Deployer Address
+#### 2.2 Get Deployer Address
 
 ```bash
 export DEPLOYER_ADDRESS=$(movement config show-profiles --profile movement-testnet | jq -r '.Result["movement-testnet"].account')
 echo "Deployer address: 0x$DEPLOYER_ADDRESS"
 ```
 
-### 2.3 Deploy Move Modules
+#### 2.3 Deploy Move Modules
 
 ```bash
 cd move-intent-framework
@@ -279,7 +301,7 @@ movement move publish \
   --assume-yes
 ```
 
-### 2.4 Verify Deployment
+#### 2.4 Verify Deployment
 
 ```bash
 # Check modules are deployed
@@ -295,9 +317,31 @@ movement move view \
 
 ## Phase 3: Deploy EVM IntentEscrow (Base Sepolia)
 
-### 3.1 Configure Hardhat for Base Sepolia
+### Quick Start (Automated)
 
-Update `evm-intent-framework/hardhat.config.js`:
+Use the deployment script:
+
+```bash
+./testing-infra/testnet/deploy-base-testnet.sh
+```
+
+The script will:
+1. Read keys from `.testnet-keys.env`
+2. Create Hardhat `.env` file
+3. Install dependencies if needed
+4. Deploy IntentEscrow to Base Sepolia
+5. Optionally verify contract on Basescan (if API key is set)
+6. Display the deployed address to save
+
+**Save the displayed address** to `.testnet-keys.env` as `BASE_ESCROW_CONTRACT_ADDRESS`.
+
+### Manual Deployment (Alternative)
+
+If you prefer to deploy manually:
+
+#### 3.1 Configure Hardhat for Base Sepolia
+
+Ensure `evm-intent-framework/hardhat.config.js` includes Base Sepolia network:
 
 ```javascript
 require("@nomicfoundation/hardhat-toolbox");
@@ -342,7 +386,7 @@ module.exports = {
 };
 ```
 
-### 3.2 Create Environment File
+#### 3.2 Create Environment File
 
 Create `evm-intent-framework/.env`:
 
@@ -353,7 +397,7 @@ BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
 BASESCAN_API_KEY=<optional-for-verification>
 ```
 
-### 3.3 Deploy Contract
+#### 3.3 Deploy Contract
 
 ```bash
 cd evm-intent-framework
@@ -363,7 +407,7 @@ npm install
 npx hardhat run scripts/deploy.js --network baseSepolia
 ```
 
-### 3.4 Verify Contract (Optional)
+#### 3.4 Verify Contract (Optional)
 
 ```bash
 npx hardhat verify --network baseSepolia <CONTRACT_ADDRESS> <VERIFIER_ADDRESS>
@@ -593,7 +637,7 @@ GET /approvals
 
 ## Next Steps
 
-1. [ ] Fund testnet accounts
+1. [x] Fund testnet accounts
 2. [ ] Generate and secure verifier keys
 3. [ ] Deploy Move modules to Movement Bardock
 4. [ ] Deploy IntentEscrow to Base Sepolia

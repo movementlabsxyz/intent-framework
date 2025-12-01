@@ -45,8 +45,27 @@ async function main() {
   console.log("IntentEscrow deployed to:", escrowAddress);
   console.log("Verifier set to:", verifierAddr);
 
-  // Verify deployment
-  const verifierFromContract = await escrow.verifier();
+  // Wait a moment for RPC indexing
+  console.log("Waiting for RPC indexing...");
+  await new Promise(r => setTimeout(r, 5000));
+
+  // Verify deployment with retry
+  let verifierFromContract;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      verifierFromContract = await escrow.verifier();
+      break;
+    } catch (err) {
+      if (attempt === 3) {
+        console.log("Warning: Could not verify contract state, but deployment succeeded.");
+        console.log("\n✅ Deployment successful!");
+        console.log("Contract address:", escrowAddress);
+        process.exit(0);
+      }
+      console.log(`Retry ${attempt}/3...`);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
   console.log("Verifier from contract:", verifierFromContract);
   
   if (verifierFromContract.toLowerCase() !== verifierAddr.toLowerCase()) {

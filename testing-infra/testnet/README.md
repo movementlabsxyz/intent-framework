@@ -8,7 +8,7 @@ This directory contains scripts and configuration for deploying the Intent Frame
 
 - **`deploy-movement-testnet.sh`** - Deploy Move Intent Framework to Movement Bardock Testnet
 - **`deploy-base-testnet.sh`** - Deploy EVM IntentEscrow to Base Sepolia Testnet
-- **`check-testnet-balances.sh`** - Check balances for all testnet accounts
+- **`check-testnet-preparedness.sh`** - Check balances and deployed contracts
 - **`config/testnet-assets.toml`** - Public configuration for asset addresses and decimals
 
 ## Usage
@@ -25,10 +25,10 @@ This directory contains scripts and configuration for deploying the Intent Frame
 ./testing-infra/testnet/deploy-base-testnet.sh
 ```
 
-### Check Testnet Balances
+### Check Testnet Preparedness
 
 ```bash
-./testing-infra/testnet/check-testnet-balances.sh
+./testing-infra/testnet/check-testnet-preparedness.sh
 ```
 
 ## Configuration

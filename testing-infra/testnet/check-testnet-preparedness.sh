@@ -1,13 +1,19 @@
 #!/bin/bash
 
-# Check Testnet Balances Script
-# Checks balances for all accounts in .testnet-keys.env
+# Check Testnet Preparedness Script
+# Checks balances and deployed contracts for testnet readiness
+# 
+# Checks:
+#   1. Account balances (MOVE, ETH, USDC)
+#   2. Deployed contracts (Movement Intent Module, Base Escrow)
+#
 # Supports:
 #   - Movement Bardock Testnet (MOVE, USDC)
 #   - Base Sepolia (ETH, USDC)
 #   - Ethereum Sepolia (ETH, USDC)
 # 
-# Asset addresses are read from testing-infra/testnet/config/testnet-assets.toml
+# Config: testing-infra/testnet/config/testnet-assets.toml
+# Keys: .testnet-keys.env
 
 # Get the script directory and project root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -17,8 +23,8 @@ export PROJECT_ROOT
 # Source utilities (for error handling only, not logging)
 source "$PROJECT_ROOT/testing-infra/ci-e2e/util.sh" 2>/dev/null || true
 
-echo "🔍 Checking Testnet Balances"
-echo "============================"
+echo "🔍 Checking Testnet Preparedness"
+echo "================================="
 echo ""
 
 # Load .testnet-keys.env
@@ -431,11 +437,136 @@ else
 fi
 
 echo ""
-if [ -z "$MOVEMENT_USDC_ADDRESS" ] || [ "$MOVEMENT_USDC_ADDRESS" = "" ]; then
-    echo "💡 Note: Movement USDC address not configured in testnet-assets.toml"
-    echo "   Add USDC deployment address to check Movement USDC balances"
+
+# =============================================================================
+# CONTRACT DEPLOYMENT STATUS
+# =============================================================================
+
+echo "📦 Deployed Contracts"
+echo "---------------------"
+
+# Check Movement Intent Module
+check_movement_module() {
+    local module_address="$1"
+    
+    # Ensure address has 0x prefix
+    if [[ ! "$module_address" =~ ^0x ]]; then
+        module_address="0x${module_address}"
+    fi
+    
+    # Query account modules to check if intent module exists
+    local response=$(curl -s --max-time 10 "${MOVEMENT_RPC_URL}/accounts/${module_address}/modules" 2>/dev/null)
+    
+    if echo "$response" | jq -e '.[].abi.name' 2>/dev/null | grep -q "intent"; then
+        echo "✅"
+    else
+        echo "❌"
+    fi
+}
+
+# Check Base Escrow Contract (EVM)
+check_evm_contract() {
+    local contract_address="$1"
+    local rpc_url="$2"
+    
+    # Ensure address has 0x prefix
+    if [[ ! "$contract_address" =~ ^0x ]]; then
+        contract_address="0x${contract_address}"
+    fi
+    
+    # Query contract code
+    local code=$(curl -s --max-time 10 -X POST "$rpc_url" \
+        -H "Content-Type: application/json" \
+        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$contract_address\",\"latest\"],\"id\":1}" \
+        | jq -r '.result // "0x"' 2>/dev/null)
+    
+    if [ -n "$code" ] && [ "$code" != "0x" ] && [ "$code" != "null" ]; then
+        echo "✅"
+    else
+        echo "❌"
+    fi
+}
+
+# Movement Intent Module
+if [ -z "$MOVEMENT_INTENT_MODULE_ADDRESS" ] || [ "$MOVEMENT_INTENT_MODULE_ADDRESS" = "" ]; then
+    echo "   Movement Intent Module: ⏳ Not configured"
+else
+    status=$(check_movement_module "$MOVEMENT_INTENT_MODULE_ADDRESS")
+    echo "   Movement Intent Module ($MOVEMENT_INTENT_MODULE_ADDRESS)"
+    echo "             Status: $status Deployed"
 fi
-echo "   Config file: $ASSETS_CONFIG_FILE"
+
+# Base Escrow Contract
+if [ -z "$BASE_ESCROW_CONTRACT_ADDRESS" ] || [ "$BASE_ESCROW_CONTRACT_ADDRESS" = "" ]; then
+    echo "   Base Escrow Contract:   ⏳ Not configured"
+else
+    status=$(check_evm_contract "$BASE_ESCROW_CONTRACT_ADDRESS" "$BASE_RPC_URL")
+    echo "   Base Escrow Contract ($BASE_ESCROW_CONTRACT_ADDRESS)"
+    echo "             Status: $status Deployed"
+fi
+
 echo ""
-echo "✅ Balance check complete!"
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+echo "📋 Summary"
+echo "----------"
+
+# Count readiness
+ready_count=0
+total_count=6
+
+# Check balances
+if [ -n "$MOVEMENT_DEPLOYER_ADDRESS" ]; then
+    balance=$(get_movement_balance "$MOVEMENT_DEPLOYER_ADDRESS")
+    if [ "$balance" != "0" ] && [ -n "$balance" ]; then
+        ((ready_count++))
+    fi
+fi
+
+if [ -n "$BASE_DEPLOYER_ADDRESS" ]; then
+    balance=$(get_base_eth_balance "$BASE_DEPLOYER_ADDRESS")
+    if [ "$balance" != "0" ] && [ -n "$balance" ]; then
+        ((ready_count++))
+    fi
+fi
+
+# Check requester/solver have funds
+if [ -n "$MOVEMENT_REQUESTER_ADDRESS" ]; then
+    balance=$(get_movement_balance "$MOVEMENT_REQUESTER_ADDRESS")
+    if [ "$balance" != "0" ] && [ -n "$balance" ]; then
+        ((ready_count++))
+    fi
+fi
+
+if [ -n "$BASE_REQUESTER_ADDRESS" ]; then
+    balance=$(get_base_eth_balance "$BASE_REQUESTER_ADDRESS")
+    if [ "$balance" != "0" ] && [ -n "$balance" ]; then
+        ((ready_count++))
+    fi
+fi
+
+# Check contracts deployed
+if [ -n "$MOVEMENT_INTENT_MODULE_ADDRESS" ] && [ "$MOVEMENT_INTENT_MODULE_ADDRESS" != "" ]; then
+    ((ready_count++))
+fi
+
+if [ -n "$BASE_ESCROW_CONTRACT_ADDRESS" ] && [ "$BASE_ESCROW_CONTRACT_ADDRESS" != "" ]; then
+    ((ready_count++))
+fi
+
+echo "   Readiness: $ready_count/$total_count checks passed"
+
+if [ -z "$MOVEMENT_USDC_ADDRESS" ] || [ "$MOVEMENT_USDC_ADDRESS" = "" ]; then
+    echo ""
+    echo "💡 Note: Movement USDC address not configured in testnet-assets.toml"
+fi
+
+echo ""
+echo "   Config: $ASSETS_CONFIG_FILE"
+echo "   Keys:   $TESTNET_KEYS_FILE"
+echo ""
+echo "✅ Preparedness check complete!"
 

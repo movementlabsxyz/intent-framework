@@ -27,6 +27,7 @@ Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust)
 - **CRITICAL: NEVER run `git add` or `git add -A`** - files must already be staged by the user
 - **Run tests before committing** to ensure changes work correctly
 - **Always include test results** in the format: `Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust) <number>`
+- **Display test summary table** after running tests using the commands in the next subsection, showing passed/total for each category (Move, EVM, Verifier, Solver)
 - Follow conventional commit format (e.g., `feat:`, `fix:`, `refactor:`, `test:`, `docs:`)
 - Keep commit messages brief and professional
 - Do NOT mention subtask or task IDs in commit messages

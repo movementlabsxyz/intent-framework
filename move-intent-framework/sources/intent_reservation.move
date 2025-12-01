@@ -208,7 +208,7 @@ module mvmt_intent::intent_reservation {
         } else if (auth_key_len == 32) {
             // New format: authentication key is the account address (32 bytes)
             // For new format accounts, we cannot extract the Ed25519 public key from the address
-            // This means accounts created with aptos init (new format) are not supported
+            // This means accounts created with movement/aptos init (new format) are not supported
             abort std::error::invalid_argument(EINVALID_AUTH_KEY_FORMAT)
         } else {
             // Invalid format

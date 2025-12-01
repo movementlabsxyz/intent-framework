@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        aptosCli = pkgs.callPackage ./aptos.nix {};
+        movementCli = pkgs.callPackage ./movement.nix {};
       in
       {
         devShells.default = pkgs.mkShell {
@@ -28,11 +28,11 @@
             pkgs.nodejs
             pkgs.nodePackages.npm
             pkgs.git
-            aptosCli
+            movementCli
           ];
 
           shellHook = ''
-            echo "[nix] Dev shell ready: rustc $(rustc --version | awk '{print $2}') | cargo $(cargo --version | awk '{print $2}') | aptos $(aptos --version 2>/dev/null || echo 'unknown') | node $(node --version 2>/dev/null || echo 'unknown')"
+            echo "[nix] Dev shell ready: rustc $(rustc --version | awk '{print $2}') | cargo $(cargo --version | awk '{print $2}') | movement $(movement --version 2>/dev/null || echo 'unknown') | node $(node --version 2>/dev/null || echo 'unknown')"
             export OPENSSL_DIR=${pkgs.openssl.dev}
             export OPENSSL_LIB_DIR=${pkgs.openssl.out}/lib
             export OPENSSL_INCLUDE_DIR=${pkgs.openssl.dev}/include

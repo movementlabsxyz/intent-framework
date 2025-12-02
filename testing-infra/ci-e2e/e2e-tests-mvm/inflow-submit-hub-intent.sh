@@ -84,15 +84,74 @@ display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 # ============================================================================
-# SECTION 4: EXECUTE MAIN OPERATION
+# SECTION 4: REGISTER SOLVER ON-CHAIN (prerequisite for signature validation)
 # ============================================================================
 log ""
-log "   Creating request-intent on hub chain..."
-log "   - Requester (Requester) creates request-intent on Chain 1 (hub chain)"
-log "   - Request-intent requests 1 USDxyz to be provided by solver (Solver)"
-log "   - Using intent_id: $INTENT_ID"
+log "   Registering solver on-chain (prerequisite for verifier validation)..."
 
-log "   - Generating solver signature..."
+# Get solver's public key by running sign_intent with a dummy call to extract key
+log "   - Getting solver public key..."
+SOLVER_PUBLIC_KEY_OUTPUT=$(cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile solver-chain1 --chain-address $CHAIN1_ADDRESS --offered-metadata $OFFERED_METADATA_CHAIN1 --offered-amount $OFFERED_AMOUNT --offered-chain-id $OFFERED_CHAIN_ID --desired-metadata $DESIRED_METADATA_CHAIN1 --desired-amount $DESIRED_AMOUNT --desired-chain-id $DESIRED_CHAIN_ID --expiry-time $EXPIRY_TIME --issuer $REQUESTER_CHAIN1_ADDRESS --solver $SOLVER_CHAIN1_ADDRESS --chain-num 1 2>&1" | tee -a "$LOG_FILE")
+
+SOLVER_PUBLIC_KEY=$(echo "$SOLVER_PUBLIC_KEY_OUTPUT" | grep "PUBLIC_KEY:" | tail -1 | sed 's/.*PUBLIC_KEY://')
+if [ -z "$SOLVER_PUBLIC_KEY" ]; then
+    log_and_echo "❌ Failed to extract solver public key"
+    exit 1
+fi
+log "     ✅ Solver public key: ${SOLVER_PUBLIC_KEY:0:20}..."
+
+log "   - Registering solver in solver registry..."
+register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$SOLVER_CHAIN2_ADDRESS" "$LOG_FILE"
+
+log "   - Waiting for solver registration to be confirmed on-chain (5 seconds)..."
+sleep 5
+
+log "   - Verifying solver registration..."
+verify_solver_registered "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_CHAIN1_ADDRESS" "$LOG_FILE"
+
+# ============================================================================
+# SECTION 5: VERIFIER-BASED NEGOTIATION ROUTING
+# ============================================================================
+log ""
+log "🔄 Starting verifier-based negotiation routing..."
+log "   Flow: Requester → Verifier → Solver → Verifier → Requester"
+
+# Step 1: Requester submits draft intent to verifier
+log ""
+log "   Step 1: Requester submits draft intent to verifier..."
+DRAFT_DATA=$(build_draft_data \
+    "$OFFERED_METADATA_CHAIN1" \
+    "$OFFERED_AMOUNT" \
+    "$OFFERED_CHAIN_ID" \
+    "$DESIRED_METADATA_CHAIN1" \
+    "$DESIRED_AMOUNT" \
+    "$DESIRED_CHAIN_ID" \
+    "$EXPIRY_TIME" \
+    "$INTENT_ID" \
+    "$REQUESTER_CHAIN1_ADDRESS" \
+    "{\"chain_address\": \"$CHAIN1_ADDRESS\", \"flow_type\": \"inflow\"}")
+
+DRAFT_ID=$(submit_draft_intent "$REQUESTER_CHAIN1_ADDRESS" "$DRAFT_DATA")
+log "     Draft ID: $DRAFT_ID"
+
+# Step 2: Solver polls verifier for pending drafts (simulated - in real scenario solver runs separately)
+log ""
+log "   Step 2: Solver polls verifier for pending drafts..."
+PENDING_DRAFTS=$(poll_pending_drafts)
+DRAFT_COUNT=$(echo "$PENDING_DRAFTS" | jq 'length')
+log "     Found $DRAFT_COUNT pending draft(s)"
+
+# Find our draft
+OUR_DRAFT=$(echo "$PENDING_DRAFTS" | jq -r ".[] | select(.draft_id == \"$DRAFT_ID\")")
+if [ -z "$OUR_DRAFT" ] || [ "$OUR_DRAFT" = "null" ]; then
+    log_and_echo "❌ ERROR: Our draft not found in pending drafts"
+    exit 1
+fi
+log "     ✅ Found our draft in pending list"
+
+# Step 3: Solver generates signature for the draft
+log ""
+log "   Step 3: Solver generates signature for draft..."
 SOLVER_SIGNATURE=$(generate_solver_signature \
     "solver-chain1" \
     "$CHAIN1_ADDRESS" \
@@ -113,38 +172,43 @@ if [ -z "$SOLVER_SIGNATURE" ] || [[ ! "$SOLVER_SIGNATURE" =~ ^0x[0-9a-fA-F]+$ ]]
     log_and_echo "   Output was: $SOLVER_SIGNATURE"
     exit 1
 fi
-
 log "     ✅ Solver signature generated: ${SOLVER_SIGNATURE:0:20}..."
 
-SOLVER_PUBLIC_KEY=$(grep "PUBLIC_KEY:" "$LOG_FILE" | tail -1 | sed 's/.*PUBLIC_KEY://')
-if [ -z "$SOLVER_PUBLIC_KEY" ]; then
-    log_and_echo "❌ Failed to extract solver public key from sign_intent output"
+# Step 4: Solver submits signature to verifier
+log ""
+log "   Step 4: Solver submits signature to verifier (FCFS)..."
+submit_signature_to_verifier "$DRAFT_ID" "$SOLVER_CHAIN1_ADDRESS" "$SOLVER_SIGNATURE" "$SOLVER_PUBLIC_KEY"
+
+# Step 5: Requester polls verifier for signature
+log ""
+log "   Step 5: Requester polls verifier for signature..."
+SIGNATURE_DATA=$(poll_for_signature "$DRAFT_ID" 30 2)
+RETRIEVED_SIGNATURE=$(echo "$SIGNATURE_DATA" | jq -r '.signature')
+RETRIEVED_SOLVER=$(echo "$SIGNATURE_DATA" | jq -r '.solver_address')
+
+if [ -z "$RETRIEVED_SIGNATURE" ] || [ "$RETRIEVED_SIGNATURE" = "null" ]; then
+    log_and_echo "❌ ERROR: Failed to retrieve signature from verifier"
     exit 1
 fi
-log "     ✅ Solver public key extracted: ${SOLVER_PUBLIC_KEY:0:20}..."
-
-log "   - Registering solver (Solver) in solver registry..."
-# Register with EVM address and connected chain MVM address (Solver's Chain 2 address) for consistency
-register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$SOLVER_CHAIN2_ADDRESS" "$LOG_FILE"
-
-log "   - Waiting for solver registration to be confirmed on-chain (5 seconds)..."
-sleep 5
-
-log "   - Verifying solver registration..."
-verify_solver_registered "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_CHAIN1_ADDRESS" "$LOG_FILE"
-
-log "   - Creating cross-chain request-intent on Chain 1..."
-log "     Offered metadata: $OFFERED_METADATA_CHAIN1"
-log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
-log "     Solver (Solver) address: $SOLVER_CHAIN1_ADDRESS"
-
-SOLVER_SIGNATURE_HEX="${SOLVER_SIGNATURE#0x}"
-aptos move run --profile requester-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
-    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${SOLVER_CHAIN1_ADDRESS}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+log "     ✅ Retrieved signature from solver: $RETRIEVED_SOLVER"
+log "     Signature: ${RETRIEVED_SIGNATURE:0:20}..."
 
 # ============================================================================
-# SECTION 5: VERIFY RESULTS
+# SECTION 6: CREATE INTENT ON-CHAIN WITH RETRIEVED SIGNATURE
+# ============================================================================
+log ""
+log "   Creating cross-chain request-intent on Chain 1..."
+log "     Offered metadata: $OFFERED_METADATA_CHAIN1"
+log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
+log "     Solver address: $RETRIEVED_SOLVER"
+
+SOLVER_SIGNATURE_HEX="${RETRIEVED_SIGNATURE#0x}"
+aptos move run --profile requester-chain1 --assume-yes \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
+    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+
+# ============================================================================
+# SECTION 7: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
     log "     ✅ Request-intent created on Chain 1!"
@@ -156,7 +220,7 @@ if [ $? -eq 0 ]; then
 
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
         log "     ✅ Hub request-intent stored at: $HUB_INTENT_ADDRESS"
-        log_and_echo "✅ Request-intent created"
+        log_and_echo "✅ Request-intent created (via verifier negotiation)"
     else
         log_and_echo "❌ ERROR: Could not verify hub request-intent address"
         exit 1
@@ -171,7 +235,7 @@ else
 fi
 
 # ============================================================================
-# SECTION 6: FINAL SUMMARY
+# SECTION 8: FINAL SUMMARY
 # ============================================================================
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
@@ -182,11 +246,18 @@ log ""
 log "🎉 INFLOW - HUB CHAIN INTENT CREATION COMPLETE!"
 log "================================================"
 log ""
-log "✅ Step completed successfully:"
-log "   1. Request-intent created on Chain 1 (hub chain)"
+log "✅ Steps completed successfully (via verifier-based negotiation):"
+log "   1. Solver registered on-chain"
+log "   2. Requester submitted draft intent to verifier"
+log "   3. Solver polled verifier and found pending draft"
+log "   4. Solver signed draft and submitted signature to verifier (FCFS)"
+log "   5. Requester polled verifier and retrieved signature"
+log "   6. Requester created intent on-chain with retrieved signature"
 log ""
 log "📋 Request-intent Details:"
 log "   Intent ID: $INTENT_ID"
+log "   Draft ID: $DRAFT_ID"
+log "   Solver: $RETRIEVED_SOLVER"
 if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
     log "   Chain 1 Hub Request-intent: $HUB_INTENT_ADDRESS"
 fi

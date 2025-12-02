@@ -284,3 +284,294 @@ start_verifier() {
     exit 1
 }
 
+# ============================================================================
+# VERIFIER NEGOTIATION ROUTING HELPERS
+# ============================================================================
+
+# Get verifier API base URL
+# Usage: get_verifier_url [port]
+# Returns the base URL for verifier API calls
+get_verifier_url() {
+    local port="${1:-3333}"
+    echo "http://127.0.0.1:${port}"
+}
+
+# Submit draft intent to verifier
+# Usage: submit_draft_intent <requester_address> <draft_data_json>
+# Returns the draft_id on success, exits on error
+# draft_data_json should be a JSON object with intent details
+submit_draft_intent() {
+    local requester_address="$1"
+    local draft_data_json="$2"
+    local verifier_port="${3:-3333}"
+    
+    if [ -z "$requester_address" ] || [ -z "$draft_data_json" ]; then
+        log_and_echo "❌ ERROR: submit_draft_intent() requires requester_address and draft_data_json"
+        exit 1
+    fi
+    
+    local verifier_url=$(get_verifier_url "$verifier_port")
+    
+    log "   Submitting draft intent to verifier..."
+    log "     Requester: $requester_address"
+    
+    local response
+    response=$(curl -s -X POST "${verifier_url}/draft-intent" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"requester_address\": \"$requester_address\",
+            \"draft_data\": $draft_data_json
+        }" 2>&1)
+    
+    local curl_exit=$?
+    if [ $curl_exit -ne 0 ]; then
+        log_and_echo "❌ ERROR: Failed to connect to verifier at ${verifier_url}"
+        log_and_echo "   curl exit code: $curl_exit"
+        exit 1
+    fi
+    
+    # Check for success
+    local success=$(echo "$response" | jq -r '.success // false')
+    if [ "$success" != "true" ]; then
+        local error=$(echo "$response" | jq -r '.error // "Unknown error"')
+        log_and_echo "❌ ERROR: Failed to submit draft intent"
+        log_and_echo "   Error: $error"
+        log_and_echo "   Response: $response"
+        exit 1
+    fi
+    
+    local draft_id=$(echo "$response" | jq -r '.data.draft_id')
+    if [ -z "$draft_id" ] || [ "$draft_id" = "null" ]; then
+        log_and_echo "❌ ERROR: No draft_id in response"
+        log_and_echo "   Response: $response"
+        exit 1
+    fi
+    
+    log "     ✅ Draft submitted with ID: $draft_id"
+    echo "$draft_id"
+}
+
+# Poll verifier for pending drafts (solver perspective)
+# Usage: poll_pending_drafts [verifier_port]
+# Returns JSON array of pending drafts
+poll_pending_drafts() {
+    local verifier_port="${1:-3333}"
+    local verifier_url=$(get_verifier_url "$verifier_port")
+    
+    log "   Polling verifier for pending drafts..."
+    
+    local response
+    response=$(curl -s -X GET "${verifier_url}/draft-intents/pending" 2>&1)
+    
+    local curl_exit=$?
+    if [ $curl_exit -ne 0 ]; then
+        log_and_echo "❌ ERROR: Failed to connect to verifier at ${verifier_url}"
+        exit 1
+    fi
+    
+    local success=$(echo "$response" | jq -r '.success // false')
+    if [ "$success" != "true" ]; then
+        local error=$(echo "$response" | jq -r '.error // "Unknown error"')
+        log_and_echo "❌ ERROR: Failed to poll pending drafts"
+        log_and_echo "   Error: $error"
+        exit 1
+    fi
+    
+    local drafts=$(echo "$response" | jq -r '.data')
+    local count=$(echo "$drafts" | jq 'length')
+    log "     ✅ Found $count pending draft(s)"
+    
+    echo "$drafts"
+}
+
+# Get draft intent by ID
+# Usage: get_draft_intent <draft_id> [verifier_port]
+# Returns the draft data JSON
+get_draft_intent() {
+    local draft_id="$1"
+    local verifier_port="${2:-3333}"
+    
+    if [ -z "$draft_id" ]; then
+        log_and_echo "❌ ERROR: get_draft_intent() requires draft_id"
+        exit 1
+    fi
+    
+    local verifier_url=$(get_verifier_url "$verifier_port")
+    
+    local response
+    response=$(curl -s -X GET "${verifier_url}/draft-intent/${draft_id}" 2>&1)
+    
+    local curl_exit=$?
+    if [ $curl_exit -ne 0 ]; then
+        log_and_echo "❌ ERROR: Failed to connect to verifier at ${verifier_url}"
+        exit 1
+    fi
+    
+    local success=$(echo "$response" | jq -r '.success // false')
+    if [ "$success" != "true" ]; then
+        local error=$(echo "$response" | jq -r '.error // "Unknown error"')
+        log_and_echo "❌ ERROR: Failed to get draft intent"
+        log_and_echo "   Error: $error"
+        exit 1
+    fi
+    
+    echo "$response" | jq -r '.data'
+}
+
+# Submit signature to verifier (solver submits after signing)
+# Usage: submit_signature_to_verifier <draft_id> <solver_address> <signature_hex> <public_key_hex> [verifier_port]
+# Returns success/failure, exits on error
+submit_signature_to_verifier() {
+    local draft_id="$1"
+    local solver_address="$2"
+    local signature_hex="$3"
+    local public_key_hex="$4"
+    local verifier_port="${5:-3333}"
+    
+    if [ -z "$draft_id" ] || [ -z "$solver_address" ] || [ -z "$signature_hex" ] || [ -z "$public_key_hex" ]; then
+        log_and_echo "❌ ERROR: submit_signature_to_verifier() requires draft_id, solver_address, signature_hex, public_key_hex"
+        exit 1
+    fi
+    
+    local verifier_url=$(get_verifier_url "$verifier_port")
+    
+    log "   Submitting signature to verifier..."
+    log "     Draft ID: $draft_id"
+    log "     Solver: $solver_address"
+    
+    local response
+    response=$(curl -s -X POST "${verifier_url}/draft-intent/${draft_id}/signature" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"solver_address\": \"$solver_address\",
+            \"signature\": \"$signature_hex\",
+            \"public_key\": \"$public_key_hex\"
+        }" 2>&1)
+    
+    local curl_exit=$?
+    if [ $curl_exit -ne 0 ]; then
+        log_and_echo "❌ ERROR: Failed to connect to verifier at ${verifier_url}"
+        exit 1
+    fi
+    
+    local success=$(echo "$response" | jq -r '.success // false')
+    if [ "$success" != "true" ]; then
+        local error=$(echo "$response" | jq -r '.error // "Unknown error"')
+        # Check if it's a 409 Conflict (already signed)
+        if echo "$error" | grep -qi "already signed\|conflict"; then
+            log "     ⚠️  Draft already signed by another solver (FCFS)"
+            return 1
+        fi
+        log_and_echo "❌ ERROR: Failed to submit signature"
+        log_and_echo "   Error: $error"
+        log_and_echo "   Response: $response"
+        exit 1
+    fi
+    
+    log "     ✅ Signature submitted successfully"
+    return 0
+}
+
+# Poll verifier for signature (requester polls after submitting draft)
+# Usage: poll_for_signature <draft_id> [max_attempts] [sleep_seconds] [verifier_port]
+# Returns signature JSON on success, exits on timeout
+poll_for_signature() {
+    local draft_id="$1"
+    local max_attempts="${2:-60}"
+    local sleep_seconds="${3:-2}"
+    local verifier_port="${4:-3333}"
+    
+    if [ -z "$draft_id" ]; then
+        log_and_echo "❌ ERROR: poll_for_signature() requires draft_id"
+        exit 1
+    fi
+    
+    local verifier_url=$(get_verifier_url "$verifier_port")
+    
+    log "   Polling verifier for signature..."
+    log "     Draft ID: $draft_id"
+    log "     Max attempts: $max_attempts, interval: ${sleep_seconds}s"
+    
+    local attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        local response
+        response=$(curl -s -X GET "${verifier_url}/draft-intent/${draft_id}/signature" 2>&1)
+        
+        local curl_exit=$?
+        if [ $curl_exit -ne 0 ]; then
+            log "     Attempt $((attempt+1)): Connection failed, retrying..."
+            sleep "$sleep_seconds"
+            attempt=$((attempt + 1))
+            continue
+        fi
+        
+        local success=$(echo "$response" | jq -r '.success // false')
+        if [ "$success" = "true" ]; then
+            local signature=$(echo "$response" | jq -r '.data.signature // empty')
+            local solver=$(echo "$response" | jq -r '.data.solver_address // empty')
+            
+            if [ -n "$signature" ] && [ "$signature" != "null" ]; then
+                log "     ✅ Signature received from solver: $solver"
+                echo "$response" | jq -r '.data'
+                return 0
+            fi
+        fi
+        
+        # Check if draft is still pending (202 response)
+        local status=$(echo "$response" | jq -r '.data.status // empty')
+        if [ "$status" = "pending" ]; then
+            log "     Attempt $((attempt+1)): Draft still pending, waiting..."
+        else
+            log "     Attempt $((attempt+1)): No signature yet, waiting..."
+        fi
+        
+        sleep "$sleep_seconds"
+        attempt=$((attempt + 1))
+    done
+    
+    log_and_echo "❌ ERROR: Timeout waiting for signature after $max_attempts attempts"
+    exit 1
+}
+
+# Build draft data JSON for intent
+# Usage: build_draft_data <offered_metadata> <offered_amount> <offered_chain_id> <desired_metadata> <desired_amount> <desired_chain_id> <expiry_time> <intent_id> <issuer> [extra_fields_json]
+# Returns JSON object suitable for submit_draft_intent
+build_draft_data() {
+    local offered_metadata="$1"
+    local offered_amount="$2"
+    local offered_chain_id="$3"
+    local desired_metadata="$4"
+    local desired_amount="$5"
+    local desired_chain_id="$6"
+    local expiry_time="$7"
+    local intent_id="$8"
+    local issuer="$9"
+    local extra_fields="${10:-{}}"
+    
+    # Build the JSON object
+    local json=$(jq -n \
+        --arg om "$offered_metadata" \
+        --arg oa "$offered_amount" \
+        --arg oci "$offered_chain_id" \
+        --arg dm "$desired_metadata" \
+        --arg da "$desired_amount" \
+        --arg dci "$desired_chain_id" \
+        --arg et "$expiry_time" \
+        --arg ii "$intent_id" \
+        --arg is "$issuer" \
+        --argjson extra "$extra_fields" \
+        '{
+            offered_metadata: $om,
+            offered_amount: $oa,
+            offered_chain_id: $oci,
+            desired_metadata: $dm,
+            desired_amount: $da,
+            desired_chain_id: $dci,
+            expiry_time: $et,
+            intent_id: $ii,
+            issuer: $is
+        } + $extra')
+    
+    echo "$json"
+}
+

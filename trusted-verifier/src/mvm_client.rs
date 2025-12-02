@@ -775,29 +775,62 @@ impl MvmClient {
 
         match result {
             Ok(value) => {
-                // The view function returns a vector<u8> (empty if not registered)
-                if let Some(pk_bytes) = value.as_array() {
-                    if pk_bytes.is_empty() {
-                        Ok(None)
-                    } else {
-                        let mut public_key = Vec::new();
-                        for byte_val in pk_bytes {
-                            if let Some(byte) = byte_val.as_u64() {
-                                public_key.push(byte as u8);
-                            }
-                        }
-                        Ok(Some(public_key))
-                    }
-                } else {
+                tracing::debug!(
+                    "View function returned for solver '{}': {:?}",
+                    solver_address,
+                    value
+                );
+                // Aptos view function returns an array of return values
+                // For get_public_key returning vector<u8>, response is ["0x..."] (hex string)
+                let outer_array = value.as_array().ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Unexpected response format for solver '{}': expected array, got {:?}",
+                        solver_address,
+                        value
+                    )
+                })?;
+
+                let first_result = outer_array.first().ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Empty response array for solver '{}': expected at least one element",
+                        solver_address
+                    )
+                })?;
+
+                let hex_str = first_result.as_str().ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Unexpected response format for solver '{}': expected hex string, got {:?}",
+                        solver_address,
+                        first_result
+                    )
+                })?;
+
+                let hex_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+                if hex_str.is_empty() {
+                    // Empty hex string means solver is not registered
+                    tracing::debug!("Solver '{}' not registered (empty public key)", solver_address);
                     Ok(None)
+                } else {
+                    let bytes = hex::decode(hex_str).map_err(|e| {
+                        anyhow::anyhow!(
+                            "Failed to decode hex public key for solver '{}': {}",
+                            solver_address,
+                            e
+                        )
+                    })?;
+                    tracing::debug!(
+                        "Solver '{}' registered with public key ({} bytes)",
+                        solver_address,
+                        bytes.len()
+                    );
+                    Ok(Some(bytes))
                 }
             }
-            Err(e) => {
-                // If view function fails, solver might not be registered
-                // Log and return None
-                tracing::debug!("Failed to query solver public key: {}", e);
-                Ok(None)
-            }
+            Err(e) => Err(anyhow::anyhow!(
+                "Failed to query solver public key for '{}': {}",
+                solver_address,
+                e
+            )),
         }
     }
 

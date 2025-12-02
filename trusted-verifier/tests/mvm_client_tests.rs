@@ -561,13 +561,14 @@ async fn setup_mock_server_with_public_key(
 ) -> (MockServer, MvmClient) {
     let mock_server = MockServer::start().await;
 
-    // View function returns vector<u8> directly as array
-    let view_response = if let Some(pk) = public_key {
-        // Return public key as vector<u8> (array of u64 values)
-        pk.iter().map(|b| json!(*b as u64)).collect::<Vec<_>>()
+    // Aptos view function returns array of return values
+    // For get_public_key returning vector<u8>, response is ["0x..."] (hex string)
+    let view_response: Vec<serde_json::Value> = if let Some(pk) = public_key {
+        // Return public key as hex string in an array (Aptos API format)
+        vec![json!(format!("0x{}", hex::encode(pk)))]
     } else {
-        // Return empty vector (solver not registered)
-        vec![]
+        // Return empty hex string (solver not registered)
+        vec![json!("0x")]
     };
 
     Mock::given(method("POST"))
@@ -630,19 +631,17 @@ async fn test_get_solver_public_key_not_registered() {
     assert_eq!(pk, None, "Should return None for unregistered solver");
 }
 
-/// Test that get_solver_public_key handles empty public key array
-/// What is tested: Edge case where view function returns empty array
-/// Why: Empty array should be treated as "not registered"
+/// Test that get_solver_public_key handles empty hex string (not registered)
+/// What is tested: Empty hex string means solver is not registered
+/// Why: Aptos returns "0x" for empty vector<u8>
 #[tokio::test]
-async fn test_get_solver_public_key_empty_array() {
+async fn test_get_solver_public_key_empty_hex_string() {
     let registry_address = "0x1";
     let solver_address = "0xabc";
 
-    // Empty array response
+    // Empty hex string response (Aptos API format for empty vector<u8>)
     let mock_server = MockServer::start().await;
-    let view_response = json!({
-        "inner": []
-    });
+    let view_response = json!(["0x"]);
 
     Mock::given(method("POST"))
         .and(path("/v1/view"))
@@ -658,7 +657,40 @@ async fn test_get_solver_public_key_empty_array() {
 
     assert!(result.is_ok(), "Query should succeed");
     let pk = result.unwrap();
-    assert_eq!(pk, None, "Should return None for empty array");
+    assert_eq!(pk, None, "Should return None for empty hex string");
+}
+
+/// Test that get_solver_public_key errors on unexpected response format
+/// What is tested: Unexpected response format results in error
+/// Why: We should fail loudly on unexpected formats, not silently return None
+#[tokio::test]
+async fn test_get_solver_public_key_errors_on_unexpected_format() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+
+    let mock_server = MockServer::start().await;
+    // Return an object instead of array - this is unexpected
+    let view_response = json!({"unexpected": "format"});
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_err(), "Should error on unexpected format");
+    let err = result.unwrap_err();
+    assert!(
+        err.to_string().contains("expected array"),
+        "Error should mention expected format: {}",
+        err
+    );
 }
 
 /// Test that get_solver_public_key handles 32-byte Ed25519 public key
@@ -686,6 +718,135 @@ async fn test_get_solver_public_key_ed25519_format() {
     let pk = result.unwrap();
     assert_eq!(pk, Some(public_key), "Should return 32-byte public key");
     assert_eq!(pk.unwrap().len(), 32, "Public key should be 32 bytes");
+}
+
+/// Test that get_solver_public_key errors on empty array response
+/// What is tested: Empty array response results in error
+/// Why: Aptos should return at least one element for a view function return value
+#[tokio::test]
+async fn test_get_solver_public_key_errors_on_empty_array() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+
+    let mock_server = MockServer::start().await;
+    let view_response = json!([]);
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_err(), "Should error on empty array");
+    let err = result.unwrap_err();
+    assert!(
+        err.to_string().contains("Empty response array"),
+        "Error should mention empty array: {}",
+        err
+    );
+}
+
+/// Test that get_solver_public_key errors on non-string element
+/// What is tested: Non-string element in array results in error
+/// Why: Aptos returns hex string, not raw numbers
+#[tokio::test]
+async fn test_get_solver_public_key_errors_on_non_string_element() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+
+    let mock_server = MockServer::start().await;
+    // Return number instead of hex string
+    let view_response = json!([12345]);
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_err(), "Should error on non-string element");
+    let err = result.unwrap_err();
+    assert!(
+        err.to_string().contains("expected hex string"),
+        "Error should mention expected hex string: {}",
+        err
+    );
+}
+
+/// Test that get_solver_public_key errors on invalid hex string
+/// What is tested: Invalid hex characters result in error
+/// Why: Hex decode should fail on invalid characters
+#[tokio::test]
+async fn test_get_solver_public_key_errors_on_invalid_hex() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+
+    let mock_server = MockServer::start().await;
+    // Return invalid hex string (contains 'Z' which is not hex)
+    let view_response = json!(["0xZZZZinvalidhex"]);
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_err(), "Should error on invalid hex");
+    let err = result.unwrap_err();
+    assert!(
+        err.to_string().contains("Failed to decode hex"),
+        "Error should mention hex decode failure: {}",
+        err
+    );
+}
+
+/// Test that get_solver_public_key errors on HTTP error
+/// What is tested: HTTP error from view function results in error
+/// Why: Network/server errors should be surfaced, not silently ignored
+#[tokio::test]
+async fn test_get_solver_public_key_errors_on_http_error() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_err(), "Should error on HTTP error");
+    let err = result.unwrap_err();
+    assert!(
+        err.to_string().contains("Failed to query solver public key"),
+        "Error should mention query failure: {}",
+        err
+    );
 }
 
 /// Test that get_solver_public_key rejects addresses without 0x prefix

@@ -300,6 +300,8 @@ get_verifier_url() {
 # Usage: submit_draft_intent <requester_address> <draft_data_json> <expiry_time> [verifier_port]
 # Returns the draft_id on success, exits on error
 # draft_data_json should be a JSON object with intent details
+# Note: Cannot use log/log_and_echo for success path because this function's output
+# is captured via command substitution, and log functions write to stdout.
 submit_draft_intent() {
     local requester_address="$1"
     local draft_data_json="$2"
@@ -313,8 +315,11 @@ submit_draft_intent() {
     
     local verifier_url=$(get_verifier_url "$verifier_port")
     
-    log "   Submitting draft intent to verifier..."
-    log "     Requester: $requester_address"
+    # Log to stderr so it doesn't contaminate the return value
+    echo "   Submitting draft intent to verifier..." >&2
+    echo "     Requester: $requester_address" >&2
+    [ -n "$LOG_FILE" ] && echo "   Submitting draft intent to verifier..." >> "$LOG_FILE"
+    [ -n "$LOG_FILE" ] && echo "     Requester: $requester_address" >> "$LOG_FILE"
     
     # Build request body using jq to ensure valid JSON
     local request_body
@@ -328,9 +333,11 @@ submit_draft_intent() {
             expiry_time: $et
         }')
     
-    # Log the request for debugging (use log_and_echo to see in CI output)
-    log_and_echo "     DEBUG: Request body:"
-    log_and_echo "$request_body"
+    # Log the request for debugging (to stderr)
+    echo "     DEBUG: Request body:" >&2
+    echo "$request_body" >&2
+    [ -n "$LOG_FILE" ] && echo "     DEBUG: Request body:" >> "$LOG_FILE"
+    [ -n "$LOG_FILE" ] && echo "$request_body" >> "$LOG_FILE"
     
     local response
     response=$(curl -s -X POST "${verifier_url}/draft-intent" \
@@ -361,7 +368,9 @@ submit_draft_intent() {
         exit 1
     fi
     
-    log "     ✅ Draft submitted with ID: $draft_id"
+    # Log to stderr so it doesn't contaminate the return value (stdout is captured by caller)
+    echo "     ✅ Draft submitted with ID: $draft_id" >&2
+    [ -n "$LOG_FILE" ] && echo "     ✅ Draft submitted with ID: $draft_id" >> "$LOG_FILE"
     echo "$draft_id"
 }
 

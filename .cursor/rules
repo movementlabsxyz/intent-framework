@@ -35,20 +35,38 @@ Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust)
 
 ### Test Count Commands
 
-Get test counts for each component:
+Get test counts for all components and display in a summary table:
+
+```bash
+VERIFIER_COUNT=$(RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet 2>&1" | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}') && \
+SOLVER_COUNT=$(RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet 2>&1" | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}') && \
+MOVE_COUNT=$(nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep -oE "Total tests: [0-9]+" | awk '{print $3}') && \
+EVM_COUNT=$(nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep -oE "[0-9]+ passing" | awk '{print $1}') && \
+echo "=== Test Summary Table ===" && \
+echo "" && \
+echo "| Component | Tests Passed |" && \
+echo "|-----------|--------------|" && \
+echo "| Verifier (Rust) | $VERIFIER_COUNT |" && \
+echo "| Solver (Rust) | $SOLVER_COUNT |" && \
+echo "| Move | $MOVE_COUNT |" && \
+echo "| EVM | $EVM_COUNT |" && \
+echo ""
+```
+
+Individual component commands:
 
 ```bash
 # Move tests
 nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep "Total tests:"
 
 # Verifier tests
-RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Verifier: " sum " passed"}'
-
-# EVM tests
-nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep "passing"
+RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}'
 
 # Solver tests
-RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Solver: " sum " passed"}'
+RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}'
+
+# EVM tests
+nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep -oE "[0-9]+ passing" | awk '{print $1}'
 ```
 
 ## Context Requirements

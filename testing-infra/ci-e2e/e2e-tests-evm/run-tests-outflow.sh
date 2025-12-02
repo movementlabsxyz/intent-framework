@@ -3,7 +3,8 @@
 # E2E Integration Test Runner - OUTFLOW (EVM)
 # 
 # This script runs the outflow E2E tests with EVM connected chain.
-# It sets up chains, deploys contracts, submits outflow intents, then runs the tests.
+# It sets up chains, deploys contracts, starts verifier for negotiation routing,
+# submits outflow intents via verifier, then runs the tests.
 
 set -e
 
@@ -38,14 +39,18 @@ log_and_echo "======================================================"
 ./testing-infra/ci-e2e/chain-hub/deploy-contracts.sh
 
 log_and_echo ""
-log_and_echo "🚀 Step 3: Testing OUTFLOW intents (hub chain → connected EVM chain)..."
-log_and_echo "====================================================================="
-log_and_echo "   Submitting outflow cross-chain intents..."
-./testing-infra/ci-e2e/e2e-tests-evm/outflow-submit-hub-intent.sh
-./testing-infra/ci-e2e/e2e-tests-evm/outflow-solver-transfer.sh
+log_and_echo "🚀 Step 3: Configuring and starting verifier (for negotiation routing)..."
+log_and_echo "=========================================================================="
 ./testing-infra/ci-e2e/chain-hub/configure-verifier.sh
 ./testing-infra/ci-e2e/chain-connected-evm/configure-verifier.sh
 ./testing-infra/ci-e2e/e2e-tests-evm/start-verifier.sh
+
+log_and_echo ""
+log_and_echo "🚀 Step 4: Testing OUTFLOW intents (hub chain → connected EVM chain)..."
+log_and_echo "====================================================================="
+log_and_echo "   Submitting outflow cross-chain intents via verifier negotiation routing..."
+./testing-infra/ci-e2e/e2e-tests-evm/outflow-submit-hub-intent.sh
+./testing-infra/ci-e2e/e2e-tests-evm/outflow-solver-transfer.sh
 ./testing-infra/ci-e2e/e2e-tests-evm/outflow-validate-and-fulfill.sh
 
 log_and_echo ""
@@ -58,9 +63,10 @@ log_and_echo "✅ E2E outflow test flow completed!"
 log_and_echo ""
 log_and_echo "📊 Test Summary:"
 log_and_echo "   ✅ Outflow tests: Tokens transferred from hub chain to connected EVM chain"
+log_and_echo "   ✅ Verifier negotiation routing: Draft submission and signature retrieval"
 
 log_and_echo ""
-log_and_echo "🧹 Step 4: Cleaning up chains, accounts and processes..."
+log_and_echo "🧹 Step 5: Cleaning up chains, accounts and processes..."
 log_and_echo "========================================================"
 ./testing-infra/ci-e2e/chain-connected-evm/cleanup.sh
 

@@ -368,11 +368,12 @@ submit_draft_intent() {
 # Poll verifier for pending drafts (solver perspective)
 # Usage: poll_pending_drafts [verifier_port]
 # Returns JSON array of pending drafts
+# Note: Cannot use log/log_and_echo for success path because this function's output
+# is captured via command substitution (e.g., PENDING_DRAFTS=$(poll_pending_drafts)),
+# and log functions write to stdout which would contaminate the JSON output.
 poll_pending_drafts() {
     local verifier_port="${1:-3333}"
     local verifier_url=$(get_verifier_url "$verifier_port")
-    
-    log "   Polling verifier for pending drafts..."
     
     local response
     response=$(curl -s -X GET "${verifier_url}/draft-intents/pending" 2>&1)
@@ -392,9 +393,6 @@ poll_pending_drafts() {
     fi
     
     local drafts=$(echo "$response" | jq -r '.data')
-    local count=$(echo "$drafts" | jq 'length')
-    log "     ✅ Found $count pending draft(s)"
-    
     echo "$drafts"
 }
 

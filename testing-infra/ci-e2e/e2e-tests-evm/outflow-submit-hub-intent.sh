@@ -152,7 +152,7 @@ DRAFT_DATA=$(build_draft_data \
     "$REQUESTER_CHAIN1_ADDRESS" \
     "{\"chain_address\": \"$CHAIN1_ADDRESS\", \"flow_type\": \"outflow\", \"connected_chain_type\": \"evm\", \"requester_connected_chain_address\": \"$REQUESTER_EVM_ADDRESS\"}")
 
-DRAFT_ID=$(submit_draft_intent "$REQUESTER_CHAIN1_ADDRESS" "$DRAFT_DATA")
+DRAFT_ID=$(submit_draft_intent "$REQUESTER_CHAIN1_ADDRESS" "$DRAFT_DATA" "$EXPIRY_TIME")
 log "     Draft ID: $DRAFT_ID"
 
 # Step 2: Solver polls verifier for pending drafts (simulated - in real scenario solver runs separately)

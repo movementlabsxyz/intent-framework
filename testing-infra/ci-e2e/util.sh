@@ -297,16 +297,17 @@ get_verifier_url() {
 }
 
 # Submit draft intent to verifier
-# Usage: submit_draft_intent <requester_address> <draft_data_json>
+# Usage: submit_draft_intent <requester_address> <draft_data_json> <expiry_time> [verifier_port]
 # Returns the draft_id on success, exits on error
 # draft_data_json should be a JSON object with intent details
 submit_draft_intent() {
     local requester_address="$1"
     local draft_data_json="$2"
-    local verifier_port="${3:-3333}"
+    local expiry_time="$3"
+    local verifier_port="${4:-3333}"
     
-    if [ -z "$requester_address" ] || [ -z "$draft_data_json" ]; then
-        log_and_echo "❌ ERROR: submit_draft_intent() requires requester_address and draft_data_json"
+    if [ -z "$requester_address" ] || [ -z "$draft_data_json" ] || [ -z "$expiry_time" ]; then
+        log_and_echo "❌ ERROR: submit_draft_intent() requires requester_address, draft_data_json, and expiry_time"
         exit 1
     fi
     
@@ -320,7 +321,8 @@ submit_draft_intent() {
         -H "Content-Type: application/json" \
         -d "{
             \"requester_address\": \"$requester_address\",
-            \"draft_data\": $draft_data_json
+            \"draft_data\": $draft_data_json,
+            \"expiry_time\": $expiry_time
         }" 2>&1)
     
     local curl_exit=$?

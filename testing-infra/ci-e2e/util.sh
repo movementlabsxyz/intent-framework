@@ -316,14 +316,21 @@ submit_draft_intent() {
     log "   Submitting draft intent to verifier..."
     log "     Requester: $requester_address"
     
-    local response
-    response=$(curl -s -X POST "${verifier_url}/draft-intent" \
-        -H "Content-Type: application/json" \
-        -d "{
+    # Build request body
+    local request_body="{
             \"requester_address\": \"$requester_address\",
             \"draft_data\": $draft_data_json,
             \"expiry_time\": $expiry_time
-        }" 2>&1)
+        }"
+    
+    # Log the request for debugging
+    log "     DEBUG: Request body:"
+    log "$request_body"
+    
+    local response
+    response=$(curl -s -X POST "${verifier_url}/draft-intent" \
+        -H "Content-Type: application/json" \
+        -d "$request_body" 2>&1)
     
     local curl_exit=$?
     if [ $curl_exit -ne 0 ]; then
@@ -558,7 +565,8 @@ build_draft_data() {
     fi
     
     # Build the JSON object
-    local json=$(jq -n \
+    local json
+    json=$(jq -n \
         --arg om "$offered_metadata" \
         --arg oa "$offered_amount" \
         --arg oci "$offered_chain_id" \
@@ -579,7 +587,19 @@ build_draft_data() {
             expiry_time: $et,
             intent_id: $ii,
             issuer: $is
-        } + $extra')
+        } + $extra' 2>&1)
+    
+    local jq_exit=$?
+    if [ $jq_exit -ne 0 ]; then
+        log "   ERROR: build_draft_data jq failed with exit code $jq_exit"
+        log "   jq output: $json"
+        log "   Inputs: om=$offered_metadata, oa=$offered_amount, oci=$offered_chain_id"
+        log "   Inputs: dm=$desired_metadata, da=$desired_amount, dci=$desired_chain_id"
+        log "   Inputs: et=$expiry_time, ii=$intent_id, is=$issuer"
+        log "   Inputs: extra=$validated_extra"
+        echo "{}"
+        return 1
+    fi
     
     echo "$json"
 }

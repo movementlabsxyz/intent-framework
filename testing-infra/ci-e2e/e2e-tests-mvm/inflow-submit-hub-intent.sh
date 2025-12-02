@@ -182,7 +182,7 @@ submit_signature_to_verifier "$DRAFT_ID" "$SOLVER_CHAIN1_ADDRESS" "$SOLVER_SIGNA
 # Step 5: Requester polls verifier for signature
 log ""
 log "   Step 5: Requester polls verifier for signature..."
-SIGNATURE_DATA=$(poll_for_signature "$DRAFT_ID" 30 2)
+SIGNATURE_DATA=$(poll_for_signature "$DRAFT_ID" 3 2)
 RETRIEVED_SIGNATURE=$(echo "$SIGNATURE_DATA" | jq -r '.signature')
 RETRIEVED_SOLVER=$(echo "$SIGNATURE_DATA" | jq -r '.solver_address')
 

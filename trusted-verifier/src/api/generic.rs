@@ -523,6 +523,7 @@ impl ApiServer {
         let get_draft_store = draft_store.clone();
         let get_draft = warp::path("draft-intent")
             .and(warp::path::param())
+            .and(warp::path::end()) // Exact match - don't match /draft-intent/:id/signature
             .and(warp::get())
             .and(negotiation::with_draft_store(get_draft_store))
             .and_then(negotiation::get_draft_intent_handler);

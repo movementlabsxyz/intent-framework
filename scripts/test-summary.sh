@@ -14,7 +14,8 @@ MOVE_PASSED=$(nix develop -c bash -c "cd move-intent-framework && movement move 
 MOVE_FAILED=$(nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep -oE "failed: [0-9]+" | awk '{print $2}' | head -1)
 
 EVM_PASSED=$(nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep -oE "[0-9]+ passing" | awk '{print $1}')
-EVM_FAILED=$(nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep -oE "[0-9]+ failing" | awk '{print $1+0}')
+EVM_FAILED=$(nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep -oE "[0-9]+ failing" | awk '{print $1+0}' || echo "0")
+EVM_FAILED=${EVM_FAILED:-0}
 
 echo "=== Test Summary Table ==="
 echo ""

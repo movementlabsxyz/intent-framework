@@ -23,7 +23,7 @@ log "🚀 Starting Chain 1 (ports 8080/8081)..."
 docker-compose -f testing-infra/ci-e2e/chain-hub/docker-compose-hub-chain.yml -p aptos-chain1 up -d
 
 log ""
-log "⏳ Waiting for Chain 1 to start (this may take 2-3 minutes)..."
+log "⏳ Waiting for Chain 1 to start..."
 
 # Wait for Chain 1
 wait_for_aptos_chain_ready "1"

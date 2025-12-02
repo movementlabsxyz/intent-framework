@@ -272,6 +272,7 @@ module mvmt_intent::solver_registry {
     
     // ==================== View Functions ====================
     
+    #[view]
     /// Check if a solver is registered
     public fun is_registered(solver_addr: address): bool acquires SolverRegistry {
         if (!exists<SolverRegistry>(@mvmt_intent)) {
@@ -281,6 +282,7 @@ module mvmt_intent::solver_registry {
         simple_map::contains_key(&registry.solvers, &solver_addr)
     }
     
+    #[view]
     /// Get solver's Ed25519 public key
     /// Returns empty vector if solver is not registered
     public fun get_public_key(solver_addr: address): vector<u8> acquires SolverRegistry {
@@ -295,6 +297,7 @@ module mvmt_intent::solver_registry {
         solver_info.public_key
     }
     
+    #[view]
     /// Get solver's connected chain EVM address
     /// Returns None if solver is not registered or no connected chain EVM address is set
     public fun get_connected_chain_evm_address(solver_addr: address): Option<vector<u8>> acquires SolverRegistry {
@@ -309,6 +312,7 @@ module mvmt_intent::solver_registry {
         solver_info.connected_chain_evm_address
     }
     
+    #[view]
     /// Get solver's connected chain Move VM address
     /// Returns None if solver is not registered or no connected chain address is set
     public fun get_connected_chain_mvm_address(solver_addr: address): Option<address> acquires SolverRegistry {
@@ -333,6 +337,7 @@ module mvmt_intent::solver_registry {
         option::some(ed25519::new_unvalidated_public_key_from_bytes(public_key_bytes))
     }
     
+    #[view]
     /// Get solver registration timestamp
     public fun get_registered_at(solver_addr: address): (bool, u64) acquires SolverRegistry {
         if (!exists<SolverRegistry>(@mvmt_intent)) {
@@ -346,6 +351,7 @@ module mvmt_intent::solver_registry {
         (true, solver_info.registered_at)
     }
     
+    #[view]
     /// Get all solver information
     /// Returns (is_registered, public_key, connected_chain_evm_address, connected_chain_mvm_address, registered_at)
     public fun get_solver_info(solver_addr: address): (bool, vector<u8>, Option<vector<u8>>, Option<address>, u64) acquires SolverRegistry {

@@ -519,49 +519,52 @@ poll_for_signature() {
     
     local verifier_url=$(get_verifier_url "$verifier_port")
     
-    log "   Polling verifier for signature..."
-    log "     Draft ID: $draft_id"
-    log "     Max attempts: $max_attempts, interval: ${sleep_seconds}s"
+    # Use >&2 for all logs to avoid capturing them in command substitution
+    echo "   Polling verifier for signature..." >&2
+    echo "     Draft ID: $draft_id" >&2
+    echo "     Max attempts: $max_attempts, interval: ${sleep_seconds}s" >&2
+    [ -n "$LOG_FILE" ] && echo "   Polling verifier for signature..." >> "$LOG_FILE"
+    [ -n "$LOG_FILE" ] && echo "     Draft ID: $draft_id" >> "$LOG_FILE"
+    [ -n "$LOG_FILE" ] && echo "     Max attempts: $max_attempts, interval: ${sleep_seconds}s" >> "$LOG_FILE"
     
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
         local response
-        response=$(curl -s -X GET "${verifier_url}/draft-intent/${draft_id}/signature" 2>&1)
+        response=$(curl -s -X GET "${verifier_url}/draft-intent/${draft_id}/signature" 2>/dev/null)
         
         local curl_exit=$?
-        if [ $curl_exit -ne 0 ]; then
-            log "     Attempt $((attempt+1)): Connection failed, retrying..."
+        if [ $curl_exit -ne 0 ] || [ -z "$response" ]; then
+            echo "     Attempt $((attempt+1)): Connection failed, retrying..." >&2
+            [ -n "$LOG_FILE" ] && echo "     Attempt $((attempt+1)): Connection failed, retrying..." >> "$LOG_FILE"
             sleep "$sleep_seconds"
             attempt=$((attempt + 1))
             continue
         fi
         
-        local success=$(echo "$response" | jq -r '.success // false')
+        # Debug: show response
+        echo "     Attempt $((attempt+1)): Response: $response" >&2
+        [ -n "$LOG_FILE" ] && echo "     Attempt $((attempt+1)): Response: $response" >> "$LOG_FILE"
+        
+        local success=$(echo "$response" | jq -r '.success // false' 2>/dev/null)
         if [ "$success" = "true" ]; then
-            local signature=$(echo "$response" | jq -r '.data.signature // empty')
-            local solver=$(echo "$response" | jq -r '.data.solver_address // empty')
+            local signature=$(echo "$response" | jq -r '.data.signature // empty' 2>/dev/null)
+            local solver=$(echo "$response" | jq -r '.data.solver_address // empty' 2>/dev/null)
             
             if [ -n "$signature" ] && [ "$signature" != "null" ]; then
-                log "     ✅ Signature received from solver: $solver"
+                echo "     ✅ Signature received from solver: $solver" >&2
+                [ -n "$LOG_FILE" ] && echo "     ✅ Signature received from solver: $solver" >> "$LOG_FILE"
                 echo "$response" | jq -r '.data'
                 return 0
             fi
-        fi
-        
-        # Check if draft is still pending (202 response)
-        local status=$(echo "$response" | jq -r '.data.status // empty')
-        if [ "$status" = "pending" ]; then
-            log "     Attempt $((attempt+1)): Draft still pending, waiting..."
-        else
-            log "     Attempt $((attempt+1)): No signature yet, waiting..."
         fi
         
         sleep "$sleep_seconds"
         attempt=$((attempt + 1))
     done
     
-    log_and_echo "❌ ERROR: Timeout waiting for signature after $max_attempts attempts"
-    exit 1
+    # Return empty on timeout instead of exiting (let caller handle)
+    echo ""
+    return 1
 }
 
 # Build draft data JSON for intent

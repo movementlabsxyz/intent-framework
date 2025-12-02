@@ -23,7 +23,7 @@ log "🚀 Starting Chain 2 (ports 8082/8083)..."
 docker-compose -f testing-infra/ci-e2e/chain-connected-mvm/docker-compose-connected-chain-mvm.yml -p aptos-chain2 up -d
 
 log ""
-log "⏳ Waiting for Chain 2 to start (this may take 2-3 minutes)..."
+log "⏳ Waiting for Chain 2 to start..."
 
 # Wait for Chain 2
 wait_for_aptos_chain_ready "2"

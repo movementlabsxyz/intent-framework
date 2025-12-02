@@ -1254,9 +1254,17 @@ impl MvmClient {
             .json(&request_body)
             .send()
             .await
-            .context("Failed to send view function request")?
-            .error_for_status()
-            .context("View function request failed")?;
+            .context("Failed to send view function request")?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let error_body = response.text().await.unwrap_or_default();
+            return Err(anyhow::anyhow!(
+                "View function request failed with status {}: {}",
+                status,
+                error_body
+            ));
+        }
 
         let result: serde_json::Value = response
             .json()

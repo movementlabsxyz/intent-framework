@@ -468,6 +468,27 @@ impl ApiServer {
             .and(negotiation::with_draft_store(get_pending_store))
             .and_then(negotiation::get_pending_drafts_handler);
 
+        // POST /draft-intent/:id/signature - Solver submits signature (FCFS)
+        let submit_sig_store = draft_store.clone();
+        let submit_sig_config = _config.clone();
+        let submit_signature = warp::path("draft-intent")
+            .and(warp::path::param())
+            .and(warp::path("signature"))
+            .and(warp::post())
+            .and(warp::body::json())
+            .and(negotiation::with_draft_store(submit_sig_store))
+            .and(negotiation::with_config(submit_sig_config))
+            .and_then(negotiation::submit_signature_handler);
+
+        // GET /draft-intent/:id/signature - Requester polls for signature
+        let get_sig_store = draft_store.clone();
+        let get_signature = warp::path("draft-intent")
+            .and(warp::path::param())
+            .and(warp::path("signature"))
+            .and(warp::get())
+            .and(negotiation::with_draft_store(get_sig_store))
+            .and_then(negotiation::get_signature_handler);
+
         // Combine all routes
         health
             .or(events)
@@ -480,5 +501,7 @@ impl ApiServer {
             .or(create_draft)
             .or(get_draft)
             .or(get_pending)
+            .or(submit_signature)
+            .or(get_signature)
     }
 }

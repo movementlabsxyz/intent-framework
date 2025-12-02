@@ -12,9 +12,11 @@
 ## Task-by-Task Status
 
 ### ✅ Task 1: Draft Intent Submission & Message Queue
+
 **Status**: ❌ **NOT IMPLEMENTED**
 
-#### What's Missing:
+#### Task 1 - What's Missing
+
 - ❌ No `trusted-verifier/src/storage/` directory exists
 - ❌ No `trusted-verifier/src/storage/draft_intents.rs` module
 - ❌ No draft intent storage (HashMap/BTreeMap)
@@ -23,7 +25,8 @@
 - ❌ No `GET /draft-intents/pending` endpoint
 - ❌ No `trusted-verifier/src/api/negotiation.rs` module
 
-#### What Exists:
+#### Task 1 - What Exists
+
 - ✅ `trusted-verifier/src/api/generic.rs` - Base API infrastructure exists
 - ✅ `ApiResponse<T>` structure - Can be reused for new endpoints
 - ✅ Warp routing infrastructure - Can add new routes
@@ -31,16 +34,19 @@
 ---
 
 ### ✅ Task 2: Signature Submission & Retrieval (FCFS)
+
 **Status**: ❌ **NOT IMPLEMENTED**
 
-#### What's Missing:
+#### Task 2 - What's Missing
+
 - ❌ No `POST /draft-intent/:id/signature` endpoint
 - ❌ No `GET /draft-intent/:id/signature` endpoint
 - ❌ No FCFS logic (first signature wins)
 - ❌ No signature validation for draft intents
 - ❌ No on-chain solver registration validation for draft signatures
 
-#### What Exists:
+#### Task 2 - What Exists
+
 - ✅ `mvm_client.rs` has methods to query solver registry:
   - `get_solver_public_key()` - Can verify solver is registered
   - `get_solver_evm_address()` - Can get solver EVM address
@@ -50,9 +56,11 @@
 ---
 
 ### ✅ Task 3: Authentication & Authorization
+
 **Status**: ❌ **NOT IMPLEMENTED**
 
-#### What's Missing:
+#### Task 3 - What's Missing
+
 - ❌ No solver authentication mechanism
 - ❌ No requester authentication (optional)
 - ❌ No rate limiting middleware
@@ -60,23 +68,27 @@
 - ❌ No signature-based authentication for solvers
 - ❌ No JWT tokens or API keys
 
-#### What Exists:
+#### Task 3 - What Exists
+
 - ✅ `CryptoService` exists for cryptographic operations
 - ✅ Can verify signatures against public keys (but not used for auth)
 
 ---
 
 ### ✅ Task 4: Monitoring & Logging
+
 **Status**: ❌ **NOT IMPLEMENTED**
 
-#### What's Missing:
+#### Task 4 - What's Missing
+
 - ❌ No `GET /negotiations/stats` endpoint
 - ❌ No `GET /negotiations/:draft_id/history` endpoint
 - ❌ No negotiation statistics tracking
 - ❌ No negotiation history logging
 - ❌ No structured logging for draft submissions/signatures
 
-#### What Exists:
+#### Task 4 - What Exists
+
 - ✅ `EventMonitor` exists for on-chain event monitoring
 - ✅ Structured logging infrastructure (tracing) exists
 - ✅ Can extend existing monitoring patterns
@@ -84,14 +96,17 @@
 ---
 
 ### ✅ Task 5: Update Documentation
+
 **Status**: ❌ **NOT IMPLEMENTED**
 
-#### What's Missing:
+#### Task 5 - What's Missing
+
 - ❌ No `docs/trusted-verifier/negotiation-routing.md` guide
 - ❌ No updates to `docs/trusted-verifier/api.md` for negotiation endpoints
 - ❌ No updates to `TESTNET_DEPLOYMENT_PLAN.md` for negotiation routing
 
-#### What Exists:
+#### Task 5 - What Exists
+
 - ✅ `docs/trusted-verifier/api.md` exists (needs updates)
 - ✅ `docs/` directory structure exists
 
@@ -116,7 +131,8 @@ The verifier currently exposes these endpoints (from `trusted-verifier/src/api/g
 
 ## Infrastructure That Can Be Reused
 
-### ✅ Available Components:
+### ✅ Available Components
+
 1. **API Infrastructure**:
    - `ApiResponse<T>` structure for consistent responses
    - Warp routing framework
@@ -140,12 +156,14 @@ The verifier currently exposes these endpoints (from `trusted-verifier/src/api/g
 
 ## What Needs to Be Created
 
-### New Files to Create:
+### New Files to Create
+
 1. `trusted-verifier/src/storage/mod.rs` - Storage module
 2. `trusted-verifier/src/storage/draft_intents.rs` - Draft intent storage
 3. `trusted-verifier/src/api/negotiation.rs` - Negotiation API endpoints
 
-### Files to Modify:
+### Files to Modify
+
 1. `trusted-verifier/src/api/mod.rs` - Add negotiation module
 2. `trusted-verifier/src/api/generic.rs` - Add negotiation routes to `create_routes()`
 3. `docs/trusted-verifier/api.md` - Document new endpoints

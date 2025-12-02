@@ -548,3 +548,142 @@ async fn test_get_solver_evm_address_leading_zero_mismatch() {
         "Should find the SolverRegistry despite leading zero being stripped in type name"
     );
 }
+
+// ============================================================================
+// GET_SOLVER_PUBLIC_KEY TESTS
+// ============================================================================
+
+/// Setup a mock server that responds to get_public_key view function calls
+async fn setup_mock_server_with_public_key(
+    _registry_address: &str,
+    _solver_address: &str,
+    public_key: Option<&[u8]>,
+) -> (MockServer, MvmClient) {
+    let mock_server = MockServer::start().await;
+
+    // View function returns vector<u8> directly as array
+    let view_response = if let Some(pk) = public_key {
+        // Return public key as vector<u8> (array of u64 values)
+        pk.iter().map(|b| json!(*b as u64)).collect::<Vec<_>>()
+    } else {
+        // Return empty vector (solver not registered)
+        vec![]
+    };
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    (mock_server, client)
+}
+
+/// Test that get_solver_public_key returns public key when solver is registered
+/// What is tested: Successful retrieval of solver public key from registry
+/// Why: Signature submission requires verifying solver is registered
+#[tokio::test]
+async fn test_get_solver_public_key_success() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+    let public_key = vec![1u8, 2u8, 3u8, 4u8, 5u8]; // Test public key
+
+    let (_mock_server, client) = setup_mock_server_with_public_key(
+        registry_address,
+        solver_address,
+        Some(&public_key),
+    )
+    .await;
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_ok(), "Query should succeed");
+    let pk = result.unwrap();
+    assert_eq!(pk, Some(public_key), "Should return the public key");
+}
+
+/// Test that get_solver_public_key returns None when solver is not registered
+/// What is tested: Handling of unregistered solver
+/// Why: Unregistered solvers should be rejected
+#[tokio::test]
+async fn test_get_solver_public_key_not_registered() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+
+    let (_mock_server, client) = setup_mock_server_with_public_key(
+        registry_address,
+        solver_address,
+        None, // No public key = not registered
+    )
+    .await;
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_ok(), "Query should succeed");
+    let pk = result.unwrap();
+    assert_eq!(pk, None, "Should return None for unregistered solver");
+}
+
+/// Test that get_solver_public_key handles empty public key array
+/// What is tested: Edge case where view function returns empty array
+/// Why: Empty array should be treated as "not registered"
+#[tokio::test]
+async fn test_get_solver_public_key_empty_array() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+
+    // Empty array response
+    let mock_server = MockServer::start().await;
+    let view_response = json!({
+        "inner": []
+    });
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response))
+        .mount(&mock_server)
+        .await;
+
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_ok(), "Query should succeed");
+    let pk = result.unwrap();
+    assert_eq!(pk, None, "Should return None for empty array");
+}
+
+/// Test that get_solver_public_key handles 32-byte Ed25519 public key
+/// What is tested: Real-world Ed25519 public key format (32 bytes)
+/// Why: Ed25519 public keys are exactly 32 bytes
+#[tokio::test]
+async fn test_get_solver_public_key_ed25519_format() {
+    let registry_address = "0x1";
+    let solver_address = "0xabc";
+    // 32-byte Ed25519 public key
+    let public_key: Vec<u8> = (0..32).collect();
+
+    let (_mock_server, client) = setup_mock_server_with_public_key(
+        registry_address,
+        solver_address,
+        Some(&public_key),
+    )
+    .await;
+
+    let result = client
+        .get_solver_public_key(solver_address, registry_address)
+        .await;
+
+    assert!(result.is_ok(), "Query should succeed");
+    let pk = result.unwrap();
+    assert_eq!(pk, Some(public_key), "Should return 32-byte public key");
+    assert_eq!(pk.unwrap().len(), 32, "Public key should be 32 bytes");
+}

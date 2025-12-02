@@ -49,6 +49,8 @@ See the [component README](../../trusted-verifier/README.md) for quick start com
 
 ## API Endpoints
 
+### Core Endpoints
+
 - `GET /health` - Health check
 - `GET /events` - Get cached intent events
 - `POST /approval` - Create approval signature
@@ -56,7 +58,15 @@ See the [component README](../../trusted-verifier/README.md) for quick start com
 - `POST /validate-outflow-fulfillment` - Validate connected chain transaction for outflow intent
 - `POST /validate-inflow-escrow` - Validate escrow for inflow intent
 
-For detailed API documentation, see [api.md](api.md). For usage guide, see [guide.md](guide.md).
+### Negotiation Routing Endpoints
+
+- `POST /draft-intent` - Submit draft intent (open to any solver)
+- `GET /draft-intent/:id` - Get draft intent status
+- `GET /draft-intents/pending` - Get all pending drafts (for solvers to poll)
+- `POST /draft-intent/:id/signature` - Submit signature for draft (FCFS)
+- `GET /draft-intent/:id/signature` - Poll for signature (for requesters)
+
+For detailed API documentation, see [api.md](api.md). For usage guide, see [guide.md](guide.md). For negotiation routing guide, see [negotiation-routing.md](negotiation-routing.md).
 
 ## Dependencies
 

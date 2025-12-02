@@ -166,7 +166,6 @@ impl DraftIntentStore {
     ///
     /// * `Ok(())` if signature was accepted (first signature)
     /// * `Err(String)` if draft not found, already signed, or expired
-    #[allow(dead_code)] // Will be used in Task 2 (signature submission endpoints)
     pub async fn add_signature(
         &self,
         draft_id: &str,

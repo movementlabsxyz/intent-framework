@@ -9,7 +9,7 @@ Deployment plan for Movement Bardock Testnet (Hub) + Base Sepolia (Connected Cha
 ## Overview
 
 | Component | Network | Deployment Target |
-|-----------|---------|-------------------|
+| --------- | ------- | ----------------- |
 | Move Intent Framework | Movement Bardock Testnet | Hub Chain |
 | EVM IntentEscrow | Base Sepolia | Connected Chain |
 | Trusted Verifier | AWS EC2 | Off-chain Service |
@@ -25,7 +25,7 @@ Deployment plan for Movement Bardock Testnet (Hub) + Base Sepolia (Connected Cha
 > **Reference**: [Movement Network Endpoints](https://docs.movementnetwork.xyz/devs/networkEndpoints)
 
 | Property | Value |
-|----------|-------|
+| -------- | ----- |
 | Network Name | Movement Bardock Testnet |
 | RPC URL | `https://testnet.movementnetwork.xyz/v1` |
 | Faucet UI | `https://faucet.movementnetwork.xyz/` |
@@ -36,7 +36,7 @@ Deployment plan for Movement Bardock Testnet (Hub) + Base Sepolia (Connected Cha
 ### Base Sepolia Testnet (Connected Chain)
 
 | Property | Value |
-|----------|-------|
+| -------- | ----- |
 | Network Name | Base Sepolia |
 | RPC URL | `https://sepolia.base.org` |
 | Chain ID | `84532` |
@@ -118,7 +118,7 @@ nix develop
 - Monitors chains for intents, escrows, and fulfillments
 - Validates cross-chain fulfillment conditions
 - Provides approval signatures via REST API (`/approval`, `/approvals`)
-- **Note**: Currently does NOT provide negotiation routing. Requester and solver must negotiate directly off-chain. See `.taskmaster/tasks/VERIFIER_NEGOTIATION_ROUTING.md` for planned enhancement.
+- Provides negotiation routing for off-chain communication between requesters and solvers (see `.taskmaster/tasks/VERIFIER_NEGOTIATION_ROUTING.md`)
 
 ### 4.1 Launch EC2 Instance
 
@@ -450,15 +450,17 @@ The scripts will:
 
 ### 5.2 Test Intent Flow (USDC/pyUSD → USDC/pyUSD)
 
-**Note on Negotiation**: For reserved intents, requester and solver must negotiate off-chain before creating the intent:
+**Note on Negotiation**: For reserved intents, requester and solver negotiate off-chain using verifier-based negotiation routing:
 
-1. **Off-chain Negotiation** (Current Method):
+1. **Off-chain Negotiation** (Verifier-Based):
    - Requester creates draft intent (off-chain)
-   - Requester contacts solver directly (off-chain, e.g., HTTP API, messaging)
-   - Solver signs draft and returns Ed25519 signature (off-chain)
+   - Requester submits draft to verifier via `POST /draft-intent` (draft is open to any solver)
+   - Solvers poll verifier via `GET /draft-intents/pending` to discover drafts
+   - First solver to sign submits signature via `POST /draft-intent/:id/signature` (FCFS)
+   - Requester polls verifier via `GET /draft-intent/:id/signature` to retrieve signature
    - Requester submits intent on-chain with solver's signature
 
-   **Future Enhancement**: Verifier-based negotiation routing will eliminate the need for direct requester-solver communication. See `.taskmaster/tasks/VERIFIER_NEGOTIATION_ROUTING.md` for implementation plan.
+   See `.taskmaster/tasks/VERIFIER_NEGOTIATION_ROUTING.md` for details.
 
 2. **Requester creates Intent on Movement** - offers USDC/pyUSD, wants USDC/pyUSD on Base (with solver signature)
 3. **Requester creates Escrow on Base Sepolia** - deposits USDC/pyUSD for solver
@@ -561,7 +563,7 @@ jobs:
 ## GitHub Secrets Required
 
 | Secret | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `MOVEMENT_PRIVATE_KEY` | Private key for Movement deployer account |
 | `BASE_DEPLOYER_PRIVATE_KEY` | Private key for Base Sepolia deployer |
 | `VERIFIER_ETH_ADDRESS` | Ethereum address derived from verifier keys |
@@ -574,7 +576,7 @@ jobs:
 ## Deployed Addresses (Fill After Deployment)
 
 | Component | Network | Address |
-|-----------|---------|---------|
+| --------- | ------- | ------- |
 | Intent Framework | Movement Bardock | `0x...` |
 | IntentEscrow | Base Sepolia | `0x...` |
 | Verifier API | Cloud | `https://...` |

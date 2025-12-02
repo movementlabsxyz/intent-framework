@@ -2,26 +2,28 @@
 
 ## Overview
 
-Add negotiation routing capabilities to the Trusted Verifier service to facilitate off-chain communication between requesters and solvers for reserved intent creation. This eliminates the need for direct requester-solver communication and provides a centralized discovery and messaging service.
+The Trusted Verifier service provides negotiation routing capabilities for off-chain communication between requesters and solvers for reserved intent creation. This eliminates the need for direct requester-solver communication and provides a centralized discovery and messaging service.
 
 ## Current State
 
-**Current Negotiation Flow:**
+**Current Negotiation Flow** (Verifier-Based):
 
 - Requester creates draft intent (off-chain)
-- Requester contacts solver directly (off-chain, manual/HTTP/messaging)
-- Solver signs draft and returns signature (off-chain, direct response)
+- Requester submits draft to verifier via `POST /draft-intent` (draft is open to any solver)
+- Solvers poll verifier via `GET /draft-intents/pending` to discover drafts
+- First solver to sign submits signature via `POST /draft-intent/:id/signature` (FCFS)
+- Requester polls verifier via `GET /draft-intent/:id/signature` to retrieve signature
 - Requester submits intent on-chain with solver's signature
 
 **Solver Registration:**
 
 - **On-chain**: Solvers register via `solver_registry::register_solver()` with public key and addresses (for signature verification)
 
-**Limitations:**
+**Benefits:**
 
-- Requester must know how to contact solver (no discovery mechanism)
-- No centralized negotiation tracking
-- Direct communication required
+- No direct requester-solver communication required
+- Centralized negotiation tracking via verifier
+- FCFS (First Come First Served) ensures fair competition
 
 ## Proposed Solution
 
@@ -181,16 +183,19 @@ The Trusted Verifier service will act as a negotiation message queue/hub:
 
 ## Testing Strategy
 
-1. **Unit Tests**: Test storage, routing logic, validation
-2. **Integration Tests**: Test API endpoints end-to-end
-3. **E2E Tests**: Test full negotiation flow (requester → verifier → solver → verifier → requester)
-4. **Load Tests**: Test concurrent draft submissions and polling
+1. **Unit Tests**: ✅ Test storage, routing logic, validation
+   - ✅ Storage tests: `tests/storage_tests.rs` (comprehensive CRUD, FCFS, expiry, status transitions)
+   - ✅ Signature validation tests: `tests/negotiation_validation_tests.rs` (format validation)
+   - ✅ Solver registration tests: `tests/mvm_client_tests.rs` (`get_solver_public_key` tests)
+2. **Integration Tests**: ⏸️ Test API endpoints end-to-end (deferred - handlers are thin wrappers)
+3. **E2E Tests**: ⏸️ Test full negotiation flow (requester → verifier → solver → verifier → requester) (future)
+4. **Load Tests**: ⏸️ Test concurrent draft submissions and polling (future)
 
 ## Migration Path
 
 **Phase 1**: Deploy alongside existing verifier (no breaking changes)
-**Phase 2**: Update documentation to recommend verifier routing
-**Phase 3**: Deprecate direct negotiation (optional, keep for backward compatibility)
+**Phase 2**: Update documentation to use verifier routing (completed)
+**Phase 3**: Authentication & Authorization (see Task 3 in `tasks.json`)
 
 ## Future Enhancements
 
@@ -202,13 +207,16 @@ The Trusted Verifier service will act as a negotiation message queue/hub:
 
 ## Files to Modify/Create
 
-1. **Create**: `trusted-verifier/src/api/negotiation.rs` - Negotiation routing endpoints
-2. **Create**: `trusted-verifier/src/storage/` - Storage module for draft intents (no solver storage needed)
-3. **Modify**: `trusted-verifier/src/api/mod.rs` - Add negotiation routes
-4. **Modify**: `trusted-verifier/src/api/generic.rs` - Integrate negotiation routes
-5. **Update**: `docs/trusted-verifier/api.md` - Document new endpoints
-6. **Create**: `docs/trusted-verifier/negotiation-routing.md` - User guide
-7. **Update**: `.taskmaster/tasks/TESTNET_DEPLOYMENT_PLAN.md` - Note current state and future enhancement
+1. **✅ Create**: `trusted-verifier/src/api/negotiation.rs` - Negotiation routing endpoints
+2. **✅ Create**: `trusted-verifier/src/storage/` - Storage module for draft intents
+3. **✅ Modify**: `trusted-verifier/src/api/mod.rs` - Add negotiation routes
+4. **✅ Modify**: `trusted-verifier/src/api/generic.rs` - Integrate negotiation routes
+5. **✅ Create**: `trusted-verifier/tests/storage_tests.rs` - Storage unit tests
+6. **✅ Create**: `trusted-verifier/tests/negotiation_validation_tests.rs` - Signature validation tests
+7. **✅ Update**: `trusted-verifier/tests/mvm_client_tests.rs` - Added `get_solver_public_key` tests
+8. **⏸️ Update**: `docs/trusted-verifier/api.md` - Document new endpoints (pending)
+9. **⏸️ Create**: `docs/trusted-verifier/negotiation-routing.md` - User guide (pending)
+10. **✅ Update**: `.taskmaster/tasks/TESTNET_DEPLOYMENT_PLAN.md` - Note current state and future enhancement
 
 ## Dependencies
 
@@ -223,4 +231,4 @@ The Trusted Verifier service will act as a negotiation message queue/hub:
 - FCFS logic works correctly (first signature wins, later signatures rejected)
 - Requesters receive signature with solver_address from first signer
 - Full negotiation flow works end-to-end
-- Backward compatible with existing direct negotiation flow
+- Verifier-based negotiation routing is the standard method for off-chain negotiation

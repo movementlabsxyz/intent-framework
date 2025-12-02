@@ -35,9 +35,14 @@ sequenceDiagram
 
     Note over Requester,Solver: Phase 1: Intent Creation on Hub Chain
     Requester->>Requester: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
-    Requester->>Solver: Send draft
+    Requester->>Verifier: POST /draft-intent<br/>(submit draft, open to any solver)
+    Verifier->>Verifier: Store draft
+    Solver->>Verifier: GET /draft-intents/pending<br/>(poll for drafts)
+    Verifier->>Solver: Return pending drafts
     Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
-    Solver->>Requester: Returns signature
+    Solver->>Verifier: POST /draft-intent/:id/signature<br/>(submit signature, FCFS)
+    Requester->>Verifier: GET /draft-intent/:id/signature<br/>(poll for signature)
+    Verifier->>Requester: Return signature
     Requester->>Hub: create_inflow_request_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, solver, solver_signature)
     Hub->>Verifier: LimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
 
@@ -74,9 +79,13 @@ sequenceDiagram
 
 ### Inflow Flow Steps
 
-1. **Off-chain (before Hub)**: Requester and solver negotiate using the reserved intent flow:
-   - **Step 1**: Requester creates draft using `create_cross_chain_draft_intent()` with `offered_amount` (amount that will be locked in escrow on connected chain), `offered_chain_id`, and `desired_chain_id`
-   - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
+1. **Off-chain (before Hub)**: Requester and solver negotiate using verifier-based negotiation routing:
+   - **Step 1**: Requester submits draft to verifier via `POST /draft-intent` (draft is open to any solver)
+   - **Step 2**: Solvers poll verifier via `GET /draft-intents/pending` to discover drafts
+   - **Step 3**: First solver to sign submits signature via `POST /draft-intent/:id/signature` (FCFS)
+   - **Step 4**: Requester polls verifier via `GET /draft-intent/:id/signature` to retrieve signature
+   
+   See [Negotiation Routing Guide](trusted-verifier/negotiation-routing.md) for details.
 2. **Hub**: Requester calls `create_inflow_request_intent()` with `offered_amount` (amount that will be locked in escrow on connected chain), `intent_id`, `offered_chain_id`, `desired_chain_id`, `solver` address, and `solver_signature`. The function looks up the solver's public key from the on-chain solver registry, verifies the signature, and creates a reserved intent (emits `LimitOrderEvent` with `offered_amount`, `offered_chain_id`, `desired_chain_id`, `revocable=false`). The intent is **reserved** for the specified solver, ensuring solver commitment across chains.
 
    **Note**: The solver must be registered in the solver registry before calling this function. The registry stores the solver's Ed25519 public key (for signature verification) and connected chain addresses (for outflow validation). See the [Solver Registry API](../docs/move-intent-framework/api-reference.md#solver-registry-api) for registration details.
@@ -102,9 +111,14 @@ sequenceDiagram
 
     Note over Requester,Solver: Phase 1: Intent Creation on Hub Chain
     Requester->>Requester: create_cross_chain_draft_intent()<br/>(off-chain, creates IntentDraft)
-    Requester->>Solver: Send draft
+    Requester->>Verifier: POST /draft-intent<br/>(submit draft, open to any solver)
+    Verifier->>Verifier: Store draft
+    Solver->>Verifier: GET /draft-intents/pending<br/>(poll for drafts)
+    Verifier->>Solver: Return pending drafts
     Solver->>Solver: Solver signs<br/>(off-chain, returns Ed25519 signature)
-    Solver->>Requester: Returns signature
+    Solver->>Verifier: POST /draft-intent/:id/signature<br/>(submit signature, FCFS)
+    Requester->>Verifier: GET /draft-intent/:id/signature<br/>(poll for signature)
+    Verifier->>Requester: Return signature
     Requester->>Hub: create_outflow_request_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, requester_address_connected_chain,<br/>verifier_public_key, solver, solver_signature)
     Hub->>Hub: Lock assets on hub
     Hub->>Verifier: OracleLimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
@@ -127,9 +141,13 @@ sequenceDiagram
 
 ### Outflow Flow Steps
 
-1. **Off-chain (before Hub)**: Requester and solver negotiate using the reserved intent flow:
-   - **Step 1**: Requester creates draft using `create_cross_chain_draft_intent()` with `offered_amount` (amount that will be locked on hub chain), `offered_chain_id` (hub chain), and `desired_chain_id` (connected chain)
-   - **Step 2**: Solver adds their address using `add_solver_to_draft_intent()`, signs the `IntentToSign` using `hash_intent()`, and returns the Ed25519 signature
+1. **Off-chain (before Hub)**: Requester and solver negotiate using verifier-based negotiation routing:
+   - **Step 1**: Requester submits draft to verifier via `POST /draft-intent` (draft is open to any solver)
+   - **Step 2**: Solvers poll verifier via `GET /draft-intents/pending` to discover drafts
+   - **Step 3**: First solver to sign submits signature via `POST /draft-intent/:id/signature` (FCFS)
+   - **Step 4**: Requester polls verifier via `GET /draft-intent/:id/signature` to retrieve signature
+   
+   See [Negotiation Routing Guide](trusted-verifier/negotiation-routing.md) for details.
 2. **Hub**: Requester calls `create_outflow_request_intent()` with `offered_amount` (amount to lock on hub), `intent_id`, `offered_chain_id` (hub), `desired_chain_id` (connected), `requester_address_connected_chain` (where solver should send tokens), `verifier_public_key`, `solver` address, and `solver_signature`. The function locks tokens on the hub and creates an oracle-guarded intent requiring verifier signature (emits `OracleLimitOrderEvent` with `revocable=false`).
 3. **Connected Chain**: Solver transfers tokens directly to `requester_address_connected_chain` using standard token transfer (not an escrow). The transaction must include `intent_id` as metadata for verifier tracking. See [Connected Chain Outflow Fulfillment Transaction Format](#connected-chain-outflow-fulfillment-transaction-format) for exact specification.
 4. **Solver**: Calls the verifier REST API endpoint `POST /validate-outflow-fulfillment` with the transaction hash, chain type, and intent ID.

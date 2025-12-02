@@ -55,6 +55,10 @@ This script sets up chains, deploys contracts, submits intents, runs integration
 4) Verifier: observes fulfillment + escrow, generates approval (signature over BCS(u64=1))
 5) Script: submits `complete_escrow_from_fa` on connected chain with approval
 
+## Negotiation Routing
+
+The verifier provides negotiation routing capabilities for off-chain communication between requesters and solvers. Requesters can submit draft intents to the verifier, and solvers can poll for drafts and submit signatures (FCFS). See [Negotiation Routing Guide](negotiation-routing.md) for details.
+
 ## Balances and Debugging
 
 - The integration script prints initial and final balances for Requester/Solver on both chains
@@ -64,3 +68,4 @@ This script sets up chains, deploys contracts, submits intents, runs integration
   - `curl -s http://127.0.0.1:3333/public-key`
   - `curl -s http://127.0.0.1:3333/events | jq`
   - `curl -s http://127.0.0.1:3333/approvals | jq`
+  - `curl -s http://127.0.0.1:3333/draft-intents/pending | jq` (negotiation routing)

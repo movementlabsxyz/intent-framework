@@ -8,11 +8,13 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::info;
+use tracing::{info, warn};
 use uuid::Uuid;
-use warp::Filter;
+use warp::{http::StatusCode, Filter};
 
 use crate::api::generic::ApiResponse;
+use crate::config::Config;
+use crate::mvm_client::MvmClient;
 use crate::storage::{DraftIntentStatus, DraftIntentStore};
 
 // ============================================================================
@@ -54,6 +56,37 @@ pub struct DraftIntentStatusResponse {
     pub expiry_time: u64,
 }
 
+/// Request structure for submitting a signature for a draft intent.
+#[derive(Debug, Deserialize)]
+pub struct SignatureSubmissionRequest {
+    /// Address of the solver submitting the signature
+    pub solver_address: String,
+    /// Signature in hex format (Ed25519, 64 bytes)
+    pub signature: String,
+    /// Public key of the solver (hex format)
+    pub public_key: String,
+}
+
+/// Response structure for signature submission.
+#[derive(Debug, Serialize)]
+pub struct SignatureSubmissionResponse {
+    /// Unique identifier for the draft
+    pub draft_id: String,
+    /// Current status of the draft
+    pub status: String,
+}
+
+/// Response structure for signature retrieval.
+#[derive(Debug, Serialize)]
+pub struct SignatureResponse {
+    /// Signature in hex format
+    pub signature: String,
+    /// Address of the solver who signed (first signer)
+    pub solver_address: String,
+    /// Timestamp when signature was received
+    pub timestamp: u64,
+}
+
 // ============================================================================
 // API HANDLERS
 // ============================================================================
@@ -86,8 +119,8 @@ pub async fn create_draft_intent_handler(
 
     // Add draft to store
     {
-        let store_read = store.read().await;
-        store_read
+        let store_write = store.write().await;
+        store_write
             .add_draft(
                 draft_id.clone(),
                 request.requester_address,
@@ -200,6 +233,256 @@ pub async fn get_pending_drafts_handler(
     }))
 }
 
+/// Handler for POST /draft-intent/:id/signature endpoint.
+///
+/// Accepts a signature submission from a solver for a draft intent.
+/// Implements FCFS logic: first signature wins, later signatures are rejected with 409 Conflict.
+///
+/// # Arguments
+///
+/// * `draft_id` - The draft ID to sign
+/// * `request` - The signature submission request
+/// * `store` - The draft intent store
+/// * `config` - Service configuration (for registry address)
+///
+/// # Returns
+///
+/// * `Ok(warp::Reply)` - JSON response with draft_id and status (200 OK for first signature, 409 Conflict for later)
+/// * `Err(warp::Rejection)` - Failed to process signature
+pub async fn submit_signature_handler(
+    draft_id: String,
+    request: SignatureSubmissionRequest,
+    store: Arc<RwLock<DraftIntentStore>>,
+    config: Arc<Config>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    info!(
+        "Received signature submission for draft {} from solver {}",
+        draft_id, request.solver_address
+    );
+
+    // Validate solver is registered on-chain
+    let registry_address = &config.hub_chain.intent_module_address;
+    let hub_rpc_url = &config.hub_chain.rpc_url;
+
+    let mvm_client = match MvmClient::new(hub_rpc_url) {
+        Ok(client) => client,
+        Err(e) => {
+            warn!("Failed to create MvmClient: {}", e);
+            return Ok(warp::reply::with_status(
+                warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
+                    success: false,
+                    data: None,
+                    error: Some("Failed to connect to hub chain".to_string()),
+                }),
+                StatusCode::INTERNAL_SERVER_ERROR,
+            ));
+        }
+    };
+
+    // Check if solver is registered
+    let solver_registered = match mvm_client
+        .get_solver_public_key(&request.solver_address, registry_address)
+        .await
+    {
+        Ok(Some(_)) => true,
+        Ok(None) => false,
+        Err(e) => {
+            warn!("Failed to query solver registry: {}", e);
+            return Ok(warp::reply::with_status(
+                warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
+                    success: false,
+                    data: None,
+                    error: Some("Failed to verify solver registration".to_string()),
+                }),
+                StatusCode::INTERNAL_SERVER_ERROR,
+            ));
+        }
+    };
+
+    if !solver_registered {
+        return Ok(warp::reply::with_status(
+            warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
+                success: false,
+                data: None,
+                error: Some(format!(
+                    "Solver {} is not registered on-chain",
+                    request.solver_address
+                )),
+            }),
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+
+    // Validate signature format
+    if let Err(e) = validate_signature_format(&request.signature) {
+        return Ok(warp::reply::with_status(
+            warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
+                success: false,
+                data: None,
+                error: Some(e),
+            }),
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+
+    // Add signature to store (FCFS logic handled in add_signature)
+    let store_write = store.write().await;
+    let result = store_write
+        .add_signature(
+            &draft_id,
+            request.solver_address.clone(),
+            request.signature.clone(),
+            request.public_key.clone(),
+        )
+        .await;
+
+    drop(store_write);
+
+    match result {
+        Ok(()) => {
+            info!("Successfully added signature for draft {}", draft_id);
+            Ok(warp::reply::with_status(
+                warp::reply::json(&ApiResponse {
+                    success: true,
+                    data: Some(SignatureSubmissionResponse {
+                        draft_id,
+                        status: "signed".to_string(),
+                    }),
+                    error: None,
+                }),
+                StatusCode::OK,
+            ))
+        }
+        Err(e) => {
+            // Check if it's an FCFS conflict (already signed)
+            if e.contains("already signed") {
+                warn!("Draft {} already signed - rejecting duplicate signature", draft_id);
+                Ok(warp::reply::with_status(
+                    warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
+                        success: false,
+                        data: None,
+                        error: Some("Draft already signed by another solver".to_string()),
+                    }),
+                    StatusCode::CONFLICT, // 409 Conflict
+                ))
+            } else {
+                warn!("Failed to add signature for draft {}: {}", draft_id, e);
+                Ok(warp::reply::with_status(
+                    warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
+                        success: false,
+                        data: None,
+                        error: Some(e),
+                    }),
+                    StatusCode::BAD_REQUEST,
+                ))
+            }
+        }
+    }
+}
+
+/// Handler for GET /draft-intent/:id/signature endpoint.
+///
+/// Retrieves the signature for a draft intent (first signature received).
+/// This is a polling endpoint - requesters call this regularly to check if signature is available.
+///
+/// # Arguments
+///
+/// * `draft_id` - The draft ID to retrieve signature for
+/// * `store` - The draft intent store
+///
+/// # Returns
+///
+/// * `Ok(warp::Reply)` - JSON response with signature (200 OK if signed, 202 Accepted if pending)
+/// * `Err(warp::Rejection)` - Draft not found (404)
+pub async fn get_signature_handler(
+    draft_id: String,
+    store: Arc<RwLock<DraftIntentStore>>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let store_read = store.read().await;
+    let draft = store_read.get_draft(&draft_id).await;
+    drop(store_read);
+
+    let draft = match draft {
+        Some(d) => d,
+        None => {
+            return Ok(warp::reply::with_status(
+                warp::reply::json(&ApiResponse::<SignatureResponse> {
+                    success: false,
+                    data: None,
+                    error: Some("Draft not found".to_string()),
+                }),
+                StatusCode::NOT_FOUND,
+            ));
+        }
+    };
+
+    match draft.signature {
+        Some(sig) => {
+            // Draft is signed - return signature
+            Ok(warp::reply::with_status(
+                warp::reply::json(&ApiResponse {
+                    success: true,
+                    data: Some(SignatureResponse {
+                        signature: sig.signature,
+                        solver_address: sig.solver_address,
+                        timestamp: sig.signature_timestamp,
+                    }),
+                    error: None,
+                }),
+                StatusCode::OK,
+            ))
+        }
+        None => {
+            // Draft not yet signed - return 202 Accepted
+            Ok(warp::reply::with_status(
+                warp::reply::json(&ApiResponse::<SignatureResponse> {
+                    success: false,
+                    data: None,
+                    error: Some("Draft not yet signed".to_string()),
+                }),
+                StatusCode::ACCEPTED, // 202 Accepted
+            ))
+        }
+    }
+}
+
+// ============================================================================
+// VALIDATION HELPERS
+// ============================================================================
+
+/// Validates Ed25519 signature format.
+///
+/// Checks that the signature is:
+/// - 128 hex characters (64 bytes) after removing optional 0x prefix
+/// - Valid hex characters only
+///
+/// # Arguments
+///
+/// * `signature` - Signature string (with or without 0x prefix)
+///
+/// # Returns
+///
+/// * `Ok(())` if signature format is valid
+/// * `Err(String)` with error message if invalid
+pub fn validate_signature_format(signature: &str) -> Result<(), String> {
+    let signature_hex = signature.strip_prefix("0x").unwrap_or(signature);
+    
+    // Check length (Ed25519 signature is 64 bytes = 128 hex chars)
+    if signature_hex.len() != 128 {
+        return Err(format!(
+            "Invalid signature format: expected 128 hex characters (64 bytes), got {}",
+            signature_hex.len()
+        ));
+    }
+    
+    // Check hex format
+    if !signature_hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("Invalid signature format: not valid hex".to_string());
+    }
+    
+    Ok(())
+}
+
 // ============================================================================
 // WARP FILTER HELPERS
 // ============================================================================
@@ -210,5 +493,12 @@ pub fn with_draft_store(
 ) -> impl Filter<Extract = (Arc<RwLock<DraftIntentStore>>,), Error = std::convert::Infallible> + Clone
 {
     warp::any().map(move || store.clone())
+}
+
+/// Helper function to inject Config into handlers.
+pub fn with_config(
+    config: Arc<Config>,
+) -> impl Filter<Extract = (Arc<Config>,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || config.clone())
 }
 

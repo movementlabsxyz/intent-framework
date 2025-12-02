@@ -55,10 +55,10 @@ Response (abbreviated)
         "offered_metadata": {"inner":"0xa"},
         "offered_amount": 0,
         "desired_metadata": {"inner":"0xa"},
-        "desired_amount": 100000000,
-        "expiry_time": 1761765097,
+        "desired_amount": 1000000,
+        "expiry_time": 2000000,
         "revocable": false,
-        "timestamp": 1761761513
+        "timestamp": 1000000
       }
     ],
     "escrow_events": [
@@ -71,12 +71,12 @@ Response (abbreviated)
         "offered_amount": 1000,
         "desired_metadata": {"inner":"0xa"},
         "desired_amount": 0,
-        "expiry_time": 1761765097,
+        "expiry_time": 2000000,
         "revocable": false,
         "reserved_solver": "0x...",
         "chain_id": 2,
         "chain_type": "Mvm",
-        "timestamp": 1761761513
+        "timestamp": 1000000
       }
     ],
     "fulfillment_events": [ { ... } ],
@@ -96,7 +96,7 @@ Response item:
   "escrow_id": "0x...",
   "intent_id": "0x...",
   "signature": "<base64>",
-  "timestamp": 1761761504
+      "timestamp": 1000000
 }
 ```
 
@@ -127,7 +127,7 @@ Response
   "success": true,
   "data": {
     "signature": "<base64>",
-    "timestamp": 1761761504
+      "timestamp": 1000000
   }
 }
 ```
@@ -157,11 +157,11 @@ Validates a connected chain transaction for an outflow intent and returns an app
     "validation": {
       "valid": true,
       "message": "Outflow fulfillment validation successful",
-      "timestamp": 1763586708
+      "timestamp": 1000000
     },
     "approval_signature": {
       "signature": "<base64>",
-      "timestamp": 1763586708
+      "timestamp": 1000000
     }
   }
 }
@@ -204,4 +204,211 @@ SIGNATURE_HEX=$(echo "$SIGNATURE_BASE64" | base64 -d | xxd -p -c 1000 | tr -d '\
 movement move run --profile solver-chain2 --assume-yes \
   --function-id "0x<connected_module_address>::intent_as_escrow_entry::complete_escrow_from_fa" \
   --args "address:<escrow_id>" "u64:<payment_amount>" "hex:<signature_hex>"
+```
+
+---
+
+## Negotiation Routing Endpoints
+
+The verifier provides negotiation routing capabilities for off-chain communication between requesters and solvers. This enables requesters to submit draft intents without needing direct contact with solvers, and allows solvers to discover and sign drafts through a centralized message queue.
+
+**Note**: This is a **polling-based, FCFS (First Come First Served)** system. Solvers poll the verifier for drafts, and the first solver to submit a valid signature wins.
+
+### POST /draft-intent
+
+Submit a draft intent for negotiation. Drafts are open to any solver (no `solver_address` required).
+
+**Request**
+
+```json
+{
+  "requester_address": "0x...",
+  "draft_data": {
+    "offered_metadata": "...",
+    "offered_amount": 1000,
+    "desired_metadata": "...",
+    "desired_amount": 2000
+  },
+  "expiry_time": 2000000
+}
+```
+
+**Response** (200 OK)
+
+```json
+{
+  "success": true,
+  "data": {
+    "draft_id": "11111111-1111-1111-1111-111111111111",
+    "status": "pending"
+  },
+  "error": null
+}
+```
+
+**Example**
+
+```bash
+curl -X POST http://127.0.0.1:3333/draft-intent \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requester_address": "0x123...",
+    "draft_data": {"offered_metadata": "0x1::test::Token", "offered_amount": 1000},
+    "expiry_time": 2000000
+  }'
+```
+
+### GET /draft-intent/:id
+
+Get the status of a specific draft intent.
+
+**Response** (200 OK)
+
+```json
+{
+  "success": true,
+  "data": {
+    "draft_id": "11111111-1111-1111-1111-111111111111",
+    "status": "pending",
+    "requester_address": "0x123...",
+    "timestamp": 1000000,
+    "expiry_time": 2000000
+  },
+  "error": null
+}
+```
+
+**Status values**: `pending`, `signed`, `expired`
+
+**Example**
+
+```bash
+curl http://127.0.0.1:3333/draft-intent/11111111-1111-1111-1111-111111111111
+```
+
+### GET /draft-intents/pending
+
+Get all pending drafts. All solvers see all pending drafts (no filtering). This is a polling endpoint - solvers call this regularly to discover new drafts.
+
+**Response** (200 OK)
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "draft_id": "11111111-1111-1111-1111-111111111111",
+      "requester_address": "0x123...",
+      "draft_data": {...},
+      "timestamp": 1000000,
+      "expiry_time": 2000000
+    }
+  ],
+  "error": null
+}
+```
+
+**Example**
+
+```bash
+curl http://127.0.0.1:3333/draft-intents/pending
+```
+
+### POST /draft-intent/:id/signature
+
+Submit a signature for a draft intent. Implements FCFS logic: first signature wins, later signatures are rejected with 409 Conflict.
+
+**Request**
+
+```json
+{
+  "solver_address": "0xabc...",
+  "signature": "0x" + "a".repeat(128),
+  "public_key": "0x" + "b".repeat(64)
+}
+```
+
+**Response** (200 OK - first signature)
+
+```json
+{
+  "success": true,
+  "data": {
+    "draft_id": "11111111-1111-1111-1111-111111111111",
+    "status": "signed"
+  },
+  "error": null
+}
+```
+
+**Response** (409 Conflict - draft already signed)
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": "Draft already signed by another solver"
+}
+```
+
+**Validation**
+
+- Solver must be registered on-chain (verified via `get_solver_public_key`)
+- Signature must be Ed25519 format (64 bytes = 128 hex characters)
+- Signature must be valid hex
+
+**Example**
+
+```bash
+curl -X POST http://127.0.0.1:3333/draft-intent/11111111-1111-1111-1111-111111111111/signature \
+  -H "Content-Type: application/json" \
+  -d '{
+    "solver_address": "0xabc...",
+    "signature": "0x'$(python3 -c "print('a'*128)")'",
+    "public_key": "0x'$(python3 -c "print('b'*64)")'"
+  }'
+```
+
+### GET /draft-intent/:id/signature
+
+Poll for the signature of a draft intent. Returns the first signature received (FCFS). This is a polling endpoint - requesters call this regularly to check if a signature is available.
+
+**Response** (200 OK - signed)
+
+```json
+{
+  "success": true,
+  "data": {
+    "signature": "0x" + "a".repeat(128),
+    "solver_address": "0xabc...",
+    "timestamp": 1000000
+  },
+  "error": null
+}
+```
+
+**Response** (202 Accepted - pending)
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": "Draft not yet signed"
+}
+```
+
+**Response** (404 Not Found - draft doesn't exist)
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": "Draft not found"
+}
+```
+
+**Example**
+
+```bash
+curl http://127.0.0.1:3333/draft-intent/11111111-1111-1111-1111-111111111111/signature
 ```

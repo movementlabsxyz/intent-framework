@@ -42,13 +42,13 @@ Get test counts for each component:
 nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep "Total tests:"
 
 # Verifier tests
-nix develop -c bash -c "cd trusted-verifier && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Verifier: " sum " passed"}'
+RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Verifier: " sum " passed"}'
 
 # EVM tests
 nix develop -c bash -c "cd evm-intent-framework && npm test" 2>&1 | grep "passing"
 
 # Solver tests
-nix develop -c bash -c "cd solver && cargo test" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Solver: " sum " passed"}'
+RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet" 2>&1 | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print "Solver: " sum " passed"}'
 ```
 
 ## Context Requirements

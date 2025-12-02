@@ -27,6 +27,7 @@ mod crypto;
 mod evm_client;
 mod monitor;
 mod mvm_client;
+mod storage;
 mod validator;
 
 use config::Config;

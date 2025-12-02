@@ -23,6 +23,9 @@ mod inflow_mvm;
 mod outflow_evm;
 mod outflow_mvm;
 
+// Negotiation routing module
+mod negotiation;
+
 // Re-export ApiServer for convenience
 pub use generic::ApiServer;
 // Note: ApiResponse is used internally but not re-exported

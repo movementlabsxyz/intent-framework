@@ -9,7 +9,11 @@ pub mod crypto;
 pub mod evm_client;
 pub mod monitor;
 pub mod mvm_client;
+pub mod storage;
 pub mod validator;
+
+// Re-export storage types for tests
+pub use storage::draft_intents::{DraftIntentStatus, DraftIntentStore};
 
 // Re-export commonly used types
 pub use config::{ApiConfig, ChainConfig, Config, VerifierConfig};

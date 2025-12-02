@@ -462,7 +462,3 @@ impl EvmClient {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    // Tests will be added in integration tests or separate test file
-}

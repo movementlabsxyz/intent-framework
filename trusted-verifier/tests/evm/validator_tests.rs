@@ -7,7 +7,7 @@ use serde_json::json;
 use trusted_verifier::config::Config;
 use trusted_verifier::monitor::RequestIntentEvent;
 use trusted_verifier::validator::CrossChainValidator;
-use wiremock::matchers::{body_json, method, path};
+use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
@@ -145,7 +145,7 @@ async fn test_successful_evm_solver_validation() {
 
     let solver_address = "0xsolver_mvm";
     let registered_evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config, validator) =
+    let (_mock_server, config, _validator) =
         setup_mock_server_with_evm_address_response(solver_address, Some(registered_evm_address))
             .await;
 
@@ -180,7 +180,7 @@ async fn test_rejection_when_solver_not_registered() {
     let _ = tracing_subscriber::fmt::try_init();
 
     let solver_address = "0xunregistered_solver";
-    let (_mock_server, config, validator) = setup_mock_server_with_evm_address_response(
+    let (_mock_server, config, _validator) = setup_mock_server_with_evm_address_response(
         solver_address,
         None, // No EVM address (solver not registered)
     )
@@ -218,7 +218,7 @@ async fn test_rejection_when_evm_addresses_dont_match() {
 
     let solver_address = "0xsolver_mvm";
     let registered_evm_address = "0x1111111111111111111111111111111111111111";
-    let (_mock_server, config, validator) =
+    let (_mock_server, config, _validator) =
         setup_mock_server_with_evm_address_response(solver_address, Some(registered_evm_address))
             .await;
 
@@ -265,7 +265,7 @@ async fn test_evm_address_normalization() {
 
     for (escrow_addr, registered_addr, should_match) in test_cases {
         let solver_address = "0xsolver_mvm";
-        let (_mock_server, config, validator) =
+        let (_mock_server, config, _validator) =
             setup_mock_server_with_evm_address_response(solver_address, Some(registered_addr))
                 .await;
 

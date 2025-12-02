@@ -575,6 +575,7 @@ impl MvmClient {
     ///
     /// * `Ok(Option<String>)` - Solver address if reserved, None if not reserved
     /// * `Err(anyhow::Error)` - Failed to query intent
+    #[allow(dead_code)] // Reserved for future use
     pub async fn get_intent_solver(
         &self,
         intent_address: &str,
@@ -742,6 +743,7 @@ impl MvmClient {
     ///
     /// * `Ok(Option<Vec<u8>>)` - Public key bytes if solver is registered, None otherwise
     /// * `Err(anyhow::Error)` - Failed to query registry
+    #[allow(dead_code)] // Reserved for future use
     pub async fn get_solver_public_key(
         &self,
         solver_address: &str,
@@ -802,8 +804,8 @@ impl MvmClient {
         solver_address: &str,
         registry_address: &str,
     ) -> Result<Option<String>> {
-        tracing::error!(
-            "DEBUG: get_solver_evm_address called with solver_address='{}' (len: {}, type: str), registry_address='{}' (len: {}, type: str)",
+        tracing::debug!(
+            "get_solver_evm_address called with solver_address='{}' (len: {}, type: str), registry_address='{}' (len: {}, type: str)",
             solver_address,
             solver_address.len(),
             registry_address,
@@ -816,8 +818,8 @@ impl MvmClient {
             .unwrap_or(solver_address)
             .to_lowercase();
 
-        tracing::error!(
-            "DEBUG: Normalized solver_address='{}' -> normalized='{}' (len: {})",
+        tracing::debug!(
+            "Normalized solver_address='{}' -> normalized='{}' (len: {})",
             solver_address,
             solver_addr_normalized,
             solver_addr_normalized.len()
@@ -876,8 +878,8 @@ impl MvmClient {
             }
         };
 
-        tracing::error!(
-            "DEBUG: connected_chain_evm_address field for solver '{}': {}",
+        tracing::debug!(
+            "connected_chain_evm_address field for solver '{}': {}",
             solver_address,
             serde_json::to_string(evm_addr_field).unwrap_or_else(|_| "failed to serialize".to_string())
         );
@@ -920,8 +922,8 @@ impl MvmClient {
         // Convert bytes to hex string with 0x prefix
         let hex_string = format!("0x{}", evm_bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>());
 
-        tracing::error!(
-            "DEBUG: Successfully extracted EVM address for solver '{}': {}",
+        tracing::debug!(
+            "Successfully extracted EVM address for solver '{}': {}",
             solver_address,
             hex_string
         );
@@ -1007,8 +1009,8 @@ impl MvmClient {
             })
             .collect();
         
-        tracing::error!(
-            "DEBUG: Looking for solver in registry. Input solver_address='{}' (type: str), normalized='{}' (type: str, len: {}), Available solvers (original -> normalized): {:?}",
+        tracing::debug!(
+            "Looking for solver in registry. Input solver_address='{}' (type: str), normalized='{}' (type: str, len: {}), Available solvers (original -> normalized): {:?}",
             solver_address,
             solver_addr_normalized,
             solver_addr_normalized.len(),
@@ -1020,8 +1022,8 @@ impl MvmClient {
             let key = entry_obj.get("key")?.as_str()?;
             let key_normalized = key.strip_prefix("0x").unwrap_or(key).to_lowercase();
             
-            tracing::error!(
-                "DEBUG: Comparing - Looking for: '{}' (normalized: '{}', len: {}) vs Registry key: '{}' (normalized: '{}', len: {}) -> Match: {}",
+            tracing::debug!(
+                "Comparing - Looking for: '{}' (normalized: '{}', len: {}) vs Registry key: '{}' (normalized: '{}', len: {}) -> Match: {}",
                 solver_address,
                 solver_addr_normalized,
                 solver_addr_normalized.len(),
@@ -1075,8 +1077,8 @@ impl MvmClient {
             return Ok(None);
         }
 
-        tracing::error!(
-            "DEBUG: connected_chain_evm_address vec for solver '{}': length={}, vec[0]={}",
+        tracing::debug!(
+            "connected_chain_evm_address vec for solver '{}': length={}, vec[0]={}",
             solver_address,
             vec_array.len(),
             serde_json::to_string(vec_array.get(0).unwrap_or(&serde_json::Value::Null)).unwrap_or_else(|_| "failed to serialize".to_string())
@@ -1159,8 +1161,8 @@ impl MvmClient {
             return Ok(None);
         }
 
-        tracing::error!(
-            "DEBUG: Successfully parsed EVM address bytes for solver '{}': length={}, first 5 bytes: {:?}",
+        tracing::debug!(
+            "Successfully parsed EVM address bytes for solver '{}': length={}, first 5 bytes: {:?}",
             solver_address,
             evm_bytes.len(),
             evm_bytes.iter().take(5).copied().collect::<Vec<_>>()
@@ -1183,6 +1185,7 @@ impl MvmClient {
     ///
     /// * `Ok(serde_json::Value)` - Function return value
     /// * `Err(anyhow::Error)` - Failed to call view function
+    #[allow(dead_code)] // Reserved for future use
     pub async fn call_view_function(
         &self,
         module_address: &str,
@@ -1277,9 +1280,3 @@ pub struct LimitOrderFulfillmentEvent {
     pub provided_amount: String,
     pub timestamp: String,
 }
-
-#[cfg(test)]
-mod tests {
-    // Tests will be added in integration tests or separate test file
-}
-

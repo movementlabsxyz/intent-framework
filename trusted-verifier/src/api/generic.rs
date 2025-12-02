@@ -13,6 +13,7 @@ use warp::Filter;
 use crate::config::Config;
 use crate::crypto::CryptoService;
 use crate::monitor::EventMonitor;
+use crate::storage::DraftIntentStore;
 use crate::validator::CrossChainValidator;
 
 // ============================================================================
@@ -295,6 +296,8 @@ pub struct ApiServer {
     validator: Arc<RwLock<CrossChainValidator>>,
     /// Cryptographic service for signature operations
     crypto_service: Arc<RwLock<CryptoService>>,
+    /// Draft intent store for negotiation routing
+    draft_store: Arc<RwLock<DraftIntentStore>>,
 }
 
 impl ApiServer {
@@ -324,6 +327,7 @@ impl ApiServer {
             monitor: Arc::new(RwLock::new(monitor)),
             validator: Arc::new(RwLock::new(validator)),
             crypto_service: Arc::new(RwLock::new(crypto_service)),
+            draft_store: Arc::new(RwLock::new(DraftIntentStore::new())),
         }
     }
 
@@ -366,12 +370,14 @@ impl ApiServer {
         &self,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         use super::inflow_generic;
+        use super::negotiation;
         use super::outflow_generic;
 
         let _config = self.config.clone();
         let monitor = self.monitor.clone();
         let _validator = self.validator.clone();
         let crypto_service = self.crypto_service.clone();
+        let draft_store = self.draft_store.clone();
 
         // Health check endpoint - returns service status
         let health = warp::path("health").and(warp::get()).map(|| {
@@ -437,6 +443,31 @@ impl ApiServer {
             .and(with_monitor(validate_inflow_monitor))
             .and_then(inflow_generic::handle_inflow_escrow_validation);
 
+        // Negotiation routing endpoints
+        // POST /draft-intent - Submit draft intent (open to any solver)
+        let create_draft_store = draft_store.clone();
+        let create_draft = warp::path("draft-intent")
+            .and(warp::post())
+            .and(warp::body::json())
+            .and(negotiation::with_draft_store(create_draft_store))
+            .and_then(negotiation::create_draft_intent_handler);
+
+        // GET /draft-intent/:id - Get draft intent status
+        let get_draft_store = draft_store.clone();
+        let get_draft = warp::path("draft-intent")
+            .and(warp::path::param())
+            .and(warp::get())
+            .and(negotiation::with_draft_store(get_draft_store))
+            .and_then(negotiation::get_draft_intent_handler);
+
+        // GET /draft-intents/pending - Get all pending drafts (all solvers see all drafts)
+        let get_pending_store = draft_store.clone();
+        let get_pending = warp::path("draft-intents")
+            .and(warp::path("pending"))
+            .and(warp::get())
+            .and(negotiation::with_draft_store(get_pending_store))
+            .and_then(negotiation::get_pending_drafts_handler);
+
         // Combine all routes
         health
             .or(events)
@@ -446,5 +477,8 @@ impl ApiServer {
             .or(public_key)
             .or(validate_outflow)
             .or(validate_inflow)
+            .or(create_draft)
+            .or(get_draft)
+            .or(get_pending)
     }
 }

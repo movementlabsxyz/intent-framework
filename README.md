@@ -28,9 +28,9 @@ Run from project root:
 
 ```bash
 nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123"
-nix develop -c bash -c "cd trusted-verifier && cargo test"
+RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet"
 nix develop -c bash -c "cd evm-intent-framework && npm test"
-nix develop -c bash -c "cd solver && cargo test"
+RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet"
 ```
 
 #### E2E Integration Tests (requires Docker)

@@ -24,6 +24,7 @@ mod outflow_evm;
 mod outflow_mvm;
 
 // Re-export public types and functions
+#[allow(unused_imports)] // These are used in tests via trusted_verifier::validator::*
 pub use generic::{
     get_chain_type_from_chain_id, normalize_address, CrossChainValidator,
     FulfillmentTransactionParams, ValidationResult,

@@ -13,6 +13,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 // ============================================================================
 
 /// Setup a mock server that responds to eth_getTransactionByHash
+#[allow(dead_code)]
 async fn setup_mock_transaction(
     transaction_hash: &str,
     calldata: &str,

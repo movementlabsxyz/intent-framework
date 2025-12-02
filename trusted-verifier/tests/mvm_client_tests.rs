@@ -687,3 +687,28 @@ async fn test_get_solver_public_key_ed25519_format() {
     assert_eq!(pk, Some(public_key), "Should return 32-byte public key");
     assert_eq!(pk.unwrap().len(), 32, "Public key should be 32 bytes");
 }
+
+/// Test that get_solver_public_key rejects addresses without 0x prefix
+/// What is tested: Address validation rejects malformed addresses
+/// Why: Addresses must have 0x prefix - missing prefix indicates a bug in calling code
+#[tokio::test]
+async fn test_get_solver_public_key_rejects_address_without_prefix() {
+    let registry_address = "0x1";
+    // Address WITHOUT 0x prefix - this should be rejected
+    let solver_address_no_prefix = "781a856e472a8cbc280cc979a6e3225355369dcea2980f7a4f00a1c4d09606f7";
+
+    let mock_server = MockServer::start().await;
+    let client = MvmClient::new(&mock_server.uri()).expect("Failed to create MvmClient");
+
+    let result = client
+        .get_solver_public_key(solver_address_no_prefix, registry_address)
+        .await;
+
+    assert!(result.is_err(), "Should reject address without 0x prefix");
+    let err = result.unwrap_err();
+    assert!(
+        err.to_string().contains("must start with 0x prefix"),
+        "Error should mention missing 0x prefix: {}",
+        err
+    );
+}

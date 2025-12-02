@@ -749,6 +749,19 @@ impl MvmClient {
         solver_address: &str,
         registry_address: &str,
     ) -> Result<Option<Vec<u8>>> {
+        // Validate solver address format: must have 0x prefix
+        if !solver_address.starts_with("0x") {
+            return Err(anyhow::anyhow!(
+                "Invalid solver address '{}': must start with 0x prefix",
+                solver_address
+            ));
+        }
+
+        tracing::debug!(
+            "Querying solver public key for address '{}'",
+            solver_address
+        );
+
         // Use view function to call solver_registry::get_public_key
         let result = self
             .call_view_function(

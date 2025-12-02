@@ -260,6 +260,22 @@ pub async fn submit_signature_handler(
         draft_id, request.solver_address
     );
 
+    // Validate solver address format: must have 0x prefix
+    if !request.solver_address.starts_with("0x") {
+        return Ok(warp::reply::with_status(
+            warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
+                success: false,
+                data: None,
+                error: Some(format!(
+                    "Invalid solver address '{}': must start with 0x prefix",
+                    request.solver_address
+                )),
+            }),
+            StatusCode::BAD_REQUEST,
+        ));
+    }
+    let solver_address = request.solver_address.clone();
+
     // Validate solver is registered on-chain
     let registry_address = &config.hub_chain.intent_module_address;
     let hub_rpc_url = &config.hub_chain.rpc_url;
@@ -281,7 +297,7 @@ pub async fn submit_signature_handler(
 
     // Check if solver is registered
     let solver_registered = match mvm_client
-        .get_solver_public_key(&request.solver_address, registry_address)
+        .get_solver_public_key(&solver_address, registry_address)
         .await
     {
         Ok(Some(_)) => true,
@@ -306,7 +322,7 @@ pub async fn submit_signature_handler(
                 data: None,
                 error: Some(format!(
                     "Solver {} is not registered on-chain",
-                    request.solver_address
+                    solver_address
                 )),
             }),
             StatusCode::BAD_REQUEST,
@@ -330,7 +346,7 @@ pub async fn submit_signature_handler(
     let result = store_write
         .add_signature(
             &draft_id,
-            request.solver_address.clone(),
+            solver_address.clone(),
             request.signature.clone(),
             request.public_key.clone(),
         )

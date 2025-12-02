@@ -454,17 +454,27 @@ submit_signature_to_verifier() {
         exit 1
     fi
     
+    # Normalize solver address: ensure 0x prefix (aptos config returns addresses without prefix)
+    local normalized_solver_address
+    if [ "${solver_address#0x}" != "$solver_address" ]; then
+        # Already has 0x prefix
+        normalized_solver_address="$solver_address"
+    else
+        # Add 0x prefix
+        normalized_solver_address="0x$solver_address"
+    fi
+    
     local verifier_url=$(get_verifier_url "$verifier_port")
     
     log "   Submitting signature to verifier..."
     log "     Draft ID: $draft_id"
-    log "     Solver: $solver_address"
+    log "     Solver: $normalized_solver_address"
     
     local response
     response=$(curl -s -X POST "${verifier_url}/draft-intent/${draft_id}/signature" \
         -H "Content-Type: application/json" \
         -d "{
-            \"solver_address\": \"$solver_address\",
+            \"solver_address\": \"$normalized_solver_address\",
             \"signature\": \"$signature_hex\",
             \"public_key\": \"$public_key_hex\"
         }" 2>&1)

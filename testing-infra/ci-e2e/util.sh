@@ -323,9 +323,9 @@ submit_draft_intent() {
             \"expiry_time\": $expiry_time
         }"
     
-    # Log the request for debugging
-    log "     DEBUG: Request body:"
-    log "$request_body"
+    # Log the request for debugging (use log_and_echo to see in CI output)
+    log_and_echo "     DEBUG: Request body:"
+    log_and_echo "$request_body"
     
     local response
     response=$(curl -s -X POST "${verifier_url}/draft-intent" \

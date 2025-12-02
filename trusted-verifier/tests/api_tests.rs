@@ -203,3 +203,52 @@ async fn test_signature_submission_missing_fields() {
     let body: ApiResponse<()> = serde_json::from_slice(response.body()).unwrap();
     assert!(!body.success);
 }
+
+/// Test that signature submission route doesn't match draft intent route
+/// What is tested: Route matching - /draft-intent/:id/signature vs /draft-intent
+/// Why: Prevents regression where sub-paths incorrectly match parent route
+#[tokio::test]
+async fn test_signature_route_not_confused_with_draft_route() {
+    let api_server = create_test_api_server().await;
+    let routes = api_server.test_routes();
+
+    // Create draft first
+    let create_response = request()
+        .method("POST")
+        .path("/draft-intent")
+        .json(&valid_draft_request())
+        .reply(&routes)
+        .await;
+
+    let create_body: ApiResponse<serde_json::Value> =
+        serde_json::from_slice(create_response.body()).unwrap();
+    let draft_id = create_body.data.as_ref().unwrap()["draft_id"]
+        .as_str()
+        .unwrap();
+
+    // Submit a valid signature request structure to the signature endpoint
+    // This should NOT return "missing requester_address" error
+    let signature_request = json!({
+        "solver_address": "0x456",
+        "signature": format!("0x{}", "a".repeat(128)),
+        "public_key": format!("0x{}", "b".repeat(64))
+    });
+
+    let response = request()
+        .method("POST")
+        .path(&format!("/draft-intent/{}/signature", draft_id))
+        .json(&signature_request)
+        .reply(&routes)
+        .await;
+
+    // Should NOT be BAD_REQUEST with "missing requester_address"
+    // (that would mean it hit the wrong route)
+    let body: ApiResponse<serde_json::Value> = serde_json::from_slice(response.body()).unwrap();
+    if let Some(error) = &body.error {
+        assert!(
+            !error.contains("requester_address"),
+            "Route matching bug: signature endpoint matched draft-intent route. Error: {}",
+            error
+        );
+    }
+}

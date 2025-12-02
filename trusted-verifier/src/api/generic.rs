@@ -498,6 +498,7 @@ impl ApiServer {
         // POST /draft-intent - Submit draft intent (open to any solver)
         let create_draft_store = draft_store.clone();
         let create_draft = warp::path("draft-intent")
+            .and(warp::path::end()) // Exact match - don't match /draft-intent/:id/...
             .and(warp::post())
             .and(warp::body::bytes())
             .and_then(move |body: Bytes| {

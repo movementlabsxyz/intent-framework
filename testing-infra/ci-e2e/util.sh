@@ -548,6 +548,13 @@ build_draft_data() {
     local issuer="$9"
     local extra_fields="${10:-{}}"
     
+    # Validate extra_fields is valid JSON, default to {} if not
+    local validated_extra
+    if ! validated_extra=$(echo "$extra_fields" | jq . 2>/dev/null); then
+        log "   Warning: extra_fields is not valid JSON, using empty object"
+        validated_extra="{}"
+    fi
+    
     # Build the JSON object
     local json=$(jq -n \
         --arg om "$offered_metadata" \
@@ -559,7 +566,7 @@ build_draft_data() {
         --arg et "$expiry_time" \
         --arg ii "$intent_id" \
         --arg is "$issuer" \
-        --argjson extra "$extra_fields" \
+        --argjson extra "$validated_extra" \
         '{
             offered_metadata: $om,
             offered_amount: $oa,

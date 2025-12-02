@@ -494,11 +494,3 @@ pub fn with_draft_store(
 {
     warp::any().map(move || store.clone())
 }
-
-/// Helper function to inject Config into handlers.
-pub fn with_config(
-    config: Arc<Config>,
-) -> impl Filter<Extract = (Arc<Config>,), Error = std::convert::Infallible> + Clone {
-    warp::any().map(move || config.clone())
-}
-

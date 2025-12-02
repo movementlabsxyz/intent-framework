@@ -7,8 +7,9 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::info;
-use warp::Filter;
+use tracing::{debug, error, info};
+use warp::{http::StatusCode, Filter, Rejection, Reply};
+use warp::hyper::body::Bytes;
 
 use crate::config::Config;
 use crate::crypto::CryptoService;
@@ -279,6 +280,56 @@ pub fn with_validator(
 }
 
 // ============================================================================
+// CUSTOM REJECTION TYPES
+// ============================================================================
+
+/// Custom rejection for JSON deserialization errors
+#[derive(Debug)]
+pub struct JsonDeserializeError(pub String);
+
+impl warp::reject::Reject for JsonDeserializeError {}
+
+// ============================================================================
+// REJECTION HANDLER
+// ============================================================================
+
+/// Global rejection handler for all API routes.
+///
+/// This function handles all warp rejections and converts them into
+/// standardized API responses with appropriate HTTP status codes.
+///
+/// # Arguments
+///
+/// * `rej` - The warp rejection to handle
+///
+/// # Returns
+///
+/// A warp reply with an error response
+pub async fn handle_rejection(rej: Rejection) -> Result<impl Reply, std::convert::Infallible> {
+    let (status, message) = if let Some(err) = rej.find::<JsonDeserializeError>() {
+        (StatusCode::BAD_REQUEST, err.0.clone())
+    } else if let Some(err) = rej.find::<warp::filters::body::BodyDeserializeError>() {
+        (StatusCode::BAD_REQUEST, format!("Invalid JSON: {}", err))
+    } else if rej.is_not_found() {
+        (StatusCode::NOT_FOUND, "Endpoint not found".to_string())
+    } else if rej.find::<warp::reject::MethodNotAllowed>().is_some() {
+        (StatusCode::METHOD_NOT_ALLOWED, "Method not allowed".to_string())
+    } else {
+        error!("Unhandled rejection: {:?}", rej);
+        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string())
+    };
+
+    Ok(warp::reply::with_status(
+        warp::reply::json(&ApiResponse::<()> {
+            success: false,
+            data: None,
+            error: Some(message),
+        }),
+        status,
+    ))
+}
+
+// ============================================================================
 // API SERVER IMPLEMENTATION
 // ============================================================================
 
@@ -366,9 +417,9 @@ impl ApiServer {
     /// # Returns
     ///
     /// A warp filter containing all API routes
-    fn create_routes(
+    pub(crate) fn create_routes(
         &self,
-    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    ) -> impl Filter<Extract = impl warp::Reply, Error = std::convert::Infallible> + Clone {
         use super::inflow_generic;
         use super::negotiation;
         use super::outflow_generic;
@@ -448,9 +499,24 @@ impl ApiServer {
         let create_draft_store = draft_store.clone();
         let create_draft = warp::path("draft-intent")
             .and(warp::post())
-            .and(warp::body::json())
-            .and(negotiation::with_draft_store(create_draft_store))
-            .and_then(negotiation::create_draft_intent_handler);
+            .and(warp::body::bytes())
+            .and_then(move |body: Bytes| {
+                let store = create_draft_store.clone();
+                async move {
+                    // Log raw request body for debugging
+                    let body_str = String::from_utf8_lossy(&body);
+                    debug!("POST /draft-intent - Received body: {}", body_str);
+
+                    // Deserialize and handle
+                    match serde_json::from_slice::<negotiation::DraftIntentRequest>(&body) {
+                        Ok(request) => negotiation::create_draft_intent_handler(request, store).await,
+                        Err(e) => {
+                            error!("Draft intent deserialization failed: {}. Body: {}", e, body_str);
+                            Err(warp::reject::custom(JsonDeserializeError(format!("Invalid JSON: {}", e))))
+                        }
+                    }
+                }
+            });
 
         // GET /draft-intent/:id - Get draft intent status
         let get_draft_store = draft_store.clone();
@@ -470,15 +536,30 @@ impl ApiServer {
 
         // POST /draft-intent/:id/signature - Solver submits signature (FCFS)
         let submit_sig_store = draft_store.clone();
-        let submit_sig_config = _config.clone();
+        let submit_sig_config = self.config.clone();
         let submit_signature = warp::path("draft-intent")
             .and(warp::path::param())
             .and(warp::path("signature"))
             .and(warp::post())
-            .and(warp::body::json())
-            .and(negotiation::with_draft_store(submit_sig_store))
-            .and(negotiation::with_config(submit_sig_config))
-            .and_then(negotiation::submit_signature_handler);
+            .and(warp::body::bytes())
+            .and_then(move |draft_id: String, body: Bytes| {
+                let store = submit_sig_store.clone();
+                let config = submit_sig_config.clone();
+                async move {
+                    // Log raw request body for debugging
+                    let body_str = String::from_utf8_lossy(&body);
+                    debug!("POST /draft-intent/{}/signature - Received body: {}", draft_id, body_str);
+
+                    // Deserialize and handle
+                    match serde_json::from_slice::<negotiation::SignatureSubmissionRequest>(&body) {
+                        Ok(request) => negotiation::submit_signature_handler(draft_id, request, store, config).await,
+                        Err(e) => {
+                            error!("Signature submission deserialization failed: {}. Body: {}", e, body_str);
+                            Err(warp::reject::custom(JsonDeserializeError(format!("Invalid JSON: {}", e))))
+                        }
+                    }
+                }
+            });
 
         // GET /draft-intent/:id/signature - Requester polls for signature
         let get_sig_store = draft_store.clone();
@@ -489,7 +570,7 @@ impl ApiServer {
             .and(negotiation::with_draft_store(get_sig_store))
             .and_then(negotiation::get_signature_handler);
 
-        // Combine all routes
+        // Combine all routes and apply rejection handler
         health
             .or(events)
             .or(approvals)
@@ -503,5 +584,12 @@ impl ApiServer {
             .or(get_pending)
             .or(submit_signature)
             .or(get_signature)
+            .recover(handle_rejection)
+    }
+
+    /// Public method for testing - exposes routes for integration tests
+    #[allow(dead_code)] // Used by tests
+    pub fn test_routes(&self) -> impl Filter<Extract = impl warp::Reply, Error = std::convert::Infallible> + Clone {
+        self.create_routes()
     }
 }

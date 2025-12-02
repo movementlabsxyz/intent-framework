@@ -316,12 +316,17 @@ submit_draft_intent() {
     log "   Submitting draft intent to verifier..."
     log "     Requester: $requester_address"
     
-    # Build request body
-    local request_body="{
-            \"requester_address\": \"$requester_address\",
-            \"draft_data\": $draft_data_json,
-            \"expiry_time\": $expiry_time
-        }"
+    # Build request body using jq to ensure valid JSON
+    local request_body
+    request_body=$(jq -n \
+        --arg ra "$requester_address" \
+        --argjson dd "$draft_data_json" \
+        --argjson et "$expiry_time" \
+        '{
+            requester_address: $ra,
+            draft_data: $dd,
+            expiry_time: $et
+        }')
     
     # Log the request for debugging (use log_and_echo to see in CI output)
     log_and_echo "     DEBUG: Request body:"
@@ -560,11 +565,13 @@ build_draft_data() {
     # Validate extra_fields is valid JSON, default to {} if not
     local validated_extra
     if ! validated_extra=$(echo "$extra_fields" | jq . 2>/dev/null); then
-        log "   Warning: extra_fields is not valid JSON, using empty object"
+        # Redirect warning to stderr so it doesn't contaminate JSON output
+        echo "   Warning: extra_fields is not valid JSON, using empty object" >&2
+        [ -n "$LOG_FILE" ] && echo "   Warning: extra_fields is not valid JSON, using empty object" >> "$LOG_FILE"
         validated_extra="{}"
     fi
     
-    # Build the JSON object
+    # Build the JSON object (redirect any warnings to stderr)
     local json
     json=$(jq -n \
         --arg om "$offered_metadata" \

@@ -308,7 +308,7 @@ pub async fn submit_signature_handler(
                 warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
                     success: false,
                     data: None,
-                    error: Some("Failed to verify solver registration".to_string()),
+                    error: Some(format!("Failed to verify solver registration: {}", e)),
                 }),
                 StatusCode::INTERNAL_SERVER_ERROR,
             ));

@@ -64,15 +64,15 @@
       "id": "5",
       "title": "Create configuration module",
       "description": "Configuration structs and TOML template for solver settings",
-      "status": "pending",
+      "status": "completed",
       "priority": "medium",
       "dependencies": ["3"],
-      "details": "Create solver/src/config.rs with SolverConfig, ServiceConfig, ChainsConfig (hub and connected chain settings), AcceptanceConfig (USD tokens by chain, exchange rates). Create solver/config/solver.template.toml with all settings.",
-      "testStrategy": "Unit tests for config loading and validation",
+      "details": "Created solver/src/config.rs with SolverConfig, ServiceConfig, ChainConfig, ConnectedChainConfig (MVM/EVM), AcceptanceConfig, SolverSigningConfig. Implemented SolverConfig::load() from TOML file with validation (duplicate chain IDs, token pair format, exchange rates). Created solver/config/solver.template.toml with all settings including verifier URL, hub/connected chain configs, token pairs, and solver signing config. Added 15 unit tests for validation, token pair conversion, TOML serialization, and file loading.",
+      "testStrategy": "Unit tests for config loading and validation (15 tests passing)",
       "subtasks": [
-        {"id": "5.1", "title": "Create config.rs with SolverConfig and nested structs", "status": "pending"},
-        {"id": "5.2", "title": "Implement SolverConfig::load() from TOML file", "status": "pending"},
-        {"id": "5.3", "title": "Create solver/config/solver.template.toml with all settings", "status": "pending"}
+        {"id": "5.1", "title": "Create config.rs with SolverConfig and nested structs", "status": "completed"},
+        {"id": "5.2", "title": "Implement SolverConfig::load() from TOML file", "status": "completed"},
+        {"id": "5.3", "title": "Create solver/config/solver.template.toml with all settings", "status": "completed"}
       ]
     },
     {
@@ -207,7 +207,7 @@
     "version": "1.0.0",
     "lastModified": "2025-12-03T12:00:00.000Z",
     "taskCount": 13,
-    "completedCount": 4,
+    "completedCount": 5,
     "phases": {
       "phase1": {
         "name": "Signing Service",

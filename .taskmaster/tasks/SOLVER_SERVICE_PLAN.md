@@ -248,15 +248,26 @@ HTTP client for verifier API communication.
 
 ### Task 5: Create configuration module
 
-**Status**: pending  
+**Status**: ✅ completed  
 **Dependencies**: Task 3
 
 Configuration structs and TOML loading.
 
 **Files**:
 
-1. `solver/src/config.rs` - `SolverConfig`, `ServiceConfig`, `ChainsConfig`, `AcceptanceConfig`
+1. `solver/src/config.rs` - `SolverConfig`, `ServiceConfig`, `ChainConfig`, `ConnectedChainConfig` (MVM/EVM), `AcceptanceConfig`, `SolverSigningConfig`
 2. `solver/config/solver.template.toml` - Template with all settings
+
+**Implementation**: Created comprehensive config module with:
+- `SolverConfig` main struct with nested configs
+- `ServiceConfig` for verifier URL and polling intervals
+- `ChainConfig` for hub chain settings
+- `ConnectedChainConfig` enum supporting both MVM and EVM chains
+- `AcceptanceConfig` with token pair string keys (converted to `TokenPair` structs via `get_token_pairs()`)
+- `SolverSigningConfig` for solver profile and address
+- `SolverConfig::load()` method with validation (duplicate chain IDs, token pair format, exchange rates)
+- `SolverConfig::get_token_pairs()` helper to convert string keys to `TokenPair` structs
+- 15 unit tests covering validation, token pair conversion, TOML serialization, and file loading
 
 **Commit**: `feat(solver): add configuration module and template`
 

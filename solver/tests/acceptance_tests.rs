@@ -10,6 +10,23 @@ use std::collections::HashMap;
 // HELPER FUNCTIONS
 // ============================================================================
 
+/// Create a base TokenPair with default test values
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let pair = TokenPair {
+///     desired_token: "0xccc...".to_string(),
+///     ..create_base_token_pair()
+/// };
+/// ```
+fn create_base_token_pair() -> solver::acceptance::TokenPair {
+    solver::acceptance::TokenPair {
+        offered_chain_id: 1,
+        offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        desired_chain_id: 2,
+        desired_token: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+    }
+}
+
 /// Create a base acceptance config with default test values
 fn test_config() -> AcceptanceConfig {
     use solver::acceptance::TokenPair;
@@ -19,21 +36,16 @@ fn test_config() -> AcceptanceConfig {
     // Token A -> Token B (1:1 rate)
     token_pairs.insert(
         TokenPair {
-            offered_chain_id: 1,
-            offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
-            desired_chain_id: 2,
-            desired_token: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+            ..create_base_token_pair()
         },
         1.0,  // 1:1 exchange rate
     );
     
-    // Token A -> NATIVE1 (0.5 rate: 1 NATIVE = 0.5 Token A, cross-chain)
+    // Token A -> Token C (chain 2) (0.5 rate: 1 Token C = 0.5 Token A, cross-chain)
     token_pairs.insert(
         TokenPair {
-            offered_chain_id: 1,
-            offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
-            desired_chain_id: 2,
-            desired_token: "NATIVE1".to_string(),
+            desired_token: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
+            ..create_base_token_pair()
         },
         0.5,  // 0.5 offered per 1 desired
     );
@@ -70,7 +82,9 @@ fn create_base_draft_data() -> DraftIntentData {
 #[test]
 fn test_token_pair_accept() {
     let config = test_config();
-    let draft = create_base_draft_data();  // 1:1 rate, offered=1000000, desired=1000000
+    let draft = DraftIntentData {
+        ..create_base_draft_data()  // 1:1 rate, offered=1000000, desired=1000000
+    };
     assert!(matches!(should_accept_draft(&draft, &config), AcceptanceResult::Accept));
 }
 
@@ -95,8 +109,8 @@ fn test_token_pair_reject_unfavorable() {
 fn test_token_pair_with_exchange_rate_accept() {
     let config = test_config();
     let draft = DraftIntentData {
-        desired_token: "NATIVE1".to_string(),  // Native token
-        desired_amount: 2000000,  // 2.0 NATIVE (at 0.5 rate, requires 1.0 offered)
+        desired_token: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),  // Token C
+        desired_amount: 2000000,  // 2.0 Token C (at 0.5 rate, requires 1.0 offered)
         ..create_base_draft_data()  // offered_amount: 1000000 (1.0) meets the requirement (2.0 * 0.5 = 1.0)
     };
     assert!(matches!(should_accept_draft(&draft, &config), AcceptanceResult::Accept));

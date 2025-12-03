@@ -1,0 +1,65 @@
+# Solver Service Configuration
+# 
+# This file contains all configuration settings for the solver service.
+# Copy this template to solver.toml and update the values for your environment.
+#
+# SECURITY WARNING: This file contains private keys and should never be committed to version control!
+
+# Service Configuration
+[service]
+verifier_url = "http://127.0.0.1:3333"  # Verifier API base URL
+polling_interval_ms = 2000               # Polling interval for checking pending drafts (milliseconds)
+
+# Hub Chain Configuration
+# The hub chain is where intents are created
+[hub_chain]
+name = "Hub Chain"                        # Human-readable name for the chain
+rpc_url = "http://127.0.0.1:8080/v1"     # RPC endpoint URL for blockchain communication
+chain_id = 1                              # Unique chain identifier
+module_address = "0x123"                 # Address of the intent framework module
+profile = "solver-chain1"                 # Aptos/Movement CLI profile name for this chain
+
+# Connected Chain Configuration
+# The connected chain is where escrows occur
+# Choose either "mvm" or "evm" type
+
+# Option 1: Move VM Chain
+[connected_chain]
+type = "mvm"
+name = "Connected Move VM Chain"          # Human-readable name for the chain
+rpc_url = "http://127.0.0.1:8082/v1"     # RPC endpoint URL for blockchain communication
+chain_id = 2                              # Unique chain identifier
+module_address = "0x123"                 # Address of the intent framework module
+profile = "solver-chain2"                # Aptos/Movement CLI profile name for this chain
+
+# Option 2: EVM Chain (uncomment and use instead of MVM config above)
+# [connected_chain]
+# type = "evm"
+# name = "Connected EVM Chain"            # Human-readable name for the chain
+# rpc_url = "https://sepolia.base.org"     # RPC endpoint URL for EVM chain
+# chain_id = 84532                         # Chain ID (e.g., 84532 for Base Sepolia)
+# escrow_contract_address = "0x..."         # Address of the IntentEscrow contract
+# private_key_env = "BASE_SOLVER_PRIVATE_KEY"  # Environment variable containing EVM private key
+
+# Acceptance Criteria
+# Defines which token pairs are supported and their exchange rates
+[acceptance]
+# Token pair format: "offered_chain_id:offered_token:desired_chain_id:desired_token" = exchange_rate
+# Exchange rate = how many offered tokens per 1 desired token
+# Example: If rate is 1.0, then 1 offered token = 1 desired token
+# Example: If rate is 0.5, then 0.5 offered tokens = 1 desired token (offered token is worth more)
+
+# Example: Token A (chain 1) -> Token B (chain 2) at 1:1 rate
+"1:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" = 1.0
+
+# Example: USDC (Base Sepolia) -> USDC (Ethereum Sepolia) at 1:1 rate
+# "84532:0x036CbD53842c5426634e7929541eC2318f3dCF7e:11155111:0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" = 1.0
+
+# Example: Token A (chain 1) -> Token C (chain 2) at 0.5 rate
+# "1:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2:0xcccccccccccccccccccccccccccccccccccccccc" = 0.5
+
+# Solver Signing Configuration
+[solver]
+profile = "solver-chain1"                # Aptos/Movement CLI profile name for solver account
+address = "0x..."                        # Solver address (0x-prefixed hex)
+

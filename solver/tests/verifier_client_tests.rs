@@ -152,7 +152,7 @@ fn test_pending_draft_deserialization() {
 #[test]
 fn test_poll_pending_drafts_success() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -180,10 +180,11 @@ fn test_poll_pending_drafts_success() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let drafts = client.poll_pending_drafts().unwrap();
 
     assert_eq!(drafts.len(), 1);
@@ -198,7 +199,7 @@ fn test_poll_pending_drafts_success() {
 #[test]
 fn test_poll_pending_drafts_empty() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -213,10 +214,11 @@ fn test_poll_pending_drafts_empty() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let drafts = client.poll_pending_drafts().unwrap();
 
     assert_eq!(drafts.len(), 0);
@@ -227,7 +229,7 @@ fn test_poll_pending_drafts_empty() {
 #[test]
 fn test_poll_pending_drafts_error() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -242,10 +244,11 @@ fn test_poll_pending_drafts_error() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let result = client.poll_pending_drafts();
 
     assert!(result.is_err());
@@ -261,7 +264,7 @@ fn test_poll_pending_drafts_error() {
 #[test]
 fn test_submit_signature_success() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -279,10 +282,11 @@ fn test_submit_signature_success() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
         solver_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
@@ -302,7 +306,7 @@ fn test_submit_signature_success() {
 #[test]
 fn test_submit_signature_conflict() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -317,10 +321,11 @@ fn test_submit_signature_conflict() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
         solver_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
@@ -341,7 +346,7 @@ fn test_submit_signature_conflict() {
 #[test]
 fn test_submit_signature_other_error() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -356,10 +361,11 @@ fn test_submit_signature_other_error() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
         solver_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
@@ -369,10 +375,13 @@ fn test_submit_signature_other_error() {
     let result = client.submit_signature("11111111-1111-1111-1111-111111111111", &submission);
 
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("Invalid signature format"));
+    let error_msg = result.unwrap_err().to_string();
+    // The error might be wrapped in "Verifier API error: " prefix
+    assert!(
+        error_msg.contains("Invalid signature format"),
+        "Error message should contain 'Invalid signature format', got: {}",
+        error_msg
+    );
 }
 
 // ----------------------------------------------------------------------------
@@ -384,7 +393,7 @@ fn test_submit_signature_other_error() {
 #[test]
 fn test_validate_outflow_fulfillment_success() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -407,10 +416,11 @@ fn test_validate_outflow_fulfillment_success() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let request = ValidateOutflowFulfillmentRequest {
         transaction_hash: "0x2222222222222222222222222222222222222222222222222222222222222222"
             .to_string(),
@@ -434,7 +444,7 @@ fn test_validate_outflow_fulfillment_success() {
 #[test]
 fn test_validate_outflow_fulfillment_failure() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -449,10 +459,11 @@ fn test_validate_outflow_fulfillment_failure() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let request = ValidateOutflowFulfillmentRequest {
         transaction_hash: "0x2222222222222222222222222222222222222222222222222222222222222222"
             .to_string(),
@@ -478,7 +489,7 @@ fn test_validate_outflow_fulfillment_failure() {
 #[test]
 fn test_get_approvals_success() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -500,10 +511,11 @@ fn test_get_approvals_success() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let approvals = client.get_approvals().unwrap();
 
     assert_eq!(approvals.len(), 1);
@@ -524,7 +536,7 @@ fn test_get_approvals_success() {
 #[test]
 fn test_get_approvals_empty() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         let response = json!({
@@ -539,10 +551,11 @@ fn test_get_approvals_empty() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let approvals = client.get_approvals().unwrap();
 
     assert_eq!(approvals.len(), 0);
@@ -573,7 +586,7 @@ fn test_network_error() {
 #[test]
 fn test_invalid_json_response() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let mock_server = rt.block_on(async {
+    let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("GET"))
@@ -582,10 +595,11 @@ fn test_invalid_json_response() {
             .mount(&mock_server)
             .await;
 
-        mock_server.uri()
+        let base_url = mock_server.uri().to_string();
+        (mock_server, base_url)
     });
 
-    let client = VerifierClient::new(mock_server);
+    let client = VerifierClient::new(base_url);
     let result = client.poll_pending_drafts();
 
     assert!(result.is_err());

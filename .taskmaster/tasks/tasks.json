@@ -1,9 +1,225 @@
 {
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "1",
+      "title": "Create tasks.json and plan backup",
+      "description": "Create backup files for the solver service implementation plan",
+      "status": "in-progress",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Create .taskmaster/tasks/tasks.json with all tasks and .taskmaster/tasks/SOLVER_SERVICE_PLAN.md with the full plan including code examples, configuration format, acceptance logic, and fulfillment automation.",
+      "testStrategy": "Verify files exist and contain correct content",
+      "subtasks": []
+    },
+    {
+      "id": "2",
+      "title": "Extract signing logic to library",
+      "description": "Refactor existing sign_intent.rs binary into reusable library modules",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["1"],
+      "details": "Create solver/src/lib.rs (crate root), solver/src/signing.rs (sign_intent_hash, get_private_key_from_profile), solver/src/hash.rs (IntentHashParams, get_intent_hash). Refactor solver/src/bin/sign_intent.rs to use library functions.",
+      "testStrategy": "Existing sign_intent binary should work unchanged. Run: cargo run --bin sign_intent -- --help",
+      "subtasks": [
+        {"id": "2.1", "title": "Create lib.rs crate root with module declarations", "status": "pending"},
+        {"id": "2.2", "title": "Create signing.rs with sign_intent_hash() and get_private_key_from_profile()", "status": "pending"},
+        {"id": "2.3", "title": "Create hash.rs with IntentHashParams and get_intent_hash()", "status": "pending"},
+        {"id": "2.4", "title": "Refactor sign_intent.rs binary to use library functions", "status": "pending"}
+      ]
+    },
+    {
+      "id": "3",
+      "title": "Create acceptance module",
+      "description": "Implement token validation and acceptance logic for draft intents",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["2"],
+      "details": "Create solver/src/acceptance.rs with DraftIntentData struct, AcceptanceResult enum, is_usd_token(), is_native_token(), should_accept_draft(). Rules: (1) USD->USD only if offered >= desired, (2) USD->MOVE at configured rate, (3) reject unknown token combinations.",
+      "testStrategy": "Unit tests for each acceptance rule: test_usd_to_usd_accept, test_usd_to_usd_reject_unfavorable, test_usd_to_move_accept, test_unknown_token_rejected",
+      "subtasks": [
+        {"id": "3.1", "title": "Create DraftIntentData struct and AcceptanceResult enum", "status": "pending"},
+        {"id": "3.2", "title": "Implement is_usd_token() - check against config USD token list", "status": "pending"},
+        {"id": "3.3", "title": "Implement is_native_token() - identify MOVE/APT/ETH", "status": "pending"},
+        {"id": "3.4", "title": "Implement should_accept_draft() with all rules", "status": "pending"},
+        {"id": "3.5", "title": "Add unit tests for acceptance logic", "status": "pending"}
+      ]
+    },
+    {
+      "id": "4",
+      "title": "Create verifier client",
+      "description": "HTTP client for communicating with the verifier API",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["2"],
+      "details": "Create solver/src/verifier_client.rs with VerifierClient struct. Methods: poll_pending_drafts() -> GET /draft-intents/pending, submit_signature() -> POST /draft-intent/:id/signature, validate_outflow_fulfillment() -> POST /validate-outflow-fulfillment, get_approvals() -> GET /approvals.",
+      "testStrategy": "Unit tests with mock HTTP responses",
+      "subtasks": [
+        {"id": "4.1", "title": "Create PendingDraft and SignatureSubmission structs", "status": "pending"},
+        {"id": "4.2", "title": "Implement poll_pending_drafts() - GET /draft-intents/pending", "status": "pending"},
+        {"id": "4.3", "title": "Implement submit_signature() - POST /draft-intent/:id/signature", "status": "pending"},
+        {"id": "4.4", "title": "Implement validate_outflow_fulfillment() - POST /validate-outflow-fulfillment", "status": "pending"},
+        {"id": "4.5", "title": "Implement get_approvals() - GET /approvals", "status": "pending"}
+      ]
+    },
+    {
+      "id": "5",
+      "title": "Create configuration module",
+      "description": "Configuration structs and TOML template for solver settings",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["3"],
+      "details": "Create solver/src/config.rs with SolverConfig, ServiceConfig, ChainsConfig (hub and connected chain settings), AcceptanceConfig (USD tokens by chain, exchange rates). Create solver/config/solver.template.toml with all settings.",
+      "testStrategy": "Unit tests for config loading and validation",
+      "subtasks": [
+        {"id": "5.1", "title": "Create config.rs with SolverConfig and nested structs", "status": "pending"},
+        {"id": "5.2", "title": "Implement SolverConfig::load() from TOML file", "status": "pending"},
+        {"id": "5.3", "title": "Create solver/config/solver.template.toml with all settings", "status": "pending"}
+      ]
+    },
+    {
+      "id": "6",
+      "title": "Create signing service loop",
+      "description": "Main signing loop that polls verifier and signs accepted drafts",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["3", "4", "5"],
+      "details": "Create solver/src/service/signing.rs with SigningService struct. Methods: run() - main polling loop, process_draft() - evaluate acceptance and sign if accepted, sign_and_submit() - get hash, sign, submit to verifier.",
+      "testStrategy": "Integration test with mock verifier",
+      "subtasks": [
+        {"id": "6.1", "title": "Create solver/src/service/mod.rs module root", "status": "pending"},
+        {"id": "6.2", "title": "Create SigningService struct with config and clients", "status": "pending"},
+        {"id": "6.3", "title": "Implement run() - main polling loop with interval", "status": "pending"},
+        {"id": "6.4", "title": "Implement process_draft() and sign_and_submit()", "status": "pending"}
+      ]
+    },
+    {
+      "id": "7",
+      "title": "Create main entry point (signing only)",
+      "description": "Main binary for running solver signing service",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["6"],
+      "details": "Create solver/src/main.rs with Args struct (clap), main() function that initializes tracing, loads config, creates SigningService, runs service loop. Update solver/Cargo.toml with new deps.",
+      "testStrategy": "Manual testing: cargo run --bin solver -- --help",
+      "subtasks": [
+        {"id": "7.1", "title": "Create main.rs with Args and main()", "status": "pending"},
+        {"id": "7.2", "title": "Update Cargo.toml with tokio, toml, tracing deps", "status": "pending"}
+      ]
+    },
+    {
+      "id": "8",
+      "title": "Create chain clients module",
+      "description": "Clients for interacting with hub and connected chains",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["7"],
+      "details": "Create solver/src/chains/ module with hub.rs (get_intent_events, fulfill_inflow_intent, fulfill_outflow_intent), connected_mvm.rs (get_escrow_events, transfer_with_intent_id), connected_evm.rs (transfer_with_intent_id for ERC20).",
+      "testStrategy": "Unit tests with mock RPC responses",
+      "subtasks": [
+        {"id": "8.1", "title": "Create solver/src/chains/mod.rs module root", "status": "pending"},
+        {"id": "8.2", "title": "Create hub.rs with intent and fulfillment functions", "status": "pending"},
+        {"id": "8.3", "title": "Create connected_mvm.rs with escrow and transfer functions", "status": "pending"},
+        {"id": "8.4", "title": "Create connected_evm.rs with ERC20 transfer functions", "status": "pending"}
+      ]
+    },
+    {
+      "id": "9",
+      "title": "Create intent tracker",
+      "description": "Tracks signed intents and monitors for their creation on hub chain",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["8"],
+      "details": "Create solver/src/service/tracker.rs with IntentTracker struct. Methods: add_signed_intent(), poll_for_created_intents() - query hub chain for intent creation events, get_pending_intents() - return intents ready for fulfillment. Distinguish inflow vs outflow.",
+      "testStrategy": "Unit tests for intent state management",
+      "subtasks": [
+        {"id": "9.1", "title": "Create TrackedIntent struct with state enum", "status": "pending"},
+        {"id": "9.2", "title": "Create IntentTracker with in-memory storage", "status": "pending"},
+        {"id": "9.3", "title": "Implement poll_for_created_intents() using hub client", "status": "pending"},
+        {"id": "9.4", "title": "Implement get_pending_intents() with inflow/outflow filtering", "status": "pending"}
+      ]
+    },
+    {
+      "id": "10",
+      "title": "Create inflow fulfillment service",
+      "description": "Monitors escrow deposits and fulfills inflow intents on hub",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["8", "9"],
+      "details": "Create solver/src/service/inflow.rs with InflowService struct. Methods: poll_for_escrows() - monitor connected chain for escrow deposits matching tracked intents, fulfill_inflow_intent() - call hub chain fulfill_inflow_request_intent, release_escrow() - get verifier approval and call complete_escrow_from_fa.",
+      "testStrategy": "Integration test with mock chains and verifier",
+      "subtasks": [
+        {"id": "10.1", "title": "Create InflowService struct", "status": "pending"},
+        {"id": "10.2", "title": "Implement poll_for_escrows() using connected chain client", "status": "pending"},
+        {"id": "10.3", "title": "Implement fulfill_inflow_intent() using hub client", "status": "pending"},
+        {"id": "10.4", "title": "Implement release_escrow() with verifier approval", "status": "pending"}
+      ]
+    },
+    {
+      "id": "11",
+      "title": "Create outflow fulfillment service",
+      "description": "Executes outflow transfers and fulfills hub intents",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["8", "9"],
+      "details": "Create solver/src/service/outflow.rs with OutflowService struct. Methods: execute_connected_transfer() - transfer tokens on connected chain (MVM via transfer_with_intent_id, EVM via ERC20 transfer with intent_id in calldata), get_verifier_approval() - call /validate-outflow-fulfillment, fulfill_outflow_intent() - call hub chain fulfill_outflow_request_intent with verifier signature.",
+      "testStrategy": "Integration test with mock chains and verifier",
+      "subtasks": [
+        {"id": "11.1", "title": "Create OutflowService struct", "status": "pending"},
+        {"id": "11.2", "title": "Implement execute_connected_transfer() for MVM", "status": "pending"},
+        {"id": "11.3", "title": "Implement execute_connected_transfer() for EVM", "status": "pending"},
+        {"id": "11.4", "title": "Implement get_verifier_approval() using verifier client", "status": "pending"},
+        {"id": "11.5", "title": "Implement fulfill_outflow_intent() using hub client", "status": "pending"}
+      ]
+    },
+    {
+      "id": "12",
+      "title": "Integrate all services into main loop",
+      "description": "Combine signing, tracking, and fulfillment into unified service",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["10", "11"],
+      "details": "Modify solver/src/main.rs to initialize all services and run concurrent loops using tokio: signing loop (poll verifier, sign drafts), tracking loop (monitor hub for intent creation), inflow loop (monitor escrows, fulfill), outflow loop (execute transfers, fulfill).",
+      "testStrategy": "Full integration test with all services running",
+      "subtasks": [
+        {"id": "12.1", "title": "Update main.rs to initialize all services", "status": "pending"},
+        {"id": "12.2", "title": "Implement concurrent loop execution with tokio::select", "status": "pending"},
+        {"id": "12.3", "title": "Add graceful shutdown handling", "status": "pending"}
+      ]
+    },
+    {
+      "id": "13",
+      "title": "Update E2E tests to use solver service",
+      "description": "Update shell scripts to run solver as a background service",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["12"],
+      "details": "Create testing-infra/ci-e2e/start-solver.sh (generate config, build solver, run in background, save PID). Create stop-solver.sh. Update run-tests-*.sh to start/stop solver. Simplify or remove manual signing/fulfillment scripts since solver handles them automatically.",
+      "testStrategy": "Run full E2E test suite with solver as service",
+      "subtasks": [
+        {"id": "13.1", "title": "Create start-solver.sh with config generation and startup", "status": "pending"},
+        {"id": "13.2", "title": "Create stop-solver.sh for cleanup", "status": "pending"},
+        {"id": "13.3", "title": "Update run-tests-*.sh to start/stop solver service", "status": "pending"},
+        {"id": "13.4", "title": "Simplify *-submit-hub-intent.sh to remove manual signing", "status": "pending"},
+        {"id": "13.5", "title": "Remove or simplify fulfillment scripts (solver handles)", "status": "pending"}
+      ]
+    }
+  ],
   "metadata": {
     "version": "1.0.0",
-    "lastModified": "2025-12-02T12:00:00.000Z",
-    "taskCount": 0,
-    "completedCount": 0
+    "lastModified": "2025-12-03T12:00:00.000Z",
+    "taskCount": 13,
+    "completedCount": 0,
+    "phases": {
+      "phase1": {
+        "name": "Signing Service",
+        "tasks": ["1", "2", "3", "4", "5", "6", "7"],
+        "description": "Core signing loop that polls verifier and signs accepted drafts"
+      },
+      "phase2": {
+        "name": "Fulfillment Automation",
+        "tasks": ["8", "9", "10", "11", "12", "13"],
+        "description": "Monitoring and automatic fulfillment of signed intents"
+      }
+    }
   }
 }

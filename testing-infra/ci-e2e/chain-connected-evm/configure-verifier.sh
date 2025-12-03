@@ -32,6 +32,16 @@ log_and_echo "   EVM Verifier: $VERIFIER_ADDRESS"
 # Setup verifier config
 setup_verifier_config
 
+# First, remove any commented-out EVM section from MVM-only tests
+# This handles the case where MVM test ran before EVM test
+sed -i '/^# MVM-only test:.*connected_chain_evm/d' "$VERIFIER_TESTING_CONFIG"
+sed -i '/^# MVM-only test: name = "Connected EVM Chain"/d' "$VERIFIER_TESTING_CONFIG"
+sed -i '/^# MVM-only test: rpc_url/d' "$VERIFIER_TESTING_CONFIG"
+sed -i '/^# MVM-only test: escrow_contract_address/d' "$VERIFIER_TESTING_CONFIG"
+sed -i '/^# MVM-only test: chain_id/d' "$VERIFIER_TESTING_CONFIG"
+sed -i '/^# MVM-only test: verifier_address/d' "$VERIFIER_TESTING_CONFIG"
+sed -i '/^# MVM-only test: *$/d' "$VERIFIER_TESTING_CONFIG"
+
 # Add or update EVM chain section in verifier_testing.toml
 if grep -q "^\[connected_chain_evm\]" "$VERIFIER_TESTING_CONFIG"; then
     # Update existing section
@@ -42,11 +52,12 @@ if grep -q "^\[connected_chain_evm\]" "$VERIFIER_TESTING_CONFIG"; then
 else
     # Add new section before [verifier] section
     if grep -q "^\[verifier\]" "$VERIFIER_TESTING_CONFIG"; then
-        sed -i "/^\[verifier\]/i [connected_chain_evm]\nrpc_url = \"http://127.0.0.1:8545\"\nescrow_contract_address = \"$CONTRACT_ADDRESS\"\nchain_id = 31337\nverifier_address = \"$VERIFIER_ADDRESS\"\n" "$VERIFIER_TESTING_CONFIG"
+        sed -i "/^\[verifier\]/i [connected_chain_evm]\nname = \"Connected EVM Chain\"\nrpc_url = \"http://127.0.0.1:8545\"\nescrow_contract_address = \"$CONTRACT_ADDRESS\"\nchain_id = 31337\nverifier_address = \"$VERIFIER_ADDRESS\"\n" "$VERIFIER_TESTING_CONFIG"
     else
         # Append at end of file
         echo "" >> "$VERIFIER_TESTING_CONFIG"
         echo "[connected_chain_evm]" >> "$VERIFIER_TESTING_CONFIG"
+        echo "name = \"Connected EVM Chain\"" >> "$VERIFIER_TESTING_CONFIG"
         echo "rpc_url = \"http://127.0.0.1:8545\"" >> "$VERIFIER_TESTING_CONFIG"
         echo "escrow_contract_address = \"$CONTRACT_ADDRESS\"" >> "$VERIFIER_TESTING_CONFIG"
         echo "chain_id = 31337" >> "$VERIFIER_TESTING_CONFIG"

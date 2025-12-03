@@ -40,12 +40,14 @@ if [ ! -f "$CONFIG_PATH" ]; then
     exit 1
 fi
 
-VERIFIER_ETH_ADDRESS=$(cd "$VERIFIER_DIR" && VERIFIER_CONFIG_PATH="$CONFIG_PATH" cargo run --bin get_verifier_eth_address 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+VERIFIER_ETH_OUTPUT=$(cd "$PROJECT_ROOT" && env HOME="${HOME}" VERIFIER_CONFIG_PATH="$CONFIG_PATH" nix develop -c bash -c "cd trusted-verifier && cargo run --bin get_verifier_eth_address 2>&1" | tee -a "$LOG_FILE")
+VERIFIER_ETH_ADDRESS=$(echo "$VERIFIER_ETH_OUTPUT" | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
 
 if [ -z "$VERIFIER_ETH_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Could not compute verifier Ethereum address from config"
+    log_and_echo "   Command output:"
+    echo "$VERIFIER_ETH_OUTPUT"
     log_and_echo "   Check that trusted-verifier/config/verifier_testing.toml has valid keys"
-    log_and_echo "   Run: cargo run --bin get_verifier_eth_address in trusted-verifier directory"
     exit 1
 fi
 

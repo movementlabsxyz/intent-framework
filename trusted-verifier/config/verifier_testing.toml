@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 1
-intent_module_address = "0x6807f92e54aedc4172a592bffca600e13a6b99682c6f7404e9668421816fd097"
-known_accounts = ["1a162dddde85330d95c7ae6b0bfa427aa418a596f9537b32bb98744833e46310", "1c0fff196724415f3d39d66810f71aa9a90e5026617ed3b30fbf5f7fa2077fe5"]
+intent_module_address = "0x1242b68c9e64578cf86353f5b27573d072421a8730659b86ecdb213c688e6d44"
+known_accounts = ["7c22bac1057f36f79971fcf37427cee4b924a0151bac5193c794086798c337d6", "c82cc32a2744a72a187802b9b67cbe7600f2c13a741bf7c1fda75791e809e53a"]
 
 # Connected Move VM Chain Configuration  
 # The connected Move VM chain is where escrow events occur and are monitored
@@ -23,13 +23,13 @@ known_accounts = ["bde46a2e3fdd41e5e89c55c59bb9b4d66fcb4868c2457d87fe59fdf6c7615
 
 # Connected EVM Chain Configuration
 # The connected EVM chain is where EVM escrow events occur and are monitored
-# MVM-only test: # MVM-only test: [connected_chain_evm]
-# MVM-only test: name = "Connected EVM Chain"
-# MVM-only test: rpc_url = "http://127.0.0.1:8545"
-# MVM-only test: escrow_contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-# MVM-only test: chain_id = 31337
-# MVM-only test: verifier_address = "0xf8ee8a600f9ab9b67135a533d20502eba6b52c95"
-# MVM-only test: 
+[connected_chain_evm]
+name = "Connected EVM Chain"
+rpc_url = "http://127.0.0.1:8545"
+escrow_contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+chain_id = 31337
+verifier_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+
 [verifier]
 private_key = "lNqeNsdkUB4+UR9EihzMErmY2inmVnhNAJC2y2SDpSs="
 public_key = "NfUiwrwfjQR0kKZgUmbGLkwKrsT1+Z1FJSBMVjZ5dTc="
@@ -42,4 +42,3 @@ validation_timeout_ms = 30000
 host = "127.0.0.1"
 port = 3333
 cors_origins = ["http://localhost:3333"]
-

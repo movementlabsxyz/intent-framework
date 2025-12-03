@@ -275,7 +275,7 @@ Configuration structs and TOML loading.
 
 ### Task 6: Create signing service loop
 
-**Status**: pending  
+**Status**: ✅ completed  
 **Dependencies**: Task 3, Task 4, Task 5
 
 Main signing loop that polls verifier and signs accepted drafts.
@@ -286,24 +286,29 @@ Main signing loop that polls verifier and signs accepted drafts.
 - `run()` - main polling loop
 - `process_draft()` - evaluate acceptance, sign if accepted
 - `sign_and_submit()` - get hash, sign, submit to verifier
+- `parse_draft_data()` - parse JSON draft data from verifier
 
-**Commit**: `feat(solver): add signing service loop`
+**Implementation**: Created `SigningService` with polling loop, expiry checking, acceptance evaluation, and signature submission. Added comprehensive unit tests (18 tests) for parsing and expiry logic.
+
+**Commit**: `feat: add signing service implementation`
 
 ---
 
 ### Task 7: Create main entry point (signing only)
 
-**Status**: pending  
+**Status**: ✅ completed  
 **Dependencies**: Task 6
 
 Main binary for running solver signing service.
 
 **Files**:
 
-1. `solver/src/main.rs` - Entry point with Args (clap)
-2. Update `solver/Cargo.toml` - Add tokio, toml, tracing deps
+1. `solver/src/bin/solver.rs` - Entry point with Args (clap)
+2. Updated `solver/Cargo.toml` - Added tracing-subscriber dependency
 
-**Commit**: `feat(solver): add main entry point for signing service`
+**Implementation**: Created main binary with argument parsing, configuration loading, and service initialization. Supports `--config` flag and `SOLVER_CONFIG_PATH` environment variable.
+
+**Commit**: `feat: add main entry point for solver service`
 
 ---
 

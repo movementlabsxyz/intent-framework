@@ -8,7 +8,17 @@ See the [component README](../../solver/README.md) for quick start commands.
 
 ## Overview
 
-Command-line utilities for:
+The solver provides both **command-line utilities** and a **continuous service**:
+
+### Solver Service (New)
+
+A continuous service that automatically:
+
+1. **Polls verifier** for pending draft intents
+2. **Evaluates acceptance** based on configured token pairs and exchange rates
+3. **Signs and submits** signatures for accepted drafts (FCFS - first solver to sign wins)
+
+### Command-Line Utilities
 
 1. **Generate Signatures**: Sign `IntentToSign` structures for reserved intents
 2. **Build Transaction Templates**: Generate Move VM/EVM payload templates with embedded `intent_id` for outflow fulfillment
@@ -21,17 +31,71 @@ See [Negotiation Routing Guide](../docs/trusted-verifier/negotiation-routing.md)
 
 Components:
 
-- Signature Generator: Creates Ed25519 signatures for `IntentToSign` structures
-- Transaction Template Generator: Produces Move/EVM templates with embedded `intent_id`
-- Key Management: Reads solver private keys from Movement/Aptos configuration
+- **Solver Service**: Continuous service that polls verifier and signs accepted drafts
+- **Signature Generator**: Creates Ed25519 signatures for `IntentToSign` structures
+- **Transaction Template Generator**: Produces Move/EVM templates with embedded `intent_id`
+- **Key Management**: Reads solver private keys from Movement/Aptos configuration
 
 ## Project Structure
 
-```
+```text
 solver/
-├── src/bin/        # Utility binaries (sign_intent, connected_chain_tx_template)
+├── src/
+│   ├── bin/           # Binaries (solver service, sign_intent, connected_chain_tx_template)
+│   ├── service/        # Service modules (signing service loop)
+│   ├── acceptance.rs   # Token pair acceptance logic
+│   ├── config.rs       # Configuration management
+│   ├── crypto/         # Cryptographic operations (hashing, signing)
+│   └── verifier_client.rs  # HTTP client for verifier API
+├── config/             # Configuration templates
 └── Cargo.toml
 ```
+
+## Solver Service
+
+The solver service runs continuously, polling the verifier for pending drafts and automatically signing accepted intents.
+
+### Configuration
+
+Create a `solver.toml` configuration file based on the template:
+
+```bash
+cp solver/config/solver.template.toml solver.toml
+# Edit solver.toml with your settings
+```
+
+See `solver/config/solver.template.toml` for the complete configuration template with all available options and examples.
+
+### Running the Service
+
+```bash
+# Using config file
+cargo run --bin solver -- --config solver.toml
+
+# Using environment variable
+SOLVER_CONFIG_PATH=solver.toml cargo run --bin solver
+
+# Default location (solver.toml in current directory)
+cargo run --bin solver
+```
+
+The service will:
+
+1. Load configuration from the specified file or `SOLVER_CONFIG_PATH` environment variable
+2. Initialize logging and connect to the verifier
+3. Start polling for pending drafts at the configured interval
+4. Evaluate each draft against configured token pairs and exchange rates
+5. Sign and submit signatures for accepted drafts
+6. Handle FCFS conflicts (if another solver already signed)
+
+### Acceptance Logic
+
+The solver accepts drafts based on:
+
+- **Token Pair Support**: The draft's token pair must be configured
+- **Exchange Rate**: `offered_amount >= desired_amount * exchange_rate` (solver breaks even or profits)
+
+All tokens are treated as fungible assets - no hardcoded USD/NATIVE distinctions.
 
 ## Reserved Intents
 
@@ -83,6 +147,7 @@ For more details on the reserved intent flow, see [Protocol Documentation](../pr
 Outflow intents require solvers to execute a transfer on the connected chain with the hub `intent_id` encoded. The `connected_chain_tx_template` binary produces templates for Move VM and EVM transfers.
 
 **Move VM:**
+
 ```bash
 cargo run --bin connected_chain_tx_template -- \
   --chain mvm \

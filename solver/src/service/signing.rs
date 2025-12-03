@@ -114,7 +114,7 @@ impl SigningService {
         Ok(processed)
     }
 
-    /// Process a single draft intent.
+    /// Process a single draft-intent.
     ///
     /// Evaluates acceptance and signs/submits if accepted.
     ///
@@ -166,7 +166,7 @@ impl SigningService {
         parse_draft_data(draft_data)
     }
 
-    /// Sign a draft intent and submit to verifier.
+    /// Sign a draft-intent and submit to verifier.
     ///
     /// # Arguments
     ///

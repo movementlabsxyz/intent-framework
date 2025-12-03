@@ -33,10 +33,10 @@ pub struct ApiResponse<T> {
 }
 
 // ============================================================================
-// DRAFT INTENT STRUCTURES
+// DRAFT-INTENT STRUCTURES
 // ============================================================================
 
-/// Pending draft intent from verifier API.
+/// Pending draft-intent from verifier API.
 ///
 /// Matches the response format from GET /draft-intents/pending.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,7 +53,7 @@ pub struct PendingDraft {
     pub expiry_time: u64,
 }
 
-/// Request structure for submitting a signature for a draft intent.
+/// Request structure for submitting a signature for a draft-intent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignatureSubmission {
     /// Address of the solver submitting the signature
@@ -175,7 +175,7 @@ impl VerifierClient {
         }
     }
 
-    /// Poll for pending draft intents.
+    /// Poll for pending draft-intents.
     ///
     /// Returns all pending drafts (all solvers see all drafts).
     /// This is a polling endpoint - solvers call this regularly to discover new drafts.
@@ -205,7 +205,7 @@ impl VerifierClient {
         Ok(response.data.unwrap_or_default())
     }
 
-    /// Submit a signature for a draft intent.
+    /// Submit a signature for a draft-intent.
     ///
     /// The solver submits its signature to the verifier. The verifier implements FCFS logic:
     /// the first signature wins, and later signatures are rejected with 409 Conflict.

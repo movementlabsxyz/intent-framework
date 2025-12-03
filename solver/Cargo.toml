@@ -38,6 +38,6 @@ rand = "0.8"
 
 [dev-dependencies]
 rand = "0.8"
-wiremock = "0.6"
+wiremock = "0.5"
 tokio = { version = "1.0", features = ["full"] }
 

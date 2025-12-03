@@ -222,37 +222,96 @@ impl ConnectedEvmClient {
     /// The ERC20 contract ignores the extra intent_id bytes, but they remain in the transaction
     /// data for verifier tracking.
     ///
+    /// Calls the Hardhat script `transfer-with-intent-id.js` via `npx hardhat run`,
+    /// matching the approach used in E2E test scripts. The script uses Hardhat's signer[2]
+    /// (Solver account) for signing the transaction.
+    ///
     /// # Arguments
     ///
     /// * `token_address` - ERC20 token contract address
     /// * `recipient` - Recipient address
-    /// * `amount` - Transfer amount (in base units, e.g., wei)
-    /// * `intent_id` - Intent ID to append in calldata (32 bytes, hex format)
-    /// * `private_key` - Private key for signing the transaction
+    /// * `amount` - Transfer amount (in base units)
+    /// * `intent_id` - Intent ID to include in calldata (hex format with 0x prefix)
     ///
     /// # Returns
     ///
     /// * `Ok(String)` - Transaction hash
     /// * `Err(anyhow::Error)` - Failed to execute transfer
     ///
-    /// # Note
+    /// # TODO
     ///
-    /// This function requires signing the transaction. For now, this is a placeholder
-    /// that returns an error. Full implementation would require an Ethereum signing library
-    /// like `ethers` or `alloy`.
+    /// Future improvement: Implement this directly using a Rust Ethereum library instead of
+    /// calling Hardhat scripts. Good options include:
+    /// - `ethers-rs` (https://github.com/gakonst/ethers-rs)
+    /// - `alloy` (https://github.com/alloy-rs/alloy)
     pub async fn transfer_with_intent_id(
         &self,
-        _token_address: &str,
-        _recipient: &str,
-        _amount: u128,
-        _intent_id: &str,
-        _private_key: &str,
+        token_address: &str,
+        recipient: &str,
+        amount: u64,
+        intent_id: &str,
     ) -> Result<String> {
-        // TODO: Implement ERC20 transfer with intent_id using ethers-rs or alloy
-        // For now, return an error indicating this needs to be implemented
-        anyhow::bail!(
-            "transfer_with_intent_id not yet implemented. Requires Ethereum signing library (ethers-rs or alloy)"
-        )
+        // Determine project root (assume we're in solver/ directory, go up one level)
+        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
+        let project_root = current_dir
+            .parent()
+            .context("Failed to determine project root (expected solver/ to be subdirectory)")?;
+
+        let evm_framework_dir = project_root.join("evm-intent-framework");
+        if !evm_framework_dir.exists() {
+            anyhow::bail!(
+                "evm-intent-framework directory not found at: {}",
+                evm_framework_dir.display()
+            );
+        }
+
+        // Convert intent_id to EVM format (uint256)
+        let intent_id_evm = if intent_id.starts_with("0x") {
+            intent_id.to_string()
+        } else {
+            format!("0x{}", intent_id)
+        };
+
+        // Call Hardhat script via nix develop
+        let output = Command::new("nix")
+            .args(&[
+                "develop",
+                project_root.to_str().unwrap(),
+                "-c",
+                "bash",
+                "-c",
+                &format!(
+                    "cd '{}' && TOKEN_ADDRESS='{}' RECIPIENT='{}' AMOUNT='{}' INTENT_ID='{}' npx hardhat run scripts/transfer-with-intent-id.js --network localhost",
+                    evm_framework_dir.display(),
+                    token_address,
+                    recipient,
+                    amount,
+                    intent_id_evm
+                ),
+            ])
+            .output()
+            .context("Failed to execute nix develop command")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            anyhow::bail!(
+                "Hardhat transfer-with-intent-id script failed:\nstderr: {}\nstdout: {}",
+                stderr,
+                stdout
+            );
+        }
+
+        // Extract transaction hash from output
+        // The script outputs: "Transaction hash: 0x..."
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
+            if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
+                return Ok(hash.to_string());
+            }
+        }
+
+        anyhow::bail!("Could not extract transaction hash from Hardhat output: {}", output_str)
     }
 
     /// Claims an escrow by releasing funds to the solver with verifier approval

@@ -390,6 +390,37 @@ generate_solver_signature() {
         setup_project_root
     fi
 
+    # Normalize addresses to ensure they have 0x prefix (required by get_intent_hash)
+    # aptos config returns addresses without 0x prefix, but get_intent_hash requires it
+    local normalize_address() {
+        local addr="$1"
+        if [ "${addr#0x}" != "$addr" ]; then
+            # Already has 0x prefix
+            echo "$addr"
+        else
+            # Add 0x prefix
+            echo "0x$addr"
+        fi
+    }
+    
+    # Strip 0x from chain_address (used in function ID format: 0x{chain_address}::...)
+    local strip_0x() {
+        local addr="$1"
+        if [ "${addr#0x}" != "$addr" ]; then
+            # Has 0x prefix, strip it
+            echo "${addr#0x}"
+        else
+            # No prefix, return as-is
+            echo "$addr"
+        fi
+    }
+    
+    local normalized_issuer=$(normalize_address "$issuer")
+    local normalized_solver=$(normalize_address "$solver")
+    local normalized_chain_address=$(strip_0x "$chain_address")  # Strip 0x for function ID format
+    local normalized_offered_metadata=$(normalize_address "$offered_metadata")
+    local normalized_desired_metadata=$(normalize_address "$desired_metadata")
+    
     # Run the Rust binary to generate signature
     # Use a temp file to capture output while also logging
     local temp_output_file
@@ -399,12 +430,12 @@ generate_solver_signature() {
     if [ -n "$log_file" ]; then
         # Run command, log everything, and capture to temp file
         # Pass HOME environment variable to ensure Aptos config can be found
-        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --offered-metadata \"$offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$normalized_chain_address\" --offered-metadata \"$normalized_offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$normalized_desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$normalized_issuer\" --solver \"$normalized_solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
         exit_code=${PIPESTATUS[0]}
     else
         # Run command and capture to temp file
         # Pass HOME environment variable to ensure Aptos config can be found
-        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$chain_address\" --offered-metadata \"$offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$issuer\" --solver \"$solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$normalized_chain_address\" --offered-metadata \"$normalized_offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$normalized_desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$normalized_issuer\" --solver \"$normalized_solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
         exit_code=$?
     fi
     

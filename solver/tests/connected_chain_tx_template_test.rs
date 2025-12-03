@@ -60,39 +60,39 @@ mod tests {
     fn test_normalize_address_with_prefix() {
         // What is tested: Address normalization when input already has 0x prefix
         // Why: Ensures addresses with prefix are handled correctly and remain valid
-        let result = normalize_address("0x1234567890abcdef").unwrap();
-        assert_eq!(result, "0x1234567890abcdef");
+        let result = normalize_address("0xaaaaaaaa").unwrap();
+        assert_eq!(result, "0xaaaaaaaa");
     }
 
     #[test]
     fn test_normalize_address_without_prefix() {
         // What is tested: Address normalization when input lacks 0x prefix
         // Why: Users may provide addresses without prefix; we must normalize them consistently
-        let result = normalize_address("1234567890abcdef").unwrap();
-        assert_eq!(result, "0x1234567890abcdef");
+        let result = normalize_address("bbbbbbbbbbbbbbbb").unwrap();
+        assert_eq!(result, "0xbbbbbbbbbbbbbbbb");
     }
 
     #[test]
     fn test_normalize_address_uppercase() {
         // What is tested: Uppercase hex characters are converted to lowercase
         // Why: Ensures consistent address format regardless of input case
-        let result = normalize_address("0xABCDEF1234567890").unwrap();
-        assert_eq!(result, "0xabcdef1234567890");
+        let result = normalize_address("0xAAAAAAAABBBBBBBB").unwrap();
+        assert_eq!(result, "0xaaaaaaaabbbbbbbb");
     }
 
     #[test]
     fn test_normalize_address_mixed_case() {
         // What is tested: Mixed case hex characters are normalized to lowercase
         // Why: Handles real-world input variations and ensures consistent output
-        let result = normalize_address("0xAbCdEf1234567890").unwrap();
-        assert_eq!(result, "0xabcdef1234567890");
+        let result = normalize_address("0xAaBbCcDdEeFf1111").unwrap();
+        assert_eq!(result, "0xaabbccddeeff1111");
     }
 
     #[test]
     fn test_normalize_address_mvm_format() {
         // What is tested: Full 64-character Move VM address format is normalized correctly
         // Why: Move VM addresses are 64 hex chars; we must handle full-length addresses
-        let addr = "0x7a4086988c99f3961fc8505fc4de995706fc5d3a6f5a3c55f95e49cae4b5bf45";
+        let addr = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let result = normalize_address(addr).unwrap();
         assert_eq!(result, addr.to_lowercase());
     }
@@ -119,16 +119,16 @@ mod tests {
     fn test_strip_0x_with_prefix() {
         // What is tested: 0x prefix is correctly stripped from hex strings
         // Why: Internal processing needs hex without prefix for formatting
-        let result = strip_0x("0x123456").unwrap();
-        assert_eq!(result, "123456");
+        let result = strip_0x("0xaaaaaa").unwrap();
+        assert_eq!(result, "aaaaaa");
     }
 
     #[test]
     fn test_strip_0x_without_prefix() {
         // What is tested: Hex strings without prefix remain unchanged
         // Why: Handles both prefixed and non-prefixed inputs gracefully
-        let result = strip_0x("123456").unwrap();
-        assert_eq!(result, "123456");
+        let result = strip_0x("bbbbbb").unwrap();
+        assert_eq!(result, "bbbbbb");
     }
 
     #[test]
@@ -164,10 +164,11 @@ mod tests {
     fn test_mvm_command_generation() {
         // What is tested: Complete aptos move run command is generated with all required arguments
         // Why: Solvers need a ready-to-use command; format must match Aptos CLI expectations
-        let recipient = "0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-        let metadata = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+        // Use simple repeated patterns for addresses (64 hex chars = 32 bytes for Move)
+        let recipient = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let metadata = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
         let amount = 25000000u64;
-        let intent_id = "0x5678123456789012345678901234567890123456789012345678901234567890";
+        let intent_id = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 
         let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
 
@@ -176,13 +177,13 @@ mod tests {
 
         // Should contain all addresses in correct format
         assert!(result.contains(
-            "address:0xcafe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            "address:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ));
         assert!(result.contains(
-            "address:0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            "address:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
         ));
         assert!(result.contains(
-            "address:0x5678123456789012345678901234567890123456789012345678901234567890"
+            "address:0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
         ));
 
         // Should contain amount as u64
@@ -193,16 +194,16 @@ mod tests {
     fn test_mvm_command_address_normalization() {
         // What is tested: All addresses in command are normalized to lowercase with 0x prefix
         // Why: Aptos CLI requires consistent address format; normalization prevents errors (Move VM addresses)
-        let recipient = "0xCAFE1234"; // Uppercase
-        let metadata = "1234567890abcdef"; // No prefix
+        let recipient = "0xAAAA"; // Uppercase
+        let metadata = "bbbbbbbbbbbbbbbb"; // No prefix
         let amount = 1000u64;
         let intent_id = "0x5678";
 
         let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
 
         // All addresses should be normalized to lowercase with 0x prefix
-        assert!(result.contains("address:0xcafe1234"));
-        assert!(result.contains("address:0x1234567890abcdef"));
+        assert!(result.contains("address:0xaaaa"));
+        assert!(result.contains("address:0xbbbbbbbbbbbbbbbb"));
         assert!(result.contains("address:0x5678"));
     }
 
@@ -384,11 +385,10 @@ mod tests {
         // What is tested: Maximum U256 value is handled correctly
         // Why: Ensures large token amounts (up to U256::MAX) don't cause overflow
         let recipient = "0x1234";
-        let amount =
-            "115792089237316195423570985008687907853269984665640564039457584007913129639935"; // U256::MAX
+        let amount = U256::MAX.to_string();
         let intent_id = "0x5678";
 
-        let result = generate_evm_calldata(recipient, amount, intent_id);
+        let result = generate_evm_calldata(recipient, &amount, intent_id);
         assert!(result.is_ok());
 
         // Should handle max U256 value

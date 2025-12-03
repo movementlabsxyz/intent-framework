@@ -162,55 +162,18 @@ DRAFT_DATA=$(build_draft_data \
 DRAFT_ID=$(submit_draft_intent "$REQUESTER_CHAIN1_ADDRESS" "$DRAFT_DATA" "$EXPIRY_TIME")
 log "     Draft ID: $DRAFT_ID"
 
-# Step 2: Solver polls verifier for pending drafts (simulated - in real scenario solver runs separately)
+# Step 2: Wait for solver service to sign the draft (polls automatically)
+# The solver service running in the background will:
+# - Poll for pending drafts
+# - Evaluate acceptance criteria
+# - Generate signature
+# - Submit signature to verifier (FCFS)
 log ""
-log "   Step 2: Solver polls verifier for pending drafts..."
-PENDING_DRAFTS=$(poll_pending_drafts)
-DRAFT_COUNT=$(echo "$PENDING_DRAFTS" | jq 'length')
-log "     Found $DRAFT_COUNT pending draft(s)"
+log "   Step 2: Waiting for solver service to sign draft..."
+log "     (Solver service polls verifier automatically)"
 
-# Find our draft
-OUR_DRAFT=$(echo "$PENDING_DRAFTS" | jq -r ".[] | select(.draft_id == \"$DRAFT_ID\")")
-if [ -z "$OUR_DRAFT" ] || [ "$OUR_DRAFT" = "null" ]; then
-    log_and_echo "❌ ERROR: Our draft not found in pending drafts"
-    exit 1
-fi
-log "     ✅ Found our draft in pending list"
-
-# Step 3: Solver generates signature for the draft
-log ""
-log "   Step 3: Solver generates signature for draft..."
-SOLVER_SIGNATURE=$(generate_solver_signature \
-    "solver-chain1" \
-    "$CHAIN1_ADDRESS" \
-    "$OFFERED_METADATA_CHAIN1" \
-    "$OFFERED_AMOUNT" \
-    "$OFFERED_CHAIN_ID" \
-    "$DESIRED_METADATA_CHAIN2" \
-    "$DESIRED_AMOUNT" \
-    "$DESIRED_CHAIN_ID" \
-    "$EXPIRY_TIME" \
-    "$REQUESTER_CHAIN1_ADDRESS" \
-    "$SOLVER_CHAIN1_ADDRESS" \
-    "1" \
-    "$LOG_FILE")
-
-if [ -z "$SOLVER_SIGNATURE" ] || [[ ! "$SOLVER_SIGNATURE" =~ ^0x[0-9a-fA-F]+$ ]]; then
-    log_and_echo "❌ Failed to generate solver signature"
-    log_and_echo "   Output was: $SOLVER_SIGNATURE"
-    exit 1
-fi
-log "     ✅ Solver signature generated: ${SOLVER_SIGNATURE:0:20}..."
-
-# Step 4: Solver submits signature to verifier
-log ""
-log "   Step 4: Solver submits signature to verifier (FCFS)..."
-submit_signature_to_verifier "$DRAFT_ID" "$SOLVER_CHAIN1_ADDRESS" "$SOLVER_SIGNATURE" "$SOLVER_PUBLIC_KEY"
-
-# Step 5: Requester polls verifier for signature
-log ""
-log "   Step 5: Requester polls verifier for signature..."
-SIGNATURE_DATA=$(poll_for_signature "$DRAFT_ID" 3 2)
+# Poll for signature with retry logic (solver service needs time to process)
+SIGNATURE_DATA=$(poll_for_signature "$DRAFT_ID" 10 2)
 RETRIEVED_SIGNATURE=$(echo "$SIGNATURE_DATA" | jq -r '.signature')
 RETRIEVED_SOLVER=$(echo "$SIGNATURE_DATA" | jq -r '.solver_address')
 
@@ -282,11 +245,10 @@ log ""
 log "✅ Steps completed successfully (via verifier-based negotiation):"
 log "   1. Solver registered on-chain"
 log "   2. Requester submitted draft intent to verifier"
-log "   3. Solver polled verifier and found pending draft"
-log "   4. Solver signed draft and submitted signature to verifier (FCFS)"
-log "   5. Requester polled verifier and retrieved signature"
-log "   6. Requester created outflow intent on-chain with retrieved signature"
-log "   7. Tokens locked on hub chain"
+log "   3. Solver service signed draft automatically (FCFS)"
+log "   4. Requester polled verifier and retrieved signature"
+log "   5. Requester created outflow intent on-chain with retrieved signature"
+log "   6. Tokens locked on hub chain"
 log ""
 log "📋 Request-intent Details:"
 log "   Intent ID: $INTENT_ID"

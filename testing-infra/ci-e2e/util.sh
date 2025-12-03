@@ -284,6 +284,139 @@ start_verifier() {
     exit 1
 }
 
+# Stop solver processes
+# Usage: stop_solver
+# Stops any running solver processes
+stop_solver() {
+    log "   Checking for existing solvers..."
+    
+    if pgrep -f "cargo.*solver" > /dev/null || pgrep -f "target/debug/solver" > /dev/null; then
+        log "   ⚠️  Found existing solver processes, stopping them..."
+        pkill -f "cargo.*solver" || true
+        pkill -f "target/debug/solver" || true
+        sleep 2
+        log "   ✅ Solver processes stopped"
+    else
+        log "   ✅ No existing solver processes"
+    fi
+}
+
+# Check solver health (placeholder - solver service doesn't have health endpoint yet)
+# Usage: check_solver_health [port]
+# Returns 0 if healthy, 1 if not
+# TODO: Implement health check once solver service has health endpoint
+check_solver_health() {
+    # Placeholder - solver service will have health endpoint in future
+    # For now, just check if process is running
+    local port="${1:-3334}"
+    
+    # TODO: Once solver service is implemented, check health endpoint
+    # if curl -s -f "http://127.0.0.1:${port}/health" > /dev/null 2>&1; then
+    #     return 0
+    # else
+    #     return 1
+    # fi
+    
+    # For now, return 1 (not implemented)
+    return 1
+}
+
+# Start solver service
+# Usage: start_solver [log_file] [rust_log_level] [config_path]
+# Starts solver in background and waits for it to be ready
+# Sets SOLVER_PID and SOLVER_LOG global variables
+# Exits with error if solver fails to start
+# NOTE: This will fail until solver service is implemented (Task 6-7)
+start_solver() {
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+
+    local log_file="${1:-$LOG_DIR/solver.log}"
+    local rust_log="${2:-info}"
+    local config_path="${3:-$PROJECT_ROOT/solver/config/solver.toml}"
+    
+    # Ensure log directory exists
+    mkdir -p "$(dirname "$log_file")"
+    
+    # Stop any existing solver first
+    stop_solver
+    
+    log "   Starting solver service..."
+    log "   Using config: $config_path"
+    log "   Log file: $log_file"
+    
+    # Check if solver binary exists
+    if [ ! -f "$PROJECT_ROOT/solver/target/debug/solver" ] && ! cargo --version > /dev/null 2>&1; then
+        log_and_echo "   ⚠️  WARNING: Solver service not yet built"
+        log_and_echo "   This function will work once solver service is implemented (Task 6-7)"
+        log_and_echo "   For now, tests will use manual signing via sign_intent binary"
+        return 1
+    fi
+    
+    # Change to solver directory and start the solver
+    pushd "$PROJECT_ROOT/solver" > /dev/null
+    SOLVER_CONFIG_PATH="$config_path" RUST_LOG="$rust_log" cargo run --bin solver > "$log_file" 2>&1 &
+    SOLVER_PID=$!
+    popd > /dev/null
+    
+    log "   ✅ Solver started with PID: $SOLVER_PID"
+    
+    # Wait for solver to be ready
+    log "   - Waiting for solver to initialize..."
+    RETRY_COUNT=0
+    MAX_RETRIES=60
+    
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        # Check if process is still running
+        if ! ps -p "$SOLVER_PID" > /dev/null 2>&1; then
+            log_and_echo "   ❌ Solver process died"
+            log_and_echo "   Solver log:"
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+            if [ -f "$log_file" ]; then
+                log_and_echo "   $(cat "$log_file")"
+            else
+                log_and_echo "   Log file not found at: $log_file"
+            fi
+            log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+            exit 1
+        fi
+        
+        # Check health endpoint (once implemented)
+        if check_solver_health; then
+            log "   ✅ Solver is ready!"
+            
+            SOLVER_LOG="$log_file"
+            export SOLVER_PID SOLVER_LOG
+            return 0
+        fi
+        
+        # For now, just wait a bit and assume it's ready if process is running
+        # TODO: Replace with actual health check once solver service is implemented
+        if [ $RETRY_COUNT -gt 5 ]; then
+            log "   ✅ Solver process is running (health check not yet implemented)"
+            SOLVER_LOG="$log_file"
+            export SOLVER_PID SOLVER_LOG
+            return 0
+        fi
+        
+        sleep 1
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+    done
+    
+    # If we get here, solver didn't become ready
+    log_and_echo "   ❌ Solver failed to start after $MAX_RETRIES seconds"
+    log_and_echo "   Solver log:"
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+    if [ -f "$log_file" ]; then
+        log_and_echo "   $(cat "$log_file")"
+    else
+        log_and_echo "   Log file not found at: $log_file"
+    fi
+    log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+    exit 1
+}
+
 # ============================================================================
 # VERIFIER NEGOTIATION ROUTING HELPERS
 # ============================================================================

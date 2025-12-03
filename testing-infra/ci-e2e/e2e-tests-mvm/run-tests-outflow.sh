@@ -41,6 +41,9 @@ echo "==========================================================================
 ./testing-infra/ci-e2e/e2e-tests-mvm/configure-verifier.sh
 ./testing-infra/ci-e2e/e2e-tests-mvm/start-verifier.sh
 
+# Start solver service for automatic signing and fulfillment
+./testing-infra/ci-e2e/e2e-tests-mvm/start-solver.sh
+
 echo ""
 echo "🚀 Step 4: Testing OUTFLOW intents (hub chain → connected chain)..."
 echo "===================================================================="

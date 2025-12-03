@@ -22,6 +22,7 @@ log_and_echo "🧹 Cleaning up chains and processes..."
 ./testing-infra/ci-e2e/chain-hub/stop-chain.sh
 ./testing-infra/ci-e2e/chain-connected-mvm/stop-chain.sh
 stop_verifier
+stop_solver
 
 log_and_echo "✅ Cleanup complete"
 

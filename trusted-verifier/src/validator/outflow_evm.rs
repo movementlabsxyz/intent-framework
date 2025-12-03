@@ -66,7 +66,9 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
 
     // Extract intent_id (bytes 68-99, last 32 bytes)
     let intent_id_hex = &input[136..200]; // Last 32 bytes = 64 hex chars
-    let intent_id = format!("0x{}", intent_id_hex);
+    let intent_id_raw = format!("0x{}", intent_id_hex);
+    // Normalize intent_id to handle leading zero differences (transaction has padded value)
+    let intent_id = crate::monitor::normalize_intent_id(&intent_id_raw);
 
     // Get sender from transaction
     let solver = tx.from.clone();

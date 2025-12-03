@@ -237,6 +237,41 @@ fn test_extract_evm_fulfillment_params_large_valid_amount() {
     );
 }
 
+/// Test that extract_evm_fulfillment_params normalizes intent_id with leading zeros
+///
+/// What is tested: Extracting intent_id from EVM transaction calldata where the intent_id
+/// has leading zeros (padded format) should normalize it by removing leading zeros.
+///
+/// Why: EVM transactions pad intent_id to 32 bytes (64 hex chars), but request-intents
+/// may have the same intent_id without padding. Normalization ensures they match.
+#[test]
+fn test_extract_evm_fulfillment_params_normalizes_intent_id_with_leading_zeros() {
+    // ERC20 transfer selector: 0xa9059cbb
+    // Calldata: selector (4 bytes) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes)
+    // intent_id: 0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (with leading zero, padded to 64 hex chars)
+    // Should normalize to: 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    let calldata = "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000000000000000000000000000000017d784000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    let tx = EvmTransaction {
+        input: format!("0x{}", calldata),
+        ..create_base_evm_transaction()
+    };
+
+    let result = extract_evm_fulfillment_params(&tx);
+
+    assert!(
+        result.is_ok(),
+        "Extraction should succeed for transaction with padded intent_id"
+    );
+    let params = result.unwrap();
+    // Should be normalized (leading zero removed)
+    assert_eq!(
+        params.intent_id,
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "Extracted intent_id should be normalized (leading zeros removed)"
+    );
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -359,6 +394,49 @@ async fn test_validate_outflow_fulfillment_success() {
     assert!(
         validation_result.valid,
         "Validation should pass when all parameters match and solver is registered. Message: {}",
+        validation_result.message
+    );
+}
+
+/// Test that validate_outflow_fulfillment succeeds when intent_ids match after normalization
+///
+/// What is tested: Validating an outflow fulfillment transaction where the transaction's intent_id
+/// has leading zeros (padded format) but matches the request-intent's intent_id after normalization.
+///
+/// Why: EVM transactions pad intent_id to 32 bytes, but request-intents may have the same intent_id
+/// without padding. Normalization ensures they match correctly.
+#[tokio::test]
+async fn test_validate_outflow_fulfillment_succeeds_with_normalized_intent_id() {
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let registry_address = "0x1";
+
+    let (_mock_server, validator) =
+        setup_mock_server_with_registry(registry_address, solver_address, Some(evm_address)).await;
+
+    // Request-intent has intent_id without leading zeros
+    let request_intent = RequestIntentEvent {
+        intent_id: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        desired_amount: 25000000,
+        reserved_solver: Some(solver_address.to_string()),
+        ..create_base_request_intent_evm()
+    };
+
+    // Transaction has intent_id with leading zeros (padded format)
+    let tx_params = FulfillmentTransactionParams {
+        intent_id: "0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        amount: 25000000,
+        solver: evm_address.to_string(),
+        ..create_base_fulfillment_transaction_params_evm()
+    };
+
+    let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true).await;
+
+    assert!(result.is_ok(), "Validation should complete without error");
+    let validation_result = result.unwrap();
+    assert!(
+        validation_result.valid,
+        "Validation should pass when intent_ids match after normalization. Message: {}",
         validation_result.message
     );
 }

@@ -62,8 +62,10 @@ pub async fn validate_outflow_fulfillment(
         });
     }
 
-    // Validate intent_id matches
-    if tx_params.intent_id != request_intent.intent_id {
+    // Validate intent_id matches (normalize to handle leading zero differences)
+    let tx_intent_id_normalized = crate::monitor::normalize_intent_id(&tx_params.intent_id);
+    let request_intent_id_normalized = crate::monitor::normalize_intent_id(&request_intent.intent_id);
+    if tx_intent_id_normalized != request_intent_id_normalized {
         return Ok(ValidationResult {
             valid: false,
             message: format!(

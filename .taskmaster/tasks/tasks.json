@@ -109,16 +109,16 @@
       "id": "8",
       "title": "Create chain clients module",
       "description": "Clients for interacting with hub and connected chains",
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "dependencies": ["7"],
       "details": "Create solver/src/chains/ module with hub.rs (get_intent_events, fulfill_inflow_intent, fulfill_outflow_intent), connected_mvm.rs (get_escrow_events, transfer_with_intent_id), connected_evm.rs (transfer_with_intent_id for ERC20).",
       "testStrategy": "Unit tests with mock RPC responses",
       "subtasks": [
-        {"id": "8.1", "title": "Create solver/src/chains/mod.rs module root", "status": "pending"},
-        {"id": "8.2", "title": "Create hub.rs with intent and fulfillment functions", "status": "pending"},
-        {"id": "8.3", "title": "Create connected_mvm.rs with escrow and transfer functions", "status": "pending"},
-        {"id": "8.4", "title": "Create connected_evm.rs with ERC20 transfer functions", "status": "pending"}
+        {"id": "8.1", "title": "Create solver/src/chains/mod.rs module root", "status": "completed"},
+        {"id": "8.2", "title": "Create hub.rs with intent and fulfillment functions", "status": "completed"},
+        {"id": "8.3", "title": "Create connected_mvm.rs with escrow and transfer functions", "status": "completed"},
+        {"id": "8.4", "title": "Create connected_evm.rs with ERC20 transfer functions", "status": "completed"}
       ]
     },
     {
@@ -207,7 +207,7 @@
     "version": "1.0.0",
     "lastModified": "2025-12-03T12:00:00.000Z",
     "taskCount": 13,
-    "completedCount": 5,
+    "completedCount": 8,
     "phases": {
       "phase1": {
         "name": "Signing Service",

@@ -4,7 +4,7 @@
       "id": "1",
       "title": "Create tasks.json and plan backup",
       "description": "Create backup files for the solver service implementation plan",
-      "status": "in-progress",
+      "status": "completed",
       "priority": "high",
       "dependencies": [],
       "details": "Create .taskmaster/tasks/tasks.json with all tasks and .taskmaster/tasks/SOLVER_SERVICE_PLAN.md with the full plan including code examples, configuration format, acceptance logic, and fulfillment automation.",
@@ -15,50 +15,49 @@
       "id": "2",
       "title": "Extract signing logic to library",
       "description": "Refactor existing sign_intent.rs binary into reusable library modules",
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "dependencies": ["1"],
-      "details": "Create solver/src/lib.rs (crate root), solver/src/signing.rs (sign_intent_hash, get_private_key_from_profile), solver/src/hash.rs (IntentHashParams, get_intent_hash). Refactor solver/src/bin/sign_intent.rs to use library functions.",
+      "details": "Create solver/src/lib.rs (crate root), solver/src/crypto/signing.rs (sign_intent_hash, get_private_key_from_profile), solver/src/crypto/hash.rs (get_intent_hash). Refactor solver/src/bin/sign_intent.rs to use library functions. Reorganized structure to match verifier pattern with crypto/ module.",
       "testStrategy": "Existing sign_intent binary should work unchanged. Run: cargo run --bin sign_intent -- --help",
       "subtasks": [
-        {"id": "2.1", "title": "Create lib.rs crate root with module declarations", "status": "pending"},
-        {"id": "2.2", "title": "Create signing.rs with sign_intent_hash() and get_private_key_from_profile()", "status": "pending"},
-        {"id": "2.3", "title": "Create hash.rs with IntentHashParams and get_intent_hash()", "status": "pending"},
-        {"id": "2.4", "title": "Refactor sign_intent.rs binary to use library functions", "status": "pending"}
+        {"id": "2.1", "title": "Create lib.rs crate root with module declarations", "status": "completed"},
+        {"id": "2.2", "title": "Create signing.rs with sign_intent_hash() and get_private_key_from_profile()", "status": "completed"},
+        {"id": "2.3", "title": "Create hash.rs with get_intent_hash()", "status": "completed"},
+        {"id": "2.4", "title": "Refactor sign_intent.rs binary to use library functions", "status": "completed"}
       ]
     },
     {
       "id": "3",
       "title": "Create acceptance module",
       "description": "Implement token validation and acceptance logic for draft intents",
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "dependencies": ["2"],
-      "details": "Create solver/src/acceptance.rs with DraftIntentData struct, AcceptanceResult enum, is_usd_token(), is_native_token(), should_accept_draft(). Rules: (1) USD->USD only if offered >= desired, (2) USD->MOVE at configured rate, (3) reject unknown token combinations.",
-      "testStrategy": "Unit tests for each acceptance rule: test_usd_to_usd_accept, test_usd_to_usd_reject_unfavorable, test_usd_to_move_accept, test_unknown_token_rejected",
+      "details": "Create solver/src/acceptance.rs with DraftIntentData struct, AcceptanceResult enum, TokenPair struct, AcceptanceConfig with token_pairs HashMap, and should_accept_draft(). Uses configurable token pairs and exchange rates instead of hardcoded USD/NATIVE logic.",
+      "testStrategy": "Unit tests for each acceptance rule: test_token_pair_accept, test_token_pair_reject_unfavorable, test_token_pair_with_exchange_rate_accept, test_unsupported_token_pair_rejected",
       "subtasks": [
-        {"id": "3.1", "title": "Create DraftIntentData struct and AcceptanceResult enum", "status": "pending"},
-        {"id": "3.2", "title": "Implement is_usd_token() - check against config USD token list", "status": "pending"},
-        {"id": "3.3", "title": "Implement is_native_token() - identify MOVE/APT/ETH", "status": "pending"},
-        {"id": "3.4", "title": "Implement should_accept_draft() with all rules", "status": "pending"},
-        {"id": "3.5", "title": "Add unit tests for acceptance logic", "status": "pending"}
+        {"id": "3.1", "title": "Create DraftIntentData struct and AcceptanceResult enum", "status": "completed"},
+        {"id": "3.2", "title": "Create TokenPair struct and AcceptanceConfig with token_pairs HashMap", "status": "completed"},
+        {"id": "3.3", "title": "Implement should_accept_draft() with configurable token pair exchange rates", "status": "completed"},
+        {"id": "3.4", "title": "Add unit tests for acceptance logic", "status": "completed"}
       ]
     },
     {
       "id": "4",
       "title": "Create verifier client",
       "description": "HTTP client for communicating with the verifier API",
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "dependencies": ["2"],
-      "details": "Create solver/src/verifier_client.rs with VerifierClient struct. Methods: poll_pending_drafts() -> GET /draft-intents/pending, submit_signature() -> POST /draft-intent/:id/signature, validate_outflow_fulfillment() -> POST /validate-outflow-fulfillment, get_approvals() -> GET /approvals.",
-      "testStrategy": "Unit tests with mock HTTP responses",
+      "details": "Created solver/src/verifier_client.rs with VerifierClient struct using reqwest blocking client. Implemented: poll_pending_drafts() -> GET /draft-intents/pending, submit_signature() -> POST /draft-intent/:id/signature (with FCFS 409 Conflict handling), validate_outflow_fulfillment() -> POST /validate-outflow-fulfillment, get_approvals() -> GET /approvals. All methods handle ApiResponse<T> wrapper format. Added unit tests for API response parsing and struct serialization.",
+      "testStrategy": "Unit tests with API response format validation (5 tests passing)",
       "subtasks": [
-        {"id": "4.1", "title": "Create PendingDraft and SignatureSubmission structs", "status": "pending"},
-        {"id": "4.2", "title": "Implement poll_pending_drafts() - GET /draft-intents/pending", "status": "pending"},
-        {"id": "4.3", "title": "Implement submit_signature() - POST /draft-intent/:id/signature", "status": "pending"},
-        {"id": "4.4", "title": "Implement validate_outflow_fulfillment() - POST /validate-outflow-fulfillment", "status": "pending"},
-        {"id": "4.5", "title": "Implement get_approvals() - GET /approvals", "status": "pending"}
+        {"id": "4.1", "title": "Create PendingDraft and SignatureSubmission structs", "status": "completed"},
+        {"id": "4.2", "title": "Implement poll_pending_drafts() - GET /draft-intents/pending", "status": "completed"},
+        {"id": "4.3", "title": "Implement submit_signature() - POST /draft-intent/:id/signature", "status": "completed"},
+        {"id": "4.4", "title": "Implement validate_outflow_fulfillment() - POST /validate-outflow-fulfillment", "status": "completed"},
+        {"id": "4.5", "title": "Implement get_approvals() - GET /approvals", "status": "completed"}
       ]
     },
     {
@@ -208,7 +207,7 @@
     "version": "1.0.0",
     "lastModified": "2025-12-03T12:00:00.000Z",
     "taskCount": 13,
-    "completedCount": 0,
+    "completedCount": 4,
     "phases": {
       "phase1": {
         "name": "Signing Service",

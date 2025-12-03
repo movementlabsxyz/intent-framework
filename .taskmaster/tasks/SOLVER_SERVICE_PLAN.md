@@ -77,24 +77,33 @@ These are called by E2E shell scripts manually at specific points in the flow.
 
 ## Acceptance Conditions
 
-The solver will only sign intents that meet these conditions:
+The solver uses a **configurable token pair system** with exchange rates. All tokens are treated as fungible assets (no hardcoded USD/NATIVE distinctions).
 
-### 1. USD-to-USD Swaps
+### Token Pair Configuration
 
-- Both offered and desired tokens must be USD tokens (by contract address)
-- `offered_amount >= desired_amount` (solver breaks even or profits; requester offers at least what solver provides)
+- **TokenPair**: Identified by `(offered_chain_id, offered_token, desired_chain_id, desired_token)`
+- **Exchange Rate**: Configured per token pair (how many offered tokens per 1 desired token)
+- **Acceptance Rule**: `offered_amount >= desired_amount * exchange_rate`
 
-### 2. USD-to-MOVE Swaps
+### Acceptance Logic
 
-- Offered token must be USD, desired token must be native (MOVE/APT)
-- Accept at configurable exchange rate (e.g., 1 MOVE = 0.5 USD)
-- `offered_amount >= desired_amount * usd_per_move_rate`
+1. **Lookup Token Pair**: Check if the draft's token pair exists in configuration
+2. **Reject Unsupported Pairs**: If token pair is not configured, reject immediately
+3. **Calculate Required Amount**: `required_offered = desired_amount * exchange_rate`
+4. **Accept if Profitable**: Accept if `offered_amount >= required_offered` (solver breaks even or profits)
 
-### 3. Token Validation
+### Example Configuration
 
-- USD tokens identified by contract address from config
-- Native tokens identified by chain's native token config
-- **Reject any swap involving unknown tokens**
+```toml
+[acceptance.token_pairs]
+# Token A (chain 1) -> Token B (chain 2) at 1:1 rate
+"1:0xaaa...:2:0xbbb..." = 1.0
+
+# Token A (chain 1) -> NATIVE (chain 2) at 0.5 rate (1 NATIVE = 0.5 Token A)
+"1:0xaaa...:2:NATIVE" = 0.5
+```
+
+**Note**: All tokens are fungible assets. No distinction between USD, native, or other token types - only the configured pairs and rates matter.
 
 ## Configuration Format
 
@@ -132,21 +141,19 @@ private_key_env = "BASE_SOLVER_PRIVATE_KEY"  # Env var containing private key
 escrow_contract = "0x..."  # IntentEscrow contract address
 
 [acceptance]
-# USD to MOVE exchange rate (how many USD per 1 MOVE)
-usd_per_move = 0.5
+# Supported token pairs with exchange rates
+# Format: "offered_chain_id:offered_token:desired_chain_id:desired_token" = exchange_rate
+# Exchange rate = how many offered tokens per 1 desired token
 
-# USD token addresses (by chain_id)
-[acceptance.usd_tokens]
-1 = []  # Hub chain (Movement)
-2 = []  # Connected MVM chain
-84532 = ["0x036CbD53842c5426634e7929541eC2318f3dCF7e"]  # Base Sepolia USDC
-11155111 = ["0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"]  # Eth Sepolia USDC
+[acceptance.token_pairs]
+# Example: Token A (chain 1) -> Token B (chain 2) at 1:1 rate
+"1:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" = 1.0
 
-[chains.native_tokens]
-1 = "MOVE"
-2 = "APT"
-84532 = "ETH"
-11155111 = "ETH"
+# Example: Token A (chain 1) -> NATIVE (chain 2) at 0.5 rate
+"1:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2:NATIVE" = 0.5
+
+# Example: USDC (Base Sepolia) -> USDC (Eth Sepolia) at 1:1 rate
+"84532:0x036CbD53842c5426634e7929541eC2318f3dCF7e:11155111:0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" = 1.0
 ```
 
 ## Task Breakdown
@@ -159,7 +166,7 @@ This phase implements the core signing loop that polls the verifier for drafts a
 
 ### Task 1: Create tasks.json and plan backup
 
-**Status**: in-progress
+**Status**: ✅ completed
 
 Create backup files for the solver service implementation plan:
 
@@ -172,39 +179,51 @@ Create backup files for the solver service implementation plan:
 
 ### Task 2: Extract signing logic to library
 
-**Status**: pending  
+**Status**: ✅ completed  
 **Dependencies**: Task 1
 
 Refactor existing `sign_intent.rs` binary into reusable library modules.
 
-**Files to create**:
+**Implementation**: Reorganized structure to match verifier pattern:
+- Created `solver/src/crypto/` module (matching verifier structure)
+- Moved `hash.rs` → `crypto/hash.rs`
+- Moved `signing.rs` → `crypto/signing.rs`
+- Updated `sign_intent.rs` to use `solver::crypto` module
+- Changed from `aptos` CLI to `movement` CLI for consistency
+- Added strict address validation (requires 0x prefix)
 
-1. `solver/src/lib.rs` - Crate root
-2. `solver/src/signing.rs` - `sign_intent_hash()`, `get_private_key_from_profile()`
-3. `solver/src/hash.rs` - `IntentHashParams`, `get_intent_hash()`
+**Files created**:
 
-**Modify**: `solver/src/bin/sign_intent.rs` to use library functions
+1. `solver/src/lib.rs` - Crate root with module declarations
+2. `solver/src/crypto/signing.rs` - `sign_intent_hash()`, `get_private_key_from_profile()`
+3. `solver/src/crypto/hash.rs` - `get_intent_hash()`
+4. `solver/src/crypto/mod.rs` - Module exports
 
-**Commit**: `refactor(solver): extract signing logic to library modules`
+**Modified**: `solver/src/bin/sign_intent.rs` to use `solver::crypto` module
+
+**Commit**: `refactor: reorganize solver structure and improve address validation`
 
 ---
 
 ### Task 3: Create acceptance module
 
-**Status**: pending  
+**Status**: ✅ completed  
 **Dependencies**: Task 2
 
 Implement token validation and acceptance logic.
 
 **File**: `solver/src/acceptance.rs`
 
-- `DraftIntentData` struct
+**Implementation**: Uses configurable token pair system:
+- `TokenPair` struct - identifies token pairs by `(offered_chain_id, offered_token, desired_chain_id, desired_token)`
+- `AcceptanceConfig` struct - `HashMap<TokenPair, f64>` for exchange rates
+- `DraftIntentData` struct - draft intent data from verifier API
 - `AcceptanceResult` enum (Accept, Reject with reason)
-- `is_usd_token()` - check against config USD token list
-- `is_native_token()` - identify MOVE/APT/ETH
-- `should_accept_draft()` - evaluate all rules
+- `should_accept_draft()` - evaluates token pair lookup and exchange rate
 
-**Commit**: `feat(solver): add acceptance module for draft intent validation`
+**Key Design Decision**: All tokens are fungible assets. No hardcoded USD/NATIVE distinctions. Only configured token pairs with exchange rates are supported.
+
+**Commit**: `feat(solver): add acceptance module with configurable token pairs`
 
 ---
 

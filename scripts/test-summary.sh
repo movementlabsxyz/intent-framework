@@ -4,11 +4,13 @@
 
 set -e
 
-VERIFIER_PASSED=$(RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet 2>&1" | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}')
-VERIFIER_FAILED=$(RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet 2>&1" | grep -oE "[0-9]+ failed" | awk '{sum += $1} END {print sum+0}')
+VERIFIER_TEST_OUTPUT=$(RUST_LOG=off nix develop -c bash -c "cd trusted-verifier && cargo test --quiet 2>&1")
+VERIFIER_PASSED=$(echo "$VERIFIER_TEST_OUTPUT" | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}')
+VERIFIER_FAILED=$(echo "$VERIFIER_TEST_OUTPUT" | grep -oE "[0-9]+ failed" | awk '{sum += $1} END {print sum+0}')
 
-SOLVER_PASSED=$(RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet 2>&1" | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}')
-SOLVER_FAILED=$(RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet 2>&1" | grep -oE "[0-9]+ failed" | awk '{sum += $1} END {print sum+0}')
+SOLVER_TEST_OUTPUT=$(RUST_LOG=off nix develop -c bash -c "cd solver && cargo test --quiet 2>&1")
+SOLVER_PASSED=$(echo "$SOLVER_TEST_OUTPUT" | grep -oE "[0-9]+ passed" | awk '{sum += $1} END {print sum}')
+SOLVER_FAILED=$(echo "$SOLVER_TEST_OUTPUT" | grep -oE "[0-9]+ failed" | awk '{sum += $1} END {print sum+0}')
 
 MOVE_PASSED=$(nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep -oE "passed: [0-9]+" | awk '{print $2}' | head -1)
 MOVE_FAILED=$(nix develop -c bash -c "cd move-intent-framework && movement move test --dev --named-addresses mvmt_intent=0x123" 2>&1 | grep -oE "failed: [0-9]+" | awk '{print $2}' | head -1)

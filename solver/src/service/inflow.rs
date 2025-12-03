@@ -13,6 +13,7 @@ use crate::service::tracker::{IntentTracker, TrackedIntent};
 use crate::verifier_client::VerifierClient;
 use anyhow::{Context, Result};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info, warn};
 
@@ -20,8 +21,8 @@ use tracing::{error, info, warn};
 pub struct InflowService {
     /// Solver configuration
     config: SolverConfig,
-    /// Intent tracker for tracking signed intents
-    tracker: IntentTracker,
+    /// Intent tracker for tracking signed intents (shared with other services)
+    tracker: Arc<IntentTracker>,
     /// Verifier client for getting approvals
     verifier_client: VerifierClient,
     /// Connected chain client (MVM or EVM)
@@ -47,13 +48,13 @@ impl InflowService {
     /// # Arguments
     ///
     /// * `config` - Solver configuration
-    /// * `tracker` - Intent tracker instance
+    /// * `tracker` - Shared intent tracker instance
     ///
     /// # Returns
     ///
     /// * `Ok(InflowService)` - Successfully created service
     /// * `Err(anyhow::Error)` - Failed to create service
-    pub fn new(config: SolverConfig, tracker: IntentTracker) -> Result<Self> {
+    pub fn new(config: SolverConfig, tracker: Arc<IntentTracker>) -> Result<Self> {
         let verifier_client = VerifierClient::new(&config.service.verifier_url);
 
         // Create connected chain client based on config

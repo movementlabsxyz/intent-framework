@@ -5,6 +5,7 @@
 
 use serde_json::json;
 use solver::service::parse_draft_data;
+use std::sync::Arc;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -416,7 +417,8 @@ fn test_parse_draft_data_max_amounts() {
 #[tokio::test]
 async fn test_process_draft_rejects_expired_draft() {
     let config = create_test_solver_config();
-    let service = solver::service::SigningService::new(config).unwrap();
+    let tracker = Arc::new(solver::service::IntentTracker::new(&config).unwrap());
+    let service = solver::service::SigningService::new(config, tracker).unwrap();
 
     // Create an expired draft (expiry_time in the past)
     let current_time = std::time::SystemTime::now()
@@ -438,7 +440,8 @@ async fn test_process_draft_rejects_expired_draft() {
 #[tokio::test]
 async fn test_process_draft_accepts_non_expired_draft() {
     let config = create_test_solver_config();
-    let service = solver::service::SigningService::new(config).unwrap();
+    let tracker = Arc::new(solver::service::IntentTracker::new(&config).unwrap());
+    let service = solver::service::SigningService::new(config, tracker).unwrap();
 
     // Create a non-expired draft (expiry_time in the future)
     let current_time = std::time::SystemTime::now()
@@ -477,7 +480,8 @@ async fn test_process_draft_accepts_non_expired_draft() {
 #[tokio::test]
 async fn test_process_draft_rejects_draft_at_expiry_boundary() {
     let config = create_test_solver_config();
-    let service = solver::service::SigningService::new(config).unwrap();
+    let tracker = Arc::new(solver::service::IntentTracker::new(&config).unwrap());
+    let service = solver::service::SigningService::new(config, tracker).unwrap();
 
     // Create a draft with expiry_time exactly at current time
     let current_time = std::time::SystemTime::now()

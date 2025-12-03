@@ -6,9 +6,11 @@
 use crate::acceptance::{should_accept_draft, AcceptanceConfig, AcceptanceResult, DraftIntentData};
 use crate::config::SolverConfig;
 use crate::crypto::{get_intent_hash, get_private_key_from_profile, sign_intent_hash};
+use crate::service::tracker::IntentTracker;
 use crate::verifier_client::{PendingDraft, VerifierClient};
 use anyhow::{Context, Result};
 use serde_json::Value;
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
@@ -18,6 +20,8 @@ pub struct SigningService {
     config: SolverConfig,
     /// Acceptance configuration (token pairs and exchange rates)
     acceptance_config: AcceptanceConfig,
+    /// Intent tracker for tracking signed intents
+    tracker: Arc<IntentTracker>,
 }
 
 impl SigningService {
@@ -26,11 +30,12 @@ impl SigningService {
     /// # Arguments
     ///
     /// * `config` - Solver configuration loaded from TOML
+    /// * `tracker` - Intent tracker for tracking signed intents
     ///
     /// # Returns
     ///
     /// * `Result<SigningService>` - New service instance or error
-    pub fn new(config: SolverConfig) -> Result<Self> {
+    pub fn new(config: SolverConfig, tracker: Arc<IntentTracker>) -> Result<Self> {
         // Convert config token pairs to AcceptanceConfig
         let token_pairs = config.get_token_pairs()?;
         let acceptance_config = AcceptanceConfig {
@@ -40,6 +45,7 @@ impl SigningService {
         Ok(Self {
             config,
             acceptance_config,
+            tracker,
         })
     }
 
@@ -241,6 +247,17 @@ impl SigningService {
         match result {
             Ok(_) => {
                 info!("Successfully submitted signature for draft {}", draft_id_for_log);
+                
+                // Add signed intent to tracker
+                if let Err(e) = self.tracker.add_signed_intent(
+                    draft_id_for_log.clone(),
+                    draft_data.clone(),
+                    draft.requester_address.clone(),
+                    draft.expiry_time,
+                ).await {
+                    warn!("Failed to add signed intent to tracker: {}", e);
+                }
+                
                 Ok(true)
             }
             Err(e) => {

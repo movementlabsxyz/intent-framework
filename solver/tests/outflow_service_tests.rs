@@ -7,6 +7,7 @@ use solver::{
     config::SolverConfig, service::tracker::IntentTracker,
     chains::HubChainClient, service::outflow::OutflowService,
 };
+use std::sync::Arc;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -66,7 +67,7 @@ fn create_test_outflow_draft_data() -> solver::acceptance::DraftIntentData {
 #[test]
 fn test_outflow_service_new() {
     let config = create_test_config();
-    let tracker = IntentTracker::new(&config).unwrap();
+    let tracker = Arc::new(IntentTracker::new(&config).unwrap());
     let hub_client = HubChainClient::new(&config.hub_chain).unwrap();
     let _service = OutflowService::new(config, tracker, hub_client).unwrap();
 }
@@ -86,7 +87,7 @@ fn test_poll_and_execute_transfers_empty() {
     let config = create_test_config();
     
     // These create reqwest::Client which may internally use tokio runtime
-    let tracker = IntentTracker::new(&config).unwrap();
+    let tracker = Arc::new(IntentTracker::new(&config).unwrap());
     let hub_client = HubChainClient::new(&config.hub_chain).unwrap();
     let service = OutflowService::new(config, tracker, hub_client).unwrap();
 

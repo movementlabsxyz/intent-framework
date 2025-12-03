@@ -13,6 +13,7 @@ use crate::service::tracker::{IntentTracker, TrackedIntent};
 use crate::verifier_client::{ValidateOutflowFulfillmentRequest, VerifierClient};
 use anyhow::{Context, Result};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info, warn};
 
@@ -20,8 +21,8 @@ use tracing::{error, info, warn};
 pub struct OutflowService {
     /// Solver configuration
     config: SolverConfig,
-    /// Intent tracker for tracking signed intents
-    tracker: IntentTracker,
+    /// Intent tracker for tracking signed intents (shared with other services)
+    tracker: Arc<IntentTracker>,
     /// Verifier client for getting approvals
     verifier_client: VerifierClient,
     /// Hub chain client for fulfilling intents
@@ -42,7 +43,7 @@ impl OutflowService {
     /// # Arguments
     ///
     /// * `config` - Solver configuration
-    /// * `tracker` - Intent tracker instance
+    /// * `tracker` - Shared intent tracker instance
     /// * `hub_client` - Hub chain client instance
     ///
     /// # Returns
@@ -51,7 +52,7 @@ impl OutflowService {
     /// * `Err(anyhow::Error)` - Failed to create service
     pub fn new(
         config: SolverConfig,
-        tracker: IntentTracker,
+        tracker: Arc<IntentTracker>,
         hub_client: HubChainClient,
     ) -> Result<Self> {
         let verifier_client = VerifierClient::new(&config.service.verifier_url);

@@ -1,8 +1,10 @@
 //! Solver Service
 //!
-//! Main service binary that runs the solver signing loop.
-//! Polls the verifier for pending drafts, evaluates acceptance,
-//! and signs/submits accepted drafts.
+//! Main service binary that runs all solver services concurrently:
+//! - Signing service: polls verifier and signs accepted drafts
+//! - Intent tracker: monitors hub chain for intent creation
+//! - Inflow service: monitors escrows and fulfills inflow intents
+//! - Outflow service: executes transfers and fulfills outflow intents
 //!
 //! ## Usage
 //!
@@ -18,8 +20,15 @@
 
 use anyhow::Result;
 use clap::Parser;
-use solver::{config::SolverConfig, service::SigningService};
-use tracing::{info, error};
+use solver::{
+    chains::HubChainClient,
+    config::SolverConfig,
+    service::{InflowService, IntentTracker, OutflowService, SigningService},
+};
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::signal;
+use tracing::{error, info};
 
 #[derive(Parser, Debug)]
 #[command(name = "solver")]
@@ -62,17 +71,64 @@ async fn main() -> Result<()> {
     info!("Hub chain: {} (chain ID: {})", config.hub_chain.name, config.hub_chain.chain_id);
     info!("Solver address: {}", config.solver.address);
 
-    // Create signing service
-    let signing_service = SigningService::new(config)?;
+    // Create shared intent tracker
+    let tracker = Arc::new(IntentTracker::new(&config)?);
+    info!("Intent tracker initialized");
+
+    // Create hub chain client (shared by outflow service)
+    let hub_client = HubChainClient::new(&config.hub_chain)?;
+    info!("Hub chain client initialized");
+
+    // Create services
+    let signing_service = SigningService::new(config.clone(), tracker.clone())?;
     info!("Signing service initialized");
 
-    // Run the service loop (runs indefinitely)
-    info!("Starting signing service loop...");
-    if let Err(e) = signing_service.run().await {
-        error!("Service error: {}", e);
-        return Err(e);
+    let inflow_service = InflowService::new(config.clone(), tracker.clone())?;
+    info!("Inflow service initialized");
+
+    let outflow_service = OutflowService::new(config.clone(), tracker.clone(), hub_client)?;
+    info!("Outflow service initialized");
+
+    let polling_interval = Duration::from_millis(config.service.polling_interval_ms);
+
+    // Run all services concurrently with graceful shutdown
+    info!("Starting all services...");
+    
+    tokio::select! {
+        // Signing service loop
+        result = signing_service.run() => {
+            if let Err(e) = result {
+                error!("Signing service error: {}", e);
+            }
+        }
+        
+        // Intent tracker loop (polls hub chain for created intents)
+        _ = async {
+            loop {
+                if let Err(e) = tracker.poll_for_created_intents().await {
+                    error!("Intent tracker error: {}", e);
+                }
+                tokio::time::sleep(polling_interval).await;
+            }
+        } => {}
+        
+        // Inflow fulfillment service loop
+        result = inflow_service.run() => {
+            if let Err(e) = result {
+                error!("Inflow service error: {}", e);
+            }
+        }
+        
+        // Outflow fulfillment service loop
+        _ = outflow_service.run(polling_interval) => {}
+        
+        // Graceful shutdown on Ctrl+C
+        _ = signal::ctrl_c() => {
+            info!("Received shutdown signal, stopping services...");
+        }
     }
 
+    info!("Solver service stopped");
     Ok(())
 }
 

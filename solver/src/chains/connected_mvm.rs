@@ -207,5 +207,70 @@ impl ConnectedMvmClient {
 
         anyhow::bail!("Could not extract transaction hash from output: {}", output_str)
     }
+
+    /// Completes an escrow by releasing funds to the solver with verifier approval
+    ///
+    /// Calls the `complete_escrow_from_fa` entry function which:
+    /// 1. Starts the escrow session (gets locked assets)
+    /// 2. Deposits locked assets to solver
+    /// 3. Withdraws payment from solver
+    /// 4. Completes escrow with verifier signature
+    ///
+    /// # Arguments
+    ///
+    /// * `escrow_intent_address` - Object address of the escrow intent
+    /// * `payment_amount` - Amount of tokens to provide as payment (typically matches desired_amount)
+    /// * `verifier_signature_bytes` - Verifier's Ed25519 signature as bytes (base64 decoded)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - Transaction hash
+    /// * `Err(anyhow::Error)` - Failed to complete escrow
+    pub fn complete_escrow_from_fa(
+        &self,
+        escrow_intent_address: &str,
+        payment_amount: u64,
+        verifier_signature_bytes: &[u8],
+    ) -> Result<String> {
+        // Convert signature bytes to hex string
+        let signature_hex = hex::encode(verifier_signature_bytes);
+
+        let output = Command::new("movement")
+            .args(&[
+                "move",
+                "run",
+                "--profile",
+                &self.profile,
+                "--assume-yes",
+                "--function-id",
+                &format!("{}::intent_as_escrow_entry::complete_escrow_from_fa", self.module_address),
+                "--args",
+                &format!("object:{}", escrow_intent_address),
+                &format!("u64:{}", payment_amount),
+                &format!("hex:{}", signature_hex),
+            ])
+            .output()
+            .context("Failed to execute movement move run")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            anyhow::bail!(
+                "movement move run failed:\nstderr: {}\nstdout: {}",
+                stderr,
+                stdout
+            );
+        }
+
+        // Extract transaction hash from output
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
+            if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
+                return Ok(hash.to_string());
+            }
+        }
+
+        anyhow::bail!("Could not extract transaction hash from output: {}", output_str)
+    }
 }
 

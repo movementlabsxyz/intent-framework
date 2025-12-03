@@ -8,7 +8,7 @@ pub mod connected_mvm;
 pub mod connected_evm;
 
 // Re-export for convenience
-pub use hub::HubChainClient;
-pub use connected_mvm::ConnectedMvmClient;
-pub use connected_evm::ConnectedEvmClient;
+pub use hub::{HubChainClient, IntentCreatedEvent};
+pub use connected_mvm::{ConnectedMvmClient, EscrowEvent};
+pub use connected_evm::{ConnectedEvmClient, EscrowInitializedEvent};
 

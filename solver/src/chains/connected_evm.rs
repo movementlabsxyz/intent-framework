@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
+use std::process::Command;
 use std::time::Duration;
 
 use crate::config::EvmChainConfig;
@@ -252,6 +253,116 @@ impl ConnectedEvmClient {
         anyhow::bail!(
             "transfer_with_intent_id not yet implemented. Requires Ethereum signing library (ethers-rs or alloy)"
         )
+    }
+
+    /// Claims an escrow by releasing funds to the solver with verifier approval
+    ///
+    /// Calls the `claim` function on the IntentEscrow contract using Hardhat script,
+    /// matching the approach used in E2E test scripts. The Hardhat script handles
+    /// signing using Hardhat's signer configuration (Account 2 = Solver).
+    ///
+    /// # Arguments
+    ///
+    /// * `escrow_address` - Address of the IntentEscrow contract
+    /// * `intent_id` - Intent ID (hex string with 0x prefix, will be converted to uint256)
+    /// * `signature` - Verifier's ECDSA signature (65 bytes: r || s || v)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - Transaction hash
+    /// * `Err(anyhow::Error)` - Failed to claim escrow
+    ///
+    /// # Note
+    ///
+    /// This function calls the Hardhat script `claim-escrow.js` via `npx hardhat run`,
+    /// matching the approach used in E2E test scripts. The script uses Hardhat's signer[2]
+    /// (Solver account) for signing the transaction.
+    ///
+    /// # TODO
+    ///
+    /// Future improvement: Implement this directly using a Rust Ethereum library instead of
+    /// calling Hardhat scripts. Good options include:
+    /// - `ethers-rs` (https://github.com/gakonst/ethers-rs) - Popular, well-maintained
+    /// - `alloy` (https://github.com/alloy-rs/alloy) - Modern, type-safe, actively developed
+    ///
+    /// This would eliminate the dependency on Node.js/Hardhat and provide better error handling
+    /// and type safety. The implementation would:
+    /// 1. Load the solver's private key from config
+    /// 2. Create a wallet/provider using the RPC URL
+    /// 3. Call the `claim(uint256 intentId, bytes memory signature)` function directly
+    /// 4. Sign and send the transaction
+    pub async fn claim_escrow(
+        &self,
+        escrow_address: &str,
+        intent_id: &str,
+        signature: &[u8],
+    ) -> Result<String> {
+        // Convert signature bytes to hex string (without 0x prefix, as expected by script)
+        let signature_hex = hex::encode(signature);
+
+        // Convert intent_id to EVM format (uint256)
+        // The intent_id should already be in hex format (0x...), but we need to ensure it's valid
+        let intent_id_evm = if intent_id.starts_with("0x") {
+            intent_id.to_string()
+        } else {
+            format!("0x{}", intent_id)
+        };
+
+        // Determine project root (assume we're in solver/ directory, go up one level)
+        // This matches how E2E scripts determine PROJECT_ROOT
+        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
+        let project_root = current_dir
+            .parent()
+            .context("Failed to determine project root (expected solver/ to be subdirectory)")?;
+
+        let evm_framework_dir = project_root.join("evm-intent-framework");
+        if !evm_framework_dir.exists() {
+            anyhow::bail!(
+                "evm-intent-framework directory not found at: {}",
+                evm_framework_dir.display()
+            );
+        }
+
+        // Call Hardhat script via npx (using nix develop to ensure correct environment)
+        // This matches the E2E script approach: nix develop "$PROJECT_ROOT" -c bash -c "cd ... && npx hardhat run ..."
+        let output = Command::new("nix")
+            .args(&[
+                "develop",
+                project_root.to_str().unwrap(),
+                "-c",
+                "bash",
+                "-c",
+                &format!(
+                    "cd '{}' && ESCROW_ADDRESS='{}' INTENT_ID_EVM='{}' SIGNATURE_HEX='{}' npx hardhat run scripts/claim-escrow.js --network localhost",
+                    evm_framework_dir.display(),
+                    escrow_address,
+                    intent_id_evm,
+                    signature_hex
+                ),
+            ])
+            .output()
+            .context("Failed to execute nix develop command")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            anyhow::bail!(
+                "Hardhat claim-escrow script failed:\nstderr: {}\nstdout: {}",
+                stderr,
+                stdout
+            );
+        }
+
+        // Extract transaction hash from output
+        // The script outputs: "Claim transaction hash: 0x..."
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
+            if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
+                return Ok(hash.to_string());
+            }
+        }
+
+        anyhow::bail!("Could not extract transaction hash from Hardhat output: {}", output_str)
     }
 }
 

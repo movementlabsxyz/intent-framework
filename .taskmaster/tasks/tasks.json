@@ -125,16 +125,16 @@
       "id": "9",
       "title": "Create intent tracker",
       "description": "Tracks signed intents and monitors for their creation on hub chain",
-      "status": "pending",
+      "status": "completed",
       "priority": "high",
       "dependencies": ["8"],
-      "details": "Create solver/src/service/tracker.rs with IntentTracker struct. Methods: add_signed_intent(), poll_for_created_intents() - query hub chain for intent creation events, get_pending_intents() - return intents ready for fulfillment. Distinguish inflow vs outflow.",
-      "testStrategy": "Unit tests for intent state management",
+      "details": "Created solver/src/service/tracker.rs with IntentTracker struct. Methods: add_signed_intent() - stores signed draft-intents, poll_for_created_intents() - queries hub chain for intent creation events and updates state, get_request_intents_ready_for_fulfillment() - returns Created intents ready for fulfillment. Distinguishes inflow vs outflow. Added comprehensive unit tests (12 tests) covering state management, filtering, and error handling.",
+      "testStrategy": "Unit tests for intent state management (12 tests passing)",
       "subtasks": [
-        {"id": "9.1", "title": "Create TrackedIntent struct with state enum", "status": "pending"},
-        {"id": "9.2", "title": "Create IntentTracker with in-memory storage", "status": "pending"},
-        {"id": "9.3", "title": "Implement poll_for_created_intents() using hub client", "status": "pending"},
-        {"id": "9.4", "title": "Implement get_pending_intents() with inflow/outflow filtering", "status": "pending"}
+        {"id": "9.1", "title": "Create TrackedIntent struct with state enum", "status": "completed"},
+        {"id": "9.2", "title": "Create IntentTracker with in-memory storage", "status": "completed"},
+        {"id": "9.3", "title": "Implement poll_for_created_intents() using hub client", "status": "completed"},
+        {"id": "9.4", "title": "Implement get_request_intents_ready_for_fulfillment() with inflow/outflow filtering", "status": "completed"}
       ]
     },
     {
@@ -207,7 +207,7 @@
     "version": "1.0.0",
     "lastModified": "2025-12-03T12:00:00.000Z",
     "taskCount": 13,
-    "completedCount": 8,
+    "completedCount": 10,
     "phases": {
       "phase1": {
         "name": "Signing Service",

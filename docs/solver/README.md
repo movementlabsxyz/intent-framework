@@ -10,13 +10,16 @@ See the [component README](../../solver/README.md) for quick start commands.
 
 The solver provides both **command-line utilities** and a **continuous service**:
 
-### Solver Service (New)
+### Solver Service
 
 A continuous service that automatically:
 
 1. **Polls verifier** for pending draft intents
 2. **Evaluates acceptance** based on configured token pairs and exchange rates
 3. **Signs and submits** signatures for accepted drafts (FCFS - first solver to sign wins)
+4. **Tracks signed intents** and monitors for their on-chain creation
+5. **Fulfills inflow intents** by monitoring escrow deposits and providing tokens on hub chain
+6. **Executes outflow transfers** (planned) by transferring tokens on connected chains and fulfilling hub intents
 
 ### Command-Line Utilities
 
@@ -31,7 +34,10 @@ See [Negotiation Routing Guide](../docs/trusted-verifier/negotiation-routing.md)
 
 Components:
 
-- **Solver Service**: Continuous service that polls verifier and signs accepted drafts
+- **Signing Service**: Continuous service that polls verifier and signs accepted drafts
+- **Intent Tracker**: Monitors signed intents and tracks their lifecycle from draft to on-chain creation
+- **Inflow Fulfillment Service**: Monitors escrow deposits on connected chains and fulfills inflow intents on hub chain
+- **Chain Clients**: Clients for interacting with hub chain (Movement) and connected chains (MVM/EVM)
 - **Signature Generator**: Creates Ed25519 signatures for `IntentToSign` structures
 - **Transaction Template Generator**: Produces Move/EVM templates with embedded `intent_id`
 - **Key Management**: Reads solver private keys from Movement/Aptos configuration
@@ -41,13 +47,20 @@ Components:
 ```text
 solver/
 ├── src/
-│   ├── bin/           # Binaries (solver service, sign_intent, connected_chain_tx_template)
-│   ├── service/        # Service modules (signing service loop)
-│   ├── acceptance.rs   # Token pair acceptance logic
-│   ├── config.rs       # Configuration management
-│   ├── crypto/         # Cryptographic operations (hashing, signing)
-│   └── verifier_client.rs  # HTTP client for verifier API
-├── config/             # Configuration templates
+│   ├── bin/              # Binaries (solver service, sign_intent, connected_chain_tx_template)
+│   ├── service/          # Service modules
+│   │   ├── signing.rs    # Signing service loop (polls verifier, signs drafts)
+│   │   ├── tracker.rs    # Intent tracker (monitors signed intents)
+│   │   └── inflow.rs     # Inflow fulfillment service (monitors escrows, fulfills intents)
+│   ├── chains/            # Chain clients
+│   │   ├── hub.rs        # Hub chain client (Movement)
+│   │   ├── connected_mvm.rs  # Connected MVM chain client
+│   │   └── connected_evm.rs   # Connected EVM chain client
+│   ├── acceptance.rs      # Token pair acceptance logic
+│   ├── config.rs          # Configuration management
+│   ├── crypto/            # Cryptographic operations (hashing, signing)
+│   └── verifier_client.rs # HTTP client for verifier API
+├── config/               # Configuration templates
 └── Cargo.toml
 ```
 
@@ -83,10 +96,12 @@ The service will:
 
 1. Load configuration from the specified file or `SOLVER_CONFIG_PATH` environment variable
 2. Initialize logging and connect to the verifier
-3. Start polling for pending drafts at the configured interval
-4. Evaluate each draft against configured token pairs and exchange rates
-5. Sign and submit signatures for accepted drafts
-6. Handle FCFS conflicts (if another solver already signed)
+3. Start multiple concurrent service loops:
+   - **Signing loop**: Polls verifier for pending drafts, evaluates acceptance, signs and submits
+   - **Tracking loop**: Monitors hub chain for intent creation events
+   - **Inflow loop**: Monitors connected chains for escrow deposits and fulfills inflow intents
+4. Handle FCFS conflicts (if another solver already signed)
+5. Automatically fulfill intents when conditions are met
 
 ### Acceptance Logic
 
@@ -96,6 +111,31 @@ The solver accepts drafts based on:
 - **Exchange Rate**: `offered_amount >= desired_amount * exchange_rate` (solver breaks even or profits)
 
 All tokens are treated as fungible assets - no hardcoded USD/NATIVE distinctions.
+
+## Inflow Fulfillment
+
+The solver automatically fulfills **inflow intents** (tokens locked on connected chain, desired on hub):
+
+1. **Monitor Escrows**: Polls connected chain for escrow deposits matching tracked inflow intents
+2. **Fulfill Intent**: Calls hub chain `fulfill_inflow_request_intent` when escrow is detected
+3. **Release Escrow**: Polls verifier for approval signature, then releases escrow on connected chain
+
+### Supported Chains
+
+- **Move VM Chains**: Uses `complete_escrow_from_fa` entry function
+- **EVM Chains**: Uses Hardhat script `claim-escrow.js` (calls `IntentEscrow.claim()`)
+
+**Note**: EVM escrow claiming currently uses Hardhat scripts. Future improvement: implement directly using Rust Ethereum libraries (`ethers-rs` or `alloy`) for better error handling and type safety.
+
+## Intent Tracking
+
+The solver tracks the lifecycle of intents:
+
+1. **Signed**: Draft-intent has been signed and submitted to verifier
+2. **Created**: Request-intent has been created on-chain by requester
+3. **Fulfilled**: Request-intent has been fulfilled by the solver
+
+The tracker distinguishes between inflow and outflow intents for proper fulfillment routing.
 
 ## Reserved Intents
 
@@ -170,3 +210,27 @@ cargo run --bin connected_chain_tx_template -- \
 The binary prints parameters that must match the hub intent and the command/calldata to execute the transfer.
 
 **Note:** For Move VM, `--metadata` must be a hex address (object address of Metadata), not a module path. The intent framework module must be deployed on the connected chain.
+
+## Chain Clients
+
+The solver includes chain clients for interacting with different blockchain types:
+
+### Hub Chain Client (`chains/hub.rs`)
+
+- **Query Intent Events**: `get_intent_events()` - Queries hub chain for intent creation and fulfillment events
+- **Fulfill Inflow Intent**: `fulfill_inflow_intent()` - Calls `fulfill_inflow_request_intent` entry function
+- **Fulfill Outflow Intent**: `fulfill_outflow_intent()` - Calls `fulfill_outflow_request_intent` entry function
+
+### Connected MVM Client (`chains/connected_mvm.rs`)
+
+- **Query Escrow Events**: `get_escrow_events()` - Queries connected MVM chain for escrow creation events
+- **Transfer with Intent ID**: `transfer_with_intent_id()` - Executes token transfer with embedded `intent_id`
+- **Complete Escrow**: `complete_escrow_from_fa()` - Releases escrow with verifier signature
+
+### Connected EVM Client (`chains/connected_evm.rs`)
+
+- **Query Escrow Events**: `get_escrow_events()` - Queries EVM chain for `EscrowInitialized` events via JSON-RPC
+- **Claim Escrow**: `claim_escrow()` - Claims escrow using Hardhat script (calls `IntentEscrow.claim()`)
+- **Transfer with Intent ID**: `transfer_with_intent_id()` - Placeholder for ERC20 transfer with embedded `intent_id` (requires Ethereum signing library)
+
+**Note**: EVM operations currently use Hardhat scripts for transaction execution. Future improvement: implement directly using Rust Ethereum libraries (`ethers-rs` or `alloy`) for better integration and error handling.

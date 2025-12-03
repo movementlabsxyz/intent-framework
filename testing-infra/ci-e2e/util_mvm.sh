@@ -392,7 +392,7 @@ generate_solver_signature() {
 
     # Normalize addresses to ensure they have 0x prefix (required by get_intent_hash)
     # aptos config returns addresses without 0x prefix, but get_intent_hash requires it
-    local normalize_address() {
+    normalize_address() {
         local addr="$1"
         if [ "${addr#0x}" != "$addr" ]; then
             # Already has 0x prefix
@@ -404,7 +404,7 @@ generate_solver_signature() {
     }
     
     # Strip 0x from chain_address (used in function ID format: 0x{chain_address}::...)
-    local strip_0x() {
+    strip_0x() {
         local addr="$1"
         if [ "${addr#0x}" != "$addr" ]; then
             # Has 0x prefix, strip it

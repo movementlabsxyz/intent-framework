@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 1
-intent_module_address = "0xe7314b32806e55c0d343062403a1962402f918a4a3a1ee6acd364a1690c915f7"
-known_accounts = ["71d612fd87129226c861233f9686601fef4afe791ec2a49c92b4bd6c33e5c553", "4d95b9eb03eed503b8d32e2e9354f2b18b4c83557b378f828dc9f7b50e7593a5"]
+intent_module_address = "0x6807f92e54aedc4172a592bffca600e13a6b99682c6f7404e9668421816fd097"
+known_accounts = ["1a162dddde85330d95c7ae6b0bfa427aa418a596f9537b32bb98744833e46310", "1c0fff196724415f3d39d66810f71aa9a90e5026617ed3b30fbf5f7fa2077fe5"]
 
 # Connected Move VM Chain Configuration  
 # The connected Move VM chain is where escrow events occur and are monitored
@@ -17,19 +17,19 @@ known_accounts = ["71d612fd87129226c861233f9686601fef4afe791ec2a49c92b4bd6c33e5c
 name = "Connected Move VM Chain"
 rpc_url = "http://127.0.0.1:8082"
 chain_id = 2
-intent_module_address = "0x4f733abc2052a89514c258cfec3cbe0e26369dac36b66255e0e37fa07c0f013a"
-escrow_module_address = "0x4f733abc2052a89514c258cfec3cbe0e26369dac36b66255e0e37fa07c0f013a"
-known_accounts = ["fe6d5e530a3efb47b5df0b3891904e97dd19ad7e91da3add3acc027126675314"]
+intent_module_address = "0x9b4c46be96dec0349047c028c548bf3bb7e7bc94d9c975113cdce51ed06e6ed9"
+escrow_module_address = "0x9b4c46be96dec0349047c028c548bf3bb7e7bc94d9c975113cdce51ed06e6ed9"
+known_accounts = ["bde46a2e3fdd41e5e89c55c59bb9b4d66fcb4868c2457d87fe59fdf6c7615d1d"]
 
 # Connected EVM Chain Configuration
 # The connected EVM chain is where EVM escrow events occur and are monitored
-[connected_chain_evm]
-name = "Connected EVM Chain"
-rpc_url = "http://127.0.0.1:8545"
-escrow_contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-chain_id = 31337
-verifier_address = "0xf8ee8a600f9ab9b67135a533d20502eba6b52c95"
-
+# MVM-only test: # MVM-only test: [connected_chain_evm]
+# MVM-only test: name = "Connected EVM Chain"
+# MVM-only test: rpc_url = "http://127.0.0.1:8545"
+# MVM-only test: escrow_contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+# MVM-only test: chain_id = 31337
+# MVM-only test: verifier_address = "0xf8ee8a600f9ab9b67135a533d20502eba6b52c95"
+# MVM-only test: 
 [verifier]
 private_key = "lNqeNsdkUB4+UR9EihzMErmY2inmVnhNAJC2y2SDpSs="
 public_key = "NfUiwrwfjQR0kKZgUmbGLkwKrsT1+Z1FJSBMVjZ5dTc="

@@ -35,8 +35,8 @@ pub fn get_intent_hash(
     // Determine REST port
     let rest_port = if chain_num == 1 { "8080" } else { "8082" };
 
-    // Call Move function
-    let output = Command::new("movement")
+    // Call Move function (use aptos CLI since profiles are created with aptos init)
+    let output = Command::new("aptos")
         .args(&[
             "move",
             "run",
@@ -61,7 +61,12 @@ pub fn get_intent_hash(
 
     if !output.status.success() {
         let stderr = str::from_utf8(&output.stderr).unwrap_or("");
-        anyhow::bail!("movement move run failed: {}", stderr);
+        let stdout = str::from_utf8(&output.stdout).unwrap_or("");
+        anyhow::bail!(
+            "movement move run failed:\nstderr: {}\nstdout: {}",
+            stderr,
+            stdout
+        );
     }
 
     // Wait for transaction to be processed

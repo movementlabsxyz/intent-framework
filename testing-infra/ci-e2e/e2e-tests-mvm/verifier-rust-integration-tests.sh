@@ -15,9 +15,8 @@ source "$SCRIPT_DIR/../util.sh"
 setup_project_root
 cd "$PROJECT_ROOT"
 
-# Set VERIFIER_CONFIG_PATH to use verifier_testing.toml for tests
-VERIFIER_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
-export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
+# Setup verifier config (always generates fresh ephemeral keys for CI/E2E testing)
+setup_verifier_config
 
 
 # Create a temporary integration test entry point

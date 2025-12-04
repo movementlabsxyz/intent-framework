@@ -74,16 +74,61 @@ pub struct EvmChainConfig {
 ///
 /// This configuration is critical for the verifier's operation and security.
 /// The private key must be kept secure and never exposed.
+///
+/// Keys are loaded from environment variables at runtime for security.
+/// The config file contains the environment variable names, not the actual keys.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifierConfig {
-    /// Ed25519 private key for signing approvals (base64 encoded)
-    pub private_key: String,
-    /// Ed25519 public key for signature verification (base64 encoded)
-    pub public_key: String,
+    /// Environment variable name containing Ed25519 private key (base64 encoded)
+    /// Default: "VERIFIER_PRIVATE_KEY"
+    #[serde(default = "default_private_key_env")]
+    pub private_key_env: String,
+    /// Environment variable name containing Ed25519 public key (base64 encoded)
+    /// Default: "VERIFIER_PUBLIC_KEY"
+    #[serde(default = "default_public_key_env")]
+    pub public_key_env: String,
     /// Polling interval for event monitoring in milliseconds
     pub polling_interval_ms: u64,
     /// Timeout for validation operations in milliseconds
     pub validation_timeout_ms: u64,
+}
+
+fn default_private_key_env() -> String {
+    "VERIFIER_PRIVATE_KEY".to_string()
+}
+
+fn default_public_key_env() -> String {
+    "VERIFIER_PUBLIC_KEY".to_string()
+}
+
+impl VerifierConfig {
+    /// Loads the private key from the environment variable.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The private key (base64 encoded)
+    /// * `Err(anyhow::Error)` - Failed to load from environment
+    pub fn get_private_key(&self) -> anyhow::Result<String> {
+        std::env::var(&self.private_key_env)
+            .map_err(|_| anyhow::anyhow!(
+                "Environment variable '{}' not set. Please set it with your Ed25519 private key (base64 encoded).",
+                self.private_key_env
+            ))
+    }
+
+    /// Loads the public key from the environment variable.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The public key (base64 encoded)
+    /// * `Err(anyhow::Error)` - Failed to load from environment
+    pub fn get_public_key(&self) -> anyhow::Result<String> {
+        std::env::var(&self.public_key_env)
+            .map_err(|_| anyhow::anyhow!(
+                "Environment variable '{}' not set. Please set it with your Ed25519 public key (base64 encoded).",
+                self.public_key_env
+            ))
+    }
 }
 
 /// API server configuration for external communication.
@@ -205,8 +250,8 @@ impl Config {
             },
             connected_chain_mvm: None, // Optional connected Move VM chain configuration
             verifier: VerifierConfig {
-                private_key: "REPLACE_WITH_PRIVATE_KEY".to_string(),
-                public_key: "REPLACE_WITH_PUBLIC_KEY".to_string(),
+                private_key_env: "VERIFIER_PRIVATE_KEY".to_string(),
+                public_key_env: "VERIFIER_PUBLIC_KEY".to_string(),
                 polling_interval_ms: 2000,
                 validation_timeout_ms: 30000,
             },

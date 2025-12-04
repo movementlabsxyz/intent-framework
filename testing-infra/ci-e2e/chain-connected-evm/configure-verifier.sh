@@ -3,7 +3,7 @@
 # Configure Verifier for Connected EVM Chain
 # 
 # This script extracts deployed contract addresses from the EVM chain
-# and updates the [connected_chain_evm] section in verifier_testing.toml.
+# and updates the [connected_chain_evm] section in verifier-e2e-ci-testing.toml.
 
 set -e
 
@@ -29,39 +29,42 @@ log "   - Getting verifier Ethereum address (Hardhat account 0)..."
 VERIFIER_ADDRESS=$(get_hardhat_account_address "0")
 log_and_echo "   EVM Verifier: $VERIFIER_ADDRESS"
 
-# Setup verifier config
+# Setup verifier config (always generates fresh ephemeral keys for CI/E2E testing)
 setup_verifier_config
+
+# Use VERIFIER_CONFIG_PATH exported by setup_verifier_config
+VERIFIER_E2E_CI_TESTING_CONFIG="$VERIFIER_CONFIG_PATH"
 
 # First, remove any commented-out EVM section from MVM-only tests
 # This handles the case where MVM test ran before EVM test
-sed -i '/^# MVM-only test:.*connected_chain_evm/d' "$VERIFIER_TESTING_CONFIG"
-sed -i '/^# MVM-only test: name = "Connected EVM Chain"/d' "$VERIFIER_TESTING_CONFIG"
-sed -i '/^# MVM-only test: rpc_url/d' "$VERIFIER_TESTING_CONFIG"
-sed -i '/^# MVM-only test: escrow_contract_address/d' "$VERIFIER_TESTING_CONFIG"
-sed -i '/^# MVM-only test: chain_id/d' "$VERIFIER_TESTING_CONFIG"
-sed -i '/^# MVM-only test: verifier_address/d' "$VERIFIER_TESTING_CONFIG"
-sed -i '/^# MVM-only test: *$/d' "$VERIFIER_TESTING_CONFIG"
+sed -i '/^# MVM-only test:.*connected_chain_evm/d' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+sed -i '/^# MVM-only test: name = "Connected EVM Chain"/d' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+sed -i '/^# MVM-only test: rpc_url/d' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+sed -i '/^# MVM-only test: escrow_contract_address/d' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+sed -i '/^# MVM-only test: chain_id/d' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+sed -i '/^# MVM-only test: verifier_address/d' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+sed -i '/^# MVM-only test: *$/d' "$VERIFIER_E2E_CI_TESTING_CONFIG"
 
-# Add or update EVM chain section in verifier_testing.toml
-if grep -q "^\[connected_chain_evm\]" "$VERIFIER_TESTING_CONFIG"; then
+# Add or update EVM chain section in verifier-e2e-ci-testing.toml
+if grep -q "^\[connected_chain_evm\]" "$VERIFIER_E2E_CI_TESTING_CONFIG"; then
     # Update existing section
-    sed -i "/\[connected_chain_evm\]/,/^\[/ s|rpc_url = .*|rpc_url = \"http://127.0.0.1:8545\"|" "$VERIFIER_TESTING_CONFIG"
-    sed -i "/\[connected_chain_evm\]/,/^\[/ s|escrow_contract_address = .*|escrow_contract_address = \"$CONTRACT_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
-    sed -i "/\[connected_chain_evm\]/,/^\[/ s|chain_id = .*|chain_id = 31337|" "$VERIFIER_TESTING_CONFIG"
-    sed -i "/\[connected_chain_evm\]/,/^\[/ s|verifier_address = .*|verifier_address = \"$VERIFIER_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+    sed -i "/\[connected_chain_evm\]/,/^\[/ s|rpc_url = .*|rpc_url = \"http://127.0.0.1:8545\"|" "$VERIFIER_E2E_CI_TESTING_CONFIG"
+    sed -i "/\[connected_chain_evm\]/,/^\[/ s|escrow_contract_address = .*|escrow_contract_address = \"$CONTRACT_ADDRESS\"|" "$VERIFIER_E2E_CI_TESTING_CONFIG"
+    sed -i "/\[connected_chain_evm\]/,/^\[/ s|chain_id = .*|chain_id = 31337|" "$VERIFIER_E2E_CI_TESTING_CONFIG"
+    sed -i "/\[connected_chain_evm\]/,/^\[/ s|verifier_address = .*|verifier_address = \"$VERIFIER_ADDRESS\"|" "$VERIFIER_E2E_CI_TESTING_CONFIG"
 else
     # Add new section before [verifier] section
-    if grep -q "^\[verifier\]" "$VERIFIER_TESTING_CONFIG"; then
-        sed -i "/^\[verifier\]/i [connected_chain_evm]\nname = \"Connected EVM Chain\"\nrpc_url = \"http://127.0.0.1:8545\"\nescrow_contract_address = \"$CONTRACT_ADDRESS\"\nchain_id = 31337\nverifier_address = \"$VERIFIER_ADDRESS\"\n" "$VERIFIER_TESTING_CONFIG"
+    if grep -q "^\[verifier\]" "$VERIFIER_E2E_CI_TESTING_CONFIG"; then
+        sed -i "/^\[verifier\]/i [connected_chain_evm]\nname = \"Connected EVM Chain\"\nrpc_url = \"http://127.0.0.1:8545\"\nescrow_contract_address = \"$CONTRACT_ADDRESS\"\nchain_id = 31337\nverifier_address = \"$VERIFIER_ADDRESS\"\n" "$VERIFIER_E2E_CI_TESTING_CONFIG"
     else
         # Append at end of file
-        echo "" >> "$VERIFIER_TESTING_CONFIG"
-        echo "[connected_chain_evm]" >> "$VERIFIER_TESTING_CONFIG"
-        echo "name = \"Connected EVM Chain\"" >> "$VERIFIER_TESTING_CONFIG"
-        echo "rpc_url = \"http://127.0.0.1:8545\"" >> "$VERIFIER_TESTING_CONFIG"
-        echo "escrow_contract_address = \"$CONTRACT_ADDRESS\"" >> "$VERIFIER_TESTING_CONFIG"
-        echo "chain_id = 31337" >> "$VERIFIER_TESTING_CONFIG"
-        echo "verifier_address = \"$VERIFIER_ADDRESS\"" >> "$VERIFIER_TESTING_CONFIG"
+        echo "" >> "$VERIFIER_E2E_CI_TESTING_CONFIG"
+        echo "[connected_chain_evm]" >> "$VERIFIER_E2E_CI_TESTING_CONFIG"
+        echo "name = \"Connected EVM Chain\"" >> "$VERIFIER_E2E_CI_TESTING_CONFIG"
+        echo "rpc_url = \"http://127.0.0.1:8545\"" >> "$VERIFIER_E2E_CI_TESTING_CONFIG"
+        echo "escrow_contract_address = \"$CONTRACT_ADDRESS\"" >> "$VERIFIER_E2E_CI_TESTING_CONFIG"
+        echo "chain_id = 31337" >> "$VERIFIER_E2E_CI_TESTING_CONFIG"
+        echo "verifier_address = \"$VERIFIER_ADDRESS\"" >> "$VERIFIER_E2E_CI_TESTING_CONFIG"
     fi
 fi
 
@@ -71,9 +74,9 @@ fi
 sed -i '/^\[connected_chain_mvm\]/,/^\[connected_chain_evm\]/ {
     /^\[connected_chain_mvm\]/ s/^/# EVM-only test: /
     /^\[connected_chain_evm\]/! s/^/# EVM-only test: /
-}' "$VERIFIER_TESTING_CONFIG"
+}' "$VERIFIER_E2E_CI_TESTING_CONFIG"
 
-log_and_echo "✅ Updated verifier_testing.toml with Connected EVM Chain addresses"
+log_and_echo "✅ Updated verifier-e2e-ci-testing.toml with Connected EVM Chain addresses"
 log_and_echo "   (MVM chain configuration commented out for EVM-only test)"
 log_and_echo ""
 

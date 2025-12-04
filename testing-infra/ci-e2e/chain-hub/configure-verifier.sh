@@ -3,7 +3,7 @@
 # Configure Verifier for Hub Chain
 # 
 # This script extracts deployed contract addresses from Chain 1 (Hub Chain)
-# and updates the [hub_chain] section in verifier_testing.toml.
+# and updates the [hub_chain] section in verifier-e2e-ci-testing.toml.
 
 set -e
 
@@ -30,20 +30,23 @@ fi
 
 log_and_echo "   Chain 1 deployer: $CHAIN1_ADDRESS"
 
-# Setup verifier config
+# Setup verifier config (always generates fresh ephemeral keys for CI/E2E testing)
 setup_verifier_config
 
-# Update hub_chain section in verifier_testing.toml
-sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_ADDRESS\"|" "$VERIFIER_TESTING_CONFIG"
+# Use VERIFIER_CONFIG_PATH exported by setup_verifier_config
+VERIFIER_E2E_CI_TESTING_CONFIG="$VERIFIER_CONFIG_PATH"
+
+# Update hub_chain section in verifier-e2e-ci-testing.toml
+sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|intent_module_address = .*|intent_module_address = \"0x$CHAIN1_ADDRESS\"|" "$VERIFIER_E2E_CI_TESTING_CONFIG"
 
 # Get Requester and Solver addresses and update known_accounts
 REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 
 if [ -n "$REQUESTER_CHAIN1_ADDRESS" ] && [ -n "$SOLVER_CHAIN1_ADDRESS" ]; then
-    sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|known_accounts = .*|known_accounts = [\"$REQUESTER_CHAIN1_ADDRESS\", \"$SOLVER_CHAIN1_ADDRESS\"]|" "$VERIFIER_TESTING_CONFIG"
+    sed -i "/\[hub_chain\]/,/\[connected_chain_mvm\]/ s|known_accounts = .*|known_accounts = [\"$REQUESTER_CHAIN1_ADDRESS\", \"$SOLVER_CHAIN1_ADDRESS\"]|" "$VERIFIER_E2E_CI_TESTING_CONFIG"
 fi
 
-log_and_echo "✅ Updated verifier_testing.toml with Hub Chain addresses"
+log_and_echo "✅ Updated verifier-e2e-ci-testing.toml with Hub Chain addresses"
 log_and_echo ""
 

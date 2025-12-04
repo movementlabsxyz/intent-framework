@@ -29,16 +29,12 @@ log ""
 log "🔑 Configuration:"
 log "   Computing verifier Ethereum address from config..."
 
+# Setup verifier config (always generates fresh ephemeral keys for CI/E2E testing)
+setup_verifier_config
+
 # Get verifier Ethereum address from config (derived from ECDSA public key)
 VERIFIER_DIR="$PROJECT_ROOT/trusted-verifier"
-CONFIG_PATH="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
-
-# Check if config file exists
-if [ ! -f "$CONFIG_PATH" ]; then
-    log_and_echo "❌ ERROR: verifier_testing.toml not found at $CONFIG_PATH"
-    log_and_echo "   The verifier config file is required for deployment"
-    exit 1
-fi
+CONFIG_PATH="$VERIFIER_CONFIG_PATH"
 
 VERIFIER_ETH_OUTPUT=$(cd "$PROJECT_ROOT" && env HOME="${HOME}" VERIFIER_CONFIG_PATH="$CONFIG_PATH" nix develop -c bash -c "cd trusted-verifier && cargo run --bin get_verifier_eth_address 2>&1" | tee -a "$LOG_FILE")
 VERIFIER_ETH_ADDRESS=$(echo "$VERIFIER_ETH_OUTPUT" | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
@@ -47,7 +43,7 @@ if [ -z "$VERIFIER_ETH_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Could not compute verifier Ethereum address from config"
     log_and_echo "   Command output:"
     echo "$VERIFIER_ETH_OUTPUT"
-    log_and_echo "   Check that trusted-verifier/config/verifier_testing.toml has valid keys"
+    log_and_echo "   Check that trusted-verifier/config/verifier-e2e-ci-testing.toml has valid keys"
     exit 1
 fi
 

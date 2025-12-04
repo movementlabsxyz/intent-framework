@@ -38,32 +38,26 @@ log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
 log "   Requester Chain 2 (connected): $REQUESTER_CHAIN2_ADDRESS"
 log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
-VERIFIER_TESTING_CONFIG="${PROJECT_ROOT}/trusted-verifier/config/verifier_testing.toml"
+# Setup verifier config (always generates fresh ephemeral keys for CI/E2E testing)
+setup_verifier_config
 
-if [ ! -f "$VERIFIER_TESTING_CONFIG" ]; then
-    log_and_echo "❌ ERROR: verifier_testing.toml not found at $VERIFIER_TESTING_CONFIG"
-    log_and_echo "   Tests require trusted-verifier/config/verifier_testing.toml to exist"
-    exit 1
-fi
-
-export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
-
-VERIFIER_PUBLIC_KEY_B64=$(grep "^public_key" "$VERIFIER_TESTING_CONFIG" | cut -d'"' -f2)
+# Get public key from environment variable
+VERIFIER_PUBLIC_KEY_B64="${VERIFIER_PUBLIC_KEY}"
 
 if [ -z "$VERIFIER_PUBLIC_KEY_B64" ]; then
-    log_and_echo "❌ ERROR: Could not find public_key in verifier_testing.toml"
+    log_and_echo "❌ ERROR: VERIFIER_PUBLIC_KEY environment variable not set"
     log_and_echo "   The verifier public key is required for outflow intent creation."
-    log_and_echo "   Please ensure verifier_testing.toml has a valid public_key field."
+    log_and_echo "   Please ensure VERIFIER_PUBLIC_KEY is set (setup_verifier_config should do this)."
     exit 1
 fi
 
 VERIFIER_PUBLIC_KEY_HEX=$(echo "$VERIFIER_PUBLIC_KEY_B64" | base64 -d 2>/dev/null | xxd -p -c 1000 | tr -d '\n')
 
 if [ -z "$VERIFIER_PUBLIC_KEY_HEX" ] || [ ${#VERIFIER_PUBLIC_KEY_HEX} -ne 64 ]; then
-    log_and_echo "❌ ERROR: Invalid public key format in verifier_testing.toml"
+    log_and_echo "❌ ERROR: Invalid public key format"
     log_and_echo "   Expected: base64-encoded 32-byte Ed25519 public key"
     log_and_echo "   Got: $VERIFIER_PUBLIC_KEY_B64"
-    log_and_echo "   Please ensure the public_key in verifier_testing.toml is valid base64 and decodes to 32 bytes (64 hex chars)."
+    log_and_echo "   Please ensure VERIFIER_PUBLIC_KEY is valid base64 and decodes to 32 bytes (64 hex chars)."
     exit 1
 fi
 

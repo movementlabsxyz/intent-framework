@@ -33,7 +33,8 @@ solver/config/solver_testnet.toml
 trusted-verifier/config/verifier_testnet.toml
 
 # Testing config files (generated from template with ephemeral keys)
-trusted-verifier/config/verifier_testing.toml
+trusted-verifier/config/verifier-e2e-ci-testing.toml
+solver/config/solver-e2e-ci-testing.toml
 # Editor directories and files
 .idea
 .vscode

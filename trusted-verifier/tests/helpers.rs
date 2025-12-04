@@ -4,7 +4,7 @@
 
 use base64::{engine::general_purpose, Engine as _};
 use ed25519_dalek::SigningKey;
-use rand::RngCore;
+use rand::{Rng, RngCore};
 use trusted_verifier::config::{ApiConfig, ChainConfig, Config, EvmChainConfig, VerifierConfig};
 use trusted_verifier::evm_client::EvmTransaction;
 use trusted_verifier::monitor::{ChainType, EscrowEvent, FulfillmentEvent, IntentEvent};
@@ -12,7 +12,8 @@ use trusted_verifier::mvm_client::MvmTransaction;
 use trusted_verifier::validator::FulfillmentTransactionParams;
 
 /// Build a valid in-memory test configuration with a fresh Ed25519 keypair.
-/// Keys are encoded using standard Base64 to satisfy CryptoService requirements.
+/// Keys are encoded using standard Base64 and set as environment variables.
+/// The config references these env vars via private_key_env/public_key_env.
 #[allow(dead_code)]
 pub fn build_test_config_with_mvm() -> Config {
     let mut rng = rand::thread_rng();
@@ -23,6 +24,15 @@ pub fn build_test_config_with_mvm() -> Config {
 
     let private_key_b64 = general_purpose::STANDARD.encode(signing_key.to_bytes());
     let public_key_b64 = general_purpose::STANDARD.encode(verifying_key.to_bytes());
+
+    // Use unique env var names per invocation to avoid parallel test conflicts
+    let unique_id: u64 = rng.gen();
+    let private_key_env_name = format!("TEST_VERIFIER_PRIVATE_KEY_{}", unique_id);
+    let public_key_env_name = format!("TEST_VERIFIER_PUBLIC_KEY_{}", unique_id);
+
+    // Set environment variables for the keys (CryptoService reads from env vars)
+    std::env::set_var(&private_key_env_name, &private_key_b64);
+    std::env::set_var(&public_key_env_name, &public_key_b64);
 
     Config {
         hub_chain: ChainConfig {
@@ -42,8 +52,8 @@ pub fn build_test_config_with_mvm() -> Config {
             known_accounts: Some(vec!["0x2".to_string()]),
         }),
         verifier: VerifierConfig {
-            private_key: private_key_b64,
-            public_key: public_key_b64,
+            private_key_env: private_key_env_name,
+            public_key_env: public_key_env_name,
             polling_interval_ms: 1000,
             validation_timeout_ms: 1000,
         },

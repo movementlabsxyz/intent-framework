@@ -109,6 +109,82 @@ nix develop
 
 ---
 
+## Phase 3.5: Local Testing (Before EC2 Deployment)
+
+Before deploying to EC2, test the services locally to ensure configuration is correct.
+
+### 3.5.1 Configure Local Test Files
+
+Fill in your testnet config files with actual values from `.testnet-keys.env`:
+
+```bash
+# Verifier config
+trusted-verifier/config/verifier_testnet.toml
+
+# Solver config (use localhost:3333 for verifier_url)
+solver/config/solver_testnet.toml
+```
+
+### 3.5.2 Run Verifier Locally
+
+```bash
+# Terminal 1: Start verifier
+./testing-infra/testnet/run-verifier-local.sh
+
+# Or with release build (faster):
+./testing-infra/testnet/run-verifier-local.sh --release
+```
+
+**Expected output:**
+- "Starting Trusted Verifier Service"
+- "Configuration loaded successfully"
+- "Starting background event monitoring"
+- API available at http://localhost:3333
+
+**Verify:**
+```bash
+curl http://localhost:3333/health
+# Expected: {"status":"ok"}
+```
+
+### 3.5.3 Run Solver Locally
+
+```bash
+# Terminal 2: Start solver (after verifier is running)
+./testing-infra/testnet/run-solver-local.sh
+
+# Or with release build (faster):
+./testing-infra/testnet/run-solver-local.sh --release
+```
+
+**Expected output:**
+- "Starting Solver Service"
+- "Configuration loaded successfully"
+- "Verifier URL: http://localhost:3333"
+- "Signing service initialized"
+- "Inflow service initialized"
+- "Outflow service initialized"
+
+### 3.5.4 What to Check
+
+- [ ] Verifier starts without errors
+- [ ] Verifier can connect to Movement Bardock RPC
+- [ ] Verifier can connect to Base Sepolia RPC
+- [ ] Solver starts without errors
+- [ ] Solver can connect to verifier
+- [ ] No authentication/key errors in logs
+
+### 3.5.5 Update Config for EC2
+
+After local testing succeeds, update `solver_testnet.toml` for EC2 deployment:
+
+```toml
+# Change from localhost to EC2 verifier IP
+verifier_url = "http://<EC2_VERIFIER_HOST>:3333"
+```
+
+---
+
 ## Phase 4: Deploy Verifier and Solver Services to AWS EC2
 
 **Architecture Note**: The verifier and solver are off-chain services that run on EC2. The requester operates locally (client-side).
@@ -598,24 +674,42 @@ sudo -u solver /opt/solver/bin/sign_intent --help
 sudo -u solver /opt/solver/bin/connected_chain_tx_template --help
 ```
 
-### 4.6 Quick Start (Automated Deployment)
+### 4.6 Deployment Scripts
 
-**TODO**: Create automated EC2 deployment scripts:
+#### Local Testing Scripts
+
+Test locally before deploying to EC2:
 
 ```bash
-# Deploy verifier to Verifier EC2 (not yet implemented)
+# Terminal 1: Run verifier locally
+./testing-infra/testnet/run-verifier-local.sh
+
+# Terminal 2: Run solver locally (after verifier is up)
+./testing-infra/testnet/run-solver-local.sh
+```
+
+#### EC2 Deployment Scripts
+
+After local testing succeeds, deploy to EC2:
+
+```bash
+# Step 1: Update solver config with EC2 verifier IP
+# Edit solver/config/solver_testnet.toml:
+# verifier_url = "http://<EC2_VERIFIER_HOST>:3333"
+
+# Step 2: Deploy verifier first
 ./testing-infra/testnet/deploy-verifier-ec2.sh
 
-# Deploy solver to Solver EC2 (not yet implemented)
+# Step 3: Deploy solver (after verifier is healthy)
 ./testing-infra/testnet/deploy-solver-ec2.sh
 ```
 
-When implemented, these scripts will:
+**What the EC2 scripts do:**
 
 1. SSH into the respective EC2 instance
-2. Install Rust if not present
-3. Clone repo and build binaries
-4. Copy configuration files with substituted values from `.testnet-keys.env`
+2. Install Rust and dependencies
+3. Clone repo and build release binaries
+4. Copy configuration files from your local machine
 5. Set up systemd services
 6. Configure Movement CLI profile (solver only)
 7. Start and enable services
@@ -623,9 +717,8 @@ When implemented, these scripts will:
 
 **Deployment order:**
 1. Deploy verifier first (solver depends on it)
-2. Deploy solver after verifier is healthy
-
-For now, follow the manual steps in sections 4.3-4.5.
+2. Verify verifier is healthy: `curl http://<EC2_VERIFIER_HOST>:3333/health`
+3. Deploy solver after verifier is healthy
 
 ---
 

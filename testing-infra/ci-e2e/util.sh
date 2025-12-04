@@ -69,55 +69,100 @@ log() {
 # Setup verifier configuration
 # Usage: setup_verifier_config
 # Sets up the verifier testing configuration file path and exports it
-# If the config doesn't exist, creates it from template with ephemeral keys
+# Always creates config from template (overwrites any existing config) with ephemeral keys
 # This function is used by configure-verifier.sh scripts and e2e tests
+#
+# SECURITY: This function ALWAYS generates fresh ephemeral keys for E2E/CI testing.
+# It will NEVER use keys from .testnet-keys.env or any other source.
+# Any existing VERIFIER_PRIVATE_KEY/VERIFIER_PUBLIC_KEY env vars are unset first.
 setup_verifier_config() {
     if [ -z "$PROJECT_ROOT" ]; then
         setup_project_root
     fi
 
-    VERIFIER_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
+    VERIFIER_E2E_CI_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier-e2e-ci-testing.toml"
     VERIFIER_TEMPLATE="$PROJECT_ROOT/trusted-verifier/config/verifier.template.toml"
 
-    if [ ! -f "$VERIFIER_TESTING_CONFIG" ]; then
-        log_and_echo "   Creating verifier_testing.toml from template..."
-        
-        if [ ! -f "$VERIFIER_TEMPLATE" ]; then
-            log_and_echo "❌ ERROR: verifier.template.toml not found at $VERIFIER_TEMPLATE"
-            exit 1
-        fi
-        
-        # Copy template
-        cp "$VERIFIER_TEMPLATE" "$VERIFIER_TESTING_CONFIG"
-        
-        # Generate ephemeral keys for testing
-        log_and_echo "   Generating ephemeral test keys..."
-        cd "$PROJECT_ROOT/trusted-verifier"
-        
-        # Build and run generate_keys, capture output
-        KEYS_OUTPUT=$(cargo run --bin generate_keys 2>/dev/null)
-        
-        # Extract keys from output
-        PRIVATE_KEY=$(echo "$KEYS_OUTPUT" | grep "Private Key (base64):" | sed 's/.*: //')
-        PUBLIC_KEY=$(echo "$KEYS_OUTPUT" | grep "Public Key (base64):" | sed 's/.*: //')
-        
-        if [ -z "$PRIVATE_KEY" ] || [ -z "$PUBLIC_KEY" ]; then
-            log_and_echo "❌ ERROR: Failed to generate test keys"
-            exit 1
-        fi
-        
-        # Substitute keys in config
-        sed -i "s|private_key = .*|private_key = \"$PRIVATE_KEY\"|" "$VERIFIER_TESTING_CONFIG"
-        sed -i "s|public_key = .*|public_key = \"$PUBLIC_KEY\"|" "$VERIFIER_TESTING_CONFIG"
-        
-        cd "$PROJECT_ROOT"
-        log_and_echo "   ✅ Created verifier_testing.toml with ephemeral keys"
+    # SECURITY: Always generate fresh ephemeral keys for E2E/CI tests
+    # This ensures tests NEVER use keys from .testnet-keys.env or any other source
+    # Unset any existing keys to prevent accidental reuse
+    unset VERIFIER_PRIVATE_KEY
+    unset VERIFIER_PUBLIC_KEY
+
+    # Always recreate config from template (ensures fresh config for each test run)
+    log_and_echo "   Creating verifier-e2e-ci-testing.toml from template..."
+    
+    if [ ! -f "$VERIFIER_TEMPLATE" ]; then
+        log_and_echo "❌ ERROR: verifier.template.toml not found at $VERIFIER_TEMPLATE"
+        exit 1
     fi
+    
+    # Copy template (overwrites any existing config file)
+    cp "$VERIFIER_TEMPLATE" "$VERIFIER_E2E_CI_TESTING_CONFIG"
+    
+    # Generate ephemeral keys for testing (always fresh, never reuse)
+    log_and_echo "   Generating ephemeral test keys..."
+    cd "$PROJECT_ROOT/trusted-verifier"
+    
+    # Build and run generate_keys, capture output
+    KEYS_OUTPUT=$(cargo run --bin generate_keys 2>/dev/null)
+    
+    # Extract keys from output
+    PRIVATE_KEY=$(echo "$KEYS_OUTPUT" | grep "Private Key (base64):" | sed 's/.*: //')
+    PUBLIC_KEY=$(echo "$KEYS_OUTPUT" | grep "Public Key (base64):" | sed 's/.*: //')
+    
+    if [ -z "$PRIVATE_KEY" ] || [ -z "$PUBLIC_KEY" ]; then
+        log_and_echo "❌ ERROR: Failed to generate test keys"
+        exit 1
+    fi
+    
+    # Export keys as environment variables (new format uses env vars)
+    export VERIFIER_PRIVATE_KEY="$PRIVATE_KEY"
+    export VERIFIER_PUBLIC_KEY="$PUBLIC_KEY"
+    
+    cd "$PROJECT_ROOT"
+    log_and_echo "   ✅ Created verifier-e2e-ci-testing.toml from template with fresh ephemeral keys"
+    log_and_echo "   ✅ Generated fresh ephemeral keys (VERIFIER_PRIVATE_KEY and VERIFIER_PUBLIC_KEY)"
 
     # Export config path for Rust code to use (absolute path so tests can find it)
-    export VERIFIER_CONFIG_PATH="$VERIFIER_TESTING_CONFIG"
+    export VERIFIER_CONFIG_PATH="$VERIFIER_E2E_CI_TESTING_CONFIG"
 
     log "   ✅ Verifier config set: $VERIFIER_CONFIG_PATH"
+}
+
+# Setup solver configuration for E2E/CI testing
+# Usage: setup_solver_config
+# Always creates config from template (overwrites any existing config)
+# This function is used by E2E test scripts
+#
+# SECURITY: This function ALWAYS creates a fresh config from template for E2E/CI testing.
+# Test scripts should populate it with ephemeral/test addresses and keys.
+setup_solver_config() {
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+
+    SOLVER_E2E_CI_TESTING_CONFIG="$PROJECT_ROOT/solver/config/solver-e2e-ci-testing.toml"
+    SOLVER_TEMPLATE="$PROJECT_ROOT/solver/config/solver.template.toml"
+
+    # Always recreate config from template (ensures fresh config for each test run)
+    log_and_echo "   Creating solver-e2e-ci-testing.toml from template..."
+    
+    if [ ! -f "$SOLVER_TEMPLATE" ]; then
+        log_and_echo "❌ ERROR: solver.template.toml not found at $SOLVER_TEMPLATE"
+        exit 1
+    fi
+    
+    # Copy template (overwrites any existing config file)
+    cp "$SOLVER_TEMPLATE" "$SOLVER_E2E_CI_TESTING_CONFIG"
+    
+    cd "$PROJECT_ROOT"
+    log_and_echo "   ✅ Created solver-e2e-ci-testing.toml from template"
+
+    # Export config path for Rust code to use (absolute path so tests can find it)
+    export SOLVER_CONFIG_PATH="$SOLVER_E2E_CI_TESTING_CONFIG"
+
+    log "   ✅ Solver config set: $SOLVER_CONFIG_PATH"
 }
 
 # Save intent information to file

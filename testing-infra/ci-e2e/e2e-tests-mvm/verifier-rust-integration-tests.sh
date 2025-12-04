@@ -11,11 +11,12 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
 
-# Setup project root
+# Setup project root and logging
 setup_project_root
+setup_logging "verifier-rust-integration-tests"
 cd "$PROJECT_ROOT"
 
-# Setup verifier config (always generates fresh ephemeral keys for CI/E2E testing)
+# Setup verifier config (loads keys from .verifier-keys.env written by start-verifier.sh)
 setup_verifier_config
 
 

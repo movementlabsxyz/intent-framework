@@ -68,8 +68,10 @@ log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
 
 # For EVM inflow: offered token is on EVM chain (connected), desired token is on hub
 # Convert 20-byte Ethereum address to 32-byte Move address by padding with zeros
+# Lowercase for consistent matching with solver acceptance config
 EVM_TOKEN_ADDRESS_NO_PREFIX="${USDXYZ_EVM_ADDRESS#0x}"
-OFFERED_METADATA_EVM="0x000000000000000000000000${EVM_TOKEN_ADDRESS_NO_PREFIX}"
+EVM_TOKEN_ADDRESS_LOWER=$(echo "$EVM_TOKEN_ADDRESS_NO_PREFIX" | tr '[:upper:]' '[:lower:]')
+OFFERED_METADATA_EVM="0x000000000000000000000000${EVM_TOKEN_ADDRESS_LOWER}"
 DESIRED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 log "     EVM USDxyz token address: $USDXYZ_EVM_ADDRESS"
 log "     Padded to 32-byte format: $OFFERED_METADATA_EVM"

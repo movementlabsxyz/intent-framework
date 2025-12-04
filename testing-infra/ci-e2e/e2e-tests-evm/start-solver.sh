@@ -44,10 +44,19 @@ generate_solver_config_evm() {
     # Get USDxyz metadata on hub chain (32-byte Move address)
     local usdxyz_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
     
-    # Get EVM USDxyz address and pad to 32 bytes
+    # Get EVM USDxyz address from chain-info.env and pad to 32 bytes
+    if [ -f "$PROJECT_ROOT/tmp/chain-info.env" ]; then
+        source "$PROJECT_ROOT/tmp/chain-info.env"
+    fi
     local evm_token_address="${USDXYZ_EVM_ADDRESS:-}"
+    if [ -z "$evm_token_address" ]; then
+        log_and_echo "❌ ERROR: USDXYZ_EVM_ADDRESS not found in chain-info.env"
+        exit 1
+    fi
+    # Lowercase and pad to 32 bytes for Move compatibility
     local evm_token_no_prefix="${evm_token_address#0x}"
-    local usdxyz_metadata_evm="0x000000000000000000000000${evm_token_no_prefix}"
+    local evm_token_lower=$(echo "$evm_token_no_prefix" | tr '[:upper:]' '[:lower:]')
+    local usdxyz_metadata_evm="0x000000000000000000000000${evm_token_lower}"
     
     # Use environment variables from test setup
     local verifier_url="${VERIFIER_URL:-http://127.0.0.1:3333}"

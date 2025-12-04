@@ -4,15 +4,16 @@
 # Checks balances and deployed contracts for testnet readiness
 # 
 # Checks:
-#   1. Account balances (MOVE, ETH, USDC)
+#   1. Account balances (MOVE, ETH, USDC/USDC.e)
 #   2. Deployed contracts (Movement Intent Module, Base Escrow)
 #
 # Supports:
-#   - Movement Bardock Testnet (MOVE, USDC)
+#   - Movement Bardock Testnet (MOVE, USDC.e)
 #   - Base Sepolia (ETH, USDC)
 #   - Ethereum Sepolia (ETH, USDC)
 # 
-# Config: testing-infra/testnet/config/testnet-assets.toml
+# Assets Config: testing-infra/testnet/config/testnet-assets.toml
+# Service Configs: trusted-verifier/config/verifier_testnet.toml, solver/config/solver_testnet.toml (gitignored)
 # Keys: .testnet-keys.env
 
 # Get the script directory and project root
@@ -77,7 +78,7 @@ fi
 MOVEMENT_USDC_ADDRESS=$(grep -A 20 "^\[movement_bardock_testnet\]" "$ASSETS_CONFIG_FILE" | grep "^usdc = " | sed 's/.*= "\(.*\)".*/\1/' | tr -d '"' || echo "")
 MOVEMENT_USDC_DECIMALS=$(grep -A 20 "^\[movement_bardock_testnet\]" "$ASSETS_CONFIG_FILE" | grep "^usdc_decimals = " | sed 's/.*= \([0-9]*\).*/\1/' || echo "")
 if [ -n "$MOVEMENT_USDC_ADDRESS" ] && [ -z "$MOVEMENT_USDC_DECIMALS" ]; then
-    echo "❌ ERROR: Movement USDC address configured but decimals not found in testnet-assets.toml"
+    echo "❌ ERROR: Movement USDC.e address configured but decimals not found in testnet-assets.toml"
     echo "   Add usdc_decimals = 6 to [movement_bardock_testnet] section"
     exit 1
 fi
@@ -155,11 +156,13 @@ get_movement_balance() {
     fi
 }
 
-# Function to get Movement USDC balance (fungible asset or coin)
+# Function to get Movement USDC balance (Fungible Asset)
 get_movement_usdc_balance() {
     local address="$1"
-    # Remove 0x prefix if present
-    address="${address#0x}"
+    # Ensure address has 0x prefix
+    if [[ ! "$address" =~ ^0x ]]; then
+        address="0x${address}"
+    fi
     
     # If USDC address is not configured, return 0
     if [ -z "$MOVEMENT_USDC_ADDRESS" ] || [ "$MOVEMENT_USDC_ADDRESS" = "" ]; then
@@ -167,18 +170,18 @@ get_movement_usdc_balance() {
         return
     fi
     
-    # Try to get USDC balance
-    # If USDC is deployed as a coin type:
-    # local balance=$(curl -s "${MOVEMENT_RPC_URL}/accounts/${address}/resource/0x1::coin::CoinStore<${MOVEMENT_USDC_ADDRESS}::usdc::USDC>" \
-    #     | jq -r '.data.coin.value // 0' 2>/dev/null)
+    # Query USDC.e balance via view function API (Fungible Asset)
+    # USDC.e is deployed as a Fungible Asset, use primary_fungible_store::balance
+    local balance=$(curl -s --max-time 10 -X POST "${MOVEMENT_RPC_URL}/view" \
+        -H "Content-Type: application/json" \
+        -d "{\"function\":\"0x1::primary_fungible_store::balance\",\"type_arguments\":[\"0x1::fungible_asset::Metadata\"],\"arguments\":[\"$address\",\"${MOVEMENT_USDC_ADDRESS}\"]}" \
+        | jq -r '.[0] // "0"' 2>/dev/null)
     
-    # If USDC is deployed as a fungible asset, query the fungible asset store
-    # This is a placeholder - actual implementation depends on USDC deployment
-    # For now, return 0
-    echo "0"
-    
-    # TODO: Implement based on actual USDC deployment on Movement testnet
-    # Update this function once USDC is deployed and we know its type
+    if [ -z "$balance" ] || [ "$balance" = "null" ]; then
+        echo "0"
+    else
+        echo "$balance"
+    fi
 }
 
 # Function to get EVM ETH balance (works for any EVM chain)
@@ -294,10 +297,10 @@ else
     usdc_balance=$(get_movement_usdc_balance "$MOVEMENT_DEPLOYER_ADDRESS")
     echo "   Deployer  ($MOVEMENT_DEPLOYER_ADDRESS)"
     if [ -n "$MOVEMENT_USDC_ADDRESS" ]; then
-        usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC")
+        usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC.e")
         echo "             $formatted, $usdc_formatted"
     else
-        echo "             $formatted (USDC n/a)"
+        echo "             $formatted (USDC.e n/a)"
     fi
 fi
 
@@ -309,10 +312,10 @@ else
     usdc_balance=$(get_movement_usdc_balance "$MOVEMENT_REQUESTER_ADDRESS")
     echo "   Requester ($MOVEMENT_REQUESTER_ADDRESS)"
     if [ -n "$MOVEMENT_USDC_ADDRESS" ]; then
-        usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC")
+        usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC.e")
         echo "             $formatted, $usdc_formatted"
     else
-        echo "             $formatted (USDC n/a)"
+        echo "             $formatted (USDC.e n/a)"
     fi
 fi
 
@@ -324,10 +327,10 @@ else
     usdc_balance=$(get_movement_usdc_balance "$MOVEMENT_SOLVER_ADDRESS")
     echo "   Solver    ($MOVEMENT_SOLVER_ADDRESS)"
     if [ -n "$MOVEMENT_USDC_ADDRESS" ]; then
-        usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC")
+        usdc_formatted=$(format_balance "$usdc_balance" "$MOVEMENT_USDC_DECIMALS" "USDC.e")
         echo "             $formatted, $usdc_formatted"
     else
-        echo "             $formatted (USDC n/a)"
+        echo "             $formatted (USDC.e n/a)"
     fi
 fi
 
@@ -488,8 +491,14 @@ check_evm_contract() {
 }
 
 # Movement Intent Module
+# Read from verifier_testnet.toml (gitignored config file)
+VERIFIER_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testnet.toml"
+if [ -f "$VERIFIER_CONFIG" ]; then
+    MOVEMENT_INTENT_MODULE_ADDRESS=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_address" | sed 's/.*= *"\(.*\)".*/\1/' | tr -d '"' || echo "")
+fi
+
 if [ -z "$MOVEMENT_INTENT_MODULE_ADDRESS" ] || [ "$MOVEMENT_INTENT_MODULE_ADDRESS" = "" ]; then
-    echo "   Movement Intent Module: ⏳ Not configured"
+    echo "   Movement Intent Module: ⏳ Not configured (check verifier_testnet.toml)"
 else
     status=$(check_movement_module "$MOVEMENT_INTENT_MODULE_ADDRESS")
     echo "   Movement Intent Module ($MOVEMENT_INTENT_MODULE_ADDRESS)"
@@ -497,8 +506,13 @@ else
 fi
 
 # Base Escrow Contract
+# Read from verifier_testnet.toml (gitignored config file)
+if [ -f "$VERIFIER_CONFIG" ]; then
+    BASE_ESCROW_CONTRACT_ADDRESS=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_address" | sed 's/.*= *"\(.*\)".*/\1/' | tr -d '"' || echo "")
+fi
+
 if [ -z "$BASE_ESCROW_CONTRACT_ADDRESS" ] || [ "$BASE_ESCROW_CONTRACT_ADDRESS" = "" ]; then
-    echo "   Base Escrow Contract:   ⏳ Not configured"
+    echo "   Base Escrow Contract:   ⏳ Not configured (check verifier_testnet.toml)"
 else
     status=$(check_evm_contract "$BASE_ESCROW_CONTRACT_ADDRESS" "$BASE_RPC_URL")
     echo "   Base Escrow Contract ($BASE_ESCROW_CONTRACT_ADDRESS)"
@@ -561,11 +575,12 @@ echo "   Readiness: $ready_count/$total_count checks passed"
 
 if [ -z "$MOVEMENT_USDC_ADDRESS" ] || [ "$MOVEMENT_USDC_ADDRESS" = "" ]; then
     echo ""
-    echo "💡 Note: Movement USDC address not configured in testnet-assets.toml"
+    echo "💡 Note: Movement USDC.e address not configured in testnet-assets.toml"
 fi
 
 echo ""
-echo "   Config: $ASSETS_CONFIG_FILE"
+echo "   Assets Config: $ASSETS_CONFIG_FILE"
+echo "   Service Configs: verifier_testnet.toml, solver_testnet.toml (gitignored)"
 echo "   Keys:   $TESTNET_KEYS_FILE"
 echo ""
 echo "✅ Preparedness check complete!"

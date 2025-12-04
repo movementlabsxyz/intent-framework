@@ -21,10 +21,9 @@ rpc_url = "https://testnet.movementnetwork.xyz/v1"
 native_token = "MOVE"
 native_token_decimals = 8
 
-# USDC on Movement Testnet
-# TODO: Update with actual USDC deployment address once deployed
-# usdc = "0x..."
-# usdc_decimals = 6
+# USDC on Movement Testnet (USDC.e)
+usdc = "0xb89077cfd2a82a0c1450534d49cfd5f2707643155273069bc23a912bcfefdee7"
+usdc_decimals = 6
 
 # pyUSD on Movement Testnet (Paxos USD)
 # TODO: Update with actual pyUSD deployment address once deployed

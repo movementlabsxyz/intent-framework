@@ -199,8 +199,8 @@ check_and_release_escrows() {
         
         # Calculate balance increase
         # Expected: Solver should receive 1 USDxyz (matches request-intent offered_amount)
-        # Note: EVM USDxyz uses 18 decimals, MVM uses 8 decimals
-        EXPECTED_USDXYZ="100000000"  # 1 USDxyz = 100_000_000
+        # Note: Both EVM and MVM USDxyz use 6 decimals
+        EXPECTED_USDXYZ="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
         CHAIN3_USDXYZ_INCREASE=$(echo "$SOLVER_CHAIN3_USDXYZ_AFTER $SOLVER_CHAIN3_USDXYZ_BEFORE" | awk '{print $1 - $2}')
         
         log "   - USDxyz balance increase: $CHAIN3_USDXYZ_INCREASE USDxyz.10e8"
@@ -327,7 +327,7 @@ fi
 # - Solver on EVM Chain 3 should have received 1 USDxyz (matches request-intent offered_amount) from escrow release
 # Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 
-SOLVER_CHAIN3_USDXYZ_EXPECTED="100000000"  # 1 USDxyz = 100_000_000 (8 decimals)
+SOLVER_CHAIN3_USDXYZ_EXPECTED="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
 
 # Calculate balance increase for Solver on EVM Chain 3
 SOLVER_CHAIN3_USDXYZ_GAIN=$((SOLVER_CHAIN3_USDXYZ_FINAL - SOLVER_CHAIN3_USDXYZ_INIT))

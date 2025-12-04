@@ -110,7 +110,7 @@ log "     Reserved solver (Solver): $SOLVER_CHAIN2_ADDRESS"
 
 aptos move run --profile requester-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \
-    --args "address:${OFFERED_METADATA_CHAIN2}" "u64:100000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${SOLVER_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN2}" "u64:1000000" "u64:${CONNECTED_CHAIN_ID}" "hex:${ORACLE_PUBLIC_KEY}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${SOLVER_CHAIN2_ADDRESS}" "u64:${HUB_CHAIN_ID}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS
@@ -155,7 +155,7 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 
-    if [ "$LOCKED_AMOUNT" = "100000000" ]; then
+    if [ "$LOCKED_AMOUNT" = "1000000" ]; then
         log "     ✅ Escrow has correct locked amount (1 USDxyz)"
     else
         log_and_echo "❌ ERROR: Escrow has unexpected locked amount: $LOCKED_AMOUNT"

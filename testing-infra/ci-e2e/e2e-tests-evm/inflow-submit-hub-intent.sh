@@ -39,8 +39,8 @@ EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
 # Generate solver signature using helper function
 # For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
-OFFERED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000 (on EVM chain)
-DESIRED_AMOUNT="100000000"  # 1 USDxyz = 100_000_000 (on hub chain)
+OFFERED_AMOUNT="1000000"  # 1 USDxyz = 1_000_000 (6 decimals, on EVM chain)
+DESIRED_AMOUNT="1000000"  # 1 USDxyz = 1_000_000 (6 decimals, on hub chain)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (31337 for EVM)
 DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 HUB_CHAIN_ID=1

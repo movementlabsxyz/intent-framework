@@ -22,7 +22,7 @@ module test_tokens::usdxyz {
     /// Token metadata constants
     const TOKEN_NAME: vector<u8> = b"USDxyz";
     const TOKEN_SYMBOL: vector<u8> = b"USDxyz";
-    const TOKEN_DECIMALS: u8 = 8;
+    const TOKEN_DECIMALS: u8 = 6;
     const TOKEN_ICON_URI: vector<u8> = b"";
     const TOKEN_PROJECT_URI: vector<u8> = b"";
 
@@ -112,10 +112,10 @@ module test_tokens::usdxyz {
         
         // Mint to alice
         let alice_addr = signer::address_of(alice);
-        mint(deployer, alice_addr, 1000000000); // 10 USDxyz (8 decimals)
+        mint(deployer, alice_addr, 10000000); // 10 USDxyz (6 decimals)
         
         // Check balance
-        assert!(balance(alice_addr) == 1000000000, 0);
+        assert!(balance(alice_addr) == 10000000, 0);
     }
 }
 

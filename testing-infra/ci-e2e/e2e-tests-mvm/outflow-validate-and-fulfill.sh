@@ -241,7 +241,7 @@ if [ $? -eq 0 ]; then
     log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL USDxyz.10e8"
 
     CHAIN1_USDXYZ_INCREASE=$((SOLVER_CHAIN1_USDXYZ_FINAL - SOLVER_CHAIN1_USDXYZ_INIT))
-    OFFERED_AMOUNT=100000000  # 1 USDxyz = 100_000_000
+    OFFERED_AMOUNT=1000000  # 1 USDxyz = 1_000_000 (6 decimals)
 
     if [ "$CHAIN1_USDXYZ_INCREASE" -eq "$OFFERED_AMOUNT" ]; then
         log "     ✅ Solver (Solver) received locked USDxyz tokens: +$CHAIN1_USDXYZ_INCREASE USDxyz.10e8 (expected $OFFERED_AMOUNT USDxyz.10e8)"

@@ -40,8 +40,8 @@ log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 # Requester and Solver get funded with 1 USDxyz each, transfer 1 USDxyz
-OFFERED_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
-DESIRED_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
+OFFERED_AMOUNT="1000000"  # 1 USDxyz (6 decimals = 1_000_000)
+DESIRED_AMOUNT="1000000"  # 1 USDxyz (6 decimals = 1_000_000)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID
 DESIRED_CHAIN_ID=1
 HUB_CHAIN_ID=1

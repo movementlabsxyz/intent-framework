@@ -59,7 +59,7 @@ log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
 
 aptos move run --profile solver-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::fulfill_inflow_request_intent" \
-    --args "address:$INTENT_OBJECT_ADDRESS" "u64:100000000" >> "$LOG_FILE" 2>&1
+    --args "address:$INTENT_OBJECT_ADDRESS" "u64:1000000" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS

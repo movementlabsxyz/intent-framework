@@ -32,7 +32,7 @@ log "   Solver EVM (connected): $SOLVER_EVM_ADDRESS"
 
 # Transfer amount must match the request-intent's desired_amount (1 USDxyz)
 # This is the amount the requester specified they want on the connected chain
-TRANSFER_AMOUNT="100000000"  # 1 USDxyz = 100_000_000 (8 decimals)
+TRANSFER_AMOUNT="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
 
 log ""
 log "🔑 Configuration:"

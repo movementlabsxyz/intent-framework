@@ -10,10 +10,10 @@
 //!   --profile bob-chain1 \
 //!   --chain-address 0x123 \
 //!   --offered-metadata 0xabc \
-//!   --offered-amount 100000000 \
+//!   --offered-amount 1000000 \
 //!   --offered-chain-id 1 \
 //!   --desired-metadata 0xdef \
-//!   --desired-amount 100000000 \
+//!   --desired-amount 1000000 \
 //!   --desired-chain-id 2 \
 //!   --expiry-time 1234567890 \
 //!   --issuer 0xalice \
@@ -31,7 +31,7 @@ fn main() -> Result<()> {
     if args.len() < 2 || args[1] == "--help" || args[1] == "-h" {
         eprintln!("Usage: sign_intent --profile <profile> --chain-address <address> --offered-metadata <address> --offered-amount <u64> --offered-chain-id <u64> --desired-metadata <address> --desired-amount <u64> --desired-chain-id <u64> --expiry-time <u64> --issuer <address> --solver <address> --chain-num <1|2>");
         eprintln!("\nExample:");
-        eprintln!("  sign_intent --profile bob-chain1 --chain-address 0x123 --offered-metadata 0xabc --offered-amount 100000000 --offered-chain-id 1 --desired-metadata 0xdef --desired-amount 100000000 --desired-chain-id 2 --expiry-time 1234567890 --issuer 0xalice --solver 0xbob --chain-num 1");
+        eprintln!("  sign_intent --profile bob-chain1 --chain-address 0x123 --offered-metadata 0xabc --offered-amount 1000000 --offered-chain-id 1 --desired-metadata 0xdef --desired-amount 1000000 --desired-chain-id 2 --expiry-time 1234567890 --issuer 0xalice --solver 0xbob --chain-num 1");
         std::process::exit(1);
     }
 

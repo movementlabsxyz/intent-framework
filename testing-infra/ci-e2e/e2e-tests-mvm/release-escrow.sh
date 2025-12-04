@@ -345,7 +345,7 @@ else
             # Calculate balance increase
             CHAIN2_USDXYZ_INCREASE=$((SOLVER_CHAIN2_USDXYZ_AFTER - SOLVER_CHAIN2_USDXYZ_BEFORE))
             
-            SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED=100000000  # 1 USDxyz (8 decimals = 100_000_000)
+            SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED=1000000  # 1 USDxyz (6 decimals = 1_000_000)
             
             if [ $TX_EXIT_CODE -eq 0 ]; then
                 log "   ✅ Escrow release transaction succeeded!"
@@ -361,7 +361,7 @@ else
                     exit 1
                 fi
                 
-                log "   ✅ Solver (Solver) received $CHAIN2_USDXYZ_INCREASE USDxyz.10e8 (expected 100_000_000 USDxyz.10e8)"
+                log "   ✅ Solver (Solver) received $CHAIN2_USDXYZ_INCREASE USDxyz.10e6 (expected 1_000_000 USDxyz.10e6)"
                 RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
             else
                 # Check the log file for error messages
@@ -464,8 +464,8 @@ SOLVER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOK
 # - Solver on Chain 2 should have received 1 USDxyz from escrow release
 # Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
 
-ESCROW_USDXYZ_AMOUNT=100000000  # 1 USDxyz (8 decimals = 100_000_000)
-SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED=100000000  # 1 USDxyz = 100_000_000 (no deduction)
+ESCROW_USDXYZ_AMOUNT=1000000  # 1 USDxyz (6 decimals = 1_000_000)
+SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED=1000000  # 1 USDxyz = 1_000_000 (no deduction)
 
 # Calculate balance increase
 SOLVER_CHAIN2_USDXYZ_GAIN=$((SOLVER_CHAIN2_USDXYZ_FINAL - SOLVER_CHAIN2_USDXYZ_INIT))

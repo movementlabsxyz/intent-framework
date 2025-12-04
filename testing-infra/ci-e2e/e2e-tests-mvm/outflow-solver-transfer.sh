@@ -36,7 +36,7 @@ log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
 log "   Requester Chain 2 (connected): $REQUESTER_CHAIN2_ADDRESS"
 log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
-TRANSFER_AMOUNT="100000000"  # 1 USDxyz (8 decimals = 100_000_000)
+TRANSFER_AMOUNT="1000000"  # 1 USDxyz (6 decimals = 1_000_000)
 
 # Get test tokens address
 TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")

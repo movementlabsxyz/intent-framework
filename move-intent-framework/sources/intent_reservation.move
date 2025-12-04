@@ -59,6 +59,21 @@ module mvmt_intent::intent_reservation {
         solver: address,
     }
 
+    /// Raw version of IntentToSign using addresses instead of Object<Metadata>.
+    /// Used for off-chain hash computation where metadata objects may not exist on the local chain.
+    /// BCS encoding is identical to IntentToSign since Object<T> encodes as just its inner address.
+    public struct IntentToSignRaw has copy, drop {
+        offered_metadata: address,
+        offered_amount: u64,
+        offered_chain_id: u64,
+        desired_metadata: address,
+        desired_amount: u64,
+        desired_chain_id: u64,
+        expiry_time: u64,
+        requester: address,
+        solver: address,
+    }
+
     /// Creates an IntentToSign struct from the provided parameters.
     public fun new_intent_to_sign(
         offered_metadata: Object<Metadata>,
@@ -84,8 +99,40 @@ module mvmt_intent::intent_reservation {
         }
     }
 
+    /// Creates an IntentToSignRaw struct from addresses (no object validation).
+    /// Use this for cross-chain hash computation where metadata may not exist locally.
+    public fun new_intent_to_sign_raw(
+        offered_metadata: address,
+        offered_amount: u64,
+        offered_chain_id: u64,
+        desired_metadata: address,
+        desired_amount: u64,
+        desired_chain_id: u64,
+        expiry_time: u64,
+        requester: address,
+        solver: address,
+    ): IntentToSignRaw {
+        IntentToSignRaw {
+            offered_metadata,
+            offered_amount,
+            offered_chain_id,
+            desired_metadata,
+            desired_amount,
+            desired_chain_id,
+            expiry_time,
+            requester,
+            solver,
+        }
+    }
+
     /// Hashes the IntentToSign struct for off-chain signing by a solver.
     public fun hash_intent(intent_to_sign: IntentToSign): vector<u8> {
+        bcs::to_bytes(&intent_to_sign)
+    }
+
+    /// Hashes the IntentToSignRaw struct for off-chain signing.
+    /// Produces identical bytes to hash_intent since Object<T> BCS-encodes as just its address.
+    public fun hash_intent_raw(intent_to_sign: IntentToSignRaw): vector<u8> {
         bcs::to_bytes(&intent_to_sign)
     }
 
@@ -170,6 +217,41 @@ module mvmt_intent::intent_reservation {
         let solver_public_key = option::extract(&mut public_key_opt);
         let signature = ed25519::new_signature_from_bytes(solver_signature);
         let message = hash_intent(intent_to_sign);
+        
+        // Emit event with hash being verified (useful for debugging signature mismatches)
+        event::emit(IntentHashVerificationEvent {
+            hash: message,
+        });
+        
+        if (ed25519::signature_verify_strict(&signature, &solver_public_key, message)) {
+            option::some(IntentReserved { solver })
+        } else {
+            abort std::error::invalid_argument(EINVALID_SIGNATURE)
+        }
+    }
+
+    /// Verifies a solver's signature using the solver registry (raw address version).
+    /// Use this for cross-chain intents where metadata objects may not exist locally.
+    /// 
+    /// # Aborts
+    /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
+    /// - `EINVALID_SIGNATURE`: Signature verification failed
+    public fun verify_and_create_reservation_from_registry_raw(
+        intent_to_sign: IntentToSignRaw,
+        solver_signature: vector<u8>,
+    ): Option<IntentReserved> {
+        let solver = intent_to_sign.solver;
+        
+        // Check if solver is registered
+        assert!(solver_registry::is_registered(solver), std::error::invalid_argument(ESOLVER_NOT_REGISTERED));
+        
+        // Get public key from registry
+        let public_key_opt = solver_registry::get_public_key_unvalidated(solver);
+        assert!(option::is_some(&public_key_opt), std::error::invalid_argument(ESOLVER_NOT_REGISTERED));
+        
+        let solver_public_key = option::extract(&mut public_key_opt);
+        let signature = ed25519::new_signature_from_bytes(solver_signature);
+        let message = hash_intent_raw(intent_to_sign);
         
         // Emit event with hash being verified (useful for debugging signature mismatches)
         event::emit(IntentHashVerificationEvent {

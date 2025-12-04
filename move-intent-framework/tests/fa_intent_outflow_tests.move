@@ -122,12 +122,14 @@ module mvmt_intent::fa_intent_outflow_tests {
         let requester_address_connected_chain = @0x9999; // Address on connected chain
         
         // Create outflow request-intent (returns intent object)
+        // Pass desired_metadata as address (for cross-chain support)
+        let desired_metadata_addr = object::object_address(&desired_metadata);
         let intent_obj = fa_intent_outflow::create_outflow_request_intent(
             requester_signer,
             offered_metadata,
             offered_amount,
             1, // offered_chain_id (hub chain)
-            desired_metadata,
+            desired_metadata_addr,  // Pass as address, not Object
             desired_amount,
             2, // desired_chain_id (connected chain)
             expiry_time,
@@ -178,12 +180,14 @@ module mvmt_intent::fa_intent_outflow_tests {
         assert!(primary_fungible_store::balance(signer::address_of(requester_signer), offered_metadata) == 100);
         
         // Create outflow intent (returns intent object)
+        // Pass desired_metadata as address (for cross-chain support)
+        let desired_metadata_addr = object::object_address(&desired_metadata);
         let intent_obj = fa_intent_outflow::create_outflow_request_intent(
             requester_signer,
             offered_metadata,
             offered_amount,
             1, // offered_chain_id (hub chain)
-            desired_metadata,
+            desired_metadata_addr,  // Pass as address, not Object
             desired_amount,
             2, // desired_chain_id (connected chain)
             expiry_time,
@@ -406,12 +410,14 @@ module mvmt_intent::fa_intent_outflow_tests {
         let requester_address_connected_chain = @0x0; // Zero address - should be rejected
         
         // Attempt to create outflow intent with zero address - should abort
+        // Pass desired_metadata as address (for cross-chain support)
+        let desired_metadata_addr = object::object_address(&desired_metadata);
         fa_intent_outflow::create_outflow_request_intent(
             requester_signer,
             offered_metadata,
             offered_amount,
             1, // offered_chain_id (hub chain)
-            desired_metadata,
+            desired_metadata_addr,  // Pass as address, not Object
             desired_amount,
             2, // desired_chain_id (connected chain)
             expiry_time,

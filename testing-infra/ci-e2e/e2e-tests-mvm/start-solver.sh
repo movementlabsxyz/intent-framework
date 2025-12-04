@@ -91,7 +91,7 @@ profile = "solver-chain2"
 [acceptance]
 # Accept USDxyz swaps at 1:1 rate for E2E testing
 # Inflow: offered on connected chain (2), desired on hub chain (1)
-"$connected_chain_id:$usdxyz_metadata_chain1:$hub_chain_id:$usdxyz_metadata_chain1" = 1.0
+"$connected_chain_id:$usdxyz_metadata_chain2:$hub_chain_id:$usdxyz_metadata_chain1" = 1.0
 # Outflow: offered on hub chain (1), desired on connected chain (2)
 "$hub_chain_id:$usdxyz_metadata_chain1:$connected_chain_id:$usdxyz_metadata_chain2" = 1.0
 

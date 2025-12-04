@@ -72,9 +72,11 @@ module mvmt_intent::fa_intent_inflow_tests {
         let solver_signature_bytes = ed25519::signature_to_bytes(&solver_signature);
         
         // Step 4: Create inflow request-intent (returns intent object)
+        // Pass offered_metadata as address (for cross-chain support)
+        let offered_metadata_addr = object::object_address(&offered_metadata);
         let intent_obj = fa_intent_inflow::create_inflow_request_intent(
             requestor,
-            offered_metadata,
+            offered_metadata_addr,  // Pass as address, not Object
             100, // offered_amount
             2, // offered_chain_id (connected chain)
             desired_metadata,
@@ -157,9 +159,11 @@ module mvmt_intent::fa_intent_inflow_tests {
         assert!(primary_fungible_store::balance(signer::address_of(requestor), offered_metadata) == 0);
         
         // Step 5: Create inflow intent using public function
+        // Pass offered_metadata as address (for cross-chain support)
+        let offered_metadata_addr = object::object_address(&offered_metadata);
         let intent_obj = fa_intent_inflow::create_inflow_request_intent(
             requestor,
-            offered_metadata,
+            offered_metadata_addr,  // Pass as address, not Object
             offered_amount,
             2, // offered_chain_id (connected chain)
             desired_metadata,

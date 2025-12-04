@@ -31,15 +31,19 @@ module mvmt_intent::utils {
 
     /// Generates the hash of an IntentToSign structure for off-chain signing.
     ///
-    /// This function constructs an IntentToSign struct and returns its BCS-encoded hash
-    /// via event. The hash can then be signed off-chain using the solver's private key.
+    /// This function constructs an IntentToSignRaw struct (using addresses, not Object<Metadata>)
+    /// and returns its BCS-encoded hash via event. The hash can then be signed off-chain using
+    /// the solver's private key.
+    ///
+    /// Using addresses instead of Object<Metadata> allows computing hashes for cross-chain intents
+    /// where the desired_metadata object may not exist on the local chain.
     ///
     /// # Arguments
     /// - `solver`: Signer of the solver account (must match solver_address)
-    /// - `offered_metadata`: Metadata of the offered token type
+    /// - `offered_metadata`: Address of the offered token metadata
     /// - `offered_amount`: Amount of offered tokens
     /// - `offered_chain_id`: Chain ID where offered tokens are located
-    /// - `desired_metadata`: Metadata of the desired token type
+    /// - `desired_metadata`: Address of the desired token metadata
     /// - `desired_amount`: Amount of desired tokens
     /// - `desired_chain_id`: Chain ID where desired tokens are located
     /// - `expiry_time`: Unix timestamp when intent expires
@@ -55,10 +59,10 @@ module mvmt_intent::utils {
     /// 3. Use the signature in create_cross_chain_request_intent_entry (solver must be registered in the registry)
     public entry fun get_intent_to_sign_hash(
         solver: &signer,
-        offered_metadata: object::Object<Metadata>,
+        offered_metadata: address,
         offered_amount: u64,
         offered_chain_id: u64,
-        desired_metadata: object::Object<Metadata>,
+        desired_metadata: address,
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
@@ -68,9 +72,9 @@ module mvmt_intent::utils {
         // Verify solver signer matches solver_address
         assert!(signer::address_of(solver) == solver_address, 1);
 
-        // Create IntentToSign structure
+        // Create IntentToSignRaw structure (uses addresses, no object validation)
         let intent_to_sign =
-            intent_reservation::new_intent_to_sign(
+            intent_reservation::new_intent_to_sign_raw(
                 offered_metadata,
                 offered_amount,
                 offered_chain_id,
@@ -82,8 +86,8 @@ module mvmt_intent::utils {
                 solver_address
             );
 
-        // Hash the intent (BCS encoding)
-        let intent_hash = intent_reservation::hash_intent(intent_to_sign);
+        // Hash the intent (BCS encoding) - produces same bytes as Object<Metadata> version
+        let intent_hash = intent_reservation::hash_intent_raw(intent_to_sign);
 
         // Emit hash via event for off-chain signing
         event::emit(IntentHashEvent { hash: intent_hash });

@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 1
-intent_module_address = "0xb1d530aab5f310b5e93adfdf13376eadc513a6b4c333028c3ea70b0955948451"
-known_accounts = ["858400e98f816ee82ff8a1cca1cfbae9ae90dadf3486843e29d5ee6084392621", "e9e905bbb7f4561dc2c2833618258fe3c17e549d43bd6d4d88da3f7170aaca68"]
+intent_module_address = "0x4a3cba9463b06f024eb6a1e05fc624a9c50f5095c065f0b7edfab388ca1187c8"
+known_accounts = ["d968fafae6ca0626ed8021ecdfb23e07c13706499411d57c2a390a71f8291be7", "d84e82b244d768dbeb36cffe40bccb81015d1e05cce01681febc7ed012ebba4d"]
 
 # Connected Move VM Chain Configuration  
 # The connected Move VM chain is where escrow events occur and are monitored
@@ -17,9 +17,9 @@ known_accounts = ["858400e98f816ee82ff8a1cca1cfbae9ae90dadf3486843e29d5ee6084392
 name = "Connected Move VM Chain"
 rpc_url = "http://127.0.0.1:8082"
 chain_id = 2
-intent_module_address = "0xbaeb8b776aff804b0772fe6372251f407aad07d7561ff31a66fa523c52ff81e0"
-escrow_module_address = "0xbaeb8b776aff804b0772fe6372251f407aad07d7561ff31a66fa523c52ff81e0"
-known_accounts = ["f77c5c843a3c2f9be9b964562aaf788e65b0e82dd25ef53b6e3eec7fa4dc27e3"]
+intent_module_address = "0x5a1c74842aa1bb10b4cb9d8604ccecd1049c38c6a34ff954068da6b6f41d0bad"
+escrow_module_address = "0x5a1c74842aa1bb10b4cb9d8604ccecd1049c38c6a34ff954068da6b6f41d0bad"
+known_accounts = ["6999180c81880a32df4faa48dd65fa384efb56e2b5065d42910dfcd94144b99b"]
 
 # Connected EVM Chain Configuration
 # The connected EVM chain is where EVM escrow events occur and are monitored

@@ -88,12 +88,17 @@ log "   Desired amount: $DESIRED_AMOUNT USDxyz.10e8 (1 USDxyz on EVM chain)"
 
 log ""
 log "   - Getting USDxyz metadata addresses..."
-log "     Getting USDxyz metadata on Chain 1..."
+log "     Getting USDxyz metadata on Chain 1 (hub)..."
 OFFERED_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
 log "     ✅ Got USDxyz metadata on Chain 1: $OFFERED_METADATA_CHAIN1"
 
-# For EVM outflow, we use Chain 1 metadata for desired (since we're transferring on EVM, not Chain 2)
-DESIRED_METADATA_CHAIN1="$OFFERED_METADATA_CHAIN1"
+# For EVM outflow, desired token is on EVM chain (connected chain)
+# Convert 20-byte Ethereum address to 32-byte Move address by padding with zeros
+# e.g., 0x1234...5678 -> 0x0000000000000000000000001234...5678
+EVM_TOKEN_ADDRESS_NO_PREFIX="${USDXYZ_ADDRESS#0x}"
+DESIRED_METADATA_EVM="0x000000000000000000000000${EVM_TOKEN_ADDRESS_NO_PREFIX}"
+log "     EVM USDxyz token address: $USDXYZ_ADDRESS"
+log "     Padded to 32-byte format: $DESIRED_METADATA_EVM"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
@@ -111,7 +116,7 @@ log "   Registering solver on-chain (prerequisite for verifier validation)..."
 
 # Get solver's public key by running sign_intent with a dummy call to extract key
 log "   - Getting solver public key..."
-SOLVER_PUBLIC_KEY_OUTPUT=$(cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile solver-chain1 --chain-address $CHAIN1_ADDRESS --offered-metadata $OFFERED_METADATA_CHAIN1 --offered-amount $OFFERED_AMOUNT --offered-chain-id $OFFERED_CHAIN_ID --desired-metadata $DESIRED_METADATA_CHAIN1 --desired-amount $DESIRED_AMOUNT --desired-chain-id $DESIRED_CHAIN_ID --expiry-time $EXPIRY_TIME --issuer 0x$REQUESTER_CHAIN1_ADDRESS --solver 0x$SOLVER_CHAIN1_ADDRESS --chain-num 1 2>&1" | tee -a "$LOG_FILE")
+SOLVER_PUBLIC_KEY_OUTPUT=$(cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile solver-chain1 --chain-address $CHAIN1_ADDRESS --offered-metadata $OFFERED_METADATA_CHAIN1 --offered-amount $OFFERED_AMOUNT --offered-chain-id $OFFERED_CHAIN_ID --desired-metadata $DESIRED_METADATA_EVM --desired-amount $DESIRED_AMOUNT --desired-chain-id $DESIRED_CHAIN_ID --expiry-time $EXPIRY_TIME --issuer 0x$REQUESTER_CHAIN1_ADDRESS --solver 0x$SOLVER_CHAIN1_ADDRESS --chain-num 1 2>&1" | tee -a "$LOG_FILE")
 
 SOLVER_PUBLIC_KEY=$(echo "$SOLVER_PUBLIC_KEY_OUTPUT" | grep "PUBLIC_KEY:" | tail -1 | sed 's/.*PUBLIC_KEY://')
 if [ -z "$SOLVER_PUBLIC_KEY" ]; then
@@ -146,7 +151,7 @@ DRAFT_DATA=$(build_draft_data \
     "$OFFERED_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
     "$OFFERED_CHAIN_ID" \
-    "$DESIRED_METADATA_CHAIN1" \
+    "$DESIRED_METADATA_EVM" \
     "$DESIRED_AMOUNT" \
     "$DESIRED_CHAIN_ID" \
     "$EXPIRY_TIME" \
@@ -187,7 +192,7 @@ log "   Creating outflow request-intent on hub chain..."
 log "   - Requester locks 1 USDxyz on hub chain"
 log "   - Requester wants 1 USDxyz on connected chain (EVM)"
 log "     Offered metadata (hub): $OFFERED_METADATA_CHAIN1"
-log "     Desired metadata (connected): $DESIRED_METADATA_CHAIN1"
+log "     Desired metadata (connected): $DESIRED_METADATA_EVM"
 log "     Solver address: $RETRIEVED_SOLVER"
 log "     Requester address on connected chain: $REQUESTER_EVM_ADDRESS"
 
@@ -196,7 +201,7 @@ VERIFIER_PUBLIC_KEY_HEX_CLEAN="${VERIFIER_PUBLIC_KEY#0x}"
 
 aptos move run --profile requester-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_outflow::create_outflow_request_intent_entry" \
-    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${REQUESTER_EVM_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX_CLEAN}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_METADATA_EVM}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${REQUESTER_EVM_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX_CLEAN}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 7: VERIFY RESULTS

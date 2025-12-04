@@ -18,7 +18,7 @@ if ! load_intent_info "INTENT_ID,HUB_INTENT_ADDRESS"; then
     exit 1
 fi
 
-TRANSFER_INFO_FILE="${PROJECT_ROOT}/.test-data/outflow-transfer-info.txt"
+TRANSFER_INFO_FILE="${PROJECT_ROOT}/tmp/outflow-transfer-info.txt"
 
 if [ ! -f "$TRANSFER_INFO_FILE" ]; then
     log_and_echo "❌ ERROR: Transfer info file not found at $TRANSFER_INFO_FILE"

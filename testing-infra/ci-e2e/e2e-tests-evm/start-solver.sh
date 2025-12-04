@@ -19,6 +19,7 @@ set -e
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
+source "$SCRIPT_DIR/../util_mvm.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -35,15 +36,28 @@ log ""
 generate_solver_config_evm() {
     local config_file="$1"
     
+    # Get addresses from aptos CLI profiles
+    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
+    local solver_chain1_address=$(get_profile_address "solver-chain1")
+    local chain1_address=$(get_profile_address "intent-account-chain1")
+    
+    # Get USDxyz metadata on hub chain (32-byte Move address)
+    local usdxyz_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
+    
+    # Get EVM USDxyz address and pad to 32 bytes
+    local evm_token_address="${USDXYZ_EVM_ADDRESS:-}"
+    local evm_token_no_prefix="${evm_token_address#0x}"
+    local usdxyz_metadata_evm="0x000000000000000000000000${evm_token_no_prefix}"
+    
     # Use environment variables from test setup
     local verifier_url="${VERIFIER_URL:-http://127.0.0.1:3333}"
     local hub_rpc="${CHAIN1_URL:-http://127.0.0.1:8080/v1}"
     local evm_rpc="${EVM_RPC_URL:-http://127.0.0.1:8545}"
     local hub_chain_id="${CHAIN1_ID:-1}"
     local evm_chain_id="${EVM_CHAIN_ID:-31337}"
-    local module_address="${ACCOUNT_ADDRESS:-0x123}"
+    local module_address="0x${chain1_address}"
     local escrow_contract="${ESCROW_CONTRACT_ADDRESS:-0x0}"
-    local solver_address="${SOLVER_ADDRESS:-$module_address}"
+    local solver_address="0x${solver_chain1_address}"
     local evm_private_key_env="${EVM_PRIVATE_KEY_ENV:-SOLVER_EVM_PRIVATE_KEY}"
     
     log "   Generating solver config:"
@@ -53,6 +67,8 @@ generate_solver_config_evm() {
     log "   - Hub module address: $module_address"
     log "   - EVM escrow contract: $escrow_contract"
     log "   - Solver address: $solver_address"
+    log "   - USDxyz metadata (hub): $usdxyz_metadata_chain1"
+    log "   - USDxyz metadata (EVM, padded): $usdxyz_metadata_evm"
     
     cat > "$config_file" << EOF
 # Auto-generated solver config for EVM E2E tests
@@ -67,7 +83,7 @@ name = "Hub Chain (E2E Test)"
 rpc_url = "$hub_rpc"
 chain_id = $hub_chain_id
 module_address = "$module_address"
-profile = "default"
+profile = "solver-chain1"
 
 [connected_chain]
 type = "evm"
@@ -78,12 +94,14 @@ escrow_contract_address = "$escrow_contract"
 private_key_env = "$evm_private_key_env"
 
 [acceptance]
-# Accept any token swap at 1:1 rate (for testing)
-# In production, this would be configured with specific token pairs
-"$hub_chain_id:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:$evm_chain_id:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" = 1.0
+# Accept USDxyz swaps at 1:1 rate for E2E testing
+# Inflow: offered on EVM (connected), desired on hub
+"$evm_chain_id:$usdxyz_metadata_evm:$hub_chain_id:$usdxyz_metadata_chain1" = 1.0
+# Outflow: offered on hub, desired on EVM (connected)
+"$hub_chain_id:$usdxyz_metadata_chain1:$evm_chain_id:$usdxyz_metadata_evm" = 1.0
 
 [solver]
-profile = "default"
+profile = "solver-chain1"
 address = "$solver_address"
 EOF
 

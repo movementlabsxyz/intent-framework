@@ -142,8 +142,8 @@ if [ $TRANSFER_EXIT_CODE -eq 0 ] && echo "$TRANSFER_OUTPUT" | grep -qi "SUCCESS"
         exit 1
     fi
 
-    TRANSFER_INFO_FILE="${PROJECT_ROOT}/.test-data/outflow-transfer-info.txt"
-    mkdir -p "${PROJECT_ROOT}/.test-data"
+    TRANSFER_INFO_FILE="${PROJECT_ROOT}/tmp/outflow-transfer-info.txt"
+    mkdir -p "${PROJECT_ROOT}/tmp"
     echo "CONNECTED_CHAIN_TX_HASH=$TX_HASH" > "$TRANSFER_INFO_FILE"
     echo "INTENT_ID=$INTENT_ID" >> "$TRANSFER_INFO_FILE"
     log "     ✅ Transaction info saved to $TRANSFER_INFO_FILE"

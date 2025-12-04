@@ -94,12 +94,19 @@ module mvmt_intent::fa_intent_inflow {
     ///
     /// This is the core implementation that both the entry function and tests use.
     ///
+    /// # Note on parameter types:
+    /// - `offered_metadata_address` uses `address` because the offered tokens are on a different chain
+    ///   (connected chain), so the metadata object doesn't exist on the hub chain. We can't validate
+    ///   it here - validation happens on the connected chain where the escrow was created.
+    /// - `desired_metadata` uses `Object<Metadata>` because the desired tokens are on the hub chain,
+    ///   so we can validate the object exists and is the correct type.
+    ///
     /// # Arguments
     /// - `account`: Signer of the requester creating the intent
-    /// - `offered_metadata`: Metadata of the token type being offered (locked on connected chain)
+    /// - `offered_metadata_address`: Address of the token metadata being offered (locked on connected chain)
     /// - `offered_amount`: Amount of tokens offered (locked in escrow on connected chain)
     /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)
-    /// - `desired_metadata`: Metadata of the desired token type
+    /// - `desired_metadata`: Metadata object of the desired token type (on hub chain)
     /// - `desired_amount`: Amount of desired tokens
     /// - `desired_chain_id`: Chain ID of the hub chain (where this intent is created)
     /// - `expiry_time`: Unix timestamp when intent expires
@@ -115,7 +122,7 @@ module mvmt_intent::fa_intent_inflow {
     /// - `EINVALID_SIGNATURE`: Signature verification failed
     public fun create_inflow_request_intent(
         account: &signer,
-        offered_metadata: Object<Metadata>,
+        offered_metadata_address: address,
         offered_amount: u64,
         offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
@@ -126,17 +133,23 @@ module mvmt_intent::fa_intent_inflow {
         solver: address,
         solver_signature: vector<u8>
     ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
-        // Withdraw 0 tokens of offered type (no tokens locked on hub chain, just requesting for cross-chain swap)
+        // Withdraw 0 tokens of DESIRED type (not offered type).
+        // Why: The offered token metadata is on the connected chain, so the Object doesn't exist here.
+        // We use desired_metadata (which exists on hub) to create a placeholder FungibleAsset.
+        // No actual tokens are locked on hub for inflow - they're locked on connected chain.
         let fa: FungibleAsset =
-            primary_fungible_store::withdraw(account, offered_metadata, 0);
+            primary_fungible_store::withdraw(account, desired_metadata, 0);
 
-        // Verify solver signature and create reservation using the solver registry
+        // Get desired_metadata address for the raw intent
+        let desired_metadata_addr = object::object_address(&desired_metadata);
+
+        // Verify solver signature using raw addresses (works for cross-chain where offered token doesn't exist locally)
         let intent_to_sign =
-            intent_reservation::new_intent_to_sign(
-                offered_metadata,
+            intent_reservation::new_intent_to_sign_raw(
+                offered_metadata_address,
                 offered_amount,
                 offered_chain_id,
-                desired_metadata,
+                desired_metadata_addr,
                 desired_amount,
                 desired_chain_id,
                 expiry_time,
@@ -144,9 +157,9 @@ module mvmt_intent::fa_intent_inflow {
                 solver
             );
 
-        // Use verify_and_create_reservation_from_registry to look up public key from registry
+        // Use verify_and_create_reservation_from_registry_raw to look up public key from registry
         let reservation_result =
-            intent_reservation::verify_and_create_reservation_from_registry(
+            intent_reservation::verify_and_create_reservation_from_registry_raw(
                 intent_to_sign, solver_signature
             );
         // Fail if signature verification failed - cross-chain intents must be reserved
@@ -178,7 +191,7 @@ module mvmt_intent::fa_intent_inflow {
     /// For argument descriptions and abort conditions, see `create_inflow_request_intent`.
     public entry fun create_inflow_request_intent_entry(
         account: &signer,
-        offered_metadata: Object<Metadata>,
+        offered_metadata_address: address,
         offered_amount: u64,
         offered_chain_id: u64,
         desired_metadata: Object<Metadata>,
@@ -192,7 +205,7 @@ module mvmt_intent::fa_intent_inflow {
         let _intent_obj =
             create_inflow_request_intent(
                 account,
-                offered_metadata,
+                offered_metadata_address,
                 offered_amount,
                 offered_chain_id,
                 desired_metadata,

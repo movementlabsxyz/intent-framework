@@ -4,12 +4,12 @@
 //! without requiring external services.
 
 use futures::future;
-use trusted_verifier::monitor::{EscrowEvent, EventMonitor, FulfillmentEvent, RequestIntentEvent};
+use trusted_verifier::monitor::{EscrowEvent, EventMonitor, FulfillmentEvent, IntentEvent};
 #[path = "mod.rs"]
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_escrow_event, create_base_fulfillment,
-    create_base_request_intent_mvm,
+    create_base_intent_mvm,
 };
 
 // ============================================================================
@@ -17,7 +17,7 @@ use test_helpers::{
 // ============================================================================
 
 /// Helper function for validation logic
-fn is_safe_for_escrow(event: &RequestIntentEvent) -> bool {
+fn is_safe_for_escrow(event: &IntentEvent) -> bool {
     !event.revocable
 }
 
@@ -79,19 +79,19 @@ fn test_normalize_intent_id_case() {
 /// Why: Verify critical security check - revocable intents must be rejected for escrow
 #[test]
 fn test_revocable_intent_rejection() {
-    let revocable_intent = RequestIntentEvent {
+    let revocable_intent = IntentEvent {
         intent_id: "0xrevocable".to_string(),
         revocable: true, // NOT safe for escrow
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     // Simulate validation: revocable intents should be rejected
     let result = is_safe_for_escrow(&revocable_intent);
     assert!(!result, "Revocable intents should NOT be safe for escrow");
 
-    let non_revocable_intent = RequestIntentEvent {
+    let non_revocable_intent = IntentEvent {
         intent_id: "0xsafe".to_string(),
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     let result = is_safe_for_escrow(&non_revocable_intent);
@@ -256,7 +256,7 @@ async fn test_multiple_concurrent_intents() {
     let approval3 = approval3.unwrap();
     assert_eq!(approval3.intent_id, "0x03");
 
-    // Assert: approvals are independent and signatures are unique per request-intent
+    // Assert: approvals are independent and signatures are unique per intent
     assert!(
         !approval1.signature.is_empty(),
         "Approval 1 should have signature"
@@ -270,117 +270,117 @@ async fn test_multiple_concurrent_intents() {
         "Approval 3 should have signature"
     );
 
-    // Assert: signatures must be unique per request-intent (each signature includes intent_id)
+    // Assert: signatures must be unique per intent (each signature includes intent_id)
     let sig1 = approval1.signature;
     let sig2 = approval2.signature;
     let sig3 = approval3.signature;
-    assert_ne!(sig1, sig2, "Signatures should be unique per request-intent");
-    assert_ne!(sig2, sig3, "Signatures should be unique per request-intent");
-    assert_ne!(sig1, sig3, "Signatures should be unique per request-intent");
+    assert_ne!(sig1, sig2, "Signatures should be unique per intent");
+    assert_ne!(sig2, sig3, "Signatures should be unique per intent");
+    assert_ne!(sig1, sig3, "Signatures should be unique per intent");
 }
 
-/// Test that monitor's validate_request_intent_fulfillment rejects escrows when matching request-intent has expired
-/// Why: Verify that expired request-intents are rejected when validating escrow fulfillment
+/// Test that monitor's validate_intent_fulfillment rejects escrows when matching intent has expired
+/// Why: Verify that expired intents are rejected when validating escrow fulfillment
 #[tokio::test]
-async fn test_expiry_check_failure_in_monitor_validate_request_intent_fulfillment() {
+async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
 
-    // Create an expired request-intent
+    // Create an expired intent
     let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
     let past_expiry = current_time - 1000; // Expired 1000 seconds ago
 
-    let expired_request_intent = RequestIntentEvent {
+    let expired_intent = IntentEvent {
         intent_id: "0xexpired_intent".to_string(),
         expiry_time: past_expiry,
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
-    // Add expired request-intent to cache
+    // Add expired intent to cache
     {
         let mut cache = monitor.event_cache.write().await;
-        cache.push(expired_request_intent.clone());
+        cache.push(expired_intent.clone());
     }
 
-    // Create an escrow event that matches the expired request-intent
+    // Create an escrow event that matches the expired intent
     // The escrow must pass other validations first (amount, metadata, solver)
-    // Note: escrow.offered_amount (1000) >= request_intent.desired_amount (0) ✓
-    //       escrow.desired_metadata ("{}") == request_intent.desired_metadata ("{}") ✓
+    // Note: escrow.offered_amount (1000) >= intent.desired_amount (0) ✓
+    //       escrow.desired_metadata ("{}") == intent.desired_metadata ("{}") ✓
     //       Both have no solver reservation, so solver validation passes ✓
     let escrow_event = EscrowEvent {
-        intent_id: expired_request_intent.intent_id.clone(),
+        intent_id: expired_intent.intent_id.clone(),
         ..create_base_escrow_event()
     };
 
-    // Verify that validation fails when request-intent has expired
+    // Verify that validation fails when intent has expired
     let result = monitor
-        .validate_request_intent_fulfillment(&escrow_event)
+        .validate_intent_fulfillment(&escrow_event)
         .await;
     assert!(
         result.is_err(),
-        "Validation should fail when request-intent has expired"
+        "Validation should fail when intent has expired"
     );
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("expired") || error_msg.contains("expiry"),
-        "Error message should indicate request-intent expired: {}",
+        "Error message should indicate intent expired: {}",
         error_msg
     );
 }
 
-/// Test that monitor's validate_request_intent_fulfillment passes expiry check for non-expired request-intents
-/// Why: Verify that non-expired request-intents pass the expiry validation
+/// Test that monitor's validate_intent_fulfillment passes expiry check for non-expired intents
+/// Why: Verify that non-expired intents pass the expiry validation
 #[tokio::test]
-async fn test_expiry_check_success_in_monitor_validate_request_intent_fulfillment() {
+async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
     let config = build_test_config_with_mvm();
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
 
-    // Create a non-expired request-intent
+    // Create a non-expired intent
     let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
     let future_expiry = current_time + 1000; // Expires in 1000 seconds
 
-    let non_expired_request_intent = RequestIntentEvent {
+    let non_expired_intent = IntentEvent {
         intent_id: "0xvalid_intent".to_string(),
         expiry_time: future_expiry,
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
-    // Add non-expired request-intent to cache
+    // Add non-expired intent to cache
     {
         let mut cache = monitor.event_cache.write().await;
-        cache.push(non_expired_request_intent.clone());
+        cache.push(non_expired_intent.clone());
     }
 
-    // Create an escrow event that matches the non-expired request-intent
+    // Create an escrow event that matches the non-expired intent
     // The escrow must pass all other validations to reach the expiry check:
-    // - escrow.offered_amount (1000) >= request_intent.desired_amount (0) ✓
-    // - escrow.desired_metadata ("{}") == request_intent.desired_metadata ("{}") ✓
+    // - escrow.offered_amount (1000) >= intent.desired_amount (0) ✓
+    // - escrow.desired_metadata ("{}") == intent.desired_metadata ("{}") ✓
     // - Both have no solver reservation, so solver validation passes ✓
     let valid_escrow = EscrowEvent {
-        intent_id: non_expired_request_intent.intent_id.clone(),
+        intent_id: non_expired_intent.intent_id.clone(),
         ..create_base_escrow_event()
     };
 
-    // Verify that validation passes when request-intent has not expired
+    // Verify that validation passes when intent has not expired
     // This confirms the expiry check passes for non-expired intents
     let result = monitor
-        .validate_request_intent_fulfillment(&valid_escrow)
+        .validate_intent_fulfillment(&valid_escrow)
         .await;
     assert!(
         result.is_ok(),
-        "Validation should pass when request-intent has not expired and all other validations pass"
+        "Validation should pass when intent has not expired and all other validations pass"
     );
 }
 
@@ -444,7 +444,7 @@ async fn test_duplicate_intent_event_rejection() {
         .await
         .expect("Failed to create monitor");
 
-    let intent = create_base_request_intent_mvm();
+    let intent = create_base_intent_mvm();
 
     // Add intent to cache (first time)
     {

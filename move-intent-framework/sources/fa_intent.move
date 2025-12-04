@@ -5,7 +5,7 @@ module mvmt_intent::fa_intent {
     use std::vector;
     use aptos_framework::event;
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata, FungibleStore};
-    use mvmt_intent::intent::{Self, TradeSession, TradeIntent};
+    use mvmt_intent::intent::{Self, Session, Intent};
     use mvmt_intent::intent_reservation::{Self, IntentReserved};
     use aptos_framework::object::{Self, DeleteRef, ExtendRef, Object};
     use aptos_framework::primary_fungible_store;
@@ -88,7 +88,7 @@ module mvmt_intent::fa_intent {
     /// - `requester`: Address of the intent creator
     ///
     /// # Returns
-    /// - `Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>`: Intent object
+    /// - `Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>>`: Intent object
     public fun create_fa_to_fa_intent(
         offered_fungible_asset: FungibleAsset,
         offered_chain_id: u64,
@@ -100,7 +100,7 @@ module mvmt_intent::fa_intent {
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address> // Optional cross-chain intent_id (None for regular intents)
-    ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
+    ): Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Capture metadata and amount before depositing
         let offered_metadata = fungible_asset::asset_metadata(&offered_fungible_asset);
         let offered_amount = fungible_asset::amount(&offered_fungible_asset);
@@ -248,10 +248,10 @@ module mvmt_intent::fa_intent {
     ///
     /// # Returns
     /// - `FungibleAsset`: The unlocked fungible asset
-    /// - `TradeSession<Args>`: Trading session containing the conditions
+    /// - `Session<Args>`: Trading session containing the conditions
     public fun start_fa_offering_session<Args: store + drop>(
-        solver: &signer, intent: Object<TradeIntent<FungibleStoreManager, Args>>
-    ): (FungibleAsset, TradeSession<Args>) {
+        solver: &signer, intent: Object<Intent<FungibleStoreManager, Args>>
+    ): (FungibleAsset, Session<Args>) {
         let (store_manager, session) = intent::start_intent_session(intent);
         let reservation = intent::get_reservation(&session);
         intent_reservation::ensure_solver_authorized(solver, reservation);
@@ -302,7 +302,7 @@ module mvmt_intent::fa_intent {
     /// - `intent_address`: The address of the intent being fulfilled
     /// - `solver`: The address of the solver who fulfilled the intent
     public fun finish_fa_receiving_session_with_event(
-        session: TradeSession<FungibleAssetLimitOrder>,
+        session: Session<FungibleAssetLimitOrder>,
         received_fa: FungibleAsset,
         intent_address: address,
         solver: address
@@ -351,7 +351,7 @@ module mvmt_intent::fa_intent {
 
     /// Legacy version without event - kept for compatibility
     public fun finish_fa_receiving_session(
-        session: TradeSession<FungibleAssetLimitOrder>, received_fa: FungibleAsset
+        session: Session<FungibleAssetLimitOrder>, received_fa: FungibleAsset
     ) {
         let argument = intent::get_argument(&session);
         assert!(
@@ -377,7 +377,7 @@ module mvmt_intent::fa_intent {
     /// - `account`: Signer of the intent owner
     /// - `intent`: Object reference to the intent to revoke
     public entry fun revoke_fa_intent<Args: store + drop>(
-        account: &signer, intent: Object<TradeIntent<FungibleStoreManager, Args>>
+        account: &signer, intent: Object<Intent<FungibleStoreManager, Args>>
     ) {
         let store_manager = intent::revoke_intent(account, intent);
         let fa = destroy_store_manager(store_manager);

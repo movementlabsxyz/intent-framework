@@ -3,7 +3,7 @@
 //! These tests verify that the solver correctly evaluates draft intents
 //! based on token types and amounts.
 
-use solver::acceptance::{AcceptanceConfig, AcceptanceResult, DraftIntentData, should_accept_draft};
+use solver::acceptance::{AcceptanceConfig, AcceptanceResult, DraftintentData, should_accept_draft};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -59,14 +59,14 @@ fn test_config() -> AcceptanceConfig {
 /// This can be customized using Rust's struct update syntax:
 /// ```
 /// let draft = create_base_draft_data();
-/// let custom_draft = DraftIntentData {
+/// let custom_draft = DraftintentData {
 ///     offered_amount: 500000,
 ///     desired_amount: 1000000,
 ///     ..draft
 /// };
 /// ```
-fn create_base_draft_data() -> DraftIntentData {
-    DraftIntentData {
+fn create_base_draft_data() -> DraftintentData {
+    DraftintentData {
         offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         offered_amount: 1000000,
         offered_chain_id: 1,
@@ -82,7 +82,7 @@ fn create_base_draft_data() -> DraftIntentData {
 #[test]
 fn test_token_pair_accept() {
     let config = test_config();
-    let draft = DraftIntentData {
+    let draft = DraftintentData {
         ..create_base_draft_data()  // 1:1 rate, offered=1000000, desired=1000000
     };
     assert!(matches!(should_accept_draft(&draft, &config), AcceptanceResult::Accept));
@@ -94,7 +94,7 @@ fn test_token_pair_accept() {
 #[test]
 fn test_token_pair_reject_unfavorable() {
     let config = test_config();
-    let draft = DraftIntentData {
+    let draft = DraftintentData {
         offered_amount: 500000,  // 0.5 is less than the required amount 1.0 at configured 1:1 exchange rate
         desired_amount: 1000000,  // 1.0 requires 1.0 offered at configured 1:1 exchange rate
         ..create_base_draft_data()
@@ -108,7 +108,7 @@ fn test_token_pair_reject_unfavorable() {
 #[test]
 fn test_token_pair_with_exchange_rate_accept() {
     let config = test_config();
-    let draft = DraftIntentData {
+    let draft = DraftintentData {
         desired_token: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),  // Token C
         desired_amount: 2000000,  // 2.0 Token C (at 0.5 rate, requires 1.0 offered)
         ..create_base_draft_data()  // offered_amount: 1000000 (1.0) meets the requirement (2.0 * 0.5 = 1.0)
@@ -122,7 +122,7 @@ fn test_token_pair_with_exchange_rate_accept() {
 #[test]
 fn test_unsupported_token_pair_rejected() {
     let config = test_config();
-    let draft = DraftIntentData {
+    let draft = DraftintentData {
         offered_token: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc".to_string(),  // Token not in any configured pair
         ..create_base_draft_data()  // offered_amount: 1000000, desired_amount: 1000000, but pair is not configured
     };

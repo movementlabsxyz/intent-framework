@@ -29,13 +29,13 @@ module mvmt_intent::intent_reservation {
     }
 
     /// Struct to hold reservation details for an intent.
-    /// This is stored inside the `TradeIntent` if the intent is reserved for a specific solver.
+    /// This is stored inside the `Intent` if the intent is reserved for a specific solver.
     public struct IntentReserved has store, drop {
         solver: address,
     }
 
     /// The draft intent data created by the offerer (without solver address).
-    struct IntentDraft has copy, drop {
+    struct Draftintent has copy, drop {
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
         offered_chain_id: u64,
@@ -146,8 +146,8 @@ module mvmt_intent::intent_reservation {
         desired_chain_id: u64,
         expiry_time: u64,
         requester: address,
-    ): IntentDraft {
-        IntentDraft {
+    ): Draftintent {
+        Draftintent {
             offered_metadata,
             offered_amount,
             offered_chain_id,
@@ -161,7 +161,7 @@ module mvmt_intent::intent_reservation {
 
     /// Converts draft intent to IntentToSign by adding solver address.
     public fun add_solver_to_draft_intent(
-        draft: IntentDraft,
+        draft: Draftintent,
         solver: address,
     ): IntentToSign {
         IntentToSign {

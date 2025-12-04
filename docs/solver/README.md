@@ -117,7 +117,7 @@ All tokens are treated as fungible assets - no hardcoded USD/NATIVE distinctions
 The solver automatically fulfills **inflow intents** (tokens locked on connected chain, desired on hub):
 
 1. **Monitor Escrows**: Polls connected chain for escrow deposits matching tracked inflow intents
-2. **Fulfill Intent**: Calls hub chain `fulfill_inflow_request_intent` when escrow is detected
+2. **Fulfill Intent**: Calls hub chain `fulfill_inflow_intent` when escrow is detected
 3. **Release Escrow**: Polls verifier for approval signature, then releases escrow on connected chain
 
 ### Supported Chains
@@ -218,8 +218,8 @@ The solver includes chain clients for interacting with different blockchain type
 ### Hub Chain Client (`chains/hub.rs`)
 
 - **Query Intent Events**: `get_intent_events()` - Queries hub chain for intent creation and fulfillment events
-- **Fulfill Inflow Intent**: `fulfill_inflow_intent()` - Calls `fulfill_inflow_request_intent` entry function
-- **Fulfill Outflow Intent**: `fulfill_outflow_intent()` - Calls `fulfill_outflow_request_intent` entry function
+- **Fulfill Inflow Intent**: `fulfill_inflow_intent()` - Calls `fulfill_inflow_intent` entry function
+- **Fulfill Outflow Intent**: `fulfill_outflow_intent()` - Calls `fulfill_outflow_intent` entry function
 
 ### Connected MVM Client (`chains/connected_mvm.rs`)
 

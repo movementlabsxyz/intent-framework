@@ -8,7 +8,7 @@
 //!
 //! 1. Solver creates escrow on connected chain (tokens locked in escrow)
 //! 2. Verifier monitors connected chain for escrow events
-//! 3. Verifier validates escrow matches hub request-intent requirements
+//! 3. Verifier validates escrow matches hub intent requirements
 //! 4. Verifier monitors hub chain for fulfillment events
 //! 5. When hub fulfillment is observed, verifier generates approval signature for escrow release
 //! 6. Solver uses signature to release escrow on connected chain
@@ -37,7 +37,7 @@ use super::inflow_mvm;
 ///
 /// This function runs in an infinite loop, polling the connected Move VM chain
 /// for escrow deposit events. When events are found, it caches them and validates
-/// that they fulfill the conditions of existing hub request-intents.
+/// that they fulfill the conditions of existing hub intents.
 ///
 /// The validation ensures that:
 /// - Escrow amount matches or exceeds intent desired amount
@@ -88,12 +88,12 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
                         }
                     }
 
-                    // Validate that this escrow fulfills an existing request-intent
-                    // Note: It's normal for escrow to exist before request-intent (escrow created first)
-                    if let Err(e) = validate_request_intent_fulfillment(monitor, &event).await {
-                        // If no matching request-intent found, just log info (request-intent may be created later)
-                        if e.to_string().contains("No matching request-intent found") {
-                            info!("Registered escrow {} for intent_id {} (request-intent not yet created on hub chain)", event.escrow_id, event.intent_id);
+                    // Validate that this escrow fulfills an existing intent
+                    // Note: It's normal for escrow to exist before intent (escrow created first)
+                    if let Err(e) = validate_intent_fulfillment(monitor, &event).await {
+                        // If no matching intent found, just log info (intent may be created later)
+                        if e.to_string().contains("No matching intent found") {
+                            info!("Registered escrow {} for intent_id {} (intent not yet created on hub chain)", event.escrow_id, event.intent_id);
                         } else {
                             error!("Intent fulfillment validation failed: {}", e);
                         }
@@ -116,7 +116,7 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
 ///
 /// This function runs in an infinite loop, polling the connected EVM chain
 /// for EscrowInitialized events. When events are found, it caches them and validates
-/// that they fulfill the conditions of existing hub request-intents.
+/// that they fulfill the conditions of existing hub intents.
 ///
 /// The validation ensures that:
 /// - Escrow amount matches or exceeds intent desired amount
@@ -168,12 +168,12 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
                         }
                     }
 
-                    // Validate that this escrow fulfills an existing request-intent
-                    // Note: It's normal for escrow to exist before request-intent (escrow created first)
-                    if let Err(e) = validate_request_intent_fulfillment(monitor, &event).await {
-                        // If no matching request-intent found, just log info (request-intent may be created later)
-                        if e.to_string().contains("No matching request-intent found") {
-                            info!("Registered escrow {} for intent_id {} (request-intent not yet created on hub chain)", event.escrow_id, event.intent_id);
+                    // Validate that this escrow fulfills an existing intent
+                    // Note: It's normal for escrow to exist before intent (escrow created first)
+                    if let Err(e) = validate_intent_fulfillment(monitor, &event).await {
+                        // If no matching intent found, just log info (intent may be created later)
+                        if e.to_string().contains("No matching intent found") {
+                            info!("Registered escrow {} for intent_id {} (intent not yet created on hub chain)", event.escrow_id, event.intent_id);
                         } else {
                             error!("Intent fulfillment validation failed for EVM escrow: {}", e);
                         }
@@ -249,10 +249,10 @@ pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowE
 // VALIDATION
 // ============================================================================
 
-/// Validates that an escrow event fulfills the conditions of an existing request-intent.
+/// Validates that an escrow event fulfills the conditions of an existing intent.
 ///
 /// This function checks whether the escrow deposit matches the requirements
-/// specified in a previously created hub request-intent. It ensures that the solver
+/// specified in a previously created hub intent. It ensures that the solver
 /// has provided the correct asset type and amount, and that all other conditions are met.
 ///
 /// ## Validation Checks
@@ -275,17 +275,17 @@ pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowE
 /// # Errors
 ///
 /// Returns an error if:
-/// - No matching request-intent is found for the escrow's intent_id
+/// - No matching intent is found for the escrow's intent_id
 /// - Escrow amount is less than required amount
 /// - Escrow metadata does not match desired metadata
 /// - Solver addresses do not match (for reserved intents)
 /// - Request-intent has expired
-pub async fn validate_request_intent_fulfillment(
+pub async fn validate_intent_fulfillment(
     monitor: &EventMonitor,
     escrow_event: &EscrowEvent,
 ) -> Result<()> {
     info!(
-        "Validating request-intent fulfillment for escrow: {} (intent_id: {})",
+        "Validating intent fulfillment for escrow: {} (intent_id: {})",
         escrow_event.escrow_id, escrow_event.intent_id
     );
 
@@ -293,38 +293,38 @@ pub async fn validate_request_intent_fulfillment(
     // Normalize intent IDs for comparison (handles leading zero differences)
     let escrow_intent_id_normalized =
         crate::monitor::generic::normalize_intent_id(&escrow_event.intent_id);
-    let matching_request_intent = cache.iter().find(|request_intent| {
-        crate::monitor::generic::normalize_intent_id(&request_intent.intent_id)
+    let matching_intent = cache.iter().find(|intent| {
+        crate::monitor::generic::normalize_intent_id(&intent.intent_id)
             == escrow_intent_id_normalized
     });
 
-    match matching_request_intent {
-        Some(request_intent) => {
+    match matching_intent {
+        Some(intent) => {
             info!(
-                "Found matching request-intent: {} for escrow: {}",
-                request_intent.intent_id, escrow_event.escrow_id
+                "Found matching intent: {} for escrow: {}",
+                intent.intent_id, escrow_event.escrow_id
             );
 
-            if escrow_event.offered_amount < request_intent.desired_amount {
+            if escrow_event.offered_amount < intent.desired_amount {
                 return Err(anyhow::anyhow!(
                     "Deposit amount {} is less than required amount {}",
                     escrow_event.offered_amount,
-                    request_intent.desired_amount
+                    intent.desired_amount
                 ));
             }
 
-            if escrow_event.desired_metadata != request_intent.desired_metadata {
+            if escrow_event.desired_metadata != intent.desired_metadata {
                 return Err(anyhow::anyhow!(
                     "Deposit metadata {} does not match desired metadata {}",
                     escrow_event.desired_metadata,
-                    request_intent.desired_metadata
+                    intent.desired_metadata
                 ));
             }
 
             let validation_result =
-                crate::validator::inflow_generic::validate_request_intent_fulfillment(
+                crate::validator::inflow_generic::validate_intent_fulfillment(
                     &monitor.validator,
-                    request_intent,
+                    intent,
                     escrow_event,
                 )
                 .await?;
@@ -339,11 +339,11 @@ pub async fn validate_request_intent_fulfillment(
                 .duration_since(std::time::UNIX_EPOCH)?
                 .as_secs();
 
-            if current_time > request_intent.expiry_time {
+            if current_time > intent.expiry_time {
                 return Err(anyhow::anyhow!(
                     "Request-intent {} has expired (expiry: {}, current: {})",
-                    request_intent.intent_id,
-                    request_intent.expiry_time,
+                    intent.intent_id,
+                    intent.expiry_time,
                     current_time
                 ));
             }
@@ -355,7 +355,7 @@ pub async fn validate_request_intent_fulfillment(
             Ok(())
         }
         None => Err(anyhow::anyhow!(
-            "No matching request-intent found for escrow: {} (intent_id: {})",
+            "No matching intent found for escrow: {} (intent_id: {})",
             escrow_event.escrow_id,
             escrow_event.intent_id
         )),

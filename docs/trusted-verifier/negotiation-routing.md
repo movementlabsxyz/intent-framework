@@ -23,7 +23,7 @@ The negotiation routing system enables:
 ### Requester Prerequisites
 
 - Must have a Move VM address (for `requester_address`)
-- Must prepare draft data matching the `IntentDraft` structure from Move
+- Must prepare draft data matching the `Draftintent` structure from Move
 
 ## Requester Workflow
 
@@ -32,7 +32,7 @@ The negotiation routing system enables:
 Submit a draft intent to the verifier. The draft is open to any solver (no `solver_address` required).
 
 ```bash
-curl -X POST http://127.0.0.1:3333/draft-intent \
+curl -X POST http://127.0.0.1:3333/draftintent \
   -H "Content-Type: application/json" \
   -d '{
     "requester_address": "0x123...",
@@ -55,7 +55,7 @@ Poll the verifier regularly to check if a solver has signed your draft.
 ```bash
 # Poll every 5 seconds
 while true; do
-  RESPONSE=$(curl -s http://127.0.0.1:3333/draft-intent/$DRAFT_ID/signature)
+  RESPONSE=$(curl -s http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature)
   if echo "$RESPONSE" | jq -e '.success == true' > /dev/null; then
     SIGNATURE=$(echo "$RESPONSE" | jq -r '.data.signature')
     SOLVER_ADDRESS=$(echo "$RESPONSE" | jq -r '.data.solver_address')
@@ -102,7 +102,7 @@ Poll the verifier regularly to discover new drafts. All solvers see all pending 
 ```bash
 # Poll every 10 seconds
 while true; do
-  DRAFTS=$(curl -s http://127.0.0.1:3333/draft-intents/pending | jq -r '.data[]')
+  DRAFTS=$(curl -s http://127.0.0.1:3333/draftintents/pending | jq -r '.data[]')
   for DRAFT in $DRAFTS; do
     DRAFT_ID=$(echo "$DRAFT" | jq -r '.draft_id')
     # Process draft...
@@ -119,7 +119,7 @@ Sign the draft and submit your signature. **FCFS Logic**: First signature wins, 
 # Sign draft (add solver_address to create IntentToSign)
 SIGNATURE=$(sign_draft "$DRAFT_DATA" "$SOLVER_ADDRESS" "$PRIVATE_KEY")
 
-curl -X POST http://127.0.0.1:3333/draft-intent/$DRAFT_ID/signature \
+curl -X POST http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature \
   -H "Content-Type: application/json" \
   -d "{
     \"solver_address\": \"$SOLVER_ADDRESS\",
@@ -198,14 +198,14 @@ Continue polling for new drafts. If your signature was rejected (409), try the n
 
 ```bash
 # 1. Submit draft
-DRAFT_RESPONSE=$(curl -s -X POST http://127.0.0.1:3333/draft-intent \
+DRAFT_RESPONSE=$(curl -s -X POST http://127.0.0.1:3333/draftintent \
   -H "Content-Type: application/json" \
   -d '{"requester_address": "0x123...", "draft_data": {...}, "expiry_time": 2000000}')
 DRAFT_ID=$(echo "$DRAFT_RESPONSE" | jq -r '.data.draft_id')
 
 # 2. Poll for signature
 while true; do
-  SIG_RESPONSE=$(curl -s http://127.0.0.1:3333/draft-intent/$DRAFT_ID/signature)
+  SIG_RESPONSE=$(curl -s http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature)
   if echo "$SIG_RESPONSE" | jq -e '.success == true' > /dev/null; then
     SIGNATURE=$(echo "$SIG_RESPONSE" | jq -r '.data.signature')
     SOLVER=$(echo "$SIG_RESPONSE" | jq -r '.data.solver_address')
@@ -224,7 +224,7 @@ movement move run --function-id "..." --args "address:$SOLVER" "hex:$SIGNATURE" 
 ```bash
 # 1. Poll for drafts
 while true; do
-  DRAFTS=$(curl -s http://127.0.0.1:3333/draft-intents/pending | jq -r '.data[]')
+  DRAFTS=$(curl -s http://127.0.0.1:3333/draftintents/pending | jq -r '.data[]')
   
   for DRAFT in $DRAFTS; do
     DRAFT_ID=$(echo "$DRAFT" | jq -r '.draft_id')
@@ -234,7 +234,7 @@ while true; do
     SIGNATURE=$(sign_draft "$DRAFT_DATA" "$SOLVER_ADDRESS" "$PRIVATE_KEY")
     
     # 3. Submit signature
-    RESPONSE=$(curl -s -X POST http://127.0.0.1:3333/draft-intent/$DRAFT_ID/signature \
+    RESPONSE=$(curl -s -X POST http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature \
       -H "Content-Type: application/json" \
       -d "{\"solver_address\": \"$SOLVER_ADDRESS\", \"signature\": \"$SIGNATURE\", \"public_key\": \"$PUBLIC_KEY\"}")
     

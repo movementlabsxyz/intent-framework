@@ -190,7 +190,7 @@ log "     Signature: ${RETRIEVED_SIGNATURE:0:20}..."
 # SECTION 6: CREATE OUTFLOW INTENT ON-CHAIN WITH RETRIEVED SIGNATURE
 # ============================================================================
 log ""
-log "   Creating outflow request-intent on hub chain..."
+log "   Creating outflow intent on hub chain..."
 log "   - Requester locks 1 USDxyz on hub chain"
 log "   - Requester wants 1 USDxyz on connected chain (EVM)"
 log "     Offered metadata (hub): $OFFERED_METADATA_CHAIN1"
@@ -202,29 +202,29 @@ SOLVER_SIGNATURE_HEX="${RETRIEVED_SIGNATURE#0x}"
 VERIFIER_PUBLIC_KEY_HEX_CLEAN="${VERIFIER_PUBLIC_KEY#0x}"
 
 aptos move run --profile requester-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_outflow::create_outflow_request_intent_entry" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_outflow::create_outflow_intent_entry" \
     --args "address:${OFFERED_METADATA_CHAIN1}" "u64:${OFFERED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "address:${DESIRED_METADATA_EVM}" "u64:${DESIRED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${REQUESTER_EVM_ADDRESS}" "hex:${VERIFIER_PUBLIC_KEY_HEX_CLEAN}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 7: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
-    log "     ✅ Outflow request-intent created on Chain 1!"
+    log "     ✅ Outflow intent created on Chain 1!"
 
     sleep 2
-    log "     - Verifying request-intent stored on-chain..."
+    log "     - Verifying intent stored on-chain..."
     HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${REQUESTER_CHAIN1_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_address' | head -n 1)
 
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-        log "     ✅ Hub outflow request-intent stored at: $HUB_INTENT_ADDRESS"
-        log_and_echo "✅ Outflow request-intent created (via verifier negotiation)"
+        log "     ✅ Hub outflow intent stored at: $HUB_INTENT_ADDRESS"
+        log_and_echo "✅ Outflow intent created (via verifier negotiation)"
     else
-        log_and_echo "❌ ERROR: Could not verify hub outflow request-intent address"
+        log_and_echo "❌ ERROR: Could not verify hub outflow intent address"
         exit 1
     fi
 else
-    log_and_echo "❌ Outflow request-intent creation failed on Chain 1!"
+    log_and_echo "❌ Outflow intent creation failed on Chain 1!"
     log_and_echo "   Log file contents:"
     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"

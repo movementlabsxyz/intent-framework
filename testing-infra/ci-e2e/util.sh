@@ -473,7 +473,7 @@ submit_draft_intent() {
     [ -n "$LOG_FILE" ] && echo "$request_body" >> "$LOG_FILE"
     
     local response
-    response=$(curl -s -X POST "${verifier_url}/draft-intent" \
+    response=$(curl -s -X POST "${verifier_url}/draftintent" \
         -H "Content-Type: application/json" \
         -d "$request_body" 2>&1)
     
@@ -518,7 +518,7 @@ poll_pending_drafts() {
     local verifier_url=$(get_verifier_url "$verifier_port")
     
     local response
-    response=$(curl -s -X GET "${verifier_url}/draft-intents/pending" 2>&1)
+    response=$(curl -s -X GET "${verifier_url}/draftintents/pending" 2>&1)
     
     local curl_exit=$?
     if [ $curl_exit -ne 0 ]; then
@@ -553,7 +553,7 @@ get_draft_intent() {
     local verifier_url=$(get_verifier_url "$verifier_port")
     
     local response
-    response=$(curl -s -X GET "${verifier_url}/draft-intent/${draft_id}" 2>&1)
+    response=$(curl -s -X GET "${verifier_url}/draftintent/${draft_id}" 2>&1)
     
     local curl_exit=$?
     if [ $curl_exit -ne 0 ]; then
@@ -604,7 +604,7 @@ submit_signature_to_verifier() {
     log "     Solver: $normalized_solver_address"
     
     local response
-    response=$(curl -s -X POST "${verifier_url}/draft-intent/${draft_id}/signature" \
+    response=$(curl -s -X POST "${verifier_url}/draftintent/${draft_id}/signature" \
         -H "Content-Type: application/json" \
         -d "{
             \"solver_address\": \"$normalized_solver_address\",
@@ -663,7 +663,7 @@ poll_for_signature() {
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
         local response
-        response=$(curl -s -X GET "${verifier_url}/draft-intent/${draft_id}/signature" 2>/dev/null)
+        response=$(curl -s -X GET "${verifier_url}/draftintent/${draft_id}/signature" 2>/dev/null)
         
         local curl_exit=$?
         if [ $curl_exit -ne 0 ] || [ -z "$response" ]; then

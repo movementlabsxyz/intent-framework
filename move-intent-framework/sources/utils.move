@@ -56,7 +56,7 @@ module mvmt_intent::utils {
     /// a helper script (Rust/Python) should:
     /// 1. Call this function to get the hash
     /// 2. Sign the hash with the solver's Ed25519 private key
-    /// 3. Use the signature in create_cross_chain_request_intent_entry (solver must be registered in the registry)
+    /// 3. Use the signature in create_cross_chain_intent_entry (solver must be registered in the registry)
     public entry fun get_intent_to_sign_hash(
         solver: &signer,
         offered_metadata: address,

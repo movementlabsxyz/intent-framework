@@ -20,7 +20,7 @@ contract IntentEscrow {
 
     /// @notice Escrow data structure
     struct Escrow {
-        address requester;           // Requester who deposited funds (requester who created the request-intent on hub chain)
+        address requester;           // Requester who deposited funds (requester who created the intent on hub chain)
         address token;           // ERC20 token address
         uint256 amount;          // Amount deposited
         bool isClaimed;          // Whether funds have been claimed

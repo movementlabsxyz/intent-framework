@@ -7,7 +7,7 @@ module mvmt_intent::fa_intent_with_oracle_tests {
     use aptos_framework::object::Object;
     use aptos_framework::timestamp;
     use aptos_framework::primary_fungible_store;
-    use mvmt_intent::intent::TradeSession;
+    use mvmt_intent::intent::Session;
     use mvmt_intent::fa_intent_with_oracle;
     use mvmt_intent::test_utils;
     use aptos_std::ed25519;
@@ -123,7 +123,7 @@ module mvmt_intent::fa_intent_with_oracle_tests {
         solver: &signer,
     ): (
         ed25519::SecretKey,
-        TradeSession<fa_intent_with_oracle::OracleGuardedLimitOrder>,
+        Session<fa_intent_with_oracle::OracleGuardedLimitOrder>,
         Object<Metadata>,
         Object<Metadata>,
     ) {

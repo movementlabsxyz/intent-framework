@@ -13,7 +13,7 @@ public fun create_intent<Source: store, Args: store + drop, Witness: drop>(
     expiry_time: u64,
     issuer: address,
     _witness: Witness,
-): Object<TradeIntent<Source, Args>>
+): Object<Intent<Source, Args>>
 ```
 
 **Parameters:**
@@ -30,8 +30,8 @@ public fun create_intent<Source: store, Args: store + drop, Witness: drop>(
 
 ```move
 public fun start_intent_session<Source: store, Args: store + drop>(
-    intent: Object<TradeIntent<Source, Args>>,
-): (Source, TradeSession<Args>)
+    intent: Object<Intent<Source, Args>>,
+): (Source, Session<Args>)
 ```
 
 **Parameters:**
@@ -44,7 +44,7 @@ public fun start_intent_session<Source: store, Args: store + drop>(
 
 ```move
 public fun finish_intent_session<Witness: drop, Args: store + drop>(
-    session: TradeSession<Args>,
+    session: Session<Args>,
     _witness: Witness,
 )
 ```
@@ -67,7 +67,7 @@ public fun create_fa_to_fa_intent_entry(
     expiry_time: u64,
     solver_address: address,
     solver_signature: vector<u8>,
-): Object<TradeIntent<FungibleAsset, FungibleAssetLimitOrder>>
+): Object<Intent<FungibleAsset, FungibleAssetLimitOrder>>
 ```
 
 **Parameters:**
@@ -85,7 +85,7 @@ public fun create_fa_to_fa_intent_entry(
 ### Creating an Inflow Request Intent
 
 ```move
-public fun create_inflow_request_intent(
+public fun create_inflow_intent(
     account: &signer,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
@@ -97,7 +97,7 @@ public fun create_inflow_request_intent(
     intent_id: address,
     solver: address,
     solver_signature: vector<u8>,
-): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>
+): Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>>
 ```
 
 **Returns:** The created intent object
@@ -116,19 +116,19 @@ public fun create_inflow_request_intent(
 - `solver`: Address of the solver authorized to fulfill this intent (must be registered in solver registry)
 - `solver_signature`: Ed25519 signature from the solver authorizing this intent
 
-**Note**: This intent has 0 tokens locked on the hub chain because tokens are in escrow elsewhere. The `offered_amount` specifies how much will be locked in escrow on the connected chain. Cross-chain request-intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
+**Note**: This intent has 0 tokens locked on the hub chain because tokens are in escrow elsewhere. The `offered_amount` specifies how much will be locked in escrow on the connected chain. Cross-chain intents MUST be reserved to ensure solver commitment across chains. The solver's public key is looked up from the on-chain solver registry, so the solver must be registered before calling this function.
 
 **Aborts:**
 
 - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
 
-**Entry Function:** For transaction calls, use `create_inflow_request_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
+**Entry Function:** For transaction calls, use `create_inflow_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
 
 ### Creating an Outflow Request Intent
 
 ```move
-public fun create_outflow_request_intent(
+public fun create_outflow_intent(
     requester_signer: &signer,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
@@ -142,7 +142,7 @@ public fun create_outflow_request_intent(
     verifier_public_key: vector<u8>,
     solver: address,
     solver_signature: vector<u8>,
-): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>
+): Object<Intent<FungibleStoreManager, OracleGuardedLimitOrder>>
 ```
 
 **Returns:** The created intent object
@@ -171,14 +171,14 @@ public fun create_outflow_request_intent(
 - `EINVALID_SIGNATURE`: Signature verification failed
 - `EINVALID_REQUESTER_ADDRESS`: `requester_address_connected_chain` is zero address (0x0)
 
-**Entry Function:** For transaction calls, use `create_outflow_request_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
+**Entry Function:** For transaction calls, use `create_outflow_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
 
 ### Fulfilling an Inflow Request Intent
 
 ```move
-public entry fun fulfill_inflow_request_intent(
+public entry fun fulfill_inflow_intent(
     solver: &signer,
-    intent: Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
+    intent: Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>>,
     payment_amount: u64,
 )
 ```
@@ -189,14 +189,14 @@ public entry fun fulfill_inflow_request_intent(
 - `intent`: Object reference to the inflow intent to fulfill
 - `payment_amount`: Amount of tokens to provide
 
-**Note**: This function is used to fulfill inflow request-intents where tokens are locked on the connected chain (in escrow) and desired on the hub. The solver provides the desired tokens to the requester on the hub chain. No verifier signature is required for inflow intents.
+**Note**: This function is used to fulfill inflow intents where tokens are locked on the connected chain (in escrow) and desired on the hub. The solver provides the desired tokens to the requester on the hub chain. No verifier signature is required for inflow intents.
 
 ### Fulfilling an Outflow Request Intent
 
 ```move
-public entry fun fulfill_outflow_request_intent(
+public entry fun fulfill_outflow_intent(
     solver: &signer,
-    intent: Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>,
+    intent: Object<Intent<FungibleStoreManager, OracleGuardedLimitOrder>>,
     verifier_signature_bytes: vector<u8>,
 )
 ```
@@ -207,14 +207,14 @@ public entry fun fulfill_outflow_request_intent(
 - `intent`: Object reference to the outflow intent to fulfill
 - `verifier_signature_bytes`: Verifier's Ed25519 signature as bytes (signs the intent_id, proves connected chain transfer)
 
-**Note**: This function is used to fulfill outflow request-intents where tokens are locked on the hub chain and desired on the connected chain. The solver must first transfer tokens on the connected chain, then the verifier approves that transaction. The solver receives the locked tokens from the hub as reward. Verifier signature is required - it proves the solver transferred tokens on the connected chain.
+**Note**: This function is used to fulfill outflow intents where tokens are locked on the hub chain and desired on the connected chain. The solver must first transfer tokens on the connected chain, then the verifier approves that transaction. The solver receives the locked tokens from the hub as reward. Verifier signature is required - it proves the solver transferred tokens on the connected chain.
 
 ### Starting a Fungible Asset Session
 
 ```move
 public fun start_fa_offering_session(
-    intent: Object<TradeIntent<FungibleAsset, FungibleAssetLimitOrder>>,
-): (FungibleAsset, TradeSession<FungibleAssetLimitOrder>)
+    intent: Object<Intent<FungibleAsset, FungibleAssetLimitOrder>>,
+): (FungibleAsset, Session<FungibleAssetLimitOrder>)
 ```
 
 **Parameters:**
@@ -227,7 +227,7 @@ public fun start_fa_offering_session(
 
 ```move
 public fun finish_fa_receiving_session(
-    session: TradeSession<FungibleAssetLimitOrder>,
+    session: Session<FungibleAssetLimitOrder>,
     payment: FungibleAsset,
 ): FungibleAsset
 ```
@@ -253,7 +253,7 @@ public fun create_draft_intent(
     desired_chain_id: u64,
     expiry_time: u64,
     requester: address,
-): IntentDraft
+): Draftintent
 ```
 
 **Parameters:**
@@ -273,7 +273,7 @@ public fun create_draft_intent(
 
 ```move
 public fun add_solver_to_draft_intent(
-    draft: IntentDraft,
+    draft: Draftintent,
     solver_address: address,
 ): IntentToSign
 ```
@@ -344,7 +344,7 @@ public fun create_oracle_guarded_intent_entry(
     desired_amount: u64,
     expiry_time: u64,
     oracle_requirement: OracleSignatureRequirement,
-): Object<TradeIntent<FungibleAsset, OracleGuardedLimitOrder>>
+): Object<Intent<FungibleAsset, OracleGuardedLimitOrder>>
 ```
 
 **Parameters:**
@@ -394,8 +394,8 @@ public fun new_oracle_signature_witness(
 
 ```move
 public fun start_oracle_intent_session(
-    intent: Object<TradeIntent<FungibleAsset, OracleGuardedLimitOrder>>,
-): (FungibleAsset, TradeSession<OracleGuardedLimitOrder>)
+    intent: Object<Intent<FungibleAsset, OracleGuardedLimitOrder>>,
+): (FungibleAsset, Session<OracleGuardedLimitOrder>)
 ```
 
 **Parameters:**
@@ -408,7 +408,7 @@ public fun start_oracle_intent_session(
 
 ```move
 public fun finish_oracle_intent_session(
-    session: TradeSession<OracleGuardedLimitOrder>,
+    session: Session<OracleGuardedLimitOrder>,
     oracle_witness: OracleSignatureWitness,
 ): FungibleAsset
 ```
@@ -542,10 +542,10 @@ struct OracleLimitOrderEvent has store, drop {
 
 ## Type Definitions
 
-### TradeIntent
+### Intent
 
 ```move
-struct TradeIntent<Source, Args> has key {
+struct Intent<Source, Args> has key {
     offered_resource: Source,
     argument: Args,
     self_delete_ref: DeleteRef,
@@ -556,10 +556,10 @@ struct TradeIntent<Source, Args> has key {
 }
 ```
 
-### TradeSession
+### Session
 
 ```move
-struct TradeSession<Args> {
+struct Session<Args> {
     argument: Args,
     witness_type: TypeInfo,
     reservation: Option<IntentReserved>,

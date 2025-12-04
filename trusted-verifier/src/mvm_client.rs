@@ -584,12 +584,12 @@ impl MvmClient {
         // Query the intent object's resources
         let resources = self.get_resources(intent_address).await?;
 
-        // Look for the TradeIntent resource which contains the reservation
-        // The resource type should be something like: "0x{module_address}::fa_intent::TradeIntent<...>"
+        // Look for the Intent resource which contains the reservation
+        // The resource type should be something like: "0x{module_address}::fa_intent::Intent<...>"
         for resource in resources {
-            if resource.resource_type.contains("TradeIntent") {
+            if resource.resource_type.contains("Intent") && !resource.resource_type.contains("IntentReserved") {
                 // Try to extract reservation from the resource data
-                // The reservation is stored as an Option<IntentReserved> in the TradeIntent
+                // The reservation is stored as an Option<IntentReserved> in the Intent
                 if let Some(data) = resource.data.as_object() {
                     // Look for reservation field
                     if let Some(reservation) = data.get("reservation") {

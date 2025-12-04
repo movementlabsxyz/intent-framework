@@ -6,7 +6,7 @@ module mvmt_intent::fa_intent_outflow {
     use aptos_framework::object::Object;
     use aptos_framework::fungible_asset::{Self as fungible_asset, FungibleAsset, Metadata};
     use mvmt_intent::fa_intent_with_oracle;
-    use mvmt_intent::intent::TradeIntent;
+    use mvmt_intent::intent::Intent;
     use mvmt_intent::intent_reservation;
     use aptos_std::ed25519;
 
@@ -23,7 +23,7 @@ module mvmt_intent::fa_intent_outflow {
     /// This is step 1 of the reserved intent flow:
     /// 1. Requester creates draft using this function (off-chain)
     /// 2. Solver signs the draft and returns signature (off-chain)
-    /// 3. Requester calls create_outflow_request_intent with the signature (on-chain)
+    /// 3. Requester calls create_outflow_intent with the signature (on-chain)
     public fun create_cross_chain_draft_intent(
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -33,7 +33,7 @@ module mvmt_intent::fa_intent_outflow {
         desired_chain_id: u64,
         expiry_time: u64,
         requester: address
-    ): intent_reservation::IntentDraft {
+    ): intent_reservation::Draftintent {
         intent_reservation::create_draft_intent(
             offered_metadata,
             offered_amount,
@@ -50,7 +50,7 @@ module mvmt_intent::fa_intent_outflow {
     // OUTFLOW REQUEST-INTENT FUNCTIONS
     // ============================================================================
 
-    /// Entry function for solver to fulfill an outflow request-intent.
+    /// Entry function for solver to fulfill an outflow intent.
     ///
     /// Outflow intents have tokens locked on the hub chain and request tokens on the connected chain.
     /// The solver must first transfer tokens on the connected chain, then the verifier approves that transaction.
@@ -62,9 +62,9 @@ module mvmt_intent::fa_intent_outflow {
     /// - `solver`: Signer fulfilling the intent
     /// - `intent`: Object reference to the outflow intent to fulfill (OracleGuardedLimitOrder)
     /// - `verifier_signature_bytes`: Verifier's Ed25519 signature as bytes (signs the intent_id, proves connected chain transfer)
-    public entry fun fulfill_outflow_request_intent(
+    public entry fun fulfill_outflow_intent(
         solver: &signer,
-        intent: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>,
+        intent: Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>,
         verifier_signature_bytes: vector<u8>
     ) {
         let solver_address = signer::address_of(solver);
@@ -109,7 +109,7 @@ module mvmt_intent::fa_intent_outflow {
         );
     }
 
-    /// Creates an outflow request-intent and returns the intent object.
+    /// Creates an outflow intent and returns the intent object.
     ///
     /// This is the core implementation that both the entry function and tests use.
     ///
@@ -136,13 +136,13 @@ module mvmt_intent::fa_intent_outflow {
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
     ///
     /// # Returns
-    /// - `Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>`: The created intent object
+    /// - `Object<Intent<FungibleStoreManager, OracleGuardedLimitOrder>>`: The created intent object
     ///
     /// # Aborts
     /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
     /// - `EINVALID_SIGNATURE`: Signature verification failed
     /// - `EINVALID_REQUESTER_ADDRESS`: requester_address_connected_chain is zero address (0x0)
-    public fun create_outflow_request_intent(
+    public fun create_outflow_intent(
         requester_signer: &signer,
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -156,7 +156,7 @@ module mvmt_intent::fa_intent_outflow {
         verifier_public_key: vector<u8>, // 32 bytes
         solver: address,
         solver_signature: vector<u8>
-    ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
+    ): Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
         // Validate requester_address_connected_chain is not zero address
         // Outflow intents require a valid address on the connected chain where the solver should send tokens
         assert!(
@@ -234,14 +234,14 @@ module mvmt_intent::fa_intent_outflow {
         )
     }
 
-    /// Entry function to create an outflow request-intent.
+    /// Entry function to create an outflow intent.
     ///
     /// Outflow intents have tokens locked on the hub chain and request tokens on the connected chain.
     /// This function uses `OracleGuardedLimitOrder` (requires verifier signature) and withdraws actual
     /// tokens from the requester (locked on hub).
     ///
-    /// For argument descriptions and abort conditions, see `create_outflow_request_intent`.
-    public entry fun create_outflow_request_intent_entry(
+    /// For argument descriptions and abort conditions, see `create_outflow_intent`.
+    public entry fun create_outflow_intent_entry(
         requester_signer: &signer,
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -257,7 +257,7 @@ module mvmt_intent::fa_intent_outflow {
         solver_signature: vector<u8>
     ) {
         let _intent_obj =
-            create_outflow_request_intent(
+            create_outflow_intent(
                 requester_signer,
                 offered_metadata,
                 offered_amount,

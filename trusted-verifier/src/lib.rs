@@ -13,10 +13,10 @@ pub mod storage;
 pub mod validator;
 
 // Re-export storage types for tests
-pub use storage::draft_intents::{DraftIntentStatus, DraftIntentStore};
+pub use storage::draftintents::{DraftintentStatus, DraftintentStore};
 
 // Re-export commonly used types
 pub use config::{ApiConfig, ChainConfig, Config, VerifierConfig};
 pub use crypto::{ApprovalSignature, CryptoService};
-pub use monitor::{ChainType, EscrowEvent, EventMonitor, FulfillmentEvent, RequestIntentEvent};
+pub use monitor::{ChainType, EscrowEvent, EventMonitor, FulfillmentEvent, IntentEvent};
 pub use validator::{CrossChainValidator, ValidationResult};

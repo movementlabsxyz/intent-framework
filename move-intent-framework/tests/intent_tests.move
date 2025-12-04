@@ -30,7 +30,7 @@ module mvmt_intent::intent_tests {
     fun create_test_intent(
         aptos_framework: &signer,
         offerer: &signer,
-    ): object::Object<intent::TradeIntent<TestResource, TestArgs>> {
+    ): object::Object<intent::Intent<TestResource, TestArgs>> {
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
         let resource = TestResource { value: 100 };

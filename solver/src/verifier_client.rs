@@ -36,16 +36,16 @@ pub struct ApiResponse<T> {
 // DRAFT-INTENT STRUCTURES
 // ============================================================================
 
-/// Pending draft-intent from verifier API.
+/// Pending draftintent from verifier API.
 ///
-/// Matches the response format from GET /draft-intents/pending.
+/// Matches the response format from GET /draftintents/pending.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PendingDraft {
     /// Unique identifier for the draft
     pub draft_id: String,
     /// Address of the requester who submitted the draft
     pub requester_address: String,
-    /// Draft data (JSON object - matches IntentDraft structure from Move)
+    /// Draft data (JSON object - matches Draftintent structure from Move)
     pub draft_data: serde_json::Value,
     /// Timestamp when draft was created (Unix timestamp)
     pub timestamp: u64,
@@ -53,7 +53,7 @@ pub struct PendingDraft {
     pub expiry_time: u64,
 }
 
-/// Request structure for submitting a signature for a draft-intent.
+/// Request structure for submitting a signature for a draftintent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignatureSubmission {
     /// Address of the solver submitting the signature
@@ -175,7 +175,7 @@ impl VerifierClient {
         }
     }
 
-    /// Poll for pending draft-intents.
+    /// Poll for pending draftintents.
     ///
     /// Returns all pending drafts (all solvers see all drafts).
     /// This is a polling endpoint - solvers call this regularly to discover new drafts.
@@ -185,15 +185,15 @@ impl VerifierClient {
     /// * `Ok(Vec<PendingDraft>)` - List of pending drafts
     /// * `Err(anyhow::Error)` - Failed to fetch drafts
     pub fn poll_pending_drafts(&self) -> Result<Vec<PendingDraft>> {
-        let url = format!("{}/draft-intents/pending", self.base_url);
+        let url = format!("{}/draftintents/pending", self.base_url);
 
         let response: ApiResponse<Vec<PendingDraft>> = self
             .client
             .get(&url)
             .send()
-            .context("Failed to send GET /draft-intents/pending request")?
+            .context("Failed to send GET /draftintents/pending request")?
             .json()
-            .context("Failed to parse GET /draft-intents/pending response")?;
+            .context("Failed to parse GET /draftintents/pending response")?;
 
         if !response.success {
             return Err(anyhow::anyhow!(
@@ -205,7 +205,7 @@ impl VerifierClient {
         Ok(response.data.unwrap_or_default())
     }
 
-    /// Submit a signature for a draft-intent.
+    /// Submit a signature for a draftintent.
     ///
     /// The solver submits its signature to the verifier. The verifier implements FCFS logic:
     /// the first signature wins, and later signatures are rejected with 409 Conflict.
@@ -225,19 +225,19 @@ impl VerifierClient {
         draft_id: &str,
         submission: &SignatureSubmission,
     ) -> Result<SignatureSubmissionResponse> {
-        let url = format!("{}/draft-intent/{}/signature", self.base_url, draft_id);
+        let url = format!("{}/draftintent/{}/signature", self.base_url, draft_id);
 
         let http_response = self
             .client
             .post(&url)
             .json(submission)
             .send()
-            .context("Failed to send POST /draft-intent/:id/signature request")?;
+            .context("Failed to send POST /draftintent/:id/signature request")?;
 
         let status = http_response.status();
         let response: ApiResponse<SignatureSubmissionResponse> = http_response
             .json()
-            .context("Failed to parse POST /draft-intent/:id/signature response")?;
+            .context("Failed to parse POST /draftintent/:id/signature response")?;
 
         if !response.success {
             if status == reqwest::StatusCode::CONFLICT {

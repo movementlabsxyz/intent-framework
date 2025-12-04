@@ -10,7 +10,7 @@ module mvmt_intent::fa_intent_outflow_tests {
     use mvmt_intent::fa_intent_outflow;
     use mvmt_intent::fa_intent;
     use mvmt_intent::fa_intent_with_oracle;
-    use mvmt_intent::intent::TradeIntent;
+    use mvmt_intent::intent::Intent;
     use mvmt_intent::intent_reservation;
     use mvmt_intent::solver_registry;
     use mvmt_intent::test_utils;
@@ -20,7 +20,7 @@ module mvmt_intent::fa_intent_outflow_tests {
     // ============================================================================
 
     /// Helper function to set up common test infrastructure (tokens, registry, keys, signed intent).
-    /// Returns all values needed to create an outflow request-intent.
+    /// Returns all values needed to create an outflow intent.
     /// This helper does NOT create the intent - it only sets up the prerequisites.
     fun setup_outflow_test_infrastructure(
         aptos_framework: &signer,
@@ -101,15 +101,15 @@ module mvmt_intent::fa_intent_outflow_tests {
         )
     }
 
-    /// Helper function to set up an outflow request-intent for testing.
+    /// Helper function to set up an outflow intent for testing.
     /// Returns the intent object, metadata, verifier signature bytes (for intent_id), and intent_id.
-    fun setup_outflow_request_intent(
+    fun setup_outflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requester_signer: &signer,
         solver_signer: &signer,
     ): (
-        Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>,
+        Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>,
         Object<aptos_framework::fungible_asset::Metadata>,
         Object<aptos_framework::fungible_asset::Metadata>,
         vector<u8>, // verifier_signature_bytes (signs intent_id)
@@ -121,10 +121,10 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         let requester_address_connected_chain = @0x9999; // Address on connected chain
         
-        // Create outflow request-intent (returns intent object)
+        // Create outflow intent (returns intent object)
         // Pass desired_metadata as address (for cross-chain support)
         let desired_metadata_addr = object::object_address(&desired_metadata);
-        let intent_obj = fa_intent_outflow::create_outflow_request_intent(
+        let intent_obj = fa_intent_outflow::create_outflow_intent(
             requester_signer,
             offered_metadata,
             offered_amount,
@@ -159,12 +159,12 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer = @0xcafe,
         solver_signer = @0xdead
     )]
-    /// Test: Outflow request-intent creation
-    /// Verifies that create_outflow_request_intent:
+    /// Test: Outflow intent creation
+    /// Verifies that create_outflow_intent:
     /// 1. Locks actual tokens on hub chain (not 0 tokens like inflow)
     /// 2. Stores requester_address_connected_chain in OracleGuardedLimitOrder struct
     /// 3. Creates an oracle-guarded intent requiring verifier signature
-    fun test_create_outflow_request_intent(
+    fun test_create_outflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requester_signer: &signer,
@@ -182,7 +182,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         // Create outflow intent (returns intent object)
         // Pass desired_metadata as address (for cross-chain support)
         let desired_metadata_addr = object::object_address(&desired_metadata);
-        let intent_obj = fa_intent_outflow::create_outflow_request_intent(
+        let intent_obj = fa_intent_outflow::create_outflow_intent(
             requester_signer,
             offered_metadata,
             offered_amount,
@@ -212,7 +212,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer = @0xcafe,
         solver_signer = @0xdead
     )]
-    /// Test: Outflow request-intent struct field validation
+    /// Test: Outflow intent struct field validation
     /// Verifies that requester_address_connected_chain parameter is accepted and intent is created successfully.
     /// The successful creation of the intent with the requester_address_connected_chain parameter
     /// confirms the struct field is stored correctly (indirect validation).
@@ -295,20 +295,20 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer = @0xcafe,
         solver_signer = @0xdead
     )]
-    /// Test: Outflow request-intent creation and fulfillment end-to-end
-    /// Verifies that create_outflow_request_intent creates an intent correctly,
-    /// and that fulfill_outflow_request_intent can fulfill it.
-    fun test_fulfill_outflow_request_intent(
+    /// Test: Outflow intent creation and fulfillment end-to-end
+    /// Verifies that create_outflow_intent creates an intent correctly,
+    /// and that fulfill_outflow_intent can fulfill it.
+    fun test_fulfill_outflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requester_signer: &signer,
         solver_signer: &signer,
     ) {
         use mvmt_intent::fa_intent_with_oracle;
-        use mvmt_intent::intent::TradeIntent;
+        use mvmt_intent::intent::Intent;
         
-        // Set up outflow request-intent using shared helper
-        let (intent_obj, offered_metadata, _desired_metadata, verifier_signature_bytes, _intent_id) = setup_outflow_request_intent(
+        // Set up outflow intent using shared helper
+        let (intent_obj, offered_metadata, _desired_metadata, verifier_signature_bytes, _intent_id) = setup_outflow_intent(
             aptos_framework,
             mvmt_intent,
             requester_signer,
@@ -323,11 +323,11 @@ module mvmt_intent::fa_intent_outflow_tests {
         assert!(primary_fungible_store::balance(signer::address_of(requester_signer), offered_metadata) == 50);
         
         // Convert to generic Object type for entry function
-        let intent_obj_generic: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> = 
+        let intent_obj_generic: Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> = 
             object::address_to_object(intent_address);
         
-        // Fulfill the outflow intent using fulfill_outflow_request_intent
-        fa_intent_outflow::fulfill_outflow_request_intent(
+        // Fulfill the outflow intent using fulfill_outflow_intent
+        fa_intent_outflow::fulfill_outflow_intent(
             solver_signer,
             intent_obj_generic,
             verifier_signature_bytes,
@@ -347,9 +347,9 @@ module mvmt_intent::fa_intent_outflow_tests {
         solver_signer = @0xdead
     )]
     #[expected_failure(abort_code = 393223, location = aptos_framework::object)] // error::not_found(ERESOURCE_DOES_NOT_EXIST)
-    /// Test: Cannot fulfill outflow intent with fulfill_inflow_request_intent
+    /// Test: Cannot fulfill outflow intent with fulfill_inflow_intent
     /// Verifies type safety - an outflow intent (OracleGuardedLimitOrder) cannot be fulfilled
-    /// using fulfill_inflow_request_intent which expects FungibleAssetLimitOrder.
+    /// using fulfill_inflow_intent which expects FungibleAssetLimitOrder.
     /// 
     /// Note: The error ERESOURCE_DOES_NOT_EXIST occurs because object::address_to_object<T> checks
     /// if an object of type T exists at the address. The object exists, but not as the requested type,
@@ -360,8 +360,8 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer: &signer,
         solver_signer: &signer,
     ) {
-        // Set up outflow request-intent using shared helper
-        let (intent_obj, _offered_metadata, _desired_metadata, _verifier_signature_bytes, _intent_id) = setup_outflow_request_intent(
+        // Set up outflow intent using shared helper
+        let (intent_obj, _offered_metadata, _desired_metadata, _verifier_signature_bytes, _intent_id) = setup_outflow_intent(
             aptos_framework,
             mvmt_intent,
             requester_signer,
@@ -377,7 +377,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         // because object::address_to_object<T> checks if an object of type T exists at the address.
         // The object exists, but not as FungibleAssetLimitOrder, so the runtime reports
         // ERESOURCE_DOES_NOT_EXIST (a resource of that type doesn't exist at that address).
-        let _wrong_type_intent: Object<TradeIntent<fa_intent::FungibleStoreManager, fa_intent::FungibleAssetLimitOrder>> = 
+        let _wrong_type_intent: Object<Intent<fa_intent::FungibleStoreManager, fa_intent::FungibleAssetLimitOrder>> = 
             object::address_to_object(intent_address);
     }
 
@@ -388,16 +388,16 @@ module mvmt_intent::fa_intent_outflow_tests {
         solver_signer = @0xdead
     )]
     #[expected_failure(abort_code = 0x10003, location = mvmt_intent::fa_intent_outflow)] // error::invalid_argument(EINVALID_REQUESTER_ADDRESS)
-    /// Test: Outflow request-intent creation fails with zero address for requester_address_connected_chain
-    /// Verifies that create_outflow_request_intent rejects zero address (0x0) for requester_address_connected_chain.
+    /// Test: Outflow intent creation fails with zero address for requester_address_connected_chain
+    /// Verifies that create_outflow_intent rejects zero address (0x0) for requester_address_connected_chain.
     /// 
-    /// What is tested: Attempting to create an outflow request-intent with requester_address_connected_chain = @0x0
+    /// What is tested: Attempting to create an outflow intent with requester_address_connected_chain = @0x0
     /// should abort with EINVALID_REQUESTER_ADDRESS error.
     /// 
     /// Why: Outflow intents require a valid address on the connected chain where the solver should send tokens.
     /// A zero address is invalid and indicates the requester address was not properly provided. The Move contract
     /// must reject such intents to prevent invalid transactions.
-    fun test_create_outflow_request_intent_rejects_zero_requester_address(
+    fun test_create_outflow_intent_rejects_zero_requester_address(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requester_signer: &signer,
@@ -412,7 +412,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         // Attempt to create outflow intent with zero address - should abort
         // Pass desired_metadata as address (for cross-chain support)
         let desired_metadata_addr = object::object_address(&desired_metadata);
-        fa_intent_outflow::create_outflow_request_intent(
+        fa_intent_outflow::create_outflow_intent(
             requester_signer,
             offered_metadata,
             offered_amount,

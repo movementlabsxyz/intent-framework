@@ -1,22 +1,22 @@
 //! Outflow-specific monitor helpers (chain-agnostic)
 //!
-//! Handles hub chain request-intent monitoring for outflow intents.
+//! Handles hub chain intent monitoring for outflow intents.
 //! Outflow intents have tokens locked on the hub chain and request tokens on the connected chain.
 
 use anyhow::Result;
 use tracing::{error, info};
 
-use super::generic::{EventMonitor, FulfillmentEvent, RequestIntentEvent};
+use super::generic::{EventMonitor, FulfillmentEvent, IntentEvent};
 use super::hub_mvm;
 
 // ============================================================================
 // HUB CHAIN MONITORING
 // ============================================================================
 
-/// Monitors the hub chain for request-intent creation events.
+/// Monitors the hub chain for intent creation events.
 ///
 /// This function runs in an infinite loop, polling the hub chain for
-/// new request-intent events. When events are found, it validates their safety
+/// new intent events. When events are found, it validates their safety
 /// for escrow operations and caches them for later processing.
 ///
 /// # Arguments
@@ -28,17 +28,17 @@ use super::hub_mvm;
 /// * `Ok(())` - Monitoring started successfully (runs indefinitely)
 /// * `Err(anyhow::Error)` - Failed to start monitoring
 pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
-    info!("Starting hub chain monitoring for request-intent events");
+    info!("Starting hub chain monitoring for intent events");
 
     loop {
         match poll_hub_events(monitor).await {
             Ok(events) => {
                 for event in events {
-                    info!("Received request-intent event: {:?}", event);
+                    info!("Received intent event: {:?}", event);
 
-                    // CRITICAL SECURITY CHECK: Reject revocable request-intents
+                    // CRITICAL SECURITY CHECK: Reject revocable intents
                     if event.revocable {
-                        error!("SECURITY: Rejecting revocable request-intent {} from {} - NOT safe for escrow", event.intent_id, event.requester);
+                        error!("SECURITY: Rejecting revocable intent {} from {} - NOT safe for escrow", event.intent_id, event.requester);
                         continue; // Skip this event - do not cache or process
                     }
 
@@ -76,9 +76,9 @@ pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
     }
 }
 
-/// Polls the hub chain for new request-intent events.
+/// Polls the hub chain for new intent events.
 ///
-/// This function queries the hub chain's event logs for new request-intent
+/// This function queries the hub chain's event logs for new intent
 /// creation events. It delegates to chain-specific polling functions.
 ///
 /// # Arguments
@@ -87,14 +87,14 @@ pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
 ///
 /// # Returns
 ///
-/// * `Ok(Vec<RequestIntentEvent>)` - List of new request-intent events
+/// * `Ok(Vec<IntentEvent>)` - List of new intent events
 /// * `Err(anyhow::Error)` - Failed to poll events
 ///
 /// # Note
 ///
 /// Currently, the hub chain is always Move VM. This function delegates to
 /// hub_mvm::poll_hub_events for Move VM-specific polling logic.
-pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntentEvent>> {
+pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>> {
     // Hub chain is currently always Move VM
     // Delegate to Move VM-specific polling
     hub_mvm::poll_hub_events(monitor).await
@@ -104,7 +104,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
 // CACHE ACCESS
 // ============================================================================
 
-/// Returns a copy of all cached request-intent events.
+/// Returns a copy of all cached intent events.
 ///
 /// This function provides access to the event cache for API endpoints
 /// and external monitoring systems.
@@ -115,8 +115,8 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<RequestIntent
 ///
 /// # Returns
 ///
-/// A vector containing all cached request-intent events
-pub async fn get_cached_events(monitor: &EventMonitor) -> Vec<RequestIntentEvent> {
+/// A vector containing all cached intent events
+pub async fn get_cached_events(monitor: &EventMonitor) -> Vec<IntentEvent> {
     monitor.event_cache.read().await.clone()
 }
 

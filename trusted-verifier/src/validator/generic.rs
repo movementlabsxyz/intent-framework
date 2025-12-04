@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::config::Config;
-use crate::monitor::{ChainType, FulfillmentEvent, RequestIntentEvent};
+use crate::monitor::{ChainType, FulfillmentEvent, IntentEvent};
 
 // ============================================================================
 // CHAIN TYPE UTILITIES
@@ -53,7 +53,7 @@ pub fn normalize_address(address: &str, chain_type: ChainType) -> String {
 /// This function compares the provided chain ID against the configured EVM and MVM
 /// chain IDs to determine which type of chain it represents. This is more reliable
 /// than checking which config section is present, as the chain ID comes directly
-/// from the request-intent.
+/// from the intent.
 ///
 /// # Arguments
 ///
@@ -165,7 +165,7 @@ pub fn validate_address_format(address: &str, chain_type: ChainType) -> Result<(
 // VALIDATION DATA STRUCTURES
 // ============================================================================
 
-/// Result of cross-chain validation between a request-intent and escrow event.
+/// Result of cross-chain validation between a intent and escrow event.
 ///
 /// This structure contains the validation result and any relevant metadata
 /// for approval or rejection decisions.
@@ -202,11 +202,11 @@ pub struct FulfillmentTransactionParams {
 // CROSS-CHAIN VALIDATOR STRUCTURE
 // ============================================================================
 
-/// Cross-chain validator that ensures escrow deposits fulfill request-intent conditions.
+/// Cross-chain validator that ensures escrow deposits fulfill intent conditions.
 ///
 /// This validator performs comprehensive checks to ensure that deposits
 /// made on the connected chain properly fulfill the requirements specified
-/// in request-intents created on the hub chain. It provides cryptographic approval
+/// in intents created on the hub chain. It provides cryptographic approval
 /// signatures for valid fulfillments.
 pub struct CrossChainValidator {
     /// Service configuration
@@ -249,34 +249,34 @@ impl CrossChainValidator {
         })
     }
 
-    /// Validates that a request-intent is safe for escrow operations.
+    /// Validates that a intent is safe for escrow operations.
     ///
-    /// This function performs critical security checks to ensure that a request-intent
+    /// This function performs critical security checks to ensure that a intent
     /// can be safely used for escrow operations. The most important check
-    /// is verifying that the request-intent is non-revocable.
+    /// is verifying that the intent is non-revocable.
     ///
     /// # Arguments
     ///
-    /// * `request_intent` - The request-intent event to validate
+    /// * `intent` - The intent event to validate
     ///
     /// # Returns
     ///
     /// * `Ok(ValidationResult)` - Validation result with detailed information
     /// * `Err(anyhow::Error)` - Validation failed due to error
     #[allow(dead_code)]
-    pub async fn validate_request_intent_safety(
+    pub async fn validate_intent_safety(
         &self,
-        request_intent: &RequestIntentEvent,
+        intent: &IntentEvent,
     ) -> anyhow::Result<ValidationResult> {
         use tracing::info;
 
         info!(
-            "Validating request-intent safety: {}",
-            request_intent.intent_id
+            "Validating intent safety: {}",
+            intent.intent_id
         );
 
-        // CRITICAL SECURITY CHECK: Verify request-intent is non-revocable
-        if request_intent.revocable {
+        // CRITICAL SECURITY CHECK: Verify intent is non-revocable
+        if intent.revocable {
             return Ok(ValidationResult {
                 valid: false,
                 message: "Request-intent is revocable - NOT safe for escrow operations".to_string(),
@@ -284,8 +284,8 @@ impl CrossChainValidator {
             });
         }
 
-        // Additional safety checks: verify request-intent has not expired
-        if request_intent.expiry_time < chrono::Utc::now().timestamp() as u64 {
+        // Additional safety checks: verify intent has not expired
+        if intent.expiry_time < chrono::Utc::now().timestamp() as u64 {
             return Ok(ValidationResult {
                 valid: false,
                 message: "Request-intent has expired".to_string(),
@@ -301,16 +301,16 @@ impl CrossChainValidator {
         })
     }
 
-    /// Validates that a fulfillment event satisfies the request-intent requirements.
+    /// Validates that a fulfillment event satisfies the intent requirements.
     ///
     /// This function checks that:
-    /// 1. The fulfilled amount matches the request-intent's desired amount
-    /// 2. The fulfilled metadata matches the request-intent's desired metadata
-    /// 3. The fulfillment occurred before the request-intent expired
+    /// 1. The fulfilled amount matches the intent's desired amount
+    /// 2. The fulfilled metadata matches the intent's desired metadata
+    /// 3. The fulfillment occurred before the intent expired
     ///
     /// # Arguments
     ///
-    /// * `request_intent` - The request-intent event from the hub chain
+    /// * `intent` - The intent event from the hub chain
     /// * `fulfillment` - The fulfillment event from the hub chain
     ///
     /// # Returns
@@ -320,60 +320,60 @@ impl CrossChainValidator {
     #[allow(dead_code)]
     pub async fn validate_fulfillment(
         &self,
-        request_intent: &RequestIntentEvent,
+        intent: &IntentEvent,
         fulfillment: &FulfillmentEvent,
     ) -> anyhow::Result<ValidationResult> {
         use tracing::info;
 
         info!(
-            "Validating fulfillment for request-intent: {}",
-            request_intent.intent_id
+            "Validating fulfillment for intent: {}",
+            intent.intent_id
         );
 
-        // Verify fulfillment is for the same request-intent
-        if fulfillment.intent_id != request_intent.intent_id {
+        // Verify fulfillment is for the same intent
+        if fulfillment.intent_id != intent.intent_id {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment intent_id {} does not match request-intent intent_id {}",
-                    fulfillment.intent_id, request_intent.intent_id
+                    "Fulfillment intent_id {} does not match intent intent_id {}",
+                    fulfillment.intent_id, intent.intent_id
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
 
-        // Validate the fulfillment's provided_amount matches the request-intent's desired_amount
+        // Validate the fulfillment's provided_amount matches the intent's desired_amount
         // Both are u64 (matching Move contract constraint)
-        if fulfillment.provided_amount != request_intent.desired_amount {
+        if fulfillment.provided_amount != intent.desired_amount {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment provided amount {} does not match request-intent desired amount {}",
-                    fulfillment.provided_amount, request_intent.desired_amount
+                    "Fulfillment provided amount {} does not match intent desired amount {}",
+                    fulfillment.provided_amount, intent.desired_amount
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
 
-        // Validate the fulfillment's provided_metadata matches the request-intent's desired_metadata
-        if fulfillment.provided_metadata != request_intent.desired_metadata {
+        // Validate the fulfillment's provided_metadata matches the intent's desired_metadata
+        if fulfillment.provided_metadata != intent.desired_metadata {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment provided metadata '{}' does not match request-intent desired metadata '{}'",
-                    fulfillment.provided_metadata, request_intent.desired_metadata
+                    "Fulfillment provided metadata '{}' does not match intent desired metadata '{}'",
+                    fulfillment.provided_metadata, intent.desired_metadata
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
 
-        // Validate fulfillment occurred before request-intent expired
-        if fulfillment.timestamp > request_intent.expiry_time {
+        // Validate fulfillment occurred before intent expired
+        if fulfillment.timestamp > intent.expiry_time {
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Fulfillment occurred after request-intent expiry (fulfillment: {}, expiry: {})",
-                    fulfillment.timestamp, request_intent.expiry_time
+                    "Fulfillment occurred after intent expiry (fulfillment: {}, expiry: {})",
+                    fulfillment.timestamp, intent.expiry_time
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });

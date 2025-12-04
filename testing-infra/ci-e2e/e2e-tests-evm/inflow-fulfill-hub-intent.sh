@@ -48,9 +48,9 @@ log_and_echo ""
 # SECTION 4: EXECUTE MAIN OPERATION
 # ============================================================================
 log ""
-log "   Fulfilling request-intent on hub chain..."
-log "   - Solver (Solver) sees request-intent with ID: $INTENT_ID"
-log "   - Solver (Solver) provides 1 USDxyz on hub chain to fulfill the request-intent"
+log "   Fulfilling intent on hub chain..."
+log "   - Solver (Solver) sees intent with ID: $INTENT_ID"
+log "   - Solver (Solver) provides 1 USDxyz on hub chain to fulfill the intent"
 
 INTENT_OBJECT_ADDRESS="$HUB_INTENT_ADDRESS"
 
@@ -63,14 +63,14 @@ log "   - Fulfilling intent at: $INTENT_OBJECT_ADDRESS"
 
 # Fulfill with 1 USDxyz (6 decimals = 1_000_000)
 aptos move run --profile solver-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::fulfill_inflow_request_intent" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::fulfill_inflow_intent" \
     --args "address:$INTENT_OBJECT_ADDRESS" "u64:1000000" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 5: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
-    log "     ✅ Solver (Solver) successfully fulfilled the request-intent!"
+    log "     ✅ Solver (Solver) successfully fulfilled the intent!"
     log_and_echo "✅ Request-intent fulfilled"
 else
     log_and_echo "❌ Request-intent fulfillment failed!"

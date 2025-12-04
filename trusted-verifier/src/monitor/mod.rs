@@ -1,7 +1,7 @@
 //! Event Monitoring Module
 //!
 //! This module handles monitoring blockchain events from both hub and connected chains.
-//! It listens for request-intent creation events on the hub chain and escrow deposit events
+//! It listens for intent creation events on the hub chain and escrow deposit events
 //! on the connected chain, providing real-time event processing and caching.
 //!
 //! ## Security Requirements
@@ -24,7 +24,7 @@ mod outflow_evm;
 
 // Re-export public types and functions
 pub use generic::{
-    ChainType, EscrowApproval, EscrowEvent, EventMonitor, FulfillmentEvent, RequestIntentEvent,
+    ChainType, EscrowApproval, EscrowEvent, EventMonitor, FulfillmentEvent, IntentEvent,
 };
 
 // Re-export test utilities (used in integration tests)

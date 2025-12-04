@@ -65,7 +65,7 @@ pub struct OutflowFulfillmentValidationResponse {
 /// This function validates a connected chain transaction for an outflow intent by:
 /// 1. Querying the transaction by hash (chain-specific)
 /// 2. Extracting intent_id and transaction parameters
-/// 3. Finding the matching request-intent
+/// 3. Finding the matching intent
 /// 4. Validating all parameters match intent requirements
 /// 5. Generating approval signature for hub chain fulfillment if validation passes
 ///
@@ -146,11 +146,11 @@ pub async fn handle_outflow_fulfillment_validation(
         }
     };
 
-    // Find matching request-intent (flow-agnostic logic)
+    // Find matching intent (flow-agnostic logic)
     let intent_id = request.intent_id.as_ref().unwrap_or(&tx_params.intent_id);
     let normalized_intent_id = crate::monitor::normalize_intent_id(intent_id);
     let intent_cache = monitor.get_cached_events().await;
-    let request_intent = match intent_cache
+    let intent = match intent_cache
         .iter()
         .find(|intent| crate::monitor::normalize_intent_id(&intent.intent_id) == normalized_intent_id)
     {
@@ -169,7 +169,7 @@ pub async fn handle_outflow_fulfillment_validation(
     // Validate transaction against intent (flow-agnostic logic)
     let validation_result = match crate::validator::validate_outflow_fulfillment(
         &validator,
-        request_intent,
+        intent,
         &tx_params,
         tx_success,
     )

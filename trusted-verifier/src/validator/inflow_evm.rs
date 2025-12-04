@@ -2,18 +2,18 @@
 //!
 //! This module contains EVM-specific handlers for inflow intent validation.
 
-use crate::monitor::RequestIntentEvent;
+use crate::monitor::IntentEvent;
 use crate::validator::generic::ValidationResult;
 use anyhow::{Context, Result};
 
 /// Validates that an EVM escrow's reserved solver matches the registered solver's EVM address.
 ///
 /// This function checks that the EVM escrow's reservedSolver address matches
-/// the EVM address registered in the solver registry for the hub request-intent's solver.
+/// the EVM address registered in the solver registry for the hub intent's solver.
 ///
 /// # Arguments
 ///
-/// * `request_intent` - The request-intent event from the hub chain (must have a solver)
+/// * `intent` - The intent event from the hub chain (must have a solver)
 /// * `escrow_reserved_solver` - The reserved solver EVM address from the escrow
 /// * `hub_chain_rpc_url` - RPC URL of the hub chain (to query solver registry)
 /// * `registry_address` - Address where the solver registry is deployed
@@ -23,18 +23,18 @@ use anyhow::{Context, Result};
 /// * `Ok(ValidationResult)` - Validation result with detailed information
 /// * `Err(anyhow::Error)` - Validation failed due to error
 pub async fn validate_evm_escrow_solver(
-    request_intent: &RequestIntentEvent,
+    intent: &IntentEvent,
     escrow_reserved_solver: &str,
     hub_chain_rpc_url: &str,
     registry_address: &str,
 ) -> Result<ValidationResult> {
-    // Check if request-intent has a solver
-    let request_intent_solver = match &request_intent.reserved_solver {
+    // Check if intent has a solver
+    let intent_solver = match &intent.reserved_solver {
         Some(solver) => solver,
         None => {
             return Ok(ValidationResult {
                 valid: false,
-                message: "Hub request-intent does not have a reserved solver".to_string(),
+                message: "Hub intent does not have a reserved solver".to_string(),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
@@ -43,7 +43,7 @@ pub async fn validate_evm_escrow_solver(
     // Query solver registry for EVM address
     let mvm_client = crate::mvm_client::MvmClient::new(hub_chain_rpc_url)?;
     let registered_evm_address = mvm_client
-        .get_solver_evm_address(request_intent_solver, registry_address)
+        .get_solver_evm_address(intent_solver, registry_address)
         .await
         .context("Failed to query solver EVM address from registry")?;
 
@@ -54,7 +54,7 @@ pub async fn validate_evm_escrow_solver(
                 valid: false,
                 message: format!(
                     "Solver '{}' is not registered in the solver registry",
-                    request_intent_solver
+                    intent_solver
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });

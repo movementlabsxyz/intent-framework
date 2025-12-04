@@ -9,7 +9,7 @@ module mvmt_intent::fa_intent_inflow_tests {
     use aptos_std::ed25519;
     use mvmt_intent::fa_intent_inflow;
     use mvmt_intent::fa_intent;
-    use mvmt_intent::intent::TradeIntent;
+    use mvmt_intent::intent::Intent;
     use mvmt_intent::intent_reservation;
     use mvmt_intent::solver_registry;
     use mvmt_intent::test_utils;
@@ -18,15 +18,15 @@ module mvmt_intent::fa_intent_inflow_tests {
     // TEST HELPERS
     // ============================================================================
 
-    /// Helper function to set up an inflow request-intent for testing.
+    /// Helper function to set up an inflow intent for testing.
     /// Returns the intent object and metadata for verification.
-    fun setup_inflow_request_intent(
+    fun setup_inflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requestor: &signer,
         solver: &signer,
     ): (
-        Object<TradeIntent<fa_intent::FungibleStoreManager, fa_intent::FungibleAssetLimitOrder>>,
+        Object<Intent<fa_intent::FungibleStoreManager, fa_intent::FungibleAssetLimitOrder>>,
         Object<aptos_framework::fungible_asset::Metadata>,
         Object<aptos_framework::fungible_asset::Metadata>,
     ) {
@@ -71,10 +71,10 @@ module mvmt_intent::fa_intent_inflow_tests {
         let solver_signature = ed25519::sign_arbitrary_bytes(&solver_secret_key, intent_hash);
         let solver_signature_bytes = ed25519::signature_to_bytes(&solver_signature);
         
-        // Step 4: Create inflow request-intent (returns intent object)
+        // Step 4: Create inflow intent (returns intent object)
         // Pass offered_metadata as address (for cross-chain support)
         let offered_metadata_addr = object::object_address(&offered_metadata);
-        let intent_obj = fa_intent_inflow::create_inflow_request_intent(
+        let intent_obj = fa_intent_inflow::create_inflow_intent(
             requestor,
             offered_metadata_addr,  // Pass as address, not Object
             100, // offered_amount
@@ -101,12 +101,12 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Inflow request-intent creation
-    /// Verifies that create_inflow_request_intent:
+    /// Test: Inflow intent creation
+    /// Verifies that create_inflow_intent:
     /// 1. Locks 0 tokens on hub chain (unlike outflow which locks actual tokens)
     /// 2. Creates a FungibleAssetLimitOrder intent (no verifier signature required)
     /// 3. Creates an intent that can be retrieved and used
-    fun test_create_inflow_request_intent(
+    fun test_create_inflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requestor: &signer,
@@ -161,7 +161,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Step 5: Create inflow intent using public function
         // Pass offered_metadata as address (for cross-chain support)
         let offered_metadata_addr = object::object_address(&offered_metadata);
-        let intent_obj = fa_intent_inflow::create_inflow_request_intent(
+        let intent_obj = fa_intent_inflow::create_inflow_intent(
             requestor,
             offered_metadata_addr,  // Pass as address, not Object
             offered_amount,
@@ -182,7 +182,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let intent_address = object::object_address(&intent_obj);
         assert!(intent_address != @0x0);
         
-        // Step 8: Verify intent structure is correct by checking it's a valid TradeIntent
+        // Step 8: Verify intent structure is correct by checking it's a valid Intent
         // The fact that we got a valid address and object confirms creation was successful
     }
 
@@ -192,11 +192,11 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Cross-chain request-intent fulfillment
-    /// Verifies that a solver can fulfill a cross-chain request-intent where the requestor
+    /// Test: Cross-chain intent fulfillment
+    /// Verifies that a solver can fulfill a cross-chain intent where the requestor
     /// has 0 tokens locked on the hub chain (tokens are in escrow on a different chain).
     /// This is Step 3 of the cross-chain escrow flow.
-    fun test_fulfill_cross_chain_request_intent(
+    fun test_fulfill_cross_chain_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requestor: &signer,
@@ -209,7 +209,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let (offered_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
         let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
-        // Requestor creates a cross-chain request-intent (has 0 tokens locked)
+        // Requestor creates a cross-chain intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
         let dummy_intent_id = @0x1234;
         let solver_address = signer::address_of(solver);
@@ -278,7 +278,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Solver fulfills the intent using the entry function
         // Note: This calls start_fa_offering_session (unlocks 0 tokens), 
         // withdraws payment tokens, and finishes the session
-        fa_intent_inflow::fulfill_inflow_request_intent(
+        fa_intent_inflow::fulfill_inflow_intent(
             solver,
             intent_obj,
             100, // Provides 100 tokens
@@ -297,17 +297,17 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Inflow request-intent creation and fulfillment end-to-end
-    /// Verifies that create_inflow_request_intent creates an intent correctly,
-    /// and that fulfill_inflow_request_intent can fulfill it.
-    fun test_fulfill_inflow_request_intent(
+    /// Test: Inflow intent creation and fulfillment end-to-end
+    /// Verifies that create_inflow_intent creates an intent correctly,
+    /// and that fulfill_inflow_intent can fulfill it.
+    fun test_fulfill_inflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
         requestor: &signer,
         solver: &signer,
     ) {
-        // Set up inflow request-intent using shared helper
-        let (intent_obj, _offered_metadata, desired_metadata) = setup_inflow_request_intent(
+        // Set up inflow intent using shared helper
+        let (intent_obj, _offered_metadata, desired_metadata) = setup_inflow_intent(
             aptos_framework,
             mvmt_intent,
             requestor,
@@ -321,8 +321,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Convert to generic Object type for entry function
         let intent_obj_generic = object::address_to_object(intent_address);
         
-        // Fulfill the inflow intent using fulfill_inflow_request_intent
-        fa_intent_inflow::fulfill_inflow_request_intent(
+        // Fulfill the inflow intent using fulfill_inflow_intent
+        fa_intent_inflow::fulfill_inflow_intent(
             solver,
             intent_obj_generic,
             100, // Provides 100 tokens
@@ -342,9 +342,9 @@ module mvmt_intent::fa_intent_inflow_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 393223, location = aptos_framework::object)] // error::not_found(ERESOURCE_DOES_NOT_EXIST)
-    /// Test: Cannot fulfill inflow intent with fulfill_outflow_request_intent
+    /// Test: Cannot fulfill inflow intent with fulfill_outflow_intent
     /// Verifies type safety - an inflow intent (FungibleAssetLimitOrder) cannot be fulfilled
-    /// using fulfill_outflow_request_intent which expects OracleGuardedLimitOrder.
+    /// using fulfill_outflow_intent which expects OracleGuardedLimitOrder.
     /// 
     /// Note: The error ERESOURCE_DOES_NOT_EXIST occurs because object::address_to_object<T> checks
     /// if an object of type T exists at the address. The object exists, but not as the requested type,
@@ -356,10 +356,10 @@ module mvmt_intent::fa_intent_inflow_tests {
         solver: &signer,
     ) {
         use mvmt_intent::fa_intent_with_oracle;
-        use mvmt_intent::intent::TradeIntent;
+        use mvmt_intent::intent::Intent;
         
-        // Set up inflow request-intent using shared helper
-        let (intent_obj, _offered_metadata, _desired_metadata) = setup_inflow_request_intent(
+        // Set up inflow intent using shared helper
+        let (intent_obj, _offered_metadata, _desired_metadata) = setup_inflow_intent(
             aptos_framework,
             mvmt_intent,
             requestor,
@@ -375,7 +375,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         // because object::address_to_object<T> checks if an object of type T exists at the address.
         // The object exists, but not as OracleGuardedLimitOrder, so the runtime reports
         // ERESOURCE_DOES_NOT_EXIST (a resource of that type doesn't exist at that address).
-        let _wrong_type_intent: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> = 
+        let _wrong_type_intent: Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> = 
             object::address_to_object(intent_address);
     }
 
@@ -385,14 +385,14 @@ module mvmt_intent::fa_intent_inflow_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 65537, location = mvmt_intent::fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
-    /// Test: Cross-chain request-intent fulfillment with insufficient amount
+    /// Test: Cross-chain intent fulfillment with insufficient amount
     /// Verifies that fulfillment fails when provided_amount < desired_amount.
     ///
     /// Expected behavior: Fulfillment fails with EAMOUNT_NOT_MEET when provided_amount < desired_amount.
     ///
     /// Actual validation is in fa_intent::finish_fa_receiving_session_with_event()
     /// which asserts: provided_amount >= argument.desired_amount
-    fun test_fulfill_cross_chain_request_intent_insufficient_amount(
+    fun test_fulfill_cross_chain_intent_insufficient_amount(
         aptos_framework: &signer,
         requestor: &signer,
         solver: &signer,
@@ -403,7 +403,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let (offered_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, requestor, 0);
         let (desired_metadata, _desired_mint_ref) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
-        // Requestor creates a cross-chain request-intent wanting 1000 tokens
+        // Requestor creates a cross-chain intent wanting 1000 tokens
         let dummy_intent_id = @0x123;
         let solver_address = signer::address_of(solver);
         let expiry_time = timestamp::now_seconds() + 3600;
@@ -435,7 +435,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         
         // Solver tries to fulfill with insufficient amount (50 < 1000)
         // This should fail with EAMOUNT_NOT_MEET
-        fa_intent_inflow::fulfill_inflow_request_intent(
+        fa_intent_inflow::fulfill_inflow_intent(
             solver,
             intent_obj,
             50, // Provides only 50 tokens (insufficient! Needs 1000)

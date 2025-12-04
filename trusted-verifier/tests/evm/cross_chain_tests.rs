@@ -3,17 +3,17 @@
 //! These tests verify that EVM escrow events can be matched to hub intent events
 //! across different chains using intent_id, and test intent ID format conversions.
 
-use trusted_verifier::monitor::{EscrowEvent, RequestIntentEvent};
+use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{create_base_escrow_event, create_base_request_intent_evm};
+use test_helpers::{create_base_escrow_event, create_base_intent_evm};
 
 /// Test that EVM escrow can be matched to hub intent by intent_id
 /// Why: Verify cross-chain matching logic correctly links EVM escrow to hub intent
 #[test]
 fn test_evm_escrow_cross_chain_matching() {
     // Step 1: Create hub intent
-    let hub_intent = create_base_request_intent_evm();
+    let hub_intent = create_base_intent_evm();
 
     // Step 2: Create EVM escrow with matching intent_id
     // For EVM, the intent_id from Move VM is used directly (after conversion to uint256 on-chain)
@@ -25,7 +25,7 @@ fn test_evm_escrow_cross_chain_matching() {
         ..create_base_escrow_event()
     };
 
-    // Step 3: Verify matching logic (simulating the matching in validate_request_intent_fulfillment)
+    // Step 3: Verify matching logic (simulating the matching in validate_intent_fulfillment)
     // The matching logic finds intent by intent_id: cache.iter().find(|intent| intent.intent_id == escrow_event.intent_id)
     let intent_cache = vec![hub_intent.clone()];
     let matching_intent = intent_cache
@@ -129,9 +129,9 @@ fn test_intent_id_conversion_to_evm_format() {
 #[test]
 fn test_evm_escrow_matching_with_hub_intent() {
     // Step 1: Create  hub intent
-    let hub_intent = RequestIntentEvent {
+    let hub_intent = IntentEvent {
         expiry_time: 2000000,
-        ..create_base_request_intent_evm()
+        ..create_base_intent_evm()
     };
 
     // Step 2: Create EVM escrow on connected chain with matching intent_id
@@ -143,7 +143,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
         ..create_base_escrow_event()
     };
 
-    // Step 3: Verify cross-chain matching (simulating validate_request_intent_fulfillment logic)
+    // Step 3: Verify cross-chain matching (simulating validate_intent_fulfillment logic)
     let intent_cache = vec![hub_intent.clone()];
     let matching_intent = intent_cache
         .iter()
@@ -155,7 +155,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
     );
     let matched = matching_intent.unwrap();
 
-    // Verify all matching criteria (as per validate_request_intent_fulfillment validation)
+    // Verify all matching criteria (as per validate_intent_fulfillment validation)
     assert_eq!(
         matched.intent_id, evm_escrow.intent_id,
         "Intent IDs must match"
@@ -179,7 +179,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
         "For EVM, escrow_id should equal intent_id"
     );
 
-    // Verify validation criteria that would be checked in validate_request_intent_fulfillment
+    // Verify validation criteria that would be checked in validate_intent_fulfillment
     // Escrow desired_amount is always 0 (escrow only holds offered funds)
     assert_eq!(
         evm_escrow.desired_amount, 0,

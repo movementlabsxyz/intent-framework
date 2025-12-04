@@ -48,8 +48,8 @@ This directory contains the core Move modules that implement the Intent Framewor
 
 [`intent.move`](../../move-intent-framework/sources/intent.move) - The core generic framework that defines the fundamental intent system. This module provides the abstract structures and functions for creating, managing, and executing any type of conditional trade intent.
 
-- **TradeIntent<Source, Args>**: Stores the offered resource, trade conditions, expiry time, and witness type requirements. Acts as the immutable record of what someone wants to trade.
-- **TradeSession<Args>**: Created when someone starts an intent session. Contains the trade conditions and witness requirements, allowing the session opener to fulfill the trade.
+- **Intent<Source, Args>**: Stores the offered resource, trade conditions, expiry time, and witness type requirements. Acts as the immutable record of what someone wants to trade.
+- **Session<Args>**: Created when someone starts an intent session. Contains the trade conditions and witness requirements, allowing the session opener to fulfill the trade.
 - **Witness System**: Enforces unlock conditions through Move's type system. The witness is an empty struct that can only be created by functions that first verify the trading conditions. For example, `FungibleAssetRecipientWitness` can only be created after confirming the received asset matches the wanted type and amount.
 
   *Note: The witness is empty (not a flag like `verified: true`) because anyone could forge a flag, but only the verification function can create the specific witness type. Having the witness proves you went through the proper verification process.*
@@ -66,7 +66,7 @@ This directory contains the core Move modules that implement the Intent Framewor
 
 [`intent_reservation.move`](../../move-intent-framework/sources/intent_reservation.move) - Provides the reservation system for reserved intents, including signature verification and solver authorization.
 
-- **IntentDraft**: Off-chain data structure for sharing intent details without solver information.
+- **Draftintent**: Off-chain data structure for sharing intent details without solver information.
 - **IntentToSign**: Data structure that solvers sign to commit to solving a specific intent.
 - **IntentReserved**: On-chain reservation data that restricts intent execution to authorized solvers.
 

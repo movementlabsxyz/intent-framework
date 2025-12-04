@@ -13,7 +13,7 @@ module mvmt_intent::fa_intent_with_oracle {
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata, FungibleStore};
     use aptos_framework::object::{Self, DeleteRef, ExtendRef, Object};
     use aptos_framework::primary_fungible_store;
-    use mvmt_intent::intent::{Self, TradeSession, TradeIntent};
+    use mvmt_intent::intent::{Self, Session, Intent};
     use mvmt_intent::intent_reservation::{Self, IntentReserved};
     use aptos_std::ed25519;
 
@@ -140,7 +140,7 @@ module mvmt_intent::fa_intent_with_oracle {
     /// - `reservation`: Optional reservation specifying which solver can claim the escrow
     ///
     /// # Returns
-    /// - `Object<TradeIntent<...>>`: Handle to the created oracle-guarded intent
+    /// - `Object<Intent<...>>`: Handle to the created oracle-guarded intent
     public fun create_fa_to_fa_intent_with_oracle_requirement(
         offered_fa: FungibleAsset,
         offered_chain_id: u64,
@@ -154,7 +154,7 @@ module mvmt_intent::fa_intent_with_oracle {
         intent_id: address,
         requester_address_connected_chain: Option<address>,
         reservation: Option<IntentReserved>,
-    ): Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>> {
+    ): Object<Intent<FungibleStoreManager, OracleGuardedLimitOrder>> {
         // Capture metadata and amount before depositing
         let offered_metadata = fungible_asset::asset_metadata(&offered_fa);
         let offered_amount = fungible_asset::amount(&offered_fa);
@@ -223,14 +223,14 @@ module mvmt_intent::fa_intent_with_oracle {
     ///
     /// # Returns
     /// - `FungibleAsset`: The unlocked supply that the solver can now move
-    /// - `TradeSession<OracleGuardedLimitOrder>`: "Hot potato" session tracking the intent arguments
+    /// - `Session<OracleGuardedLimitOrder>`: "Hot potato" session tracking the intent arguments
     ///
     /// # Aborts
     /// - If the intent is reserved and the solver is not the authorized solver
     public fun start_fa_offering_session(
         solver: &signer,
-        intent: Object<TradeIntent<FungibleStoreManager, OracleGuardedLimitOrder>>
-    ): (FungibleAsset, TradeSession<OracleGuardedLimitOrder>) {
+        intent: Object<Intent<FungibleStoreManager, OracleGuardedLimitOrder>>
+    ): (FungibleAsset, Session<OracleGuardedLimitOrder>) {
         let (store_manager, session) = intent::start_intent_session(intent);
         let reservation = intent::get_reservation(&session);
         intent_reservation::ensure_solver_authorized(solver, reservation);
@@ -255,7 +255,7 @@ module mvmt_intent::fa_intent_with_oracle {
     /// - `EINVALID_SIGNATURE`: Supplied signature failed Ed25519 verification
     /// - `EORACLE_VALUE_TOO_LOW`: Oracle value does not reach the configured threshold
     public fun finish_fa_receiving_session_with_oracle(
-        session: TradeSession<OracleGuardedLimitOrder>,
+        session: Session<OracleGuardedLimitOrder>,
         received_fa: FungibleAsset,
         oracle_witness_opt: Option<OracleSignatureWitness>,
     ) {
@@ -354,7 +354,7 @@ module mvmt_intent::fa_intent_with_oracle {
     /// - `intent`: Object reference to the intent to revoke
     public entry fun revoke_fa_intent<Args: store + drop>(
         account: &signer,
-        intent: Object<TradeIntent<FungibleStoreManager, Args>>
+        intent: Object<Intent<FungibleStoreManager, Args>>
     ) {
         let store_manager = intent::revoke_intent(account, intent);
         let fa = destroy_store_manager(store_manager);

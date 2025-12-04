@@ -1,11 +1,11 @@
 //! Intent Tracker Service
 //!
-//! Tracks the lifecycle of intents from draft-intent to on-chain creation to fulfillment.
+//! Tracks the lifecycle of intents from draftintent to on-chain creation to fulfillment.
 //!
 //! Flow:
-//! 1. **Draft-intent (Signed state)**: Solver signs a draft-intent and submits signature to verifier.
-//!    The tracker stores this draft-intent, waiting for the requester to create it on-chain.
-//! 2. **Request-intent (Created state)**: Requester creates the request-intent on-chain using the solver's signature.
+//! 1. **Draft-intent (Signed state)**: Solver signs a draftintent and submits signature to verifier.
+//!    The tracker stores this draftintent, waiting for the requester to create it on-chain.
+//! 2. **Request-intent (Created state)**: Requester creates the intent on-chain using the solver's signature.
 //!    The tracker detects this via `poll_for_created_intents()` and updates state to Created.
 //! 3. **Fulfilled Intent (Fulfilled state)**: Intent has been fulfilled by the solver.
 //!
@@ -16,14 +16,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::acceptance::DraftIntentData;
+use crate::acceptance::DraftintentData;
 use crate::chains::HubChainClient;
 use crate::config::{ChainConfig, SolverConfig};
 
 /// State of a tracked intent
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntentState {
-    /// Draft-intent has been signed and submitted to verifier, waiting for on-chain request-intent creation
+    /// Draft-intent has been signed and submitted to verifier, waiting for on-chain intent creation
     Signed,
     /// Request-intent has been created on-chain, ready for fulfillment
     Created,
@@ -41,7 +41,7 @@ pub struct TrackedIntent {
     /// Current state
     pub state: IntentState,
     /// Draft data (for matching with on-chain events)
-    pub draft_data: DraftIntentData,
+    pub draft_data: DraftintentData,
     /// Requester address
     pub requester_address: String,
     /// Expiry timestamp
@@ -86,12 +86,12 @@ impl IntentTracker {
         })
     }
 
-    /// Adds a signed draft-intent to tracking
+    /// Adds a signed draftintent to tracking
     ///
     /// Called after successfully submitting a signature to the verifier.
-    /// This tracks a **draft-intent** (not yet on-chain) that the solver has signed.
+    /// This tracks a **draftintent** (not yet on-chain) that the solver has signed.
     /// The tracker will monitor for when the requester creates the corresponding
-    /// **request-intent** on-chain.
+    /// **intent** on-chain.
     ///
     /// # Arguments
     ///
@@ -107,7 +107,7 @@ impl IntentTracker {
     pub async fn add_signed_intent(
         &self,
         draft_id: String,
-        draft_data: DraftIntentData,
+        draft_data: DraftintentData,
         requester_address: String,
         expiry_time: u64,
     ) -> Result<()> {
@@ -144,11 +144,11 @@ impl IntentTracker {
         Ok(())
     }
 
-    /// Polls the hub chain for request-intent creation events and updates tracked intents
+    /// Polls the hub chain for intent creation events and updates tracked intents
     ///
-    /// Queries the hub chain for **request-intent creation events** (LimitOrderEvent, OracleLimitOrderEvent).
-    /// Matches these on-chain events to tracked **draft-intents** by comparing intent data.
-    /// When a match is found, updates the tracked intent from `Signed` (draft-intent) to `Created` (on-chain request-intent).
+    /// Queries the hub chain for **intent creation events** (LimitOrderEvent, OracleLimitOrderEvent).
+    /// Matches these on-chain events to tracked **draftintents** by comparing intent data.
+    /// When a match is found, updates the tracked intent from `Signed` (draftintent) to `Created` (on-chain intent).
     ///
     /// # Returns
     ///
@@ -212,12 +212,12 @@ impl IntentTracker {
         Ok(updated_count)
     }
 
-    /// Gets request-intents ready for fulfillment
+    /// Gets intents ready for fulfillment
     ///
-    /// Returns **request-intents** (NOT draft-intents) in `Created` state that are ready for fulfillment.
+    /// Returns **intents** (NOT draftintents) in `Created` state that are ready for fulfillment.
     ///
-    /// These are on-chain request-intents that:
-    /// 1. Were originally draft-intents signed by the solver (Signed state)
+    /// These are on-chain intents that:
+    /// 1. Were originally draftintents signed by the solver (Signed state)
     /// 2. Have been created on-chain by the requester (Created state)
     /// 3. Are now ready for the solver to fulfill
     ///
@@ -225,12 +225,12 @@ impl IntentTracker {
     ///
     /// # Arguments
     ///
-    /// * `inflow_only` - If Some(true), return only inflow request-intents. If Some(false), return only outflow request-intents. If None, return all.
+    /// * `inflow_only` - If Some(true), return only inflow intents. If Some(false), return only outflow intents. If None, return all.
     ///
     /// # Returns
     ///
-    /// * `Vec<TrackedIntent>` - List of request-intents (Created state) ready for fulfillment
-    pub async fn get_request_intents_ready_for_fulfillment(&self, inflow_only: Option<bool>) -> Vec<TrackedIntent> {
+    /// * `Vec<TrackedIntent>` - List of intents (Created state) ready for fulfillment
+    pub async fn get_intents_ready_for_fulfillment(&self, inflow_only: Option<bool>) -> Vec<TrackedIntent> {
         let intents = self.intents.read().await;
 
         intents
@@ -277,7 +277,7 @@ impl IntentTracker {
     /// Gets a tracked intent by draft ID
     ///
     /// # Note
-    /// This method is primarily for testing. In production, use `get_request_intents_ready_for_fulfillment()`.
+    /// This method is primarily for testing. In production, use `get_intents_ready_for_fulfillment()`.
     pub async fn get_intent(&self, draft_id: &str) -> Option<TrackedIntent> {
         let intents = self.intents.read().await;
         intents.get(draft_id).cloned()

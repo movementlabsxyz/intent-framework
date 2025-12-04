@@ -4,7 +4,7 @@ module mvmt_intent::intent_as_escrow_entry {
     use aptos_framework::object::Object;
     use aptos_framework::fungible_asset::{Self as fungible_asset, FungibleAsset};
     use mvmt_intent::intent_as_escrow::{Self, start_escrow_session, complete_escrow};
-    use mvmt_intent::intent::TradeIntent;
+    use mvmt_intent::intent::Intent;
     use mvmt_intent::fa_intent_with_oracle;
     use aptos_std::ed25519;
 
@@ -16,7 +16,7 @@ module mvmt_intent::intent_as_escrow_entry {
     /// Withdraws tokens from the caller's primary FA store and forwards them to create_escrow.
     /// 
     /// # Arguments
-    /// - `requester_signer`: Signer creating the escrow (requester who created the request-intent on hub chain)
+    /// - `requester_signer`: Signer creating the escrow (requester who created the intent on hub chain)
     /// - `offered_metadata`: Metadata of the token type to lock in escrow
     /// - `offered_amount`: Amount of tokens to lock in escrow
     /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)
@@ -69,7 +69,7 @@ module mvmt_intent::intent_as_escrow_entry {
     /// - `verifier_signature_bytes`: Verifier's Ed25519 signature as bytes (base64 decoded, signs the intent_id)
     public entry fun complete_escrow_from_fa(
         solver: &signer,
-        escrow_intent: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>,
+        escrow_intent: Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>,
         payment_amount: u64,
         verifier_signature_bytes: vector<u8>,
     ) {

@@ -3,7 +3,7 @@
 //! Main service loop that polls the verifier for pending drafts,
 //! evaluates acceptance, and signs/submits accepted drafts.
 
-use crate::acceptance::{should_accept_draft, AcceptanceConfig, AcceptanceResult, DraftIntentData};
+use crate::acceptance::{should_accept_draft, AcceptanceConfig, AcceptanceResult, DraftintentData};
 use crate::config::SolverConfig;
 use crate::crypto::{get_intent_hash, get_private_key_from_profile, sign_intent_hash};
 use crate::service::tracker::IntentTracker;
@@ -120,7 +120,7 @@ impl SigningService {
         Ok(processed)
     }
 
-    /// Process a single draft-intent.
+    /// Process a single draftintent.
     ///
     /// Evaluates acceptance and signs/submits if accepted.
     ///
@@ -167,12 +167,12 @@ impl SigningService {
     ///
     /// # Returns
     ///
-    /// * `Result<DraftIntentData>` - Parsed draft data
-    fn parse_draft_data(&self, draft_data: &Value) -> Result<DraftIntentData> {
+    /// * `Result<DraftintentData>` - Parsed draft data
+    fn parse_draft_data(&self, draft_data: &Value) -> Result<DraftintentData> {
         parse_draft_data(draft_data)
     }
 
-    /// Sign a draft-intent and submit to verifier.
+    /// Sign a draftintent and submit to verifier.
     ///
     /// # Arguments
     ///
@@ -185,7 +185,7 @@ impl SigningService {
     async fn sign_and_submit(
         &self,
         draft: &PendingDraft,
-        draft_data: &DraftIntentData,
+        draft_data: &DraftintentData,
     ) -> Result<bool> {
         // Get solver profile and address from config
         let profile = self.config.solver.profile.clone();
@@ -305,8 +305,8 @@ impl SigningService {
 ///
 /// # Returns
 ///
-/// * `Result<DraftIntentData>` - Parsed draft data
-pub fn parse_draft_data(draft_data: &Value) -> Result<DraftIntentData> {
+/// * `Result<DraftintentData>` - Parsed draft data
+pub fn parse_draft_data(draft_data: &Value) -> Result<DraftintentData> {
     // Extract fields from draft_data JSON
     // Expected format (simple strings for metadata, strings for numbers):
     // {
@@ -350,7 +350,7 @@ pub fn parse_draft_data(draft_data: &Value) -> Result<DraftIntentData> {
         .parse::<u64>()
         .context("desired_chain_id must be a valid number")?;
 
-    Ok(DraftIntentData {
+    Ok(DraftintentData {
         offered_token: offered_metadata.to_string(),
         offered_amount,
         offered_chain_id,

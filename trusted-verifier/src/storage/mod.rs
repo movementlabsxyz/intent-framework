@@ -3,8 +3,8 @@
 //! This module provides storage abstractions for the trusted verifier service,
 //! including draft intent storage for negotiation routing.
 
-pub mod draft_intents;
+pub mod draftintents;
 
 // Re-export for convenience
-pub use draft_intents::{DraftIntentStatus, DraftIntentStore};
+pub use draftintents::{DraftintentStatus, DraftintentStore};
 

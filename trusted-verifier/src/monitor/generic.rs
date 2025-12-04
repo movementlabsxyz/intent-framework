@@ -69,14 +69,14 @@ pub enum ChainType {
 
 /// Request-intent creation event from the hub chain.
 ///
-/// This event is emitted when a new request-intent is created on the hub chain.
+/// This event is emitted when a new intent is created on the hub chain.
 /// The verifier monitors these events to track new trading opportunities
 /// and validate their safety for escrow operations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RequestIntentEvent {
-    /// Unique identifier for the request-intent
+pub struct IntentEvent {
+    /// Unique identifier for the intent
     pub intent_id: String,
-    /// Address of the requester who created the request-intent
+    /// Address of the requester who created the intent
     pub requester: String,
     /// Metadata of the asset being offered
     pub offered_metadata: String,
@@ -86,11 +86,11 @@ pub struct RequestIntentEvent {
     pub desired_metadata: String,
     /// Amount of the desired asset (u64, matching Move contract constraint)
     pub desired_amount: u64,
-    /// Unix timestamp when the request-intent expires
+    /// Unix timestamp when the intent expires
     pub expiry_time: u64,
-    /// Whether the request-intent can be revoked by the creator
+    /// Whether the intent can be revoked by the creator
     pub revocable: bool,
-    /// Solver address if the request-intent is reserved (None for unreserved request-intents)
+    /// Solver address if the intent is reserved (None for unreserved intents)
     pub reserved_solver: Option<String>,
     /// Connected chain ID where escrow will be created (None for regular intents)
     pub connected_chain_id: Option<u64>,
@@ -144,22 +144,22 @@ pub struct EscrowEvent {
 
 /// Fulfillment event from the hub chain.
 ///
-/// This event is emitted when a request-intent is fulfilled by a solver.
-/// The verifier monitors these events to track when hub request-intents are completed,
+/// This event is emitted when a intent is fulfilled by a solver.
+/// The verifier monitors these events to track when hub intents are completed,
 /// which triggers the approval workflow for escrow release on the connected chain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FulfillmentEvent {
-    /// Unique identifier for the request-intent that was fulfilled
+    /// Unique identifier for the intent that was fulfilled
     pub intent_id: String,
-    /// Address of the request-intent that was fulfilled
+    /// Address of the intent that was fulfilled
     pub intent_address: String,
-    /// Address of the solver who fulfilled the request-intent
+    /// Address of the solver who fulfilled the intent
     pub solver: String,
     /// Metadata of the asset provided by the solver
     pub provided_metadata: String,
     /// Amount of the asset provided by the solver (u64, matching Move contract constraint)
     pub provided_amount: u64,
-    /// Unix timestamp when the request-intent was fulfilled
+    /// Unix timestamp when the intent was fulfilled
     pub timestamp: u64,
 }
 
@@ -199,12 +199,12 @@ pub struct EventMonitor {
     pub validator: Arc<CrossChainValidator>,
     /// Cryptographic operations for signature generation
     pub crypto: Arc<CryptoService>,
-    /// In-memory cache of recent request-intent events
+    /// In-memory cache of recent intent events
     ///
     /// **WARNING**: This field is public ONLY for unit testing purposes.
     /// It should not be accessed directly in production code.
     #[doc(hidden)]
-    pub event_cache: Arc<RwLock<Vec<RequestIntentEvent>>>,
+    pub event_cache: Arc<RwLock<Vec<IntentEvent>>>,
     /// In-memory cache of recent escrow events
     ///
     /// **WARNING**: This field is public ONLY for unit testing purposes.
@@ -273,7 +273,7 @@ impl EventMonitor {
     /// Starts the event monitoring process for configured chains.
     ///
     /// This function runs monitoring loops:
-    /// 1. Hub chain monitoring for request-intent events (always)
+    /// 1. Hub chain monitoring for intent events (always)
     /// 2. Connected Move VM chain monitoring for escrow events (if configured)
     /// 3. Connected EVM chain monitoring for escrow events (if configured)
     ///
@@ -324,18 +324,18 @@ impl EventMonitor {
         Ok(())
     }
 
-    /// Polls the hub chain for new request-intent events.
+    /// Polls the hub chain for new intent events.
     ///
-    /// This function queries the hub chain's event logs for new request-intent
+    /// This function queries the hub chain's event logs for new intent
     /// creation events. Since module events are emitted in user transactions,
     /// we query known test accounts for their events.
     ///
     /// # Returns
     ///
-    /// * `Ok(Vec<RequestIntentEvent>)` - List of new request-intent events
+    /// * `Ok(Vec<IntentEvent>)` - List of new intent events
     /// * `Err(anyhow::Error)` - Failed to poll events
     #[allow(dead_code)]
-    pub async fn poll_hub_events(&self) -> anyhow::Result<Vec<RequestIntentEvent>> {
+    pub async fn poll_hub_events(&self) -> anyhow::Result<Vec<IntentEvent>> {
         use super::outflow_generic;
         outflow_generic::poll_hub_events(self).await
     }
@@ -355,10 +355,10 @@ impl EventMonitor {
         inflow_generic::poll_connected_events(self).await
     }
 
-    /// Validates that an escrow event fulfills the conditions of an existing request-intent.
+    /// Validates that an escrow event fulfills the conditions of an existing intent.
     ///
     /// This function checks whether the escrow deposit matches the requirements
-    /// specified in a previously created request-intent. It ensures that the solver
+    /// specified in a previously created intent. It ensures that the solver
     /// has provided the correct asset type and amount.
     ///
     /// # Arguments
@@ -371,23 +371,23 @@ impl EventMonitor {
     /// * `Err(anyhow::Error)` - Validation failed
     /// Note: Public for testing purposes
     #[doc(hidden)]
-    pub async fn validate_request_intent_fulfillment(
+    pub async fn validate_intent_fulfillment(
         &self,
         escrow_event: &EscrowEvent,
     ) -> anyhow::Result<()> {
         use super::inflow_generic;
-        inflow_generic::validate_request_intent_fulfillment(self, escrow_event).await
+        inflow_generic::validate_intent_fulfillment(self, escrow_event).await
     }
 
-    /// Returns a copy of all cached request-intent events.
+    /// Returns a copy of all cached intent events.
     ///
     /// This function provides access to the event cache for API endpoints
     /// and external monitoring systems.
     ///
     /// # Returns
     ///
-    /// A vector containing all cached request-intent events
-    pub async fn get_cached_events(&self) -> Vec<RequestIntentEvent> {
+    /// A vector containing all cached intent events
+    pub async fn get_cached_events(&self) -> Vec<IntentEvent> {
         use super::outflow_generic;
         outflow_generic::get_cached_events(self).await
     }

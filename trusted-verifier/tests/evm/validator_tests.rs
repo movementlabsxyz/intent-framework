@@ -5,13 +5,13 @@
 
 use serde_json::json;
 use trusted_verifier::config::Config;
-use trusted_verifier::monitor::RequestIntentEvent;
+use trusted_verifier::monitor::IntentEvent;
 use trusted_verifier::validator::CrossChainValidator;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config_with_mvm, create_base_request_intent_evm};
+use test_helpers::{build_test_config_with_mvm, create_base_intent_evm};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -121,15 +121,15 @@ async fn setup_mock_server_with_error(
     (mock_server, config, validator)
 }
 
-/// Create a test request-intent with the given solver
-fn create_test_request_intent(solver: Option<String>) -> RequestIntentEvent {
-    RequestIntentEvent {
+/// Create a test intent with the given solver
+fn create_test_intent(solver: Option<String>) -> IntentEvent {
+    IntentEvent {
         offered_metadata: "{}".to_string(),
         desired_metadata: "{}".to_string(),
         expiry_time: 1000000,
         reserved_solver: solver,
         connected_chain_id: Some(31337),
-        ..create_base_request_intent_evm()
+        ..create_base_intent_evm()
     }
 }
 
@@ -149,12 +149,12 @@ async fn test_successful_evm_solver_validation() {
         setup_mock_server_with_evm_address_response(solver_address, Some(registered_evm_address))
             .await;
 
-    let request_intent = create_test_request_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(solver_address.to_string()));
 
     // Test with matching address
     let escrow_reserved_solver = registered_evm_address;
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
-        &request_intent,
+        &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
@@ -186,11 +186,11 @@ async fn test_rejection_when_solver_not_registered() {
     )
     .await;
 
-    let request_intent = create_test_request_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(solver_address.to_string()));
 
     let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
-        &request_intent,
+        &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
@@ -222,12 +222,12 @@ async fn test_rejection_when_evm_addresses_dont_match() {
         setup_mock_server_with_evm_address_response(solver_address, Some(registered_evm_address))
             .await;
 
-    let request_intent = create_test_request_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(solver_address.to_string()));
 
     // Escrow has a different address
     let escrow_reserved_solver = "0x2222222222222222222222222222222222222222";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
-        &request_intent,
+        &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
@@ -269,10 +269,10 @@ async fn test_evm_address_normalization() {
             setup_mock_server_with_evm_address_response(solver_address, Some(registered_addr))
                 .await;
 
-        let request_intent = create_test_request_intent(Some(solver_address.to_string()));
+        let intent = create_test_intent(Some(solver_address.to_string()));
 
         let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
-            &request_intent,
+            &intent,
             escrow_addr,
             &config.hub_chain.rpc_url,
             &config.hub_chain.intent_module_address,
@@ -298,11 +298,11 @@ async fn test_error_handling_for_registry_query_failures() {
     // Setup mock server that returns a 500 error (simulating network/server error)
     let (_mock_server, config, _validator) = setup_mock_server_with_error(500).await;
 
-    let request_intent = create_test_request_intent(Some("0xsolver_mvm".to_string()));
+    let intent = create_test_intent(Some("0xsolver_mvm".to_string()));
 
     let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
-        &request_intent,
+        &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,

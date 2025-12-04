@@ -15,7 +15,7 @@ use tokio::sync::RwLock;
 
 /// Status of a draft intent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum DraftIntentStatus {
+pub enum DraftintentStatus {
     /// Draft is pending and waiting for solver signature
     Pending,
     /// Draft has been signed by a solver (first signature wins - FCFS)
@@ -42,15 +42,15 @@ pub struct DraftSignature {
 /// Represents a draft intent submitted by a requester, open to any solver.
 /// The first solver to sign wins (FCFS).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DraftIntent {
+pub struct Draftintent {
     /// Unique identifier for the draft (UUID or hash)
     pub draft_id: String,
     /// Address of the requester who submitted the draft
     pub requester_address: String,
-    /// Draft data (JSON object - matches IntentDraft structure from Move)
+    /// Draft data (JSON object - matches Draftintent structure from Move)
     pub draft_data: serde_json::Value,
     /// Current status of the draft
-    pub status: DraftIntentStatus,
+    pub status: DraftintentStatus,
     /// Timestamp when draft was created (Unix timestamp)
     pub timestamp: u64,
     /// Expiry time (Unix timestamp)
@@ -67,12 +67,12 @@ pub struct DraftIntent {
 ///
 /// Uses HashMap for O(1) lookup by draft_id. Thread-safe via RwLock.
 /// All solvers see all pending drafts (no filtering).
-pub struct DraftIntentStore {
-    /// Map of draft_id -> DraftIntent
-    drafts: RwLock<HashMap<String, DraftIntent>>,
+pub struct DraftintentStore {
+    /// Map of draft_id -> Draftintent
+    drafts: RwLock<HashMap<String, Draftintent>>,
 }
 
-impl DraftIntentStore {
+impl DraftintentStore {
     /// Create a new draft intent store.
     pub fn new() -> Self {
         Self {
@@ -91,20 +91,20 @@ impl DraftIntentStore {
     ///
     /// # Returns
     ///
-    /// The created DraftIntent
+    /// The created Draftintent
     pub async fn add_draft(
         &self,
         draft_id: String,
         requester_address: String,
         draft_data: serde_json::Value,
         expiry_time: u64,
-    ) -> DraftIntent {
+    ) -> Draftintent {
         let timestamp = Self::current_timestamp();
-        let draft = DraftIntent {
+        let draft = Draftintent {
             draft_id: draft_id.clone(),
             requester_address,
             draft_data,
-            status: DraftIntentStatus::Pending,
+            status: DraftintentStatus::Pending,
             timestamp,
             expiry_time,
             signature: None,
@@ -123,9 +123,9 @@ impl DraftIntentStore {
     ///
     /// # Returns
     ///
-    /// * `Some(DraftIntent)` if found
+    /// * `Some(Draftintent)` if found
     /// * `None` if not found
-    pub async fn get_draft(&self, draft_id: &str) -> Option<DraftIntent> {
+    pub async fn get_draft(&self, draft_id: &str) -> Option<Draftintent> {
         let drafts = self.drafts.read().await;
         drafts.get(draft_id).cloned()
     }
@@ -138,14 +138,14 @@ impl DraftIntentStore {
     /// # Returns
     ///
     /// Vector of pending draft intents
-    pub async fn get_pending_drafts(&self) -> Vec<DraftIntent> {
+    pub async fn get_pending_drafts(&self) -> Vec<Draftintent> {
         let drafts = self.drafts.read().await;
         let current_time = Self::current_timestamp();
 
         drafts
             .values()
             .filter(|draft| {
-                draft.status == DraftIntentStatus::Pending && draft.expiry_time > current_time
+                draft.status == DraftintentStatus::Pending && draft.expiry_time > current_time
             })
             .cloned()
             .collect()
@@ -177,14 +177,14 @@ impl DraftIntentStore {
         let draft = drafts.get_mut(draft_id).ok_or("Draft not found")?;
 
         // FCFS: Only accept if still pending
-        if draft.status != DraftIntentStatus::Pending {
+        if draft.status != DraftintentStatus::Pending {
             return Err("Draft already signed or expired".to_string());
         }
 
         // Check expiry
         let current_time = Self::current_timestamp();
         if draft.expiry_time <= current_time {
-            draft.status = DraftIntentStatus::Expired;
+            draft.status = DraftintentStatus::Expired;
             return Err("Draft expired".to_string());
         }
 
@@ -195,7 +195,7 @@ impl DraftIntentStore {
             public_key,
             signature_timestamp: current_time,
         });
-        draft.status = DraftIntentStatus::Signed;
+        draft.status = DraftintentStatus::Signed;
 
         Ok(())
     }
@@ -209,8 +209,8 @@ impl DraftIntentStore {
         let current_time = Self::current_timestamp();
 
         for draft in drafts.values_mut() {
-            if draft.status == DraftIntentStatus::Pending && draft.expiry_time <= current_time {
-                draft.status = DraftIntentStatus::Expired;
+            if draft.status == DraftintentStatus::Pending && draft.expiry_time <= current_time {
+                draft.status = DraftintentStatus::Expired;
             }
         }
     }
@@ -224,7 +224,7 @@ impl DraftIntentStore {
     }
 }
 
-impl Default for DraftIntentStore {
+impl Default for DraftintentStore {
     fn default() -> Self {
         Self::new()
     }

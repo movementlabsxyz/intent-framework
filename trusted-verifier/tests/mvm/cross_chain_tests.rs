@@ -3,12 +3,12 @@
 //! These tests verify Move VM-specific escrow validation logic, including
 //! solver address matching for Move VM escrows.
 
-use trusted_verifier::monitor::{EscrowEvent, RequestIntentEvent};
+use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
 use trusted_verifier::validator::CrossChainValidator;
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_mvm, create_base_escrow_event, create_base_request_intent_mvm,
+    build_test_config_with_mvm, create_base_escrow_event, create_base_intent_mvm,
 };
 
 // ============================================================================
@@ -25,9 +25,9 @@ async fn test_escrow_solver_address_matching_success() {
         .expect("Failed to create validator");
 
     // Create a hub intent with a solver
-    let hub_intent = RequestIntentEvent {
+    let hub_intent = IntentEvent {
         reserved_solver: Some("0xsolver_mvm".to_string()),
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     // Create an escrow with matching solver address (Move VM escrow)
@@ -37,7 +37,7 @@ async fn test_escrow_solver_address_matching_success() {
     };
 
     let validation_result =
-        trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(
+        trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(
             &validator,
             &hub_intent,
             &escrow_match,
@@ -66,9 +66,9 @@ async fn test_escrow_solver_address_mismatch_rejection() {
         .expect("Failed to create validator");
 
     // Create a hub intent with a solver
-    let hub_intent = RequestIntentEvent {
+    let hub_intent = IntentEvent {
         reserved_solver: Some("0xsolver_mvm".to_string()),
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     // Create an escrow with different solver address (Move VM escrow)
@@ -78,7 +78,7 @@ async fn test_escrow_solver_address_mismatch_rejection() {
     };
 
     let validation_result =
-        trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(
+        trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(
             &validator,
             &hub_intent,
             &escrow_mismatch,
@@ -106,9 +106,9 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
         .expect("Failed to create validator");
 
     // Test case 1: Hub intent has solver, escrow doesn't
-    let hub_intent_with_solver = RequestIntentEvent {
+    let hub_intent_with_solver = IntentEvent {
         reserved_solver: Some("0xsolver_mvm".to_string()),
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     let escrow_without_solver = EscrowEvent {
@@ -117,7 +117,7 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
     };
 
     let validation_result =
-        trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(
+        trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(
             &validator,
             &hub_intent_with_solver,
             &escrow_without_solver,
@@ -135,9 +135,9 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
     );
 
     // Test case 2: Escrow has solver, hub intent doesn't
-    let hub_intent_without_solver = RequestIntentEvent {
+    let hub_intent_without_solver = IntentEvent {
         reserved_solver: None,
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     let escrow_with_solver = EscrowEvent {
@@ -146,7 +146,7 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
     };
 
     let validation_result =
-        trusted_verifier::validator::inflow_generic::validate_request_intent_fulfillment(
+        trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(
             &validator,
             &hub_intent_without_solver,
             &escrow_with_solver,

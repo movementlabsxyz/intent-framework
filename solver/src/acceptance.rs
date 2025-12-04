@@ -1,6 +1,6 @@
 //! Draft-intent acceptance logic
 //!
-//! Determines whether the solver should sign a draft-intent based on:
+//! Determines whether the solver should sign a draftintent based on:
 //! - Token pair validation (must be in configured supported pairs)
 //! - Exchange rate validation (offered amount must meet required rate for the pair)
 
@@ -26,7 +26,7 @@ pub struct AcceptanceConfig {
 
 /// Draft-intent data from verifier API
 #[derive(Debug, Clone)]
-pub struct DraftIntentData {
+pub struct DraftintentData {
     pub offered_token: String,      // Contract address
     pub offered_amount: u64,
     pub offered_chain_id: u64,
@@ -42,8 +42,8 @@ pub enum AcceptanceResult {
     Reject(String),  // Reason for rejection
 }
 
-/// Evaluate whether to accept a draft-intent
-pub fn should_accept_draft(draft: &DraftIntentData, config: &AcceptanceConfig) -> AcceptanceResult {
+/// Evaluate whether to accept a draftintent
+pub fn should_accept_draft(draft: &DraftintentData, config: &AcceptanceConfig) -> AcceptanceResult {
     // Create token pair key for lookup
     let pair = TokenPair {
         offered_chain_id: draft.offered_chain_id,

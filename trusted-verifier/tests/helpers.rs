@@ -7,7 +7,7 @@ use ed25519_dalek::SigningKey;
 use rand::RngCore;
 use trusted_verifier::config::{ApiConfig, ChainConfig, Config, EvmChainConfig, VerifierConfig};
 use trusted_verifier::evm_client::EvmTransaction;
-use trusted_verifier::monitor::{ChainType, EscrowEvent, FulfillmentEvent, RequestIntentEvent};
+use trusted_verifier::monitor::{ChainType, EscrowEvent, FulfillmentEvent, IntentEvent};
 use trusted_verifier::mvm_client::MvmTransaction;
 use trusted_verifier::validator::FulfillmentTransactionParams;
 
@@ -71,19 +71,19 @@ pub fn build_test_config_with_evm() -> Config {
     config
 }
 
-/// Create a base request-intent event with default test values for Move VM connected chain.
+/// Create a base intent event with default test values for Move VM connected chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let request_intent = create_base_request_intent_mvm();
-/// let custom_request_intent = RequestIntentEvent {
+/// let intent = create_base_intent_mvm();
+/// let custom_intent = IntentEvent {
 ///     desired_amount: 500,
 ///     expiry_time: 1000000,
-///     ..request_intent
+///     ..intent
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_request_intent_mvm() -> RequestIntentEvent {
-    RequestIntentEvent {
+pub fn create_base_intent_mvm() -> IntentEvent {
+    IntentEvent {
         intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // Must be valid hex (even number of digits)
         requester: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // Hub chain requester (Move VM format, 32 bytes)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
@@ -103,26 +103,26 @@ pub fn create_base_request_intent_mvm() -> RequestIntentEvent {
     }
 }
 
-/// Create a base request-intent event with default test values for EVM connected chain.
-/// This uses `create_base_request_intent_mvm()` as a base and overrides EVM-specific fields.
+/// Create a base intent event with default test values for EVM connected chain.
+/// This uses `create_base_intent_mvm()` as a base and overrides EVM-specific fields.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let request_intent = create_base_request_intent_evm();
-/// let custom_request_intent = RequestIntentEvent {
+/// let intent = create_base_intent_evm();
+/// let custom_intent = IntentEvent {
 ///     desired_amount: 500,
 ///     expiry_time: 1000000,
-///     ..request_intent
+///     ..intent
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_request_intent_evm() -> RequestIntentEvent {
-    RequestIntentEvent {
+pub fn create_base_intent_evm() -> IntentEvent {
+    IntentEvent {
         reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes)
         connected_chain_id: Some(31337), // EVM chain ID (matches build_test_config_with_evm)
         requester_address_connected_chain: Some(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         ), // EVM address format (20 bytes)
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     }
 }
 

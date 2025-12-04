@@ -1,7 +1,7 @@
 //! Unit tests for intent tracker
 
 use solver::{
-    acceptance::DraftIntentData, config::SolverConfig, service::tracker::IntentTracker,
+    acceptance::DraftintentData, config::SolverConfig, service::tracker::IntentTracker,
     IntentState,
 };
 
@@ -41,8 +41,8 @@ fn create_test_config() -> SolverConfig {
     }
 }
 
-fn create_test_draft_data() -> DraftIntentData {
-    DraftIntentData {
+fn create_test_draft_data() -> DraftintentData {
+    DraftintentData {
         offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         offered_amount: 1000,
         offered_chain_id: 2, // Connected chain (inflow)
@@ -64,8 +64,8 @@ fn test_intent_tracker_new() {
     let _tracker = IntentTracker::new(&config).unwrap();
 }
 
-/// What is tested: add_signed_intent() stores draft-intent with Signed state
-/// Why: Ensure signed draft-intents (not yet on-chain) are tracked correctly
+/// What is tested: add_signed_intent() stores draftintent with Signed state
+/// Why: Ensure signed draftintents (not yet on-chain) are tracked correctly
 #[tokio::test]
 async fn test_add_signed_intent() {
     let config = create_test_config();
@@ -100,7 +100,7 @@ async fn test_add_signed_intent_inflow_outflow() {
     let tracker = IntentTracker::new(&config).unwrap();
 
     // Test inflow intent (tokens locked on connected chain)
-    let inflow_data = DraftIntentData {
+    let inflow_data = DraftintentData {
         offered_chain_id: 2, // Connected chain
         ..create_test_draft_data()
     };
@@ -115,7 +115,7 @@ async fn test_add_signed_intent_inflow_outflow() {
         .unwrap();
 
     // Test outflow intent (tokens locked on hub chain)
-    let outflow_data = DraftIntentData {
+    let outflow_data = DraftintentData {
         offered_chain_id: 1, // Hub chain
         ..create_test_draft_data()
     };
@@ -135,16 +135,16 @@ async fn test_add_signed_intent_inflow_outflow() {
     assert!(!outflow.is_inflow);
 }
 
-/// What is tested: get_request_intents_ready_for_fulfillment() returns only Created (on-chain) request-intents
-/// Why: Ensure filtering by state works correctly - only on-chain request-intents are returned, not draft-intents
+/// What is tested: get_intents_ready_for_fulfillment() returns only Created (on-chain) intents
+/// Why: Ensure filtering by state works correctly - only on-chain intents are returned, not draftintents
 #[tokio::test]
-async fn test_get_request_intents_ready_for_fulfillment_state_filter() {
+async fn test_get_intents_ready_for_fulfillment_state_filter() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let draft_data = create_test_draft_data();
 
-    // Add signed draft-intent (Signed state - not yet on-chain)
+    // Add signed draftintent (Signed state - not yet on-chain)
     tracker
         .add_signed_intent(
             "draft-1".to_string(),
@@ -155,29 +155,29 @@ async fn test_get_request_intents_ready_for_fulfillment_state_filter() {
         .await
         .unwrap();
 
-    // Initially, no request-intents ready (still Signed state - draft-intent, not yet on-chain)
-    let request_intents = tracker.get_request_intents_ready_for_fulfillment(None).await;
-    assert_eq!(request_intents.len(), 0);
+    // Initially, no intents ready (still Signed state - draftintent, not yet on-chain)
+    let intents = tracker.get_intents_ready_for_fulfillment(None).await;
+    assert_eq!(intents.len(), 0);
 
     // Manually mark as Created (simulating poll_for_created_intents result)
-    // This simulates the requester creating the request-intent on-chain
+    // This simulates the requester creating the intent on-chain
     tracker.set_intent_state("draft-1", IntentState::Created).await.unwrap();
 
-    // Now should return request-intent (on-chain request-intent ready for fulfillment)
-    let request_intents = tracker.get_request_intents_ready_for_fulfillment(None).await;
-    assert_eq!(request_intents.len(), 1);
-    assert_eq!(request_intents[0].draft_id, "draft-1");
+    // Now should return intent (on-chain intent ready for fulfillment)
+    let intents = tracker.get_intents_ready_for_fulfillment(None).await;
+    assert_eq!(intents.len(), 1);
+    assert_eq!(intents[0].draft_id, "draft-1");
 }
 
-/// What is tested: get_request_intents_ready_for_fulfillment() filters by inflow/outflow
-/// Why: Ensure request-intent type filtering works correctly
+/// What is tested: get_intents_ready_for_fulfillment() filters by inflow/outflow
+/// Why: Ensure intent type filtering works correctly
 #[tokio::test]
-async fn test_get_request_intents_ready_for_fulfillment_inflow_outflow_filter() {
+async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     // Add inflow intent
-    let inflow_data = DraftIntentData {
+    let inflow_data = DraftintentData {
         offered_chain_id: 2,
         ..create_test_draft_data()
     };
@@ -192,7 +192,7 @@ async fn test_get_request_intents_ready_for_fulfillment_inflow_outflow_filter() 
         .unwrap();
 
     // Add outflow intent
-    let outflow_data = DraftIntentData {
+    let outflow_data = DraftintentData {
         offered_chain_id: 1,
         ..create_test_draft_data()
     };
@@ -211,18 +211,18 @@ async fn test_get_request_intents_ready_for_fulfillment_inflow_outflow_filter() 
     tracker.set_intent_state("outflow-draft", IntentState::Created).await.unwrap();
 
     // Test inflow filter
-    let inflow_request_intents = tracker.get_request_intents_ready_for_fulfillment(Some(true)).await;
-    assert_eq!(inflow_request_intents.len(), 1);
-    assert_eq!(inflow_request_intents[0].draft_id, "inflow-draft");
+    let inflow_intents = tracker.get_intents_ready_for_fulfillment(Some(true)).await;
+    assert_eq!(inflow_intents.len(), 1);
+    assert_eq!(inflow_intents[0].draft_id, "inflow-draft");
 
     // Test outflow filter
-    let outflow_request_intents = tracker.get_request_intents_ready_for_fulfillment(Some(false)).await;
-    assert_eq!(outflow_request_intents.len(), 1);
-    assert_eq!(outflow_request_intents[0].draft_id, "outflow-draft");
+    let outflow_intents = tracker.get_intents_ready_for_fulfillment(Some(false)).await;
+    assert_eq!(outflow_intents.len(), 1);
+    assert_eq!(outflow_intents[0].draft_id, "outflow-draft");
 
     // Test no filter (all)
-    let all_request_intents = tracker.get_request_intents_ready_for_fulfillment(None).await;
-    assert_eq!(all_request_intents.len(), 2);
+    let all_intents = tracker.get_intents_ready_for_fulfillment(None).await;
+    assert_eq!(all_intents.len(), 2);
 }
 
 /// What is tested: mark_fulfilled() updates intent state
@@ -297,10 +297,10 @@ async fn test_poll_for_created_intents_empty_requester_addresses() {
     assert_eq!(count, 0);
 }
 
-/// What is tested: get_request_intents_ready_for_fulfillment() excludes Fulfilled intents
+/// What is tested: get_intents_ready_for_fulfillment() excludes Fulfilled intents
 /// Why: Ensure only Created intents are returned, not Fulfilled ones
 #[tokio::test]
-async fn test_get_request_intents_ready_for_fulfillment_excludes_fulfilled() {
+async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
@@ -332,29 +332,29 @@ async fn test_get_request_intents_ready_for_fulfillment_excludes_fulfilled() {
     tracker.set_intent_state("draft-2", IntentState::Created).await.unwrap();
 
     // Both should be returned
-    let request_intents = tracker.get_request_intents_ready_for_fulfillment(None).await;
-    assert_eq!(request_intents.len(), 2);
+    let intents = tracker.get_intents_ready_for_fulfillment(None).await;
+    assert_eq!(intents.len(), 2);
 
     // Mark one as Fulfilled
     tracker.mark_fulfilled("draft-1").await.unwrap();
 
     // Only Created intent should be returned (not Fulfilled)
-    let request_intents = tracker.get_request_intents_ready_for_fulfillment(None).await;
-    assert_eq!(request_intents.len(), 1);
-    assert_eq!(request_intents[0].draft_id, "draft-2");
+    let intents = tracker.get_intents_ready_for_fulfillment(None).await;
+    assert_eq!(intents.len(), 1);
+    assert_eq!(intents[0].draft_id, "draft-2");
 }
 
-/// What is tested: get_request_intents_ready_for_fulfillment() returns only Created request-intents
+/// What is tested: get_intents_ready_for_fulfillment() returns only Created intents
 /// Why: Ensure the function correctly selects intents that have been created on-chain and are ready for fulfillment,
-///      even when other intents in Signed state (draft-intents not yet created on-chain) also exist
+///      even when other intents in Signed state (draftintents not yet created on-chain) also exist
 #[tokio::test]
-async fn test_get_request_intents_ready_for_fulfillment_returns_only_created() {
+async fn test_get_intents_ready_for_fulfillment_returns_only_created() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let draft_data = create_test_draft_data();
 
-    // Add signed draft-intent (Signed state - not yet on-chain)
+    // Add signed draftintent (Signed state - not yet on-chain)
     tracker
         .add_signed_intent(
             "draft-1".to_string(),
@@ -377,9 +377,9 @@ async fn test_get_request_intents_ready_for_fulfillment_returns_only_created() {
         .unwrap();
     tracker.set_intent_state("draft-2", IntentState::Created).await.unwrap();
 
-    // Only Created intent should be returned (not Signed draft-intent)
-    let request_intents = tracker.get_request_intents_ready_for_fulfillment(None).await;
-    assert_eq!(request_intents.len(), 1);
-    assert_eq!(request_intents[0].draft_id, "draft-2");
+    // Only Created intent should be returned (not Signed draftintent)
+    let intents = tracker.get_intents_ready_for_fulfillment(None).await;
+    assert_eq!(intents.len(), 1);
+    assert_eq!(intents[0].draft_id, "draft-2");
 }
 

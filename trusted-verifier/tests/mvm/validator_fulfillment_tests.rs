@@ -4,7 +4,7 @@
 //! from Move VM transactions for outflow fulfillment validation.
 
 use serde_json::json;
-use trusted_verifier::monitor::RequestIntentEvent;
+use trusted_verifier::monitor::IntentEvent;
 use trusted_verifier::mvm_client::MvmTransaction;
 use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::validator::{
@@ -16,7 +16,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_fulfillment_transaction_params_mvm,
-    create_base_mvm_transaction, create_base_request_intent_mvm,
+    create_base_mvm_transaction, create_base_intent_mvm,
 };
 
 // ============================================================================
@@ -342,10 +342,10 @@ async fn test_validate_outflow_fulfillment_success() {
     )
     .await;
 
-    let request_intent = RequestIntentEvent {
-        desired_amount: 25000000, // For outflow request-intents, validation uses desired_amount (amount desired on connected chain)
+    let intent = IntentEvent {
+        desired_amount: 25000000, // For outflow intents, validation uses desired_amount (amount desired on connected chain)
         reserved_solver: Some(solver_address.to_string()),
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     let tx_params = FulfillmentTransactionParams {
@@ -354,7 +354,7 @@ async fn test_validate_outflow_fulfillment_success() {
         ..create_base_fulfillment_transaction_params_mvm()
     };
 
-    let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true).await;
+    let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
 
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
@@ -377,14 +377,14 @@ async fn test_validate_outflow_fulfillment_fails_on_unsuccessful_tx() {
         .await
         .expect("Failed to create validator");
 
-    let request_intent = create_base_request_intent_mvm();
+    let intent = create_base_intent_mvm();
     let tx_params = FulfillmentTransactionParams {
-        intent_id: request_intent.intent_id.clone(),
-        amount: request_intent.desired_amount,
+        intent_id: intent.intent_id.clone(),
+        amount: intent.desired_amount,
         ..create_base_fulfillment_transaction_params_mvm()
     };
 
-    let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, false).await;
+    let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, false).await;
 
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
@@ -401,7 +401,7 @@ async fn test_validate_outflow_fulfillment_fails_on_unsuccessful_tx() {
 /// Test that validate_outflow_fulfillment fails when intent_id doesn't match
 ///
 /// What is tested: Validating an outflow fulfillment transaction where the transaction's intent_id
-/// doesn't match the request-intent's intent_id should result in validation failure.
+/// doesn't match the intent's intent_id should result in validation failure.
 ///
 /// Why: Verify that transactions can only fulfill the specific intent they reference.
 #[tokio::test]
@@ -411,14 +411,14 @@ async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
         .await
         .expect("Failed to create validator");
 
-    let request_intent = create_base_request_intent_mvm();
+    let intent = create_base_intent_mvm();
     let tx_params = FulfillmentTransactionParams {
         intent_id: "0xwrong_intent_id".to_string(), // Different intent_id
-        amount: request_intent.desired_amount,
+        amount: intent.desired_amount,
         ..create_base_fulfillment_transaction_params_mvm()
     };
 
-    let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true).await;
+    let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
 
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
@@ -435,7 +435,7 @@ async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
 /// Test that validate_outflow_fulfillment fails when recipient doesn't match requester_address_connected_chain
 ///
 /// What is tested: Validating an outflow fulfillment transaction where the transaction's recipient
-/// doesn't match the request-intent's requester_address_connected_chain should result in validation failure.
+/// doesn't match the intent's requester_address_connected_chain should result in validation failure.
 ///
 /// Why: Verify that tokens are sent to the correct recipient address on the connected chain.
 #[tokio::test]
@@ -445,15 +445,15 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
         .await
         .expect("Failed to create validator");
 
-    let request_intent = create_base_request_intent_mvm();
+    let intent = create_base_intent_mvm();
 
     let tx_params = FulfillmentTransactionParams {
         recipient: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd".to_string(), // Different recipient (Move VM address format)
-        amount: request_intent.desired_amount,
+        amount: intent.desired_amount,
         ..create_base_fulfillment_transaction_params_mvm()
     };
 
-    let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true).await;
+    let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
 
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
@@ -470,7 +470,7 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
 /// Test that validate_outflow_fulfillment fails when amount doesn't match desired_amount
 ///
 /// What is tested: Validating an outflow fulfillment transaction where the transaction's amount
-/// doesn't match the request-intent's desired_amount should result in validation failure.
+/// doesn't match the intent's desired_amount should result in validation failure.
 ///
 /// Why: Verify that the correct amount of tokens is transferred.
 #[tokio::test]
@@ -480,9 +480,9 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
         .await
         .expect("Failed to create validator");
 
-    let request_intent = RequestIntentEvent {
+    let intent = IntentEvent {
         desired_amount: 1000,
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     let tx_params = FulfillmentTransactionParams {
@@ -490,7 +490,7 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
         ..create_base_fulfillment_transaction_params_mvm()
     };
 
-    let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true).await;
+    let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
 
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();
@@ -533,18 +533,18 @@ async fn test_validate_outflow_fulfillment_fails_on_solver_not_registered() {
         .await
         .expect("Failed to create validator");
 
-    let request_intent = RequestIntentEvent {
+    let intent = IntentEvent {
         desired_amount: 1000, // Set desired_amount to avoid validation failure on amount check
         reserved_solver: Some(unregistered_solver.to_string()),
-        ..create_base_request_intent_mvm()
+        ..create_base_intent_mvm()
     };
 
     let tx_params = FulfillmentTransactionParams {
-        amount: request_intent.desired_amount,
+        amount: intent.desired_amount,
         ..create_base_fulfillment_transaction_params_mvm()
     };
 
-    let result = validate_outflow_fulfillment(&validator, &request_intent, &tx_params, true).await;
+    let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
 
     assert!(result.is_ok(), "Validation should complete without error");
     let validation_result = result.unwrap();

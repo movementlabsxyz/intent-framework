@@ -4,7 +4,7 @@
 //!
 //! Flow:
 //! 1. **Monitor Escrows**: Poll connected chain for escrow deposits matching tracked inflow intents
-//! 2. **Fulfill Intent**: Call hub chain `fulfill_inflow_request_intent` when escrow is detected
+//! 2. **Fulfill Intent**: Call hub chain `fulfill_inflow_intent` when escrow is detected
 //! 3. **Release Escrow**: Poll verifier for approval signature, then release escrow on connected chain
 
 use crate::chains::{ConnectedEvmClient, ConnectedMvmClient};
@@ -89,7 +89,7 @@ impl InflowService {
         // Get pending inflow intents (Created state, is_inflow = true)
         let pending_intents = self
             .tracker
-            .get_request_intents_ready_for_fulfillment(Some(true))
+            .get_intents_ready_for_fulfillment(Some(true))
             .await;
 
         if pending_intents.is_empty() {
@@ -151,7 +151,7 @@ impl InflowService {
 
     /// Fulfills an inflow intent on the hub chain
     ///
-    /// Calls `fulfill_inflow_request_intent` on the hub chain to provide tokens
+    /// Calls `fulfill_inflow_intent` on the hub chain to provide tokens
     /// to the requester. This should be called after detecting a matching escrow
     /// on the connected chain.
     ///

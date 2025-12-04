@@ -158,14 +158,14 @@ log "     Signature: ${RETRIEVED_SIGNATURE:0:20}..."
 # SECTION 6: CREATE INTENT ON-CHAIN WITH RETRIEVED SIGNATURE
 # ============================================================================
 log ""
-log "   Creating cross-chain request-intent on Chain 1..."
+log "   Creating cross-chain intent on Chain 1..."
 log "     Offered metadata: $OFFERED_METADATA_EVM"
 log "     Desired metadata: $DESIRED_METADATA_CHAIN1"
 log "     Solver address: $RETRIEVED_SOLVER"
 
 SOLVER_SIGNATURE_HEX="${RETRIEVED_SIGNATURE#0x}"
 aptos move run --profile requester-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_intent_entry" \
     --args "address:${OFFERED_METADATA_EVM}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================

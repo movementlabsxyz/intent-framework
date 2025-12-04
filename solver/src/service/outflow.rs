@@ -5,7 +5,7 @@
 //! Flow:
 //! 1. **Execute Transfer**: Transfer tokens on connected chain to requester_address_connected_chain
 //! 2. **Get Verifier Approval**: Call verifier `/validate-outflow-fulfillment` with transaction hash
-//! 3. **Fulfill Intent**: Call hub chain `fulfill_outflow_request_intent` with verifier signature
+//! 3. **Fulfill Intent**: Call hub chain `fulfill_outflow_intent` with verifier signature
 
 use crate::chains::{ConnectedEvmClient, ConnectedMvmClient, HubChainClient};
 use crate::config::{ConnectedChainConfig, SolverConfig};
@@ -80,7 +80,7 @@ impl OutflowService {
         // Get pending outflow intents (Created state, is_inflow = false)
         let pending_intents = self
             .tracker
-            .get_request_intents_ready_for_fulfillment(Some(false))
+            .get_intents_ready_for_fulfillment(Some(false))
             .await;
 
         if pending_intents.is_empty() {

@@ -175,7 +175,7 @@ fn test_poll_pending_drafts_success() {
         });
 
         Mock::given(method("GET"))
-            .and(path("/draft-intents/pending"))
+            .and(path("/draftintents/pending"))
             .respond_with(ResponseTemplate::new(200).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -209,7 +209,7 @@ fn test_poll_pending_drafts_empty() {
         });
 
         Mock::given(method("GET"))
-            .and(path("/draft-intents/pending"))
+            .and(path("/draftintents/pending"))
             .respond_with(ResponseTemplate::new(200).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -239,7 +239,7 @@ fn test_poll_pending_drafts_error() {
         });
 
         Mock::given(method("GET"))
-            .and(path("/draft-intents/pending"))
+            .and(path("/draftintents/pending"))
             .respond_with(ResponseTemplate::new(500).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -277,7 +277,7 @@ fn test_submit_signature_success() {
         });
 
         Mock::given(method("POST"))
-            .and(path("/draft-intent/11111111-1111-1111-1111-111111111111/signature"))
+            .and(path("/draftintent/11111111-1111-1111-1111-111111111111/signature"))
             .respond_with(ResponseTemplate::new(200).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -316,7 +316,7 @@ fn test_submit_signature_conflict() {
         });
 
         Mock::given(method("POST"))
-            .and(path("/draft-intent/11111111-1111-1111-1111-111111111111/signature"))
+            .and(path("/draftintent/11111111-1111-1111-1111-111111111111/signature"))
             .respond_with(ResponseTemplate::new(409).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -356,7 +356,7 @@ fn test_submit_signature_other_error() {
         });
 
         Mock::given(method("POST"))
-            .and(path("/draft-intent/11111111-1111-1111-1111-111111111111/signature"))
+            .and(path("/draftintent/11111111-1111-1111-1111-111111111111/signature"))
             .respond_with(ResponseTemplate::new(400).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -578,7 +578,7 @@ fn test_network_error() {
     assert!(result
         .unwrap_err()
         .to_string()
-        .contains("Failed to send GET /draft-intents/pending request"));
+        .contains("Failed to send GET /draftintents/pending request"));
 }
 
 /// What is tested: HTTP methods handle invalid JSON responses
@@ -590,7 +590,7 @@ fn test_invalid_json_response() {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/draft-intents/pending"))
+            .and(path("/draftintents/pending"))
             .respond_with(ResponseTemplate::new(200).set_body_string("invalid json"))
             .mount(&mock_server)
             .await;
@@ -606,6 +606,6 @@ fn test_invalid_json_response() {
     assert!(result
         .unwrap_err()
         .to_string()
-        .contains("Failed to parse GET /draft-intents/pending response"));
+        .contains("Failed to parse GET /draftintents/pending response"));
 }
 

@@ -14,7 +14,7 @@ use warp::hyper::body::Bytes;
 use crate::config::Config;
 use crate::crypto::CryptoService;
 use crate::monitor::EventMonitor;
-use crate::storage::DraftIntentStore;
+use crate::storage::DraftintentStore;
 use crate::validator::CrossChainValidator;
 
 // ============================================================================
@@ -74,7 +74,7 @@ pub async fn get_events_handler(
     // Return intent, escrow, fulfillment events, and approvals in a combined structure
     #[derive(Debug, Serialize)]
     struct CombinedEvents {
-        intent_events: Vec<crate::monitor::RequestIntentEvent>,
+        intent_events: Vec<crate::monitor::IntentEvent>,
         escrow_events: Vec<crate::monitor::EscrowEvent>,
         fulfillment_events: Vec<crate::monitor::FulfillmentEvent>,
         approvals: Vec<crate::monitor::EscrowApproval>,
@@ -348,7 +348,7 @@ pub struct ApiServer {
     /// Cryptographic service for signature operations
     crypto_service: Arc<RwLock<CryptoService>>,
     /// Draft intent store for negotiation routing
-    draft_store: Arc<RwLock<DraftIntentStore>>,
+    draft_store: Arc<RwLock<DraftintentStore>>,
 }
 
 impl ApiServer {
@@ -378,7 +378,7 @@ impl ApiServer {
             monitor: Arc::new(RwLock::new(monitor)),
             validator: Arc::new(RwLock::new(validator)),
             crypto_service: Arc::new(RwLock::new(crypto_service)),
-            draft_store: Arc::new(RwLock::new(DraftIntentStore::new())),
+            draft_store: Arc::new(RwLock::new(DraftintentStore::new())),
         }
     }
 
@@ -495,10 +495,10 @@ impl ApiServer {
             .and_then(inflow_generic::handle_inflow_escrow_validation);
 
         // Negotiation routing endpoints
-        // POST /draft-intent - Submit draft intent (open to any solver)
+        // POST /draftintent - Submit draft intent (open to any solver)
         let create_draft_store = draft_store.clone();
-        let create_draft = warp::path("draft-intent")
-            .and(warp::path::end()) // Exact match - don't match /draft-intent/:id/...
+        let create_draft = warp::path("draftintent")
+            .and(warp::path::end()) // Exact match - don't match /draftintent/:id/...
             .and(warp::post())
             .and(warp::body::bytes())
             .and_then(move |body: Bytes| {
@@ -506,11 +506,11 @@ impl ApiServer {
                 async move {
                     // Log raw request body for debugging
                     let body_str = String::from_utf8_lossy(&body);
-                    debug!("POST /draft-intent - Received body: {}", body_str);
+                    debug!("POST /draftintent - Received body: {}", body_str);
 
                     // Deserialize and handle
-                    match serde_json::from_slice::<negotiation::DraftIntentRequest>(&body) {
-                        Ok(request) => negotiation::create_draft_intent_handler(request, store).await,
+                    match serde_json::from_slice::<negotiation::DraftintentRequest>(&body) {
+                        Ok(request) => negotiation::create_draftintent_handler(request, store).await,
                         Err(e) => {
                             error!("Draft intent deserialization failed: {}. Body: {}", e, body_str);
                             Err(warp::reject::custom(JsonDeserializeError(format!("Invalid JSON: {}", e))))
@@ -519,27 +519,27 @@ impl ApiServer {
                 }
             });
 
-        // GET /draft-intent/:id - Get draft intent status
+        // GET /draftintent/:id - Get draft intent status
         let get_draft_store = draft_store.clone();
-        let get_draft = warp::path("draft-intent")
+        let get_draft = warp::path("draftintent")
             .and(warp::path::param())
-            .and(warp::path::end()) // Exact match - don't match /draft-intent/:id/signature
+            .and(warp::path::end()) // Exact match - don't match /draftintent/:id/signature
             .and(warp::get())
             .and(negotiation::with_draft_store(get_draft_store))
-            .and_then(negotiation::get_draft_intent_handler);
+            .and_then(negotiation::get_draftintent_handler);
 
-        // GET /draft-intents/pending - Get all pending drafts (all solvers see all drafts)
+        // GET /draftintents/pending - Get all pending drafts (all solvers see all drafts)
         let get_pending_store = draft_store.clone();
-        let get_pending = warp::path("draft-intents")
+        let get_pending = warp::path("draftintents")
             .and(warp::path("pending"))
             .and(warp::get())
             .and(negotiation::with_draft_store(get_pending_store))
             .and_then(negotiation::get_pending_drafts_handler);
 
-        // POST /draft-intent/:id/signature - Solver submits signature (FCFS)
+        // POST /draftintent/:id/signature - Solver submits signature (FCFS)
         let submit_sig_store = draft_store.clone();
         let submit_sig_config = self.config.clone();
-        let submit_signature = warp::path("draft-intent")
+        let submit_signature = warp::path("draftintent")
             .and(warp::path::param())
             .and(warp::path("signature"))
             .and(warp::post())
@@ -550,7 +550,7 @@ impl ApiServer {
                 async move {
                     // Log raw request body for debugging
                     let body_str = String::from_utf8_lossy(&body);
-                    debug!("POST /draft-intent/{}/signature - Received body: {}", draft_id, body_str);
+                    debug!("POST /draftintent/{}/signature - Received body: {}", draft_id, body_str);
 
                     // Deserialize and handle
                     match serde_json::from_slice::<negotiation::SignatureSubmissionRequest>(&body) {
@@ -563,9 +563,9 @@ impl ApiServer {
                 }
             });
 
-        // GET /draft-intent/:id/signature - Requester polls for signature
+        // GET /draftintent/:id/signature - Requester polls for signature
         let get_sig_store = draft_store.clone();
-        let get_signature = warp::path("draft-intent")
+        let get_signature = warp::path("draftintent")
             .and(warp::path::param())
             .and(warp::path("signature"))
             .and(warp::get())

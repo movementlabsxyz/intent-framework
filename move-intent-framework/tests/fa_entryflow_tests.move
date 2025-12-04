@@ -17,7 +17,7 @@ module mvmt_intent::fa_entryflow_tests {
 
     #[test_only]
     struct PendingIntent has key {
-        intent: object::Object<intent::TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
+        intent: object::Object<intent::Intent<FungibleStoreManager, FungibleAssetLimitOrder>>,
     }
 
     // ============================================================================

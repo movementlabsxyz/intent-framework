@@ -47,8 +47,8 @@ fn create_test_config() -> SolverConfig {
 
 // Helper function for creating outflow draft data (available for future tests)
 #[allow(dead_code)]
-fn create_test_outflow_draft_data() -> solver::acceptance::DraftIntentData {
-    solver::acceptance::DraftIntentData {
+fn create_test_outflow_draft_data() -> solver::acceptance::DraftintentData {
+    solver::acceptance::DraftintentData {
         offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         offered_amount: 1000,
         offered_chain_id: 1, // Hub chain (outflow)

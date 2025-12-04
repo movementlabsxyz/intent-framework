@@ -30,7 +30,7 @@ module mvmt_intent::intent {
     /// - `expiry_time`: Unix timestamp when the intent expires
     /// - `witness_type`: Type information for the required witness
     /// - `revocable`: Whether the intent can be revoked by the owner
-    struct TradeIntent<Source, Args> has key {
+    struct Intent<Source, Args> has key {
         offered_resource: Source,
         argument: Args,
         self_delete_ref: DeleteRef,
@@ -42,7 +42,7 @@ module mvmt_intent::intent {
 
     /// Active trading session containing the conditions and witness requirements.
     /// This is a "hot potato" type that must be consumed by calling finish_intent_session.
-    struct TradeSession<Args> {
+    struct Session<Args> {
         argument: Args,
         witness_type: TypeInfo,
         reservation: Option<IntentReserved>
@@ -64,7 +64,7 @@ module mvmt_intent::intent {
     /// - `revocable`: Whether the intent can be revoked by the owner
     ///
     /// # Returns
-    /// - `Object<TradeIntent<Source, Args>>`: Object reference to the created intent
+    /// - `Object<Intent<Source, Args>>`: Object reference to the created intent
     public fun create_intent<Source: store, Args: store + drop, Witness: drop>(
         offered_resource: Source,
         argument: Args,
@@ -73,14 +73,14 @@ module mvmt_intent::intent {
         _witness: Witness,
         reservation: Option<IntentReserved>,
         revocable: bool
-    ): Object<TradeIntent<Source, Args>> {
+    ): Object<Intent<Source, Args>> {
         let constructor_ref = object::create_object(requester);
         let object_signer = object::generate_signer(&constructor_ref);
         let self_delete_ref = object::generate_delete_ref(&constructor_ref);
 
-        move_to<TradeIntent<Source, Args>>(
+        move_to<Intent<Source, Args>>(
             &object_signer,
-            TradeIntent {
+            Intent {
                 offered_resource,
                 argument,
                 expiry_time,
@@ -103,21 +103,21 @@ module mvmt_intent::intent {
     ///
     /// # Returns
     /// - `Source`: The unlocked resource that was offered
-    /// - `TradeSession<Args>`: Session containing trading conditions (hot potato type)
+    /// - `Session<Args>`: Session containing trading conditions (hot potato type)
     ///
     /// # Aborts
     /// - `EINTENT_EXPIRED`: If the current time exceeds the intent's expiry time
     public fun start_intent_session<Source: store, Args: store + drop>(
-        intent: Object<TradeIntent<Source, Args>>
-    ): (Source, TradeSession<Args>) acquires TradeIntent {
+        intent: Object<Intent<Source, Args>>
+    ): (Source, Session<Args>) acquires Intent {
         let intent_ref =
-            borrow_global<TradeIntent<Source, Args>>(object::object_address(&intent));
+            borrow_global<Intent<Source, Args>>(object::object_address(&intent));
         assert!(
             timestamp::now_seconds() <= intent_ref.expiry_time,
             error::permission_denied(EINTENT_EXPIRED)
         );
 
-        let TradeIntent {
+        let Intent {
             offered_resource,
             argument,
             expiry_time: _,
@@ -125,11 +125,11 @@ module mvmt_intent::intent {
             witness_type,
             reservation,
             revocable: _
-        } = move_from<TradeIntent<Source, Args>>(object::object_address(&intent));
+        } = move_from<Intent<Source, Args>>(object::object_address(&intent));
 
         object::delete(self_delete_ref);
 
-        return (offered_resource, TradeSession { argument, witness_type, reservation })
+        return (offered_resource, Session { argument, witness_type, reservation })
     }
 
     /// Retrieves the trading conditions from a trading session.
@@ -139,7 +139,7 @@ module mvmt_intent::intent {
     ///
     /// # Returns
     /// - `&Args`: Reference to the trading conditions
-    public fun get_argument<Args>(session: &TradeSession<Args>): &Args {
+    public fun get_argument<Args>(session: &Session<Args>): &Args {
         &session.argument
     }
 
@@ -150,7 +150,7 @@ module mvmt_intent::intent {
     ///
     /// # Returns
     /// - `&Option<IntentReserved>`: Reference to the reservation
-    public fun get_reservation<Args>(session: &TradeSession<Args>): &Option<IntentReserved> {
+    public fun get_reservation<Args>(session: &Session<Args>): &Option<IntentReserved> {
         &session.reservation
     }
 
@@ -167,9 +167,9 @@ module mvmt_intent::intent {
     /// # Aborts
     /// - `EINVALID_WITNESS`: If the witness type doesn't match the required type
     public fun finish_intent_session<Witness: drop, Args: store + drop>(
-        session: TradeSession<Args>, _witness: Witness
+        session: Session<Args>, _witness: Witness
     ) {
-        let TradeSession { argument: _, witness_type, reservation: _ } = session;
+        let Session { argument: _, witness_type, reservation: _ } = session;
 
         assert!(
             type_info::type_of<Witness>() == witness_type,
@@ -194,13 +194,13 @@ module mvmt_intent::intent {
     /// - `ENOT_REVOCABLE`: If the intent is not revocable
     public fun revoke_intent<Source: store, Args: store + drop>(
         requester: &signer,
-        intent: Object<TradeIntent<Source, Args>>
-    ): Source acquires TradeIntent {
+        intent: Object<Intent<Source, Args>>
+    ): Source acquires Intent {
         assert!(
             object::owner(intent) == signer::address_of(requester),
             error::permission_denied(ENOT_OWNER)
         );
-        let TradeIntent {
+        let Intent {
             offered_resource,
             argument: _,
             expiry_time: _,
@@ -208,7 +208,7 @@ module mvmt_intent::intent {
             witness_type: _,
             reservation: _,
             revocable
-        } = move_from<TradeIntent<Source, Args>>(object::object_address(&intent));
+        } = move_from<Intent<Source, Args>>(object::object_address(&intent));
 
         assert!(revocable, error::permission_denied(ENOT_REVOCABLE));
         object::delete(self_delete_ref);

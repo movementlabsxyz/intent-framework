@@ -6,7 +6,7 @@ module mvmt_intent::fa_intent_inflow {
     use aptos_framework::object::{Self as object, Object};
     use aptos_framework::fungible_asset::{FungibleAsset, Metadata};
     use mvmt_intent::fa_intent::{Self, FungibleStoreManager, FungibleAssetLimitOrder};
-    use mvmt_intent::intent::{Self as intent, TradeIntent};
+    use mvmt_intent::intent::{Self as intent, Intent};
     use mvmt_intent::intent_reservation;
 
     /// The solver signature is invalid and cannot be verified.
@@ -20,7 +20,7 @@ module mvmt_intent::fa_intent_inflow {
     /// This is step 1 of the reserved intent flow:
     /// 1. Requester creates draft using this function (off-chain)
     /// 2. Solver signs the draft and returns signature (off-chain)
-    /// 3. Requester calls create_inflow_request_intent with the signature (on-chain)
+    /// 3. Requester calls create_inflow_intent with the signature (on-chain)
     public fun create_cross_chain_draft_intent(
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
@@ -30,7 +30,7 @@ module mvmt_intent::fa_intent_inflow {
         desired_chain_id: u64,
         expiry_time: u64,
         requester: address
-    ): intent_reservation::IntentDraft {
+    ): intent_reservation::Draftintent {
         intent_reservation::create_draft_intent(
             offered_metadata,
             offered_amount,
@@ -47,7 +47,7 @@ module mvmt_intent::fa_intent_inflow {
     // INFLOW REQUEST-INTENT FUNCTIONS
     // ============================================================================
 
-    /// Entry function for solver to fulfill an inflow request-intent.
+    /// Entry function for solver to fulfill an inflow intent.
     ///
     /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
     /// The solver provides the desired tokens to the requester on the hub chain.
@@ -57,9 +57,9 @@ module mvmt_intent::fa_intent_inflow {
     /// - `solver`: Signer fulfilling the intent
     /// - `intent`: Object reference to the inflow intent to fulfill (FungibleAssetLimitOrder)
     /// - `payment_amount`: Amount of tokens to provide
-    public entry fun fulfill_inflow_request_intent(
+    public entry fun fulfill_inflow_intent(
         solver: &signer,
-        intent: Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>,
+        intent: Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>>,
         payment_amount: u64
     ) {
         let intent_address = object::object_address(&intent);
@@ -90,7 +90,7 @@ module mvmt_intent::fa_intent_inflow {
         );
     }
 
-    /// Creates an inflow request-intent and returns the intent object.
+    /// Creates an inflow intent and returns the intent object.
     ///
     /// This is the core implementation that both the entry function and tests use.
     ///
@@ -115,12 +115,12 @@ module mvmt_intent::fa_intent_inflow {
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
     ///
     /// # Returns
-    /// - `Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>>`: The created intent object
+    /// - `Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>>`: The created intent object
     ///
     /// # Aborts
     /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
     /// - `EINVALID_SIGNATURE`: Signature verification failed
-    public fun create_inflow_request_intent(
+    public fun create_inflow_intent(
         account: &signer,
         offered_metadata_address: address,
         offered_amount: u64,
@@ -132,7 +132,7 @@ module mvmt_intent::fa_intent_inflow {
         intent_id: address,
         solver: address,
         solver_signature: vector<u8>
-    ): Object<TradeIntent<FungibleStoreManager, FungibleAssetLimitOrder>> {
+    ): Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Withdraw 0 tokens of DESIRED type (not offered type).
         // Why: The offered token metadata is on the connected chain, so the Object doesn't exist here.
         // We use desired_metadata (which exists on hub) to create a placeholder FungibleAsset.
@@ -177,19 +177,19 @@ module mvmt_intent::fa_intent_inflow {
             expiry_time,
             signer::address_of(account),
             reservation_result, // Reserved for specific solver
-            false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub request-intent)
+            false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub intent)
             // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id) // Store the cross-chain intent_id for fulfillment event
         )
     }
 
-    /// Entry function to create an inflow request-intent.
+    /// Entry function to create an inflow intent.
     ///
     /// Inflow intents have tokens locked on the connected chain (in escrow) and request tokens on the hub.
     /// The solver's public key is looked up from the on-chain solver registry.
     ///
-    /// For argument descriptions and abort conditions, see `create_inflow_request_intent`.
-    public entry fun create_inflow_request_intent_entry(
+    /// For argument descriptions and abort conditions, see `create_inflow_intent`.
+    public entry fun create_inflow_intent_entry(
         account: &signer,
         offered_metadata_address: address,
         offered_amount: u64,
@@ -203,7 +203,7 @@ module mvmt_intent::fa_intent_inflow {
         solver_signature: vector<u8>
     ) {
         let _intent_obj =
-            create_inflow_request_intent(
+            create_inflow_intent(
                 account,
                 offered_metadata_address,
                 offered_amount,

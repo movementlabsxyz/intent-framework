@@ -38,17 +38,17 @@ fn valid_draft_request() -> serde_json::Value {
 // DRAFT INTENT ENDPOINT TESTS
 // ============================================================================
 
-/// Test that invalid JSON in POST /draft-intent returns proper error
+/// Test that invalid JSON in POST /draftintent returns proper error
 /// What is tested: Error handling for malformed JSON in draft intent submission
 /// Why: Ensures clients get clear error messages when sending invalid JSON
 #[tokio::test]
-async fn test_draft_intent_invalid_json() {
+async fn test_draftintent_invalid_json() {
     let api_server = create_test_api_server().await;
     let routes = api_server.test_routes();
 
     let response = request()
         .method("POST")
-        .path("/draft-intent")
+        .path("/draftintent")
         .body("invalid{")
         .reply(&routes)
         .await;
@@ -63,7 +63,7 @@ async fn test_draft_intent_invalid_json() {
 /// What is tested: Error handling for missing fields in draft intent request
 /// Why: Ensures clients get clear error messages about required fields
 #[tokio::test]
-async fn test_draft_intent_missing_fields() {
+async fn test_draftintent_missing_fields() {
     let api_server = create_test_api_server().await;
     let routes = api_server.test_routes();
 
@@ -74,7 +74,7 @@ async fn test_draft_intent_missing_fields() {
 
     let response = request()
         .method("POST")
-        .path("/draft-intent")
+        .path("/draftintent")
         .json(&invalid_request)
         .reply(&routes)
         .await;
@@ -88,13 +88,13 @@ async fn test_draft_intent_missing_fields() {
 /// What is tested: Valid requests still work after adding error handling
 /// Why: Ensures error handling doesn't break normal functionality
 #[tokio::test]
-async fn test_draft_intent_valid_request() {
+async fn test_draftintent_valid_request() {
     let api_server = create_test_api_server().await;
     let routes = api_server.test_routes();
 
     let response = request()
         .method("POST")
-        .path("/draft-intent")
+        .path("/draftintent")
         .json(&valid_draft_request())
         .reply(&routes)
         .await;
@@ -109,13 +109,13 @@ async fn test_draft_intent_valid_request() {
 /// What is tested: Error handling for empty request body
 /// Why: Ensures clients get clear error messages for empty requests
 #[tokio::test]
-async fn test_draft_intent_empty_body() {
+async fn test_draftintent_empty_body() {
     let api_server = create_test_api_server().await;
     let routes = api_server.test_routes();
 
     let response = request()
         .method("POST")
-        .path("/draft-intent")
+        .path("/draftintent")
         .body("")
         .reply(&routes)
         .await;
@@ -129,7 +129,7 @@ async fn test_draft_intent_empty_body() {
 // SIGNATURE SUBMISSION ENDPOINT TESTS
 // ============================================================================
 
-/// Test that invalid JSON in POST /draft-intent/:id/signature returns proper error
+/// Test that invalid JSON in POST /draftintent/:id/signature returns proper error
 /// What is tested: Error handling for malformed JSON in signature submission
 /// Why: Ensures clients get clear error messages when sending invalid JSON
 #[tokio::test]
@@ -140,7 +140,7 @@ async fn test_signature_submission_invalid_json() {
     // Create draft first
     let create_response = request()
         .method("POST")
-        .path("/draft-intent")
+        .path("/draftintent")
         .json(&valid_draft_request())
         .reply(&routes)
         .await;
@@ -154,7 +154,7 @@ async fn test_signature_submission_invalid_json() {
     // Test invalid JSON
     let response = request()
         .method("POST")
-        .path(&format!("/draft-intent/{}/signature", draft_id))
+        .path(&format!("/draftintent/{}/signature", draft_id))
         .body("invalid{")
         .reply(&routes)
         .await;
@@ -175,7 +175,7 @@ async fn test_signature_submission_missing_fields() {
     // Create draft first
     let create_response = request()
         .method("POST")
-        .path("/draft-intent")
+        .path("/draftintent")
         .json(&valid_draft_request())
         .reply(&routes)
         .await;
@@ -194,7 +194,7 @@ async fn test_signature_submission_missing_fields() {
 
     let response = request()
         .method("POST")
-        .path(&format!("/draft-intent/{}/signature", draft_id))
+        .path(&format!("/draftintent/{}/signature", draft_id))
         .json(&invalid_request)
         .reply(&routes)
         .await;
@@ -205,7 +205,7 @@ async fn test_signature_submission_missing_fields() {
 }
 
 /// Test that signature submission route doesn't match draft intent route
-/// What is tested: Route matching - /draft-intent/:id/signature vs /draft-intent
+/// What is tested: Route matching - /draftintent/:id/signature vs /draftintent
 /// Why: Prevents regression where sub-paths incorrectly match parent route
 #[tokio::test]
 async fn test_signature_route_not_confused_with_draft_route() {
@@ -215,7 +215,7 @@ async fn test_signature_route_not_confused_with_draft_route() {
     // Create draft first
     let create_response = request()
         .method("POST")
-        .path("/draft-intent")
+        .path("/draftintent")
         .json(&valid_draft_request())
         .reply(&routes)
         .await;
@@ -236,7 +236,7 @@ async fn test_signature_route_not_confused_with_draft_route() {
 
     let response = request()
         .method("POST")
-        .path(&format!("/draft-intent/{}/signature", draft_id))
+        .path(&format!("/draftintent/{}/signature", draft_id))
         .json(&signature_request)
         .reply(&routes)
         .await;
@@ -247,7 +247,7 @@ async fn test_signature_route_not_confused_with_draft_route() {
     if let Some(error) = &body.error {
         assert!(
             !error.contains("requester_address"),
-            "Route matching bug: signature endpoint matched draft-intent route. Error: {}",
+            "Route matching bug: signature endpoint matched draftintent route. Error: {}",
             error
         );
     }

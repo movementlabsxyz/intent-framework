@@ -171,7 +171,7 @@ Validates a connected chain transaction for an outflow intent and returns an app
 
 1) Solver transfers tokens on connected chain (includes `intent_id` in transaction)
 2) Solver calls `/validate-outflow-fulfillment` with transaction hash
-3) If validation passes, convert base64 signature to hex and submit hub chain entry: `fulfill_outflow_request_intent(intent, signature_hex)`
+3) If validation passes, convert base64 signature to hex and submit hub chain entry: `fulfill_outflow_intent(intent, signature_hex)`
 
 In the integration script this is automated:
 
@@ -180,7 +180,7 @@ In the integration script this is automated:
 SIGNATURE_HEX=$(echo "$APPROVAL_SIGNATURE" | base64 -d | xxd -p -c 1000 | tr -d '\n')
 
 movement move run --profile solver-chain1 --assume-yes \
-  --function-id "0x<hub_module_address>::fa_intent_outflow::fulfill_outflow_request_intent" \
+  --function-id "0x<hub_module_address>::fa_intent_outflow::fulfill_outflow_intent" \
   --args "address:<intent_object_address>" "hex:<signature_hex>"
 ```
 
@@ -214,7 +214,7 @@ The verifier provides negotiation routing capabilities for off-chain communicati
 
 **Note**: This is a **polling-based, FCFS (First Come First Served)** system. Solvers poll the verifier for drafts, and the first solver to submit a valid signature wins.
 
-### POST /draft-intent
+### POST /draftintent
 
 Submit a draft intent for negotiation. Drafts are open to any solver (no `solver_address` required).
 
@@ -249,7 +249,7 @@ Submit a draft intent for negotiation. Drafts are open to any solver (no `solver
 **Example**
 
 ```bash
-curl -X POST http://127.0.0.1:3333/draft-intent \
+curl -X POST http://127.0.0.1:3333/draftintent \
   -H "Content-Type: application/json" \
   -d '{
     "requester_address": "0x123...",
@@ -258,7 +258,7 @@ curl -X POST http://127.0.0.1:3333/draft-intent \
   }'
 ```
 
-### GET /draft-intent/:id
+### GET /draftintent/:id
 
 Get the status of a specific draft intent.
 
@@ -283,10 +283,10 @@ Get the status of a specific draft intent.
 **Example**
 
 ```bash
-curl http://127.0.0.1:3333/draft-intent/11111111-1111-1111-1111-111111111111
+curl http://127.0.0.1:3333/draftintent/11111111-1111-1111-1111-111111111111
 ```
 
-### GET /draft-intents/pending
+### GET /draftintents/pending
 
 Get all pending drafts. All solvers see all pending drafts (no filtering). This is a polling endpoint - solvers call this regularly to discover new drafts.
 
@@ -311,10 +311,10 @@ Get all pending drafts. All solvers see all pending drafts (no filtering). This 
 **Example**
 
 ```bash
-curl http://127.0.0.1:3333/draft-intents/pending
+curl http://127.0.0.1:3333/draftintents/pending
 ```
 
-### POST /draft-intent/:id/signature
+### POST /draftintent/:id/signature
 
 Submit a signature for a draft intent. Implements FCFS logic: first signature wins, later signatures are rejected with 409 Conflict.
 
@@ -360,7 +360,7 @@ Submit a signature for a draft intent. Implements FCFS logic: first signature wi
 **Example**
 
 ```bash
-curl -X POST http://127.0.0.1:3333/draft-intent/11111111-1111-1111-1111-111111111111/signature \
+curl -X POST http://127.0.0.1:3333/draftintent/11111111-1111-1111-1111-111111111111/signature \
   -H "Content-Type: application/json" \
   -d '{
     "solver_address": "0xabc...",
@@ -369,7 +369,7 @@ curl -X POST http://127.0.0.1:3333/draft-intent/11111111-1111-1111-1111-11111111
   }'
 ```
 
-### GET /draft-intent/:id/signature
+### GET /draftintent/:id/signature
 
 Poll for the signature of a draft intent. Returns the first signature received (FCFS). This is a polling endpoint - requesters call this regularly to check if a signature is available.
 
@@ -410,5 +410,5 @@ Poll for the signature of a draft intent. Returns the first signature received (
 **Example**
 
 ```bash
-curl http://127.0.0.1:3333/draft-intent/11111111-1111-1111-1111-111111111111/signature
+curl http://127.0.0.1:3333/draftintent/11111111-1111-1111-1111-111111111111/signature
 ```

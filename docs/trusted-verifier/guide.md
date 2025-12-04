@@ -68,4 +68,4 @@ The verifier provides negotiation routing capabilities for off-chain communicati
   - `curl -s http://127.0.0.1:3333/public-key`
   - `curl -s http://127.0.0.1:3333/events | jq`
   - `curl -s http://127.0.0.1:3333/approvals | jq`
-  - `curl -s http://127.0.0.1:3333/draft-intents/pending | jq` (negotiation routing)
+  - `curl -s http://127.0.0.1:3333/draftintents/pending | jq` (negotiation routing)

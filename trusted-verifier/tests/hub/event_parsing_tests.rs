@@ -1,7 +1,7 @@
 //! Unit tests for hub event parsing
 //!
 //! These tests verify that hub chain events (OracleLimitOrderEvent, LimitOrderEvent)
-//! are correctly parsed and populate all required fields in RequestIntentEvent.
+//! are correctly parsed and populate all required fields in IntentEvent.
 
 use serde_json::json;
 use trusted_verifier::monitor::EventMonitor;
@@ -112,7 +112,7 @@ async fn setup_mock_server_with_oracle_event(
 /// Test that poll_hub_events correctly parses OracleLimitOrderEvent and populates requester_address_connected_chain
 ///
 /// What is tested: When an OracleLimitOrderEvent is emitted with requester_address_connected_chain,
-/// poll_hub_events should parse it and include it in the RequestIntentEvent.
+/// poll_hub_events should parse it and include it in the IntentEvent.
 ///
 /// Why: Verify that outflow intents have all required fields populated from the event,
 /// preventing validation failures due to missing requester_address_connected_chain.

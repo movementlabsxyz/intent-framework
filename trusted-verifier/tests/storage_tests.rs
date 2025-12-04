@@ -3,8 +3,8 @@
 //! These tests verify draft intent storage operations including CRUD,
 //! FCFS signature handling, expiry, and status transitions.
 
-use trusted_verifier::storage::draft_intents::{
-    DraftIntentStore, DraftIntentStatus,
+use trusted_verifier::storage::draftintents::{
+    DraftintentStore, DraftintentStatus,
 };
 use serde_json;
 
@@ -44,7 +44,7 @@ fn past_expiry_time() -> u64 {
 /// Why: Core functionality - drafts must be stored and retrievable
 #[tokio::test]
 async fn test_add_and_get_draft() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     let draft = store
@@ -58,7 +58,7 @@ async fn test_add_and_get_draft() {
 
     assert_eq!(draft.draft_id, "test-draft-1");
     assert_eq!(draft.requester_address, "0x123");
-    assert_eq!(draft.status, DraftIntentStatus::Pending);
+    assert_eq!(draft.status, DraftintentStatus::Pending);
     assert!(draft.signature.is_none(), "Draft should not have signature initially");
 
     let retrieved = store.get_draft("test-draft-1").await;
@@ -66,7 +66,7 @@ async fn test_add_and_get_draft() {
     let retrieved = retrieved.unwrap();
     assert_eq!(retrieved.draft_id, "test-draft-1");
     assert_eq!(retrieved.requester_address, "0x123");
-    assert_eq!(retrieved.status, DraftIntentStatus::Pending);
+    assert_eq!(retrieved.status, DraftintentStatus::Pending);
 }
 
 /// Test that getting non-existent draft returns None
@@ -74,7 +74,7 @@ async fn test_add_and_get_draft() {
 /// Why: API should handle missing drafts gracefully
 #[tokio::test]
 async fn test_get_nonexistent_draft() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
 
     let retrieved = store.get_draft("nonexistent-draft").await;
     assert!(retrieved.is_none(), "Non-existent draft should return None");
@@ -89,7 +89,7 @@ async fn test_get_nonexistent_draft() {
 /// Why: Solvers need to poll for all pending drafts
 #[tokio::test]
 async fn test_get_pending_drafts() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     store
@@ -119,7 +119,7 @@ async fn test_get_pending_drafts() {
 /// Why: Solvers should not see expired drafts
 #[tokio::test]
 async fn test_pending_drafts_exclude_expired() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     // Add pending draft
@@ -155,7 +155,7 @@ async fn test_pending_drafts_exclude_expired() {
 /// Why: Solvers should not see already-signed drafts
 #[tokio::test]
 async fn test_pending_drafts_exclude_signed() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     // Add pending draft
@@ -207,7 +207,7 @@ async fn test_pending_drafts_exclude_signed() {
 /// Why: FCFS logic - first solver to sign wins
 #[tokio::test]
 async fn test_fcfs_first_signature_succeeds() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     store
@@ -232,7 +232,7 @@ async fn test_fcfs_first_signature_succeeds() {
 
     // Verify draft is signed
     let draft = store.get_draft("draft-1").await.unwrap();
-    assert_eq!(draft.status, DraftIntentStatus::Signed);
+    assert_eq!(draft.status, DraftintentStatus::Signed);
     assert!(draft.signature.is_some());
     assert_eq!(draft.signature.unwrap().solver_address, "0xsolver1");
 }
@@ -242,7 +242,7 @@ async fn test_fcfs_first_signature_succeeds() {
 /// Why: FCFS logic - only first signature wins
 #[tokio::test]
 async fn test_fcfs_second_signature_fails() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     store
@@ -282,7 +282,7 @@ async fn test_fcfs_second_signature_fails() {
 
     // Verify first signature is still stored
     let draft = store.get_draft("draft-1").await.unwrap();
-    assert_eq!(draft.status, DraftIntentStatus::Signed);
+    assert_eq!(draft.status, DraftintentStatus::Signed);
     assert_eq!(draft.signature.unwrap().solver_address, "0xsolver1");
 }
 
@@ -291,7 +291,7 @@ async fn test_fcfs_second_signature_fails() {
 /// Why: Should handle invalid draft_id gracefully
 #[tokio::test]
 async fn test_signature_nonexistent_draft() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
 
     let result = store
         .add_signature(
@@ -313,7 +313,7 @@ async fn test_signature_nonexistent_draft() {
 /// Why: Expired drafts should be rejected
 #[tokio::test]
 async fn test_signature_expired_draft() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     store
@@ -349,7 +349,7 @@ async fn test_signature_expired_draft() {
 /// Why: Status must accurately reflect draft state
 #[tokio::test]
 async fn test_status_transition_pending_to_signed() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     store
@@ -363,7 +363,7 @@ async fn test_status_transition_pending_to_signed() {
 
     // Initially pending
     let draft = store.get_draft("draft-1").await.unwrap();
-    assert_eq!(draft.status, DraftIntentStatus::Pending);
+    assert_eq!(draft.status, DraftintentStatus::Pending);
 
     // Sign draft
     store
@@ -378,7 +378,7 @@ async fn test_status_transition_pending_to_signed() {
 
     // Now signed
     let draft = store.get_draft("draft-1").await.unwrap();
-    assert_eq!(draft.status, DraftIntentStatus::Signed);
+    assert_eq!(draft.status, DraftintentStatus::Signed);
 }
 
 // ============================================================================
@@ -390,7 +390,7 @@ async fn test_status_transition_pending_to_signed() {
 /// Why: Expired drafts should be cleaned up
 #[tokio::test]
 async fn test_cleanup_expired() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     // Add expired draft
@@ -418,11 +418,11 @@ async fn test_cleanup_expired() {
 
     // Check expired draft is marked as expired
     let expired_draft = store.get_draft("draft-expired").await.unwrap();
-    assert_eq!(expired_draft.status, DraftIntentStatus::Expired);
+    assert_eq!(expired_draft.status, DraftintentStatus::Expired);
 
     // Check pending draft is still pending
     let pending_draft = store.get_draft("draft-pending").await.unwrap();
-    assert_eq!(pending_draft.status, DraftIntentStatus::Pending);
+    assert_eq!(pending_draft.status, DraftintentStatus::Pending);
 }
 
 // ============================================================================
@@ -434,7 +434,7 @@ async fn test_cleanup_expired() {
 /// Why: Edge case - should not crash on empty data
 #[tokio::test]
 async fn test_draft_with_empty_data() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let empty_data = serde_json::json!({});
 
     let draft = store
@@ -456,7 +456,7 @@ async fn test_draft_with_empty_data() {
 /// Why: Timestamps enable audit trail and ordering
 #[tokio::test]
 async fn test_signature_timestamp() {
-    let store = DraftIntentStore::new();
+    let store = DraftintentStore::new();
     let draft_data = create_test_draft_data();
 
     store

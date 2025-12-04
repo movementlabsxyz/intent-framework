@@ -16,7 +16,7 @@ module mvmt_intent::intent_as_escrow {
     use aptos_framework::fungible_asset::{Self, FungibleAsset, Metadata};
     use aptos_framework::object::Object;
     use mvmt_intent::fa_intent_with_oracle;
-    use mvmt_intent::intent::{Self, TradeIntent, TradeSession};
+    use mvmt_intent::intent::{Self, Intent, Session};
     use mvmt_intent::intent_reservation::{Self, IntentReserved};
     use aptos_std::ed25519;
 
@@ -39,7 +39,7 @@ module mvmt_intent::intent_as_escrow {
     /// Creates a simple escrow with verifier approval requirement
     ///
     /// # Arguments
-    /// - `requester_signer`: Signer of the escrow creator (requester who created the request-intent on hub chain)
+    /// - `requester_signer`: Signer of the escrow creator (requester who created the intent on hub chain)
     /// - `offered_asset`: Asset to be escrowed
     /// - `offered_chain_id`: Chain ID where the escrow is created (connected chain)
     /// - `verifier_public_key`: Public key of authorized verifier
@@ -49,7 +49,7 @@ module mvmt_intent::intent_as_escrow {
     /// - `desired_chain_id`: Chain ID where desired tokens are located (hub chain for inflow intents)
     ///
     /// # Returns
-    /// - `Object<TradeIntent<...>>`: Handle to the created escrow
+    /// - `Object<Intent<...>>`: Handle to the created escrow
     ///
     /// # Aborts
     /// - If reservation is None (escrows must always be reserved for a specific solver)
@@ -62,7 +62,7 @@ module mvmt_intent::intent_as_escrow {
         intent_id: address,
         reservation: IntentReserved,
         desired_chain_id: u64
-    ): Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
+    ): Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
         // Create verifier requirement: signature itself is the approval, min_reported_value is 0
         // (the signature verification is what matters, not the reported_value)
         let requirement =
@@ -102,14 +102,14 @@ module mvmt_intent::intent_as_escrow {
     ///
     /// # Returns
     /// - `FungibleAsset`: The escrowed asset that solver can claim
-    /// - `TradeSession<...>`: Session for completing the escrow
+    /// - `Session<...>`: Session for completing the escrow
     ///
     /// # Aborts
     /// - If the escrow is reserved and the solver is not the authorized solver
     public fun start_escrow_session(
         solver: &signer,
-        intent: Object<TradeIntent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>
-    ): (FungibleAsset, TradeSession<fa_intent_with_oracle::OracleGuardedLimitOrder>) {
+        intent: Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>>
+    ): (FungibleAsset, Session<fa_intent_with_oracle::OracleGuardedLimitOrder>) {
         fa_intent_with_oracle::start_fa_offering_session(solver, intent)
     }
 
@@ -130,7 +130,7 @@ module mvmt_intent::intent_as_escrow {
     /// - If the escrow is reserved and the solver is not the authorized solver
     public fun complete_escrow(
         solver: &signer,
-        session: TradeSession<fa_intent_with_oracle::OracleGuardedLimitOrder>,
+        session: Session<fa_intent_with_oracle::OracleGuardedLimitOrder>,
         solver_payment: FungibleAsset,
         verifier_signature: ed25519::Signature
     ) {

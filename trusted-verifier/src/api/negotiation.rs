@@ -15,7 +15,7 @@ use warp::{http::StatusCode, Filter};
 use crate::api::generic::ApiResponse;
 use crate::config::Config;
 use crate::mvm_client::MvmClient;
-use crate::storage::{DraftIntentStatus, DraftIntentStore};
+use crate::storage::{DraftintentStatus, DraftintentStore};
 
 // ============================================================================
 // REQUEST/RESPONSE STRUCTURES
@@ -23,10 +23,10 @@ use crate::storage::{DraftIntentStatus, DraftIntentStore};
 
 /// Request structure for submitting a draft intent.
 #[derive(Debug, Deserialize)]
-pub struct DraftIntentRequest {
+pub struct DraftintentRequest {
     /// Address of the requester submitting the draft
     pub requester_address: String,
-    /// Draft data (JSON object matching IntentDraft structure from Move)
+    /// Draft data (JSON object matching Draftintent structure from Move)
     pub draft_data: serde_json::Value,
     /// Expiry time (Unix timestamp)
     pub expiry_time: u64,
@@ -34,7 +34,7 @@ pub struct DraftIntentRequest {
 
 /// Response structure for draft intent submission.
 #[derive(Debug, Serialize)]
-pub struct DraftIntentResponse {
+pub struct DraftintentResponse {
     /// Unique identifier for the draft
     pub draft_id: String,
     /// Current status of the draft
@@ -43,7 +43,7 @@ pub struct DraftIntentResponse {
 
 /// Response structure for draft intent status.
 #[derive(Debug, Serialize)]
-pub struct DraftIntentStatusResponse {
+pub struct DraftintentStatusResponse {
     /// Unique identifier for the draft
     pub draft_id: String,
     /// Current status of the draft
@@ -91,7 +91,7 @@ pub struct SignatureResponse {
 // API HANDLERS
 // ============================================================================
 
-/// Handler for POST /draft-intent endpoint.
+/// Handler for POST /draftintent endpoint.
 ///
 /// Accepts a draft intent submission from a requester.
 /// Drafts are open to any solver (no solver_address required).
@@ -105,9 +105,9 @@ pub struct SignatureResponse {
 ///
 /// * `Ok(warp::Reply)` - JSON response with draft_id and status
 /// * `Err(warp::Rejection)` - Failed to create draft
-pub async fn create_draft_intent_handler(
-    request: DraftIntentRequest,
-    store: Arc<RwLock<DraftIntentStore>>,
+pub async fn create_draftintent_handler(
+    request: DraftintentRequest,
+    store: Arc<RwLock<DraftintentStore>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     info!(
         "Received draft intent submission from requester: {}",
@@ -134,7 +134,7 @@ pub async fn create_draft_intent_handler(
 
     Ok(warp::reply::json(&ApiResponse {
         success: true,
-        data: Some(DraftIntentResponse {
+        data: Some(DraftintentResponse {
             draft_id,
             status: "pending".to_string(),
         }),
@@ -142,7 +142,7 @@ pub async fn create_draft_intent_handler(
     }))
 }
 
-/// Handler for GET /draft-intent/:id endpoint.
+/// Handler for GET /draftintent/:id endpoint.
 ///
 /// Retrieves the status of a specific draft intent.
 ///
@@ -155,9 +155,9 @@ pub async fn create_draft_intent_handler(
 ///
 /// * `Ok(warp::Reply)` - JSON response with draft status
 /// * `Err(warp::Rejection)` - Draft not found (404)
-pub async fn get_draft_intent_handler(
+pub async fn get_draftintent_handler(
     draft_id: String,
-    store: Arc<RwLock<DraftIntentStore>>,
+    store: Arc<RwLock<DraftintentStore>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let store_read = store.read().await;
     let draft = store_read.get_draft(&draft_id).await;
@@ -166,7 +166,7 @@ pub async fn get_draft_intent_handler(
     let draft = match draft {
         Some(d) => d,
         None => {
-            return Ok(warp::reply::json(&ApiResponse::<DraftIntentStatusResponse> {
+            return Ok(warp::reply::json(&ApiResponse::<DraftintentStatusResponse> {
                 success: false,
                 data: None,
                 error: Some("Draft not found".to_string()),
@@ -175,14 +175,14 @@ pub async fn get_draft_intent_handler(
     };
 
     let status_str = match draft.status {
-        DraftIntentStatus::Pending => "pending",
-        DraftIntentStatus::Signed => "signed",
-        DraftIntentStatus::Expired => "expired",
+        DraftintentStatus::Pending => "pending",
+        DraftintentStatus::Signed => "signed",
+        DraftintentStatus::Expired => "expired",
     };
 
     Ok(warp::reply::json(&ApiResponse {
         success: true,
-        data: Some(DraftIntentStatusResponse {
+        data: Some(DraftintentStatusResponse {
             draft_id: draft.draft_id,
             status: status_str.to_string(),
             requester_address: draft.requester_address,
@@ -193,7 +193,7 @@ pub async fn get_draft_intent_handler(
     }))
 }
 
-/// Handler for GET /draft-intents/pending endpoint.
+/// Handler for GET /draftintents/pending endpoint.
 ///
 /// Returns all pending drafts. All solvers see all pending drafts (no filtering).
 /// This is a polling endpoint - solvers call this regularly to check for new drafts.
@@ -206,7 +206,7 @@ pub async fn get_draft_intent_handler(
 ///
 /// * `Ok(warp::Reply)` - JSON response with list of pending drafts
 pub async fn get_pending_drafts_handler(
-    store: Arc<RwLock<DraftIntentStore>>,
+    store: Arc<RwLock<DraftintentStore>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let store_read = store.read().await;
     let pending_drafts = store_read.get_pending_drafts().await;
@@ -233,7 +233,7 @@ pub async fn get_pending_drafts_handler(
     }))
 }
 
-/// Handler for POST /draft-intent/:id/signature endpoint.
+/// Handler for POST /draftintent/:id/signature endpoint.
 ///
 /// Accepts a signature submission from a solver for a draft intent.
 /// Implements FCFS logic: first signature wins, later signatures are rejected with 409 Conflict.
@@ -252,7 +252,7 @@ pub async fn get_pending_drafts_handler(
 pub async fn submit_signature_handler(
     draft_id: String,
     request: SignatureSubmissionRequest,
-    store: Arc<RwLock<DraftIntentStore>>,
+    store: Arc<RwLock<DraftintentStore>>,
     config: Arc<Config>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     info!(
@@ -396,7 +396,7 @@ pub async fn submit_signature_handler(
     }
 }
 
-/// Handler for GET /draft-intent/:id/signature endpoint.
+/// Handler for GET /draftintent/:id/signature endpoint.
 ///
 /// Retrieves the signature for a draft intent (first signature received).
 /// This is a polling endpoint - requesters call this regularly to check if signature is available.
@@ -412,7 +412,7 @@ pub async fn submit_signature_handler(
 /// * `Err(warp::Rejection)` - Draft not found (404)
 pub async fn get_signature_handler(
     draft_id: String,
-    store: Arc<RwLock<DraftIntentStore>>,
+    store: Arc<RwLock<DraftintentStore>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let store_read = store.read().await;
     let draft = store_read.get_draft(&draft_id).await;
@@ -503,10 +503,10 @@ pub fn validate_signature_format(signature: &str) -> Result<(), String> {
 // WARP FILTER HELPERS
 // ============================================================================
 
-/// Helper function to inject DraftIntentStore into handlers.
+/// Helper function to inject DraftintentStore into handlers.
 pub fn with_draft_store(
-    store: Arc<RwLock<DraftIntentStore>>,
-) -> impl Filter<Extract = (Arc<RwLock<DraftIntentStore>>,), Error = std::convert::Infallible> + Clone
+    store: Arc<RwLock<DraftintentStore>>,
+) -> impl Filter<Extract = (Arc<RwLock<DraftintentStore>>,), Error = std::convert::Infallible> + Clone
 {
     warp::any().map(move || store.clone())
 }

@@ -166,7 +166,7 @@ impl HubChainClient {
 
     /// Fulfills an inflow request intent
     ///
-    /// Calls the `fulfill_inflow_request_intent` entry function on the hub chain.
+    /// Calls the `fulfill_inflow_intent` entry function on the hub chain.
     ///
     /// # Arguments
     ///
@@ -190,7 +190,7 @@ impl HubChainClient {
                 &self.profile,
                 "--assume-yes",
                 "--function-id",
-                &format!("{}::fa_intent_inflow::fulfill_inflow_request_intent", self.module_address),
+                &format!("{}::fa_intent_inflow::fulfill_inflow_intent", self.module_address),
                 "--args",
                 &format!("object:{}", intent_address),
                 &format!("u64:{}", payment_amount),
@@ -222,7 +222,7 @@ impl HubChainClient {
 
     /// Fulfills an outflow request intent
     ///
-    /// Calls the `fulfill_outflow_request_intent` entry function on the hub chain.
+    /// Calls the `fulfill_outflow_intent` entry function on the hub chain.
     ///
     /// # Arguments
     ///
@@ -249,7 +249,7 @@ impl HubChainClient {
                 &self.profile,
                 "--assume-yes",
                 "--function-id",
-                &format!("{}::fa_intent_outflow::fulfill_outflow_request_intent", self.module_address),
+                &format!("{}::fa_intent_outflow::fulfill_outflow_intent", self.module_address),
                 "--args",
                 &format!("object:{}", intent_address),
                 &format!("vector<u8>:0x{}", signature_hex),

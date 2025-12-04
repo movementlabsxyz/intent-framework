@@ -167,14 +167,14 @@ log "     Signature: ${RETRIEVED_SIGNATURE:0:20}..."
 # SECTION 6: CREATE INTENT ON-CHAIN WITH RETRIEVED SIGNATURE
 # ============================================================================
 log ""
-log "   Creating cross-chain request-intent on Chain 1..."
+log "   Creating cross-chain intent on Chain 1..."
 log "     Offered metadata (connected chain): $OFFERED_METADATA_CHAIN2"
 log "     Desired metadata (hub chain): $DESIRED_METADATA_CHAIN1"
 log "     Solver address: $RETRIEVED_SOLVER"
 
 SOLVER_SIGNATURE_HEX="${RETRIEVED_SIGNATURE#0x}"
 aptos move run --profile requester-chain1 --assume-yes \
-    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_request_intent_entry" \
+    --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_intent_entry" \
     --args "address:${OFFERED_METADATA_CHAIN2}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
@@ -184,15 +184,15 @@ if [ $? -eq 0 ]; then
     log "     ✅ Request-intent created on Chain 1!"
 
     sleep 2
-    log "     - Verifying request-intent stored on-chain..."
+    log "     - Verifying intent stored on-chain..."
     HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${REQUESTER_CHAIN1_ADDRESS}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("LimitOrderEvent")) | .data.intent_address' | head -n 1)
 
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
-        log "     ✅ Hub request-intent stored at: $HUB_INTENT_ADDRESS"
+        log "     ✅ Hub intent stored at: $HUB_INTENT_ADDRESS"
         log_and_echo "✅ Request-intent created (via verifier negotiation)"
     else
-        log_and_echo "❌ ERROR: Could not verify hub request-intent address"
+        log_and_echo "❌ ERROR: Could not verify hub intent address"
         exit 1
     fi
 else

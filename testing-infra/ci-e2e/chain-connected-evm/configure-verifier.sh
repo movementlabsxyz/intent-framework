@@ -65,6 +65,15 @@ else
     fi
 fi
 
+# Comment out MVM chain configuration for EVM-only tests
+# This prevents the verifier from trying to connect to MVM connected chain
+# Note: TOML parser will ignore commented sections, so connected_chain_mvm will be None
+sed -i '/^\[connected_chain_mvm\]/,/^\[connected_chain_evm\]/ {
+    /^\[connected_chain_mvm\]/ s/^/# EVM-only test: /
+    /^\[connected_chain_evm\]/! s/^/# EVM-only test: /
+}' "$VERIFIER_TESTING_CONFIG"
+
 log_and_echo "✅ Updated verifier_testing.toml with Connected EVM Chain addresses"
+log_and_echo "   (MVM chain configuration commented out for EVM-only test)"
 log_and_echo ""
 

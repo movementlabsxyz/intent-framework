@@ -36,9 +36,6 @@ echo "===================================================================="
 echo ""
 echo "🚀 Step 3: Configuring and starting verifier (for negotiation routing)..."
 echo "=========================================================================="
-./testing-infra/ci-e2e/chain-hub/configure-verifier.sh
-./testing-infra/ci-e2e/chain-connected-mvm/configure-verifier.sh
-./testing-infra/ci-e2e/e2e-tests-mvm/configure-verifier.sh
 ./testing-infra/ci-e2e/e2e-tests-mvm/start-verifier.sh
 
 # Start solver service for automatic signing and fulfillment

@@ -235,6 +235,11 @@ else
                 continue
             fi
             
+            # Skip if already released (check early to avoid redundant logs)
+            if [[ "$RELEASED_ESCROWS" == *"$ESCROW_ID"* ]]; then
+                continue
+            fi
+            
             # Verify escrow_id is a valid Move VM object address format
             # Move VM addresses: 0x followed by 1-64 hex characters (3-66 chars total)
             # Object addresses can be shorter than 64 hex chars (leading zeros may be omitted)
@@ -278,11 +283,6 @@ else
                 cat "$VERIFIER_LOG"
                 log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                 exit 1
-            fi
-            
-            # Skip if already released
-            if [[ "$RELEASED_ESCROWS" == *"$ESCROW_ID"* ]]; then
-                continue
             fi
             
             log ""

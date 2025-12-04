@@ -5,7 +5,7 @@
 
 use solver::{
     config::SolverConfig, service::tracker::IntentTracker,
-    chains::HubChainClient, service::outflow::OutflowService,
+    service::outflow::OutflowService,
 };
 use std::sync::Arc;
 
@@ -68,8 +68,7 @@ fn create_test_outflow_draft_data() -> solver::acceptance::DraftIntentData {
 fn test_outflow_service_new() {
     let config = create_test_config();
     let tracker = Arc::new(IntentTracker::new(&config).unwrap());
-    let hub_client = HubChainClient::new(&config.hub_chain).unwrap();
-    let _service = OutflowService::new(config, tracker, hub_client).unwrap();
+    let _service = OutflowService::new(config, tracker).unwrap();
 }
 
 /// What is tested: poll_and_execute_transfers() returns empty list when no pending outflow intents
@@ -88,8 +87,7 @@ fn test_poll_and_execute_transfers_empty() {
     
     // These create reqwest::Client which may internally use tokio runtime
     let tracker = Arc::new(IntentTracker::new(&config).unwrap());
-    let hub_client = HubChainClient::new(&config.hub_chain).unwrap();
-    let service = OutflowService::new(config, tracker, hub_client).unwrap();
+    let service = OutflowService::new(config, tracker).unwrap();
 
     let result = rt.block_on(service.poll_and_execute_transfers()).unwrap();
     assert_eq!(result.len(), 0);

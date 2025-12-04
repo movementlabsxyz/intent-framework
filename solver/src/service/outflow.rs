@@ -23,10 +23,6 @@ pub struct OutflowService {
     config: SolverConfig,
     /// Intent tracker for tracking signed intents (shared with other services)
     tracker: Arc<IntentTracker>,
-    /// Verifier client for getting approvals
-    verifier_client: VerifierClient,
-    /// Hub chain client for fulfilling intents
-    hub_client: HubChainClient,
     /// Connected chain client (MVM or EVM)
     connected_client: ConnectedChainClient,
 }
@@ -53,10 +49,7 @@ impl OutflowService {
     pub fn new(
         config: SolverConfig,
         tracker: Arc<IntentTracker>,
-        hub_client: HubChainClient,
     ) -> Result<Self> {
-        let verifier_client = VerifierClient::new(&config.service.verifier_url);
-
         // Create connected chain client based on config
         let connected_client = match &config.connected_chain {
             ConnectedChainConfig::Mvm(chain_config) => {
@@ -70,8 +63,6 @@ impl OutflowService {
         Ok(Self {
             config,
             tracker,
-            verifier_client,
-            hub_client,
             connected_client,
         })
     }

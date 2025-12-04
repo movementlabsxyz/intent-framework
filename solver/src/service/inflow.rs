@@ -23,8 +23,8 @@ pub struct InflowService {
     config: SolverConfig,
     /// Intent tracker for tracking signed intents (shared with other services)
     tracker: Arc<IntentTracker>,
-    /// Verifier client for getting approvals
-    verifier_client: VerifierClient,
+    /// Verifier base URL (client created on-demand to avoid blocking client in async context)
+    verifier_url: String,
     /// Connected chain client (MVM or EVM)
     connected_client: ConnectedChainClient,
 }
@@ -55,7 +55,7 @@ impl InflowService {
     /// * `Ok(InflowService)` - Successfully created service
     /// * `Err(anyhow::Error)` - Failed to create service
     pub fn new(config: SolverConfig, tracker: Arc<IntentTracker>) -> Result<Self> {
-        let verifier_client = VerifierClient::new(&config.service.verifier_url);
+        let verifier_url = config.service.verifier_url.clone();
 
         // Create connected chain client based on config
         let connected_client = match &config.connected_chain {
@@ -70,7 +70,7 @@ impl InflowService {
         Ok(Self {
             config,
             tracker,
-            verifier_client,
+            verifier_url,
             connected_client,
         })
     }
@@ -197,8 +197,15 @@ impl InflowService {
         escrow_id: &str,
         payment_amount: u64,
     ) -> Result<String> {
-        // Poll verifier for approval
-        let approvals = self.verifier_client.get_approvals()?;
+        // Poll verifier for approval (use spawn_blocking to avoid blocking client in async context)
+        let verifier_url = self.verifier_url.clone();
+        let approvals = tokio::task::spawn_blocking(move || {
+            let client = VerifierClient::new(&verifier_url);
+            client.get_approvals()
+        })
+        .await
+        .context("Failed to spawn blocking task")?
+        .context("Failed to get approvals")?;
 
         // Find approval matching this intent_id
         let intent_id_normalized = normalize_intent_id(&intent.intent_id);

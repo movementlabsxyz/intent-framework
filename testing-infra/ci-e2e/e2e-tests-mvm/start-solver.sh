@@ -2,21 +2,22 @@
 
 # Start Solver Service for E2E Tests
 # 
-# This script generates a solver configuration from test environment variables
+# This script generates a solver configuration from aptos CLI profiles
 # and starts the solver service.
 #
-# Required environment variables (set by run-tests-*.sh):
-# - CHAIN1_URL: Hub chain RPC URL
-# - CHAIN2_URL: Connected chain RPC URL  
-# - CHAIN1_ID: Hub chain ID
-# - CHAIN2_ID: Connected chain ID
-# - ACCOUNT_ADDRESS: Deployed module address (used for both chains in MVM test)
+# Optional environment variables:
+# - CHAIN1_URL: Hub chain RPC URL (default: http://127.0.0.1:8080/v1)
+# - CHAIN2_URL: Connected chain RPC URL (default: http://127.0.0.1:8082/v1)
+# - CHAIN1_ID: Hub chain ID (default: 1)
+# - CHAIN2_ID: Connected chain ID (default: 2)
+# - VERIFIER_URL: Verifier URL (default: http://127.0.0.1:3333)
 
 set -e
 
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
+source "$SCRIPT_DIR/../util_mvm.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -33,21 +34,36 @@ log ""
 generate_solver_config_mvm() {
     local config_file="$1"
     
-    # Use environment variables from test setup
+    # Get addresses from aptos CLI profiles (same as other test scripts)
+    local chain1_address=$(get_profile_address "intent-account-chain1")
+    local chain2_address=$(get_profile_address "intent-account-chain2")
+    local solver_chain1_address=$(get_profile_address "solver-chain1")
+    local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
+    local test_tokens_chain2=$(get_profile_address "test-tokens-chain2")
+    
+    # Get USDxyz metadata addresses (for acceptance config)
+    local usdxyz_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
+    local usdxyz_metadata_chain2=$(get_usdxyz_metadata "0x${test_tokens_chain2}" "2")
+    
+    # Use environment variables or defaults for URLs
     local verifier_url="${VERIFIER_URL:-http://127.0.0.1:3333}"
     local hub_rpc="${CHAIN1_URL:-http://127.0.0.1:8080/v1}"
     local connected_rpc="${CHAIN2_URL:-http://127.0.0.1:8082/v1}"
     local hub_chain_id="${CHAIN1_ID:-1}"
     local connected_chain_id="${CHAIN2_ID:-2}"
-    local module_address="${ACCOUNT_ADDRESS:-0x123}"
-    local solver_address="${SOLVER_ADDRESS:-$module_address}"
+    local hub_module_address="0x${chain1_address}"
+    local connected_module_address="0x${chain2_address}"
+    local solver_address="0x${solver_chain1_address}"
     
     log "   Generating solver config:"
     log "   - Verifier URL: $verifier_url"
     log "   - Hub RPC: $hub_rpc (chain ID: $hub_chain_id)"
     log "   - Connected RPC: $connected_rpc (chain ID: $connected_chain_id)"
-    log "   - Module address: $module_address"
+    log "   - Hub module address: $hub_module_address"
+    log "   - Connected module address: $connected_module_address"
     log "   - Solver address: $solver_address"
+    log "   - USDxyz metadata chain 1: $usdxyz_metadata_chain1"
+    log "   - USDxyz metadata chain 2: $usdxyz_metadata_chain2"
     
     cat > "$config_file" << EOF
 # Auto-generated solver config for MVM E2E tests
@@ -61,24 +77,26 @@ polling_interval_ms = 1000  # Poll frequently for tests
 name = "Hub Chain (E2E Test)"
 rpc_url = "$hub_rpc"
 chain_id = $hub_chain_id
-module_address = "$module_address"
-profile = "default"
+module_address = "$hub_module_address"
+profile = "solver-chain1"
 
 [connected_chain]
 type = "mvm"
 name = "Connected Chain (E2E Test)"
 rpc_url = "$connected_rpc"
 chain_id = $connected_chain_id
-module_address = "$module_address"
-profile = "default"
+module_address = "$connected_module_address"
+profile = "solver-chain2"
 
 [acceptance]
-# Accept any token swap at 1:1 rate (for testing)
-# In production, this would be configured with specific token pairs
-"$hub_chain_id:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:$connected_chain_id:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" = 1.0
+# Accept USDxyz swaps at 1:1 rate for E2E testing
+# Inflow: offered on connected chain (2), desired on hub chain (1)
+"$connected_chain_id:$usdxyz_metadata_chain1:$hub_chain_id:$usdxyz_metadata_chain1" = 1.0
+# Outflow: offered on hub chain (1), desired on connected chain (2)
+"$hub_chain_id:$usdxyz_metadata_chain1:$connected_chain_id:$usdxyz_metadata_chain2" = 1.0
 
 [solver]
-profile = "default"
+profile = "solver-chain1"
 address = "$solver_address"
 EOF
 

@@ -21,7 +21,6 @@
 use anyhow::Result;
 use clap::Parser;
 use solver::{
-    chains::HubChainClient,
     config::SolverConfig,
     service::{InflowService, IntentTracker, OutflowService, SigningService},
 };
@@ -75,10 +74,6 @@ async fn main() -> Result<()> {
     let tracker = Arc::new(IntentTracker::new(&config)?);
     info!("Intent tracker initialized");
 
-    // Create hub chain client (shared by outflow service)
-    let hub_client = HubChainClient::new(&config.hub_chain)?;
-    info!("Hub chain client initialized");
-
     // Create services
     let signing_service = SigningService::new(config.clone(), tracker.clone())?;
     info!("Signing service initialized");
@@ -86,7 +81,7 @@ async fn main() -> Result<()> {
     let inflow_service = InflowService::new(config.clone(), tracker.clone())?;
     info!("Inflow service initialized");
 
-    let outflow_service = OutflowService::new(config.clone(), tracker.clone(), hub_client)?;
+    let outflow_service = OutflowService::new(config.clone(), tracker.clone())?;
     info!("Outflow service initialized");
 
     let polling_interval = Duration::from_millis(config.service.polling_interval_ms);

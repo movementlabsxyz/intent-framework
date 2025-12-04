@@ -188,43 +188,65 @@ impl SigningService {
         draft_data: &DraftIntentData,
     ) -> Result<bool> {
         // Get solver profile and address from config
-        let profile = &self.config.solver.profile;
-        let solver_address = &self.config.solver.address;
+        let profile = self.config.solver.profile.clone();
+        let solver_address = self.config.solver.address.clone();
 
         // Get module address and chain number from hub chain config
         let module_address = self.config.hub_chain.module_address
             .strip_prefix("0x")
-            .context("Module address must start with 0x")?;
+            .context("Module address must start with 0x")?
+            .to_string();
         let chain_num = 1u8; // Hub chain is always chain 1
 
-        // Get private key
-        let private_key = get_private_key_from_profile(profile)
-            .context("Failed to get private key from profile")?;
+        // Clone data for spawn_blocking
+        let offered_token = draft_data.offered_token.clone();
+        let offered_amount = draft_data.offered_amount;
+        let offered_chain_id = draft_data.offered_chain_id;
+        let desired_token = draft_data.desired_token.clone();
+        let desired_amount = draft_data.desired_amount;
+        let desired_chain_id = draft_data.desired_chain_id;
+        let expiry_time = draft.expiry_time;
+        let requester_address = draft.requester_address.clone();
 
-        // Get intent hash
-        let hash = get_intent_hash(
-            profile,
-            module_address,
-            &draft_data.offered_token,
-            draft_data.offered_amount,
-            draft_data.offered_chain_id,
-            &draft_data.desired_token,
-            draft_data.desired_amount,
-            draft_data.desired_chain_id,
-            draft.expiry_time,
-            &draft.requester_address,
-            solver_address,
-            chain_num,
-        )
-        .context("Failed to get intent hash")?;
+        // Get private key, intent hash, and sign - all blocking operations
+        let (signature_hex, public_key_hex) = tokio::task::spawn_blocking(move || -> Result<(String, String)> {
+            // Get private key
+            let private_key = get_private_key_from_profile(&profile)
+                .context("Failed to get private key from profile")?;
 
-        // Sign the hash
-        let (signature_bytes, public_key_bytes) = sign_intent_hash(&hash, &private_key)
-            .context("Failed to sign intent hash")?;
+            // Get intent hash
+            let hash = get_intent_hash(
+                &profile,
+                &module_address,
+                &offered_token,
+                offered_amount,
+                offered_chain_id,
+                &desired_token,
+                desired_amount,
+                desired_chain_id,
+                expiry_time,
+                &requester_address,
+                &solver_address,
+                chain_num,
+            )
+            .context("Failed to get intent hash")?;
 
-        // Convert to hex strings
-        let signature_hex = hex::encode(signature_bytes);
-        let public_key_hex = hex::encode(public_key_bytes);
+            // Sign the hash
+            let (signature_bytes, public_key_bytes) = sign_intent_hash(&hash, &private_key)
+                .context("Failed to sign intent hash")?;
+
+            // Convert to hex strings
+            let signature_hex = hex::encode(signature_bytes);
+            let public_key_hex = hex::encode(public_key_bytes);
+
+            Ok((signature_hex, public_key_hex))
+        })
+        .await
+        .context("Failed to spawn blocking task for signing")?
+        .context("Signing failed")?;
+
+        // Get solver address again for submission
+        let solver_address = self.config.solver.address.clone();
 
         // Submit signature to verifier
         // Use spawn_blocking since verifier_client uses blocking HTTP
@@ -286,41 +308,47 @@ impl SigningService {
 /// * `Result<DraftIntentData>` - Parsed draft data
 pub fn parse_draft_data(draft_data: &Value) -> Result<DraftIntentData> {
     // Extract fields from draft_data JSON
-    // Expected structure matches Move IntentDraft:
+    // Expected format (simple strings for metadata, strings for numbers):
     // {
-    //   "offered_metadata": {"inner": "0x..."},
-    //   "offered_amount": 1000,
-    //   "offered_chain_id": 1,
-    //   "desired_metadata": {"inner": "0x..."},
-    //   "desired_amount": 2000,
-    //   "desired_chain_id": 2,
-    //   "expiry_time": 1234567890,
-    //   ...
+    //   "offered_metadata": "0x...",
+    //   "offered_amount": "1000",
+    //   "offered_chain_id": "1",
+    //   "desired_metadata": "0x...",
+    //   "desired_amount": "2000",
+    //   "desired_chain_id": "2",
     // }
 
-    let offered_metadata = draft_data["offered_metadata"]["inner"]
+    let offered_metadata = draft_data["offered_metadata"]
         .as_str()
-        .context("Missing or invalid offered_metadata.inner")?;
+        .context("Missing or invalid offered_metadata")?;
 
     let offered_amount = draft_data["offered_amount"]
-        .as_u64()
-        .context("Missing or invalid offered_amount")?;
+        .as_str()
+        .context("Missing or invalid offered_amount")?
+        .parse::<u64>()
+        .context("offered_amount must be a valid number")?;
 
     let offered_chain_id = draft_data["offered_chain_id"]
-        .as_u64()
-        .context("Missing or invalid offered_chain_id")?;
-
-    let desired_metadata = draft_data["desired_metadata"]["inner"]
         .as_str()
-        .context("Missing or invalid desired_metadata.inner")?;
+        .context("Missing or invalid offered_chain_id")?
+        .parse::<u64>()
+        .context("offered_chain_id must be a valid number")?;
+
+    let desired_metadata = draft_data["desired_metadata"]
+        .as_str()
+        .context("Missing or invalid desired_metadata")?;
 
     let desired_amount = draft_data["desired_amount"]
-        .as_u64()
-        .context("Missing or invalid desired_amount")?;
+        .as_str()
+        .context("Missing or invalid desired_amount")?
+        .parse::<u64>()
+        .context("desired_amount must be a valid number")?;
 
     let desired_chain_id = draft_data["desired_chain_id"]
-        .as_u64()
-        .context("Missing or invalid desired_chain_id")?;
+        .as_str()
+        .context("Missing or invalid desired_chain_id")?
+        .parse::<u64>()
+        .context("desired_chain_id must be a valid number")?;
 
     Ok(DraftIntentData {
         offered_token: offered_metadata.to_string(),

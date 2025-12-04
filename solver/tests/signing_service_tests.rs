@@ -12,26 +12,15 @@ use std::sync::Arc;
 // ============================================================================
 
 /// Create a base draft data JSON with valid test values
-/// This can be customized using serde_json::json! macro:
-/// ```
-/// let draft = json!({
-///     "offered_amount": 2000,
-///     ..create_base_draft_data()
-/// });
-/// ```
 fn create_base_draft_data() -> serde_json::Value {
     json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
-        "expiry_time": 1000000u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": "1000",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "2000",
+        "desired_chain_id": "2",
+        "expiry_time": "1000000",
     })
 }
 
@@ -41,14 +30,10 @@ fn create_test_solver_config() -> solver::config::SolverConfig {
     use solver::config::{AcceptanceConfig, ChainConfig, ConnectedChainConfig, ServiceConfig, SolverConfig, SolverSigningConfig};
     use std::collections::HashMap;
 
-    // Configure token pair matching base draft data:
-    // offered: chain 1, 0xaaaa... (1000 amount)
-    // desired: chain 2, 0xbbbb... (2000 amount)
-    // Exchange rate 0.5 means: 1000 offered >= 2000 desired * 0.5 = 1000, so draft would be accepted
     let mut token_pairs = HashMap::new();
     token_pairs.insert(
         "1:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:2:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
-        0.5,  // Exchange rate: 0.5 offered per 1 desired
+        0.5,
     );
 
     SolverConfig {
@@ -95,9 +80,8 @@ fn create_test_pending_draft(expiry_time: u64) -> solver::verifier_client::Pendi
 // DRAFT DATA PARSING TESTS
 // ============================================================================
 
-/// Test that valid draft data is parsed correctly
-/// What is tested: Parsing a complete, valid draft data JSON structure
-/// Why: Verify that the parser correctly extracts all required fields from the verifier's JSON response
+/// What is tested: parse_draft_data() correctly parses valid draft data JSON
+/// Why: Ensure the parser extracts all required fields correctly from well-formed input
 #[test]
 fn test_parse_draft_data_success() {
     let draft_data = create_base_draft_data();
@@ -111,19 +95,16 @@ fn test_parse_draft_data_success() {
     assert_eq!(result.desired_chain_id, 2);
 }
 
-/// Test that missing offered_metadata field returns an error
-/// What is tested: Error handling when offered_metadata is missing
-/// Why: Ensure the parser fails gracefully when required fields are missing
+/// What is tested: parse_draft_data() returns error when offered_metadata field is missing
+/// Why: Ensure all required fields are validated and missing fields produce clear errors
 #[test]
 fn test_parse_draft_data_missing_offered_metadata() {
     let draft_data = json!({
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
+        "offered_amount": "1000",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "2000",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data);
@@ -131,42 +112,34 @@ fn test_parse_draft_data_missing_offered_metadata() {
     assert!(result.unwrap_err().to_string().contains("offered_metadata"));
 }
 
-/// Test that missing offered_metadata.inner field returns an error
-/// What is tested: Error handling when nested inner field is missing
-/// Why: Ensure the parser correctly accesses nested JSON structures
+/// What is tested: parse_draft_data() returns error when offered_metadata is not a string
+/// Why: Ensure type validation catches invalid data types for string fields
 #[test]
-fn test_parse_draft_data_missing_offered_metadata_inner() {
+fn test_parse_draft_data_invalid_offered_metadata_type() {
     let draft_data = json!({
-        "offered_metadata": {},
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
+        "offered_metadata": 12345,
+        "offered_amount": "1000",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "2000",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data);
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("offered_metadata.inner"));
+    assert!(result.unwrap_err().to_string().contains("offered_metadata"));
 }
 
-/// Test that missing offered_amount field returns an error
-/// What is tested: Error handling when offered_amount is missing
+/// What is tested: parse_draft_data() returns error when offered_amount field is missing
 /// Why: Ensure all required numeric fields are validated
 #[test]
 fn test_parse_draft_data_missing_offered_amount() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "2000",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data);
@@ -174,22 +147,17 @@ fn test_parse_draft_data_missing_offered_amount() {
     assert!(result.unwrap_err().to_string().contains("offered_amount"));
 }
 
-/// Test that invalid offered_amount type (string instead of number) returns an error
-/// What is tested: Type validation for numeric fields
-/// Why: Ensure the parser rejects invalid data types
+/// What is tested: parse_draft_data() returns error when offered_amount is not a valid number
+/// Why: Ensure numeric validation catches invalid values that cannot be parsed
 #[test]
-fn test_parse_draft_data_invalid_offered_amount_type() {
+fn test_parse_draft_data_invalid_offered_amount() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": "1000",  // String instead of number
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": "not_a_number",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "2000",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data);
@@ -197,21 +165,16 @@ fn test_parse_draft_data_invalid_offered_amount_type() {
     assert!(result.unwrap_err().to_string().contains("offered_amount"));
 }
 
-/// Test that missing offered_chain_id field returns an error
-/// What is tested: Error handling when offered_chain_id is missing
-/// Why: Ensure chain ID fields are validated
+/// What is tested: parse_draft_data() returns error when offered_chain_id field is missing
+/// Why: Ensure chain ID validation catches missing chain identifiers
 #[test]
 fn test_parse_draft_data_missing_offered_chain_id() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 1000u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": "1000",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "2000",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data);
@@ -219,19 +182,16 @@ fn test_parse_draft_data_missing_offered_chain_id() {
     assert!(result.unwrap_err().to_string().contains("offered_chain_id"));
 }
 
-/// Test that missing desired_metadata field returns an error
-/// What is tested: Error handling when desired_metadata is missing
-/// Why: Ensure desired token metadata is validated
+/// What is tested: parse_draft_data() returns error when desired_metadata field is missing
+/// Why: Ensure desired token metadata is required for intent processing
 #[test]
 fn test_parse_draft_data_missing_desired_metadata() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": "1000",
+        "offered_chain_id": "1",
+        "desired_amount": "2000",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data);
@@ -239,42 +199,16 @@ fn test_parse_draft_data_missing_desired_metadata() {
     assert!(result.unwrap_err().to_string().contains("desired_metadata"));
 }
 
-/// Test that missing desired_metadata.inner field returns an error
-/// What is tested: Error handling when nested inner field is missing for desired token
-/// Why: Ensure nested JSON structures are correctly validated for both tokens
-#[test]
-fn test_parse_draft_data_missing_desired_metadata_inner() {
-    let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {},
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
-    });
-
-    let result = parse_draft_data(&draft_data);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("desired_metadata.inner"));
-}
-
-/// Test that missing desired_amount field returns an error
-/// What is tested: Error handling when desired_amount is missing
-/// Why: Ensure all required numeric fields are validated
+/// What is tested: parse_draft_data() returns error when desired_amount field is missing
+/// Why: Ensure desired amount is required for exchange rate validation
 #[test]
 fn test_parse_draft_data_missing_desired_amount() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_chain_id": 2u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": "1000",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data);
@@ -282,21 +216,16 @@ fn test_parse_draft_data_missing_desired_amount() {
     assert!(result.unwrap_err().to_string().contains("desired_amount"));
 }
 
-/// Test that missing desired_chain_id field returns an error
-/// What is tested: Error handling when desired_chain_id is missing
-/// Why: Ensure chain ID fields are validated for both tokens
+/// What is tested: parse_draft_data() returns error when desired_chain_id field is missing
+/// Why: Ensure destination chain is required for cross-chain intent routing
 #[test]
 fn test_parse_draft_data_missing_desired_chain_id() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": "1000",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "2000",
     });
 
     let result = parse_draft_data(&draft_data);
@@ -304,32 +233,8 @@ fn test_parse_draft_data_missing_desired_chain_id() {
     assert!(result.unwrap_err().to_string().contains("desired_chain_id"));
 }
 
-/// Test that invalid chain_id type (string instead of number) returns an error
-/// What is tested: Type validation for chain ID fields
-/// Why: Ensure chain IDs are validated as numeric values
-#[test]
-fn test_parse_draft_data_invalid_chain_id_type() {
-    let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 1000u64,
-        "offered_chain_id": "1",  // String instead of number
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
-    });
-
-    let result = parse_draft_data(&draft_data);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("offered_chain_id"));
-}
-
-/// Test that empty JSON object returns an error
-/// What is tested: Error handling for completely empty draft data
-/// Why: Ensure the parser rejects empty or malformed JSON
+/// What is tested: parse_draft_data() returns error for empty JSON object
+/// Why: Ensure completely invalid input is rejected with appropriate error
 #[test]
 fn test_parse_draft_data_empty_json() {
     let draft_data = json!({});
@@ -338,45 +243,17 @@ fn test_parse_draft_data_empty_json() {
     assert!(result.is_err());
 }
 
-/// Test that offered_metadata.inner with non-string value returns an error
-/// What is tested: Type validation for token address fields
-/// Why: Ensure token addresses are validated as strings
-#[test]
-fn test_parse_draft_data_invalid_metadata_inner_type() {
-    let draft_data = json!({
-        "offered_metadata": {
-            "inner": 12345  // Number instead of string
-        },
-        "offered_amount": 1000u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 2000u64,
-        "desired_chain_id": 2u64,
-    });
-
-    let result = parse_draft_data(&draft_data);
-    assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("offered_metadata.inner"));
-}
-
-/// Test parsing with zero amounts (edge case)
-/// What is tested: Parsing draft data with zero values
-/// Why: Verify that zero is a valid amount (acceptance logic will reject it, but parsing should work)
+/// What is tested: parse_draft_data() accepts zero amounts
+/// Why: Ensure edge case of zero amounts is handled (validation of zero may be done elsewhere)
 #[test]
 fn test_parse_draft_data_zero_amounts() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": 0u64,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": 0u64,
-        "desired_chain_id": 2u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": "0",
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": "0",
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data).unwrap();
@@ -384,22 +261,17 @@ fn test_parse_draft_data_zero_amounts() {
     assert_eq!(result.desired_amount, 0);
 }
 
-/// Test parsing with maximum u64 amounts (edge case)
-/// What is tested: Parsing draft data with very large values
-/// Why: Verify that the parser handles maximum u64 values correctly
+/// What is tested: parse_draft_data() accepts maximum u64 amounts
+/// Why: Ensure large amounts at u64 boundary are parsed correctly without overflow
 #[test]
 fn test_parse_draft_data_max_amounts() {
     let draft_data = json!({
-        "offered_metadata": {
-            "inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        },
-        "offered_amount": u64::MAX,
-        "offered_chain_id": 1u64,
-        "desired_metadata": {
-            "inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        },
-        "desired_amount": u64::MAX,
-        "desired_chain_id": 2u64,
+        "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "offered_amount": u64::MAX.to_string(),
+        "offered_chain_id": "1",
+        "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "desired_amount": u64::MAX.to_string(),
+        "desired_chain_id": "2",
     });
 
     let result = parse_draft_data(&draft_data).unwrap();
@@ -411,79 +283,67 @@ fn test_parse_draft_data_max_amounts() {
 // EXPIRY CHECKING TESTS
 // ============================================================================
 
-/// Test that expired drafts are rejected by process_draft
-/// What is tested: Expiry checking logic in process_draft rejects drafts with expiry_time in the past
-/// Why: Expired drafts should not be processed or signed
+/// What is tested: process_draft() rejects drafts that have already expired
+/// Why: Ensure solver does not sign intents that cannot be fulfilled before expiry
 #[tokio::test]
 async fn test_process_draft_rejects_expired_draft() {
     let config = create_test_solver_config();
     let tracker = Arc::new(solver::service::IntentTracker::new(&config).unwrap());
     let service = solver::service::SigningService::new(config, tracker).unwrap();
 
-    // Create an expired draft (expiry_time in the past)
     let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let past_expiry = current_time - 1000; // Expired 1000 seconds ago
+    let past_expiry = current_time - 1000;
 
     let expired_draft = create_test_pending_draft(past_expiry);
 
-    // Process the expired draft - should return false without attempting to sign
     let result = service.process_draft(&expired_draft).await.unwrap();
     assert_eq!(result, false);
 }
 
-/// Test that non-expired drafts proceed to acceptance evaluation
-/// What is tested: Non-expired drafts are not rejected by expiry check and proceed to acceptance/signing
-/// Why: Valid drafts should proceed through the processing pipeline past expiry check
+/// What is tested: process_draft() proceeds with non-expired drafts (may fail on signing)
+/// Why: Ensure valid drafts are not rejected due to expiry check and proceed to signing
 #[tokio::test]
 async fn test_process_draft_accepts_non_expired_draft() {
     let config = create_test_solver_config();
     let tracker = Arc::new(solver::service::IntentTracker::new(&config).unwrap());
     let service = solver::service::SigningService::new(config, tracker).unwrap();
 
-    // Create a non-expired draft (expiry_time in the future)
     let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let future_expiry = current_time + 1000; // Expires in 1000 seconds
+    let future_expiry = current_time + 1000;
 
     let non_expired_draft = create_test_pending_draft(future_expiry);
 
-    // Process the non-expired draft
-    // With token pairs configured, it should proceed past expiry check and acceptance check
-    // It will then attempt to sign, which will fail (requires CLI/HTTP calls in test environment)
-    // We verify it got past expiry check by checking the error is from signing, not expiry
     let result = service.process_draft(&non_expired_draft).await;
     
-    // Should fail, but the error should be from signing (CLI/HTTP), not from expiry
-    // This proves it got past the expiry check
+    // Should fail, but from signing (CLI/HTTP), not expiry
     assert!(result.is_err());
     let error_msg = result.unwrap_err().to_string();
-    // Error should be from signing (profile/CLI/HTTP), not expiry
     assert!(
         error_msg.contains("profile") || 
         error_msg.contains("private key") || 
         error_msg.contains("Failed to get") ||
         error_msg.contains("CLI") ||
-        error_msg.contains("HTTP"),
+        error_msg.contains("HTTP") ||
+        error_msg.contains("Signing failed"),
         "Error should be from signing, not expiry. Got: {}",
         error_msg
     );
 }
 
-/// Test that drafts with expiry_time exactly equal to current time are rejected
-/// What is tested: Edge case where expiry_time == current_time (should be rejected due to >= check)
-/// Why: Verify the boundary condition for expiry checking
+/// What is tested: process_draft() handles drafts at expiry boundary
+/// Why: Ensure drafts exactly at current time are handled correctly (edge case)
 #[tokio::test]
 async fn test_process_draft_rejects_draft_at_expiry_boundary() {
     let config = create_test_solver_config();
     let tracker = Arc::new(solver::service::IntentTracker::new(&config).unwrap());
     let service = solver::service::SigningService::new(config, tracker).unwrap();
 
-    // Create a draft with expiry_time exactly at current time
     let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -491,16 +351,6 @@ async fn test_process_draft_rejects_draft_at_expiry_boundary() {
 
     let draft_at_boundary = create_test_pending_draft(current_time);
 
-    // Process the draft - should be rejected (expiry_time >= now)
     let result = service.process_draft(&draft_at_boundary).await;
-    
-    // Should return false (expired)
-    // Note: There's a small race condition here - if current_time advances between
-    // getting it and checking in process_draft, the result might vary
-    // But in most cases, it should be rejected
     assert!(result.is_ok());
-    // If it's rejected, that's correct (expired)
-    // If it's not rejected, that means current_time advanced, which is also valid behavior
-    // We just verify it doesn't crash
 }
-

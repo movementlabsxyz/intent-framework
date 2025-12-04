@@ -27,6 +27,13 @@ node_modules/
 .env.*
 !.env.*.example
 .testnet-keys.env
+
+# Testnet config files (contain sensitive keys)
+solver/config/solver_testnet.toml
+trusted-verifier/config/verifier_testnet.toml
+
+# Testing config files (generated from template with ephemeral keys)
+trusted-verifier/config/verifier_testing.toml
 # Editor directories and files
 .idea
 .vscode

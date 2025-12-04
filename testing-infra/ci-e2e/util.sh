@@ -69,6 +69,7 @@ log() {
 # Setup verifier configuration
 # Usage: setup_verifier_config
 # Sets up the verifier testing configuration file path and exports it
+# If the config doesn't exist, creates it from template with ephemeral keys
 # This function is used by configure-verifier.sh scripts and e2e tests
 setup_verifier_config() {
     if [ -z "$PROJECT_ROOT" ]; then
@@ -76,11 +77,41 @@ setup_verifier_config() {
     fi
 
     VERIFIER_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testing.toml"
+    VERIFIER_TEMPLATE="$PROJECT_ROOT/trusted-verifier/config/verifier.template.toml"
 
     if [ ! -f "$VERIFIER_TESTING_CONFIG" ]; then
-        log_and_echo "❌ ERROR: verifier_testing.toml not found at $VERIFIER_TESTING_CONFIG"
-        log_and_echo "   Tests require trusted-verifier/config/verifier_testing.toml to exist"
-        exit 1
+        log_and_echo "   Creating verifier_testing.toml from template..."
+        
+        if [ ! -f "$VERIFIER_TEMPLATE" ]; then
+            log_and_echo "❌ ERROR: verifier.template.toml not found at $VERIFIER_TEMPLATE"
+            exit 1
+        fi
+        
+        # Copy template
+        cp "$VERIFIER_TEMPLATE" "$VERIFIER_TESTING_CONFIG"
+        
+        # Generate ephemeral keys for testing
+        log_and_echo "   Generating ephemeral test keys..."
+        cd "$PROJECT_ROOT/trusted-verifier"
+        
+        # Build and run generate_keys, capture output
+        KEYS_OUTPUT=$(cargo run --bin generate_keys 2>/dev/null)
+        
+        # Extract keys from output
+        PRIVATE_KEY=$(echo "$KEYS_OUTPUT" | grep "Private Key (base64):" | sed 's/.*: //')
+        PUBLIC_KEY=$(echo "$KEYS_OUTPUT" | grep "Public Key (base64):" | sed 's/.*: //')
+        
+        if [ -z "$PRIVATE_KEY" ] || [ -z "$PUBLIC_KEY" ]; then
+            log_and_echo "❌ ERROR: Failed to generate test keys"
+            exit 1
+        fi
+        
+        # Substitute keys in config
+        sed -i "s|private_key = .*|private_key = \"$PRIVATE_KEY\"|" "$VERIFIER_TESTING_CONFIG"
+        sed -i "s|public_key = .*|public_key = \"$PUBLIC_KEY\"|" "$VERIFIER_TESTING_CONFIG"
+        
+        cd "$PROJECT_ROOT"
+        log_and_echo "   ✅ Created verifier_testing.toml with ephemeral keys"
     fi
 
     # Export config path for Rust code to use (absolute path so tests can find it)

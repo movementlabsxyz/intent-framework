@@ -120,35 +120,92 @@ nix develop
 - Provides approval signatures via REST API (`/approval`, `/approvals`)
 - Provides negotiation routing for off-chain communication between requesters and solvers (see `.taskmaster/tasks/VERIFIER_NEGOTIATION_ROUTING.md`)
 
-### 4.1 Launch EC2 Instance
+**Solver Capabilities**:
 
-**Instance Requirements:**
+- Polls verifier for pending draft intents (FCFS - first to sign wins)
+- Evaluates acceptance based on configured token pairs and exchange rates
+- Signs and submits signatures for accepted drafts
+- Tracks signed intents and monitors for their on-chain creation
+- Fulfills inflow intents by monitoring escrow deposits on connected chains
+- Executes outflow transfers on connected chains and fulfills hub intents
 
-- **AMI**: Ubuntu 22.04 LTS or Amazon Linux 2023
-- **Instance Type**: t3.small (2 vCPU, 2GB RAM) minimum (can run both verifier and solver)
-- **Storage**: 20GB minimum
-- **Security Group**:
+### 4.1 Launch EC2 Instances
+
+**Architecture**: Two separate EC2 instances for isolation and independent management.
+
+```
+┌─────────────────────┐         ┌─────────────────────┐
+│   Verifier EC2      │         │    Solver EC2       │
+│                     │         │                     │
+│  ┌───────────────┐  │  HTTP   │  ┌───────────────┐  │
+│  │   Verifier    │◄─┼─────────┼──│    Solver     │  │
+│  │  (port 3333)  │  │         │  │  (background) │  │
+│  └───────────────┘  │         │  └───────────────┘  │
+│         ▲           │         │                     │
+└─────────┼───────────┘         └─────────────────────┘
+          │
+   External requests
+```
+
+#### 4.1.1 Verifier Instance
+
+**Requirements:**
+
+- **AMI**: Ubuntu 22.04 LTS
+- **Instance Type**: t3.micro (1 vCPU, 1GB RAM) - sufficient for verifier
+- **Storage**: 20GB
+- **Security Group** (verifier-sg):
   - SSH (22) from your IP
-  - Custom TCP (3333) for verifier API (or configure reverse proxy/load balancer)
-  - Custom TCP (3334) for solver API (if solver exposes API, adjust as needed)
+  - Custom TCP (3333) from 0.0.0.0/0 (verifier API - restrict in production)
+
+#### 4.1.2 Solver Instance
+
+**Requirements:**
+
+- **AMI**: Ubuntu 22.04 LTS
+- **Instance Type**: t3.micro (1 vCPU, 1GB RAM) - sufficient for solver
+- **Storage**: 20GB
+- **Security Group** (solver-sg):
+  - SSH (22) from your IP
+  - (No inbound ports needed - solver only makes outbound connections)
 
 **Launch Steps:**
 
 1. Go to AWS EC2 Console → Launch Instance
-2. Select Ubuntu 22.04 LTS AMI
-3. Choose t3.small instance type
-4. Configure security group:
-   - SSH (22) from your IP
-   - Custom TCP (3333) from 0.0.0.0/0 (or restrict to specific IPs)
-5. Create/select SSH key pair
-6. Launch instance
+2. Launch **Verifier instance** first:
+   - Select Ubuntu 22.04 LTS AMI
+   - Choose t3.micro instance type
+   - Create security group with SSH (22) + TCP (3333)
+   - Create/select SSH key pair
+   - Launch and note the public IP
+3. Launch **Solver instance**:
+   - Select Ubuntu 22.04 LTS AMI
+   - Choose t3.micro instance type
+   - Create security group with SSH (22) only
+   - Use same SSH key pair
+   - Launch and note the public IP
 
 **Save EC2 connection details** to `.testnet-keys.env`:
 
 ```bash
-EC2_HOST=<your-ec2-public-ip-or-hostname>
-EC2_USER=ubuntu  # or 'ec2-user' for Amazon Linux
+# Verifier EC2
+EC2_VERIFIER_HOST=<verifier-ec2-public-ip>
+EC2_VERIFIER_USER=ubuntu
+
+# Solver EC2
+EC2_SOLVER_HOST=<solver-ec2-public-ip>
+EC2_SOLVER_USER=ubuntu
+
+# Shared SSH key (or use separate keys)
 EC2_SSH_KEY_PATH=<path-to-your-ssh-private-key>
+```
+
+**Important**: The solver config must use the verifier's public IP:
+
+```toml
+# In solver_testnet.toml
+[service]
+verifier_url = "http://<EC2_VERIFIER_HOST>:3333"
 ```
 
 ### 4.2 Prepare Verifier Configuration File
@@ -193,45 +250,115 @@ port = 3333
 cors_origins = ["*"]  # Adjust for production
 ```
 
-### 4.3 Build Verifier and Solver on EC2
+### 4.2.1 Prepare Solver Configuration File
 
-Since you're building on macOS, build directly on the EC2 instance:
-
-#### Option A: Build on EC2 (Recommended)
+Create `solver/config/solver_testnet.toml` using values from `.testnet-keys.env`:
 
 ```bash
-# SSH into EC2
-ssh -i $EC2_SSH_KEY_PATH $EC2_USER@$EC2_HOST
+cd solver
+cp config/solver_testnet.toml config/solver_testnet.toml
+# Or copy from template:
+# cp config/solver.template.toml config/solver_testnet.toml
+```
 
-# Install Rust (if not already installed)
+Edit `config/solver_testnet.toml`:
+
+```toml
+# Service Configuration
+[service]
+verifier_url = "http://<EC2_VERIFIER_HOST>:3333"  # Verifier EC2 public IP
+polling_interval_ms = 5000                         # Polling interval for checking pending drafts
+
+# Hub Chain Configuration - Movement Bardock Testnet
+[hub_chain]
+name = "Movement Bardock Testnet"
+rpc_url = "https://testnet.movementnetwork.xyz/v1"
+chain_id = 250
+module_address = "<MOVEMENT_INTENT_MODULE_ADDRESS>"  # From .testnet-keys.env
+profile = "solver-movement-testnet"                   # Movement CLI profile for solver
+
+# Connected Chain Configuration - Base Sepolia
+[connected_chain]
+type = "evm"
+name = "Base Sepolia"
+rpc_url = "https://sepolia.base.org"
+chain_id = 84532
+escrow_contract_address = "<BASE_ESCROW_CONTRACT_ADDRESS>"  # From .testnet-keys.env
+private_key_env = "BASE_SOLVER_PRIVATE_KEY"                 # Env var with EVM private key
+
+# Acceptance Criteria - Token pairs and exchange rates
+[acceptance]
+# Format: "offered_chain_id:offered_token:desired_chain_id:desired_token" = exchange_rate
+# Uncomment and update with actual token addresses:
+# "84532:0x036CbD53842c5426634e7929541eC2318f3dCF7e:250:<MOVEMENT_USDC_ADDRESS>" = 1.0
+# "250:<MOVEMENT_USDC_ADDRESS>:84532:0x036CbD53842c5426634e7929541eC2318f3dCF7e" = 1.0
+
+# Solver Configuration
+[solver]
+profile = "solver-movement-testnet"      # Movement CLI profile for solver
+address = "<MOVEMENT_SOLVER_ADDRESS>"    # From .testnet-keys.env
+```
+
+**Note**: The solver requires a Movement CLI profile for signing transactions on the hub chain. Set up the profile on EC2:
+
+```bash
+movement init --profile solver-movement-testnet \
+  --network custom \
+  --rest-url https://testnet.movementnetwork.xyz/v1 \
+  --private-key "$MOVEMENT_SOLVER_PRIVATE_KEY" \
+  --skip-faucet \
+  --assume-yes
+```
+
+### 4.3 Build Services on EC2
+
+Since you're building on macOS, build directly on each EC2 instance.
+
+#### 4.3.1 Build Verifier on Verifier EC2
+
+```bash
+# SSH into Verifier EC2
+ssh -i $EC2_SSH_KEY_PATH $EC2_VERIFIER_USER@$EC2_VERIFIER_HOST
+
+# Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
 
-# Clone repository (or copy files)
-# Option 1: Clone from GitHub
-git clone <your-repo-url>
+# Clone repository
+git clone https://github.com/movementlabsxyz/intent-framework.git
 cd intent-framework
-
-# Option 2: Copy files from local machine
-# (From your local machine)
-cd /path/to/intent-framework
-tar czf trusted-verifier.tar.gz trusted-verifier/
-scp -i $EC2_SSH_KEY_PATH trusted-verifier.tar.gz $EC2_USER@$EC2_HOST:~/
-# (Back on EC2)
-tar xzf trusted-verifier.tar.gz
 
 # Build verifier release binary
 cd trusted-verifier
 cargo build --release
 
-# Build solver binaries
-cd ../solver
-cargo build --release
+# Binary location: target/release/trusted-verifier
 ```
 
-#### Option B: Cross-Compile from macOS
+#### 4.3.2 Build Solver on Solver EC2
 
-If you prefer to build locally and copy the binary:
+```bash
+# SSH into Solver EC2
+ssh -i $EC2_SSH_KEY_PATH $EC2_SOLVER_USER@$EC2_SOLVER_HOST
+
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Clone repository
+git clone https://github.com/movementlabsxyz/intent-framework.git
+cd intent-framework
+
+# Build solver release binary
+cd solver
+cargo build --release
+
+# Binary location: target/release/solver
+```
+
+#### Alternative: Cross-Compile from macOS
+
+If you prefer to build locally and copy binaries:
 
 ```bash
 # Install cross-compilation target
@@ -240,20 +367,24 @@ rustup target add x86_64-unknown-linux-gnu
 # Install cross-compilation toolchain (macOS)
 brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
 
-# Build for Linux
+# Build verifier for Linux
 cd trusted-verifier
 cargo build --release --target x86_64-unknown-linux-gnu
-
-# Copy binary to EC2
 scp -i $EC2_SSH_KEY_PATH target/x86_64-unknown-linux-gnu/release/trusted-verifier \
-  $EC2_USER@$EC2_HOST:/tmp/
+  $EC2_VERIFIER_USER@$EC2_VERIFIER_HOST:/tmp/
+
+# Build solver for Linux
+cd ../solver
+cargo build --release --target x86_64-unknown-linux-gnu
+scp -i $EC2_SSH_KEY_PATH target/x86_64-unknown-linux-gnu/release/solver \
+  $EC2_SOLVER_USER@$EC2_SOLVER_HOST:/tmp/
 ```
 
 ### 4.4 Set Up Systemd Services
 
-#### 4.4.1 Verifier Service
+#### 4.4.1 Verifier Service (on Verifier EC2)
 
-On EC2, create verifier systemd service file:
+SSH into **Verifier EC2** and create the systemd service file:
 
 ```bash
 sudo nano /etc/systemd/system/verifier.service
@@ -292,11 +423,14 @@ sudo useradd -r -s /bin/false verifier
 sudo mkdir -p /opt/verifier/config
 sudo chown -R verifier:verifier /opt/verifier
 
-# Copy binary and config (from trusted-verifier directory)
-sudo cp trusted-verifier/target/release/trusted-verifier /opt/verifier/
-sudo cp trusted-verifier/config/verifier_testnet.toml /opt/verifier/config/
+# Copy binary (from intent-framework directory)
+sudo cp ~/intent-framework/trusted-verifier/target/release/trusted-verifier /opt/verifier/
 sudo chmod +x /opt/verifier/trusted-verifier
+
+# Create config file with your values (copy from local or create manually)
+sudo nano /opt/verifier/config/verifier_testnet.toml
 sudo chmod 600 /opt/verifier/config/verifier_testnet.toml
+
 sudo chown -R verifier:verifier /opt/verifier
 
 # Enable and start service
@@ -305,9 +439,9 @@ sudo systemctl enable verifier
 sudo systemctl start verifier
 ```
 
-#### 4.4.2 Solver Service
+#### 4.4.2 Solver Service (on Solver EC2)
 
-On EC2, create solver systemd service file:
+SSH into **Solver EC2** and create the systemd service file:
 
 ```bash
 sudo nano /etc/systemd/system/solver.service
@@ -324,9 +458,8 @@ After=network.target
 Type=simple
 User=solver
 WorkingDirectory=/opt/solver
-ExecStart=/opt/solver/solver-service
+ExecStart=/opt/solver/solver --config /opt/solver/config/solver_testnet.toml
 Environment="RUST_LOG=info"
-Environment="MOVEMENT_SOLVER_PRIVATE_KEY=<MOVEMENT_SOLVER_PRIVATE_KEY>"
 Environment="BASE_SOLVER_PRIVATE_KEY=<BASE_SOLVER_PRIVATE_KEY>"
 Restart=always
 RestartSec=10
@@ -337,7 +470,11 @@ StandardError=journal
 WantedBy=multi-user.target
 ```
 
-**Note**: If solver is CLI-only (no service), you may need to create a wrapper script or cron job. Adjust `ExecStart` accordingly.
+**Note**: The solver service:
+- Runs continuously, polling the verifier for pending drafts
+- Automatically signs and fulfills intents based on acceptance criteria
+- Connects to verifier via HTTP (ensure verifier is running first)
+- Does not expose an API (background service only)
 
 **Set up solver user and directory:**
 
@@ -346,57 +483,69 @@ WantedBy=multi-user.target
 sudo useradd -r -s /bin/false solver
 
 # Create directory structure
+sudo mkdir -p /opt/solver/config
 sudo mkdir -p /opt/solver/bin
 sudo chown -R solver:solver /opt/solver
 
-# Copy solver binaries (from solver directory)
-sudo cp solver/target/release/sign_intent /opt/solver/bin/
-sudo cp solver/target/release/connected_chain_tx_template /opt/solver/bin/
-# If solver has a service binary, copy it:
-# sudo cp solver/target/release/solver-service /opt/solver/
+# Copy solver binary and config (from intent-framework directory)
+sudo cp ~/intent-framework/solver/target/release/solver /opt/solver/
+sudo chmod +x /opt/solver/solver
 
-# Set permissions
+# Create config file with your values (copy from local or create manually)
+# IMPORTANT: Update verifier_url to point to Verifier EC2's public IP
+sudo nano /opt/solver/config/solver_testnet.toml
+sudo chmod 600 /opt/solver/config/solver_testnet.toml
+
+# Copy utility binaries (optional, for manual operations)
+sudo cp ~/intent-framework/solver/target/release/sign_intent /opt/solver/bin/
+sudo cp ~/intent-framework/solver/target/release/connected_chain_tx_template /opt/solver/bin/
 sudo chmod +x /opt/solver/bin/*
+
 sudo chown -R solver:solver /opt/solver
 
-# Enable and start service (if solver-service exists)
-# sudo systemctl daemon-reload
-# sudo systemctl enable solver
-# sudo systemctl start solver
+# Install Movement CLI (required for signing on hub chain)
+# See: https://docs.movementnetwork.xyz/devs/movementcli
+curl -fsSL https://raw.githubusercontent.com/movementlabsxyz/aptos-core/main/scripts/cli/install_cli.py | python3
+
+# Set up Movement CLI profile for solver (required for signing)
+sudo -u solver movement init --profile solver-movement-testnet \
+  --network custom \
+  --rest-url https://testnet.movementnetwork.xyz/v1 \
+  --private-key "$MOVEMENT_SOLVER_PRIVATE_KEY" \
+  --skip-faucet \
+  --assume-yes
+
+# Enable and start service (after verifier is running!)
+sudo systemctl daemon-reload
+sudo systemctl enable solver
+sudo systemctl start solver
 ```
 
 ### 4.5 Verify Deployment
 
-**Check service status:**
+#### 4.5.1 Verify Verifier (on Verifier EC2)
 
 ```bash
-# Verifier service
+# SSH into Verifier EC2
+ssh -i $EC2_SSH_KEY_PATH $EC2_VERIFIER_USER@$EC2_VERIFIER_HOST
+
+# Check service status
 sudo systemctl status verifier
 
-# Solver service (if running as service)
-sudo systemctl status solver
-```
-
-**View logs:**
-
-```bash
-# Verifier logs
+# View logs
 sudo journalctl -u verifier -f
-
-# Solver logs (if running as service)
-sudo journalctl -u solver -f
 ```
 
 **Test verifier health endpoints:**
 
 ```bash
-# From EC2
+# From Verifier EC2
 curl http://localhost:3333/health
 curl http://localhost:3333/public-key
 
 # From your local machine
-curl http://$EC2_HOST:3333/health
-curl http://$EC2_HOST:3333/public-key
+curl http://$EC2_VERIFIER_HOST:3333/health
+curl http://$EC2_VERIFIER_HOST:3333/public-key
 ```
 
 **Expected responses:**
@@ -404,7 +553,42 @@ curl http://$EC2_HOST:3333/public-key
 - `/health`: Should return `{"status":"ok"}`
 - `/public-key`: Should return the verifier's public key
 
-**Test solver tools (if CLI-based):**
+#### 4.5.2 Verify Solver (on Solver EC2)
+
+```bash
+# SSH into Solver EC2
+ssh -i $EC2_SSH_KEY_PATH $EC2_SOLVER_USER@$EC2_SOLVER_HOST
+
+# Check service status
+sudo systemctl status solver
+
+# View logs
+sudo journalctl -u solver -f
+```
+
+**Check solver logs for startup messages:**
+
+```bash
+sudo journalctl -u solver --no-pager | head -50
+
+# Expected log messages:
+# - "Starting Solver Service"
+# - "Configuration loaded successfully"
+# - "Verifier URL: http://<EC2_VERIFIER_HOST>:3333"
+# - "Signing service initialized"
+# - "Inflow service initialized"
+# - "Outflow service initialized"
+# - "Starting all services..."
+```
+
+**Test connectivity to verifier (from Solver EC2):**
+
+```bash
+# Solver should be able to reach verifier
+curl http://$EC2_VERIFIER_HOST:3333/health
+```
+
+**Test solver utility binaries (optional):**
 
 ```bash
 # Test solver signature generation
@@ -416,23 +600,32 @@ sudo -u solver /opt/solver/bin/connected_chain_tx_template --help
 
 ### 4.6 Quick Start (Automated Deployment)
 
-Use the deployment scripts (if available):
+**TODO**: Create automated EC2 deployment scripts:
 
 ```bash
-# Deploy verifier
+# Deploy verifier to Verifier EC2 (not yet implemented)
 ./testing-infra/testnet/deploy-verifier-ec2.sh
 
-# Deploy solver
+# Deploy solver to Solver EC2 (not yet implemented)
 ./testing-infra/testnet/deploy-solver-ec2.sh
 ```
 
-The scripts will:
+When implemented, these scripts will:
 
-1. Build binaries on EC2 (or copy pre-built)
-2. Copy configuration files
-3. Set up systemd services
-4. Start and enable services
-5. Verify health endpoints
+1. SSH into the respective EC2 instance
+2. Install Rust if not present
+3. Clone repo and build binaries
+4. Copy configuration files with substituted values from `.testnet-keys.env`
+5. Set up systemd services
+6. Configure Movement CLI profile (solver only)
+7. Start and enable services
+8. Verify health endpoints
+
+**Deployment order:**
+1. Deploy verifier first (solver depends on it)
+2. Deploy solver after verifier is healthy
+
+For now, follow the manual steps in sections 4.3-4.5.
 
 ---
 
@@ -440,13 +633,22 @@ The scripts will:
 
 ### 5.1 Checklist
 
-- [ ] Move modules deployed and callable on Movement Bardock
-- [ ] IntentEscrow deployed on Base Sepolia
+**On-Chain Contracts:**
+- [x] Move modules deployed and callable on Movement Bardock
+- [x] IntentEscrow deployed on Base Sepolia
+
+**Off-Chain Services:**
 - [ ] Verifier service running and healthy on EC2
 - [ ] Solver service running and healthy on EC2
-- [ ] Verifier monitoring both chains
-- [ ] Solver can monitor and fulfill intents
-- [ ] End-to-end intent flow tested
+- [ ] Verifier monitoring both chains (check logs for event polling)
+- [ ] Solver connected to verifier (check logs for "Verifier URL")
+
+**End-to-End Testing:**
+- [ ] Solver can accept and sign draft intents
+- [ ] Intent can be created on Movement with solver signature
+- [ ] Escrow can be created on Base Sepolia
+- [ ] Solver can fulfill intent and claim escrow
+- [ ] Full cross-chain flow tested
 
 ### 5.2 Test Intent Flow (USDC/pyUSD → USDC/pyUSD)
 

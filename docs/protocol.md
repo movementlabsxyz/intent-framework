@@ -250,7 +250,7 @@ For outflow intents (tokens locked on hub chain), the verifier validates on-dema
 
 **Validation Steps:**
 
-1. **Request-intent Monitoring**: Continuously polls hub chain for `OracleLimitOrderEvent` (outflow intent creation)
+1. **Intent Monitoring**: Continuously polls hub chain for `OracleLimitOrderEvent` (outflow intent creation)
 2. **Solver Transaction Submission**: Solver calls `POST /validate-outflow-fulfillment` with transaction hash, chain type, and intent ID
 3. **Transaction Query**: Verifier queries the connected chain transaction by hash
 4. **Transaction Parsing**: Extracts transaction parameters from Move VM or EVM transaction

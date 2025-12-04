@@ -97,7 +97,7 @@ get_hardhat_account_address() {
 # Extracts the IntentEscrow contract address from:
 #   1. Deployment output (if provided)
 #   2. Log files matching pattern (if provided)
-#   3. Falls back to searching log files in tmp/intent-framework-logs/
+#   3. Falls back to searching log files in .tmp/intent-framework-logs/
 # Returns the escrow contract address or exits with error if not found
 extract_escrow_contract_address() {
     local deploy_output="$1"
@@ -121,7 +121,7 @@ extract_escrow_contract_address() {
     
     # If not found in output, try log files
     if [ -z "$contract_address" ]; then
-        local log_dir="$PROJECT_ROOT/tmp/intent-framework-logs"
+        local log_dir="$PROJECT_ROOT/.tmp/intent-framework-logs"
         if [ -d "$log_dir" ]; then
             contract_address=$(grep -i "IntentEscrow deployed to" "$log_dir"/$log_file_pattern 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
         fi

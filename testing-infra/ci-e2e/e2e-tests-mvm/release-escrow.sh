@@ -40,8 +40,8 @@ if [ -z "$VERIFIER_LOG" ]; then
     VERIFIER_LOG="$LOG_DIR/verifier.log"
     if [ ! -f "$VERIFIER_LOG" ]; then
         # Try to find verifier log in common locations
-        if [ -f "$PROJECT_ROOT/tmp/intent-framework-logs/verifier.log" ]; then
-            VERIFIER_LOG="$PROJECT_ROOT/tmp/intent-framework-logs/verifier.log"
+        if [ -f "$PROJECT_ROOT/.tmp/intent-framework-logs/verifier.log" ]; then
+            VERIFIER_LOG="$PROJECT_ROOT/.tmp/intent-framework-logs/verifier.log"
         fi
     fi
 fi

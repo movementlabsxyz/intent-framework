@@ -92,7 +92,7 @@ fi
 log "   ✅ USDxyz deployed to: $USDXYZ_ADDRESS"
 
 # Save USDxyz address for other scripts
-echo "USDXYZ_EVM_ADDRESS=$USDXYZ_ADDRESS" >> "$PROJECT_ROOT/tmp/chain-info.env"
+echo "USDXYZ_EVM_ADDRESS=$USDXYZ_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
 
 # Mint USDxyz to Requester and Solver (accounts 1 and 2)
 log ""

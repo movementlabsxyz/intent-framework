@@ -11,7 +11,7 @@ trusted-verifier/tests/integration_test_e2e.rs
 solver/target/
 trusted-verifier/target/
 
-tmp/
+.tmp/
 
 # Logs
 logs

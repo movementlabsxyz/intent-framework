@@ -38,7 +38,7 @@ setup_project_root() {
 
 # Setup logging functions and directory
 # Usage: setup_logging "script-name"
-# Creates log file: tmp/intent-framework-logs/script-name_TIMESTAMP.log
+# Creates log file: .tmp/intent-framework-logs/script-name_TIMESTAMP.log
 setup_logging() {
     local script_name="${1:-script}"
     
@@ -46,7 +46,7 @@ setup_logging() {
         setup_project_root
     fi
     
-    LOG_DIR="$PROJECT_ROOT/tmp/intent-framework-logs"
+    LOG_DIR="$PROJECT_ROOT/.tmp/intent-framework-logs"
     mkdir -p "$LOG_DIR"
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     LOG_FILE="$LOG_DIR/${script_name}_${TIMESTAMP}.log"
@@ -92,7 +92,7 @@ setup_verifier_config() {
 # Save intent information to file
 # Usage: save_intent_info [intent_id] [hub_intent_address]
 # If arguments are provided, uses them; otherwise uses INTENT_ID and HUB_INTENT_ADDRESS env vars
-# Saves to ${PROJECT_ROOT}/tmp/intent-info.env
+# Saves to ${PROJECT_ROOT}/.tmp/intent-info.env
 save_intent_info() {
     if [ -z "$PROJECT_ROOT" ]; then
         setup_project_root
@@ -106,7 +106,7 @@ save_intent_info() {
         exit 1
     fi
 
-    INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
+    INTENT_INFO_FILE="${PROJECT_ROOT}/.tmp/intent-info.env"
     mkdir -p "$(dirname "$INTENT_INFO_FILE")"
     
     echo "INTENT_ID=$intent_id" > "$INTENT_INFO_FILE"
@@ -123,14 +123,14 @@ save_intent_info() {
 #   required_vars: comma-separated list of required variables (e.g., "INTENT_ID,HUB_INTENT_ADDRESS")
 #   If not provided, only INTENT_ID is required
 #   If INTENT_ID is already set, skips loading (allows override via env var)
-# Loads from ${PROJECT_ROOT}/tmp/intent-info.env
+# Loads from ${PROJECT_ROOT}/.tmp/intent-info.env
 load_intent_info() {
     if [ -z "$PROJECT_ROOT" ]; then
         setup_project_root
     fi
 
     local required_vars="${1:-INTENT_ID}"
-    INTENT_INFO_FILE="${PROJECT_ROOT}/tmp/intent-info.env"
+    INTENT_INFO_FILE="${PROJECT_ROOT}/.tmp/intent-info.env"
 
     # If INTENT_ID is already set and only INTENT_ID is required, skip loading
     if [ "$required_vars" = "INTENT_ID" ] && [ -n "$INTENT_ID" ]; then

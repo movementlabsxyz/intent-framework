@@ -30,7 +30,7 @@ SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 # Get EVM addresses and USDxyz token
 REQUESTER_EVM_ADDRESS=$(get_hardhat_account_address "1")
 SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
-source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
 USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 log ""

@@ -26,7 +26,7 @@ TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 
 # Get USDxyz EVM address
-source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
 USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 log ""

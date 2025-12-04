@@ -20,7 +20,7 @@ fi
 
 # Get EVM escrow contract address from deployment logs
 cd evm-intent-framework
-ESCROW_ADDRESS=$(grep -i "IntentEscrow deployed to" "$PROJECT_ROOT/tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+ESCROW_ADDRESS=$(grep -i "IntentEscrow deployed to" "$PROJECT_ROOT/.tmp/intent-framework-logs/deploy-contract"*.log 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
 if [ -z "$ESCROW_ADDRESS" ]; then
     # Try to get from hardhat config or last deployment
     ESCROW_ADDRESS=$(nix develop -c bash -c "npx hardhat run scripts/deploy.js --network localhost --dry-run 2>&1 | grep 'IntentEscrow deployed to' | awk '{print \$NF}'" 2>/dev/null | tail -1 | tr -d '\n')
@@ -41,8 +41,8 @@ log "   Intent ID:              $INTENT_ID"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
 # Get USDxyz token address from chain-info.env
-if [ -f "$PROJECT_ROOT/tmp/chain-info.env" ]; then
-    source "$PROJECT_ROOT/tmp/chain-info.env"
+if [ -f "$PROJECT_ROOT/.tmp/chain-info.env" ]; then
+    source "$PROJECT_ROOT/.tmp/chain-info.env"
     USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 fi
 if [ -z "$USDXYZ_ADDRESS" ]; then

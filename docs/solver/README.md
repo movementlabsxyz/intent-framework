@@ -19,7 +19,7 @@ A continuous service that automatically:
 3. **Signs and submits** signatures for accepted drafts (FCFS - first solver to sign wins)
 4. **Tracks signed intents** and monitors for their on-chain creation
 5. **Fulfills inflow intents** by monitoring escrow deposits and providing tokens on hub chain
-6. **Executes outflow transfers** (planned) by transferring tokens on connected chains and fulfilling hub intents
+6. **Executes outflow transfers** by transferring tokens on connected chains and fulfilling hub intents
 
 ### Command-Line Utilities
 
@@ -37,6 +37,7 @@ Components:
 - **Signing Service**: Continuous service that polls verifier and signs accepted drafts
 - **Intent Tracker**: Monitors signed intents and tracks their lifecycle from draft to on-chain creation
 - **Inflow Fulfillment Service**: Monitors escrow deposits on connected chains and fulfills inflow intents on hub chain
+- **Outflow Fulfillment Service**: Executes transfers on connected chains and fulfills outflow intents on hub chain
 - **Chain Clients**: Clients for interacting with hub chain (Movement) and connected chains (MVM/EVM)
 - **Signature Generator**: Creates Ed25519 signatures for `IntentToSign` structures
 - **Transaction Template Generator**: Produces Move/EVM templates with embedded `intent_id`
@@ -51,7 +52,8 @@ solver/
 │   ├── service/          # Service modules
 │   │   ├── signing.rs    # Signing service loop (polls verifier, signs drafts)
 │   │   ├── tracker.rs    # Intent tracker (monitors signed intents)
-│   │   └── inflow.rs     # Inflow fulfillment service (monitors escrows, fulfills intents)
+│   │   ├── inflow.rs     # Inflow fulfillment service (monitors escrows, fulfills intents)
+│   │   └── outflow.rs    # Outflow fulfillment service (executes transfers, fulfills intents)
 │   ├── chains/            # Chain clients
 │   │   ├── hub.rs        # Hub chain client (Movement)
 │   │   ├── connected_mvm.rs  # Connected MVM chain client
@@ -100,6 +102,7 @@ The service will:
    - **Signing loop**: Polls verifier for pending drafts, evaluates acceptance, signs and submits
    - **Tracking loop**: Monitors hub chain for intent creation events
    - **Inflow loop**: Monitors connected chains for escrow deposits and fulfills inflow intents
+   - **Outflow loop**: Executes transfers on connected chains and fulfills outflow intents
 4. Handle FCFS conflicts (if another solver already signed)
 5. Automatically fulfill intents when conditions are met
 
@@ -127,13 +130,28 @@ The solver automatically fulfills **inflow intents** (tokens locked on connected
 
 **Note**: EVM escrow claiming currently uses Hardhat scripts. Future improvement: implement directly using Rust Ethereum libraries (`ethers-rs` or `alloy`) for better error handling and type safety.
 
+## Outflow Fulfillment
+
+The solver automatically fulfills **outflow intents** (tokens locked on hub, desired on connected chain):
+
+1. **Execute Transfer**: Transfers tokens on connected chain to requester's address
+2. **Get Verifier Approval**: Calls verifier `/validate-outflow-fulfillment` with transaction hash
+3. **Fulfill Intent**: Calls hub chain `fulfill_outflow_intent` with verifier signature
+
+### Supported Chains
+
+- **Move VM Chains**: Uses `transfer_with_intent_id` entry function
+- **EVM Chains**: Executes ERC20 transfer with `intent_id` encoded in calldata
+
+**Note**: EVM transfer execution currently uses Hardhat scripts. Future improvement: implement directly using Rust Ethereum libraries (`ethers-rs` or `alloy`) for better integration and error handling.
+
 ## Intent Tracking
 
 The solver tracks the lifecycle of intents:
 
-1. **Signed**: Draft-intent has been signed and submitted to verifier
-2. **Created**: Request-intent has been created on-chain by requester
-3. **Fulfilled**: Request-intent has been fulfilled by the solver
+1. **Signed**: Draftintent has been signed and submitted to verifier
+2. **Created**: Intent has been created on-chain by requester
+3. **Fulfilled**: Intent has been fulfilled by the solver
 
 The tracker distinguishes between inflow and outflow intents for proper fulfillment routing.
 
@@ -151,7 +169,7 @@ This ensures only the authorized solver can fulfill the intent, providing commit
 
 Signature generation process:
 
-1. Calls `utils::get_intent_to_sign_hash()` to construct and hash the `IntentToSign` structure
+1. Calls `utils::get_intent_hash()` to construct and hash the `IntentToSign` structure
 2. Extracts the hash from the transaction event
 3. Reads the solver's private key from Movement/Aptos config
 4. Signs the hash with Ed25519
@@ -169,10 +187,10 @@ cargo run --bin sign_intent -- \
   --profile solver-chain1 \
   --chain-address 0x123 \
   --offered-metadata 0xabc \
-  --offered-amount 100000000 \
+  --offered-amount 1000000 \
   --offered-chain-id 1 \
   --desired-metadata 0xdef \
-  --desired-amount 100000000 \
+  --desired-amount 1000000 \
   --desired-chain-id 2 \
   --expiry-time 1234567890 \
   --issuer 0xrequester \

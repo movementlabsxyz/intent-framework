@@ -14,7 +14,7 @@ setup_project_root
 
 # Get test tokens addresses
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1" 2>/dev/null) || true
-source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
 USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 if [ -z "$TEST_TOKENS_CHAIN1" ]; then

@@ -74,7 +74,7 @@ fi
 cd "$PROJECT_ROOT"
 
 # Export USDxyz address for other scripts
-echo "TEST_TOKENS_CHAIN2_ADDRESS=$TEST_TOKENS_CHAIN2_ADDRESS" >> "$PROJECT_ROOT/tmp/chain-info.env"
+echo "TEST_TOKENS_CHAIN2_ADDRESS=$TEST_TOKENS_CHAIN2_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
 log "   ✅ USDxyz address saved: $TEST_TOKENS_CHAIN2_ADDRESS"
 
 # Mint USDxyz to Requester and Solver

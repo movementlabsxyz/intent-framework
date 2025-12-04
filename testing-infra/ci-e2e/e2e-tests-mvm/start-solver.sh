@@ -104,7 +104,7 @@ EOF
 }
 
 # Generate the config file
-SOLVER_CONFIG="$PROJECT_ROOT/tmp/solver-e2e.toml"
+SOLVER_CONFIG="$PROJECT_ROOT/.tmp/solver-e2e.toml"
 mkdir -p "$(dirname "$SOLVER_CONFIG")"
 generate_solver_config_mvm "$SOLVER_CONFIG"
 

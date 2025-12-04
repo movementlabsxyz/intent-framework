@@ -45,8 +45,8 @@ generate_solver_config_evm() {
     local usdxyz_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
     
     # Get EVM USDxyz address from chain-info.env and pad to 32 bytes
-    if [ -f "$PROJECT_ROOT/tmp/chain-info.env" ]; then
-        source "$PROJECT_ROOT/tmp/chain-info.env"
+    if [ -f "$PROJECT_ROOT/.tmp/chain-info.env" ]; then
+        source "$PROJECT_ROOT/.tmp/chain-info.env"
     fi
     local evm_token_address="${USDXYZ_EVM_ADDRESS:-}"
     if [ -z "$evm_token_address" ]; then
@@ -118,7 +118,7 @@ EOF
 }
 
 # Generate the config file
-SOLVER_CONFIG="$PROJECT_ROOT/tmp/solver-e2e-evm.toml"
+SOLVER_CONFIG="$PROJECT_ROOT/.tmp/solver-e2e-evm.toml"
 mkdir -p "$(dirname "$SOLVER_CONFIG")"
 generate_solver_config_evm "$SOLVER_CONFIG"
 

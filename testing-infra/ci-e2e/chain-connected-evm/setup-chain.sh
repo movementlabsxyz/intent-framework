@@ -48,13 +48,13 @@ nix develop -c bash -c "npx hardhat node --port 8545" > "$LOG_FILE" 2>&1 &
 HARDHAT_PID=$!
 
 # Save PID for cleanup (both the nix process and we'll track hardhat process separately)
-echo "$HARDHAT_PID" > /tmp/hardhat-node.pid
+echo "$HARDHAT_PID" > /.tmp/hardhat-node.pid
 
 # Also track the actual hardhat process (in case we need to kill it directly)
 sleep 2
 HARDHAT_CHILD_PID=$(pgrep -P $HARDHAT_PID -f "hardhat node" | head -1)
 if [ -n "$HARDHAT_CHILD_PID" ]; then
-    echo "$HARDHAT_CHILD_PID" >> /tmp/hardhat-node.pid
+    echo "$HARDHAT_CHILD_PID" >> /.tmp/hardhat-node.pid
 fi
 
 log "   Hardhat node started with PID: $HARDHAT_PID"

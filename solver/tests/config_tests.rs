@@ -304,7 +304,7 @@ fn test_config_load_from_file() {
     use std::fs;
     
     // Create a temporary config file
-    let test_config_dir = "tmp/test_config";
+    let test_config_dir = ".tmp/test_config";
     let test_config_file = format!("{}/solver.toml", test_config_dir);
     
     // Ensure directory exists
@@ -363,7 +363,7 @@ address = "0xccc"
 #[test]
 fn test_config_load_file_not_found() {
     // Set environment variable to non-existent file
-    std::env::set_var("SOLVER_CONFIG_PATH", "tmp/nonexistent/solver.toml");
+    std::env::set_var("SOLVER_CONFIG_PATH", ".tmp/nonexistent/solver.toml");
     
     let result = SolverConfig::load();
     assert!(result.is_err());

@@ -40,7 +40,7 @@ log "   Intent ID: $INTENT_ID"
 log "   Transfer Amount: $TRANSFER_AMOUNT USDxyz.10e8 (matches intent desired_amount)"
 
 # Get USDxyz token address from chain-info.env
-source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
 USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 if [ -z "$USDXYZ_ADDRESS" ]; then
@@ -142,7 +142,7 @@ if [ $TRANSFER_EXIT_CODE -eq 0 ] && echo "$TRANSFER_OUTPUT" | grep -qi "SUCCESS"
         exit 1
     fi
 
-    TRANSFER_INFO_FILE="${PROJECT_ROOT}/tmp/outflow-transfer-info.txt"
+    TRANSFER_INFO_FILE="${PROJECT_ROOT}/.tmp/outflow-transfer-info.txt"
     mkdir -p "${PROJECT_ROOT}/tmp"
     echo "CONNECTED_CHAIN_TX_HASH=$TX_HASH" > "$TRANSFER_INFO_FILE"
     echo "INTENT_ID=$INTENT_ID" >> "$TRANSFER_INFO_FILE"

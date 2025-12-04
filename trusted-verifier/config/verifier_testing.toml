@@ -8,8 +8,8 @@
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 1
-intent_module_address = "0x2d576f0069ae9ea92221d831e0ac7d1f5f09c83cbc33df82d92e0ffe4e479a8d"
-known_accounts = ["db151cf7fdcdb5c2dbb177277758c796751d4b88291c2b1a3f85aa4708f354c0", "296d95163849ef4c7f2e482ec6a7608ef3ed27bf2eb275cbe7d18913907e41f3"]
+intent_module_address = "0xc3b383ca5f2f16d56ad3ac4b475c7465944702a7d53cbb1e1020cfb07a8b8fa0"
+known_accounts = ["b4606ddb859a5e0aff1197f19de692c9169c46248ae6eb9e9740dce94cca3084", "3fddf030d94bbd859657a97fa0eac41de596ca29013c821c3db67082124b7248"]
 
 # Connected Move VM Chain Configuration  
 # The connected Move VM chain is where escrow events occur and are monitored

@@ -17,22 +17,22 @@ log ""
 log "🧹 Stopping Hardhat node..."
 
 # Kill by PID if exists
-if [ -f /tmp/hardhat-node.pid ]; then
+if [ -f /.tmp/hardhat-node.pid ]; then
     log "   - Found PID file, stopping processes..."
     while read -r pid; do
         if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
             log "     Killing process (PID: $pid)..."
             kill "$pid" 2>/dev/null || true
         fi
-    done < /tmp/hardhat-node.pid
+    done < /.tmp/hardhat-node.pid
     sleep 1
     # Force kill any remaining
     while read -r pid; do
         if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
             kill -9 "$pid" 2>/dev/null || true
         fi
-    done < /tmp/hardhat-node.pid
-    rm -f /tmp/hardhat-node.pid
+    done < /.tmp/hardhat-node.pid
+    rm -f /.tmp/hardhat-node.pid
     log "   ✅ Stopped processes from PID file"
 else
     log "   - No PID file found"

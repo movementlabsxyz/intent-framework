@@ -18,7 +18,7 @@ if ! load_intent_info "INTENT_ID,HUB_INTENT_ADDRESS"; then
     exit 1
 fi
 
-TRANSFER_INFO_FILE="${PROJECT_ROOT}/tmp/outflow-transfer-info.txt"
+TRANSFER_INFO_FILE="${PROJECT_ROOT}/.tmp/outflow-transfer-info.txt"
 
 if [ ! -f "$TRANSFER_INFO_FILE" ]; then
     log_and_echo "❌ ERROR: Transfer info file not found at $TRANSFER_INFO_FILE"
@@ -41,7 +41,7 @@ TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 
 # Get USDxyz EVM address
-source "$PROJECT_ROOT/tmp/chain-info.env" 2>/dev/null || true
+source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
 USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 log ""

@@ -69,12 +69,12 @@ log() {
 # Setup verifier configuration
 # Usage: setup_verifier_config
 # Sets up the verifier testing configuration file path and exports it
-# Always creates config from template (overwrites any existing config) with ephemeral keys
+# Creates config from template ONLY if it doesn't exist or keys aren't set (idempotent)
 # This function is used by configure-verifier.sh scripts and e2e tests
 #
-# SECURITY: This function ALWAYS generates fresh ephemeral keys for E2E/CI testing.
-# It will NEVER use keys from .testnet-keys.env or any other source.
-# Any existing VERIFIER_PRIVATE_KEY/VERIFIER_PUBLIC_KEY env vars are unset first.
+# SECURITY: This function generates fresh ephemeral keys for E2E/CI testing on first call.
+# Subsequent calls reuse the existing config and keys (from env vars or keys file).
+# Keys are persisted to testing-infra/ci-e2e/.verifier-keys.env (gitignored).
 setup_verifier_config() {
     if [ -z "$PROJECT_ROOT" ]; then
         setup_project_root
@@ -82,14 +82,29 @@ setup_verifier_config() {
 
     VERIFIER_E2E_CI_TESTING_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier-e2e-ci-testing.toml"
     VERIFIER_TEMPLATE="$PROJECT_ROOT/trusted-verifier/config/verifier.template.toml"
+    VERIFIER_KEYS_FILE="$PROJECT_ROOT/testing-infra/ci-e2e/.verifier-keys.env"
 
-    # SECURITY: Always generate fresh ephemeral keys for E2E/CI tests
-    # This ensures tests NEVER use keys from .testnet-keys.env or any other source
-    # Unset any existing keys to prevent accidental reuse
-    unset VERIFIER_PRIVATE_KEY
-    unset VERIFIER_PUBLIC_KEY
+    # Check if keys are already set in env vars (same shell session)
+    if [ -n "$E2E_VERIFIER_PRIVATE_KEY" ] && [ -n "$E2E_VERIFIER_PUBLIC_KEY" ] && [ -f "$VERIFIER_E2E_CI_TESTING_CONFIG" ]; then
+        log "   ✅ Verifier config already set up (reusing existing config and keys from env)"
+        export VERIFIER_CONFIG_PATH="$VERIFIER_E2E_CI_TESTING_CONFIG"
+        return 0
+    fi
 
-    # Always recreate config from template (ensures fresh config for each test run)
+    # Check if keys file exists (cross-session persistence)
+    if [ -f "$VERIFIER_KEYS_FILE" ] && [ -f "$VERIFIER_E2E_CI_TESTING_CONFIG" ]; then
+        log "   Loading verifier keys from $VERIFIER_KEYS_FILE..."
+        source "$VERIFIER_KEYS_FILE"
+        if [ -n "$E2E_VERIFIER_PRIVATE_KEY" ] && [ -n "$E2E_VERIFIER_PUBLIC_KEY" ]; then
+            export E2E_VERIFIER_PRIVATE_KEY
+            export E2E_VERIFIER_PUBLIC_KEY
+            export VERIFIER_CONFIG_PATH="$VERIFIER_E2E_CI_TESTING_CONFIG"
+            log "   ✅ Verifier config already set up (reusing existing config and keys from file)"
+            return 0
+        fi
+    fi
+
+    # First-time setup: create config from template and generate fresh keys
     log_and_echo "   Creating verifier-e2e-ci-testing.toml from template..."
     
     if [ ! -f "$VERIFIER_TEMPLATE" ]; then
@@ -97,10 +112,14 @@ setup_verifier_config() {
         exit 1
     fi
     
-    # Copy template (overwrites any existing config file)
+    # Copy template (only on first call)
     cp "$VERIFIER_TEMPLATE" "$VERIFIER_E2E_CI_TESTING_CONFIG"
     
-    # Generate ephemeral keys for testing (always fresh, never reuse)
+    # Update config to use E2E-specific env var names (avoids collision with production keys)
+    sed -i 's/private_key_env = "VERIFIER_PRIVATE_KEY"/private_key_env = "E2E_VERIFIER_PRIVATE_KEY"/' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+    sed -i 's/public_key_env = "VERIFIER_PUBLIC_KEY"/public_key_env = "E2E_VERIFIER_PUBLIC_KEY"/' "$VERIFIER_E2E_CI_TESTING_CONFIG"
+    
+    # Generate ephemeral keys for testing (only on first call)
     log_and_echo "   Generating ephemeral test keys..."
     cd "$PROJECT_ROOT/trusted-verifier"
     
@@ -116,13 +135,22 @@ setup_verifier_config() {
         exit 1
     fi
     
-    # Export keys as environment variables (new format uses env vars)
-    export VERIFIER_PRIVATE_KEY="$PRIVATE_KEY"
-    export VERIFIER_PUBLIC_KEY="$PUBLIC_KEY"
+    # Export keys as environment variables (E2E prefix to avoid collision)
+    export E2E_VERIFIER_PRIVATE_KEY="$PRIVATE_KEY"
+    export E2E_VERIFIER_PUBLIC_KEY="$PUBLIC_KEY"
+    
+    # Save keys to file for cross-session persistence
+    cat > "$VERIFIER_KEYS_FILE" << EOF
+# Ephemeral verifier keys for E2E/CI testing
+# Generated at: $(date)
+# WARNING: These keys are for testing only. Do not use in production.
+E2E_VERIFIER_PRIVATE_KEY="$PRIVATE_KEY"
+E2E_VERIFIER_PUBLIC_KEY="$PUBLIC_KEY"
+EOF
     
     cd "$PROJECT_ROOT"
     log_and_echo "   ✅ Created verifier-e2e-ci-testing.toml from template with fresh ephemeral keys"
-    log_and_echo "   ✅ Generated fresh ephemeral keys (VERIFIER_PRIVATE_KEY and VERIFIER_PUBLIC_KEY)"
+    log_and_echo "   ✅ Generated fresh ephemeral keys (saved to testing-infra/ci-e2e/.verifier-keys.env)"
 
     # Export config path for Rust code to use (absolute path so tests can find it)
     export VERIFIER_CONFIG_PATH="$VERIFIER_E2E_CI_TESTING_CONFIG"

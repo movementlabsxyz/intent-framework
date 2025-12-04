@@ -27,3 +27,8 @@ jobs:
     with:
       script: "./testing-infra/ci-e2e/e2e-tests-evm/run-tests-outflow.sh"
 
+  rust-integration:
+    uses: ./.github/workflows/e2e-reusable.yml
+    with:
+      script: "./testing-infra/ci-e2e/e2e-tests-mvm/run-tests-rust-integration.sh"
+

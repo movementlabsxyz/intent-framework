@@ -37,7 +37,7 @@ TRANSFER_AMOUNT="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
 log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
-log "   Transfer Amount: $TRANSFER_AMOUNT USDxyz.10e8 (matches intent desired_amount)"
+log "   Transfer Amount: $TRANSFER_AMOUNT 10e-6.USDxyz (matches intent desired_amount)"
 
 # Get USDxyz token address from chain-info.env
 source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
@@ -75,7 +75,7 @@ log "   Executing solver transfer on connected EVM chain..."
 log "   - Solver (Solver) transfers tokens directly to requester (Requester) on EVM chain"
 log "   - This is a DIRECT TRANSFER, not an escrow"
 log "   - Requester (Requester) receives tokens immediately on EVM chain"
-log "   - Amount: $TRANSFER_AMOUNT USDxyz.10e8 (matches intent desired_amount)"
+log "   - Amount: $TRANSFER_AMOUNT 10e-6.USDxyz (matches intent desired_amount)"
 log "   - Intent ID included in transaction calldata for verifier tracking"
 
 cd evm-intent-framework
@@ -137,7 +137,7 @@ if [ $TRANSFER_EXIT_CODE -eq 0 ] && echo "$TRANSFER_OUTPUT" | grep -qi "SUCCESS"
         log_and_echo "❌ ERROR: Requester (Requester) Chain 3 token balance mismatch"
         log_and_echo "   Expected Chain 3 final balance: $REQUESTER_CHAIN3_TOKEN_EXPECTED"
         log_and_echo "   Got Chain 3 final balance: $REQUESTER_CHAIN3_TOKEN_FINAL"
-        log_and_echo "   Expected increase: $TRANSFER_AMOUNT USDxyz.10e8"
+        log_and_echo "   Expected increase: $TRANSFER_AMOUNT 10e-6.USDxyz"
         log_and_echo "   Got increase: $REQUESTER_CHAIN3_TOKEN_INCREASE"
         exit 1
     fi
@@ -177,7 +177,7 @@ log ""
 log "📋 Transfer Details:"
 log "   Intent ID: $INTENT_ID"
 log "   Transaction Hash: $TX_HASH"
-log "   Amount Transferred: $TRANSFER_AMOUNT USDxyz.10e8 (matches intent desired_amount)"
+log "   Amount Transferred: $TRANSFER_AMOUNT 10e-6.USDxyz (matches intent desired_amount)"
 log "   Recipient: $REQUESTER_EVM_ADDRESS"
 log "   Token Address: $USDXYZ_ADDRESS"
 

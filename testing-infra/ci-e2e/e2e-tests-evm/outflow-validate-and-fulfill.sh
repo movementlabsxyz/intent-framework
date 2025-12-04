@@ -105,7 +105,7 @@ log_and_echo ""
 # Get USDxyz metadata for balance checks
 TEST_TOKENS_CHAIN1_ADDRESS=$(get_profile_address "test-tokens-chain1")
 SOLVER_CHAIN1_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1_ADDRESS")
-log "   Solver Chain 1 initial USDxyz balance: $SOLVER_CHAIN1_USDXYZ_INIT USDxyz.10e8"
+log "   Solver Chain 1 initial USDxyz balance: $SOLVER_CHAIN1_USDXYZ_INIT 10e-6.USDxyz"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -277,17 +277,17 @@ if [ $? -eq 0 ]; then
 
     log "     - Verifying solver (Solver) received locked USDxyz tokens..."
     SOLVER_CHAIN1_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain1" "1" "0x$TEST_TOKENS_CHAIN1_ADDRESS")
-    log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL USDxyz.10e8"
+    log "     Solver Chain 1 final USDxyz balance: $SOLVER_CHAIN1_USDXYZ_FINAL 10e-6.USDxyz"
 
     CHAIN1_USDXYZ_INCREASE=$((SOLVER_CHAIN1_USDXYZ_FINAL - SOLVER_CHAIN1_USDXYZ_INIT))
     OFFERED_AMOUNT=1000000  # 1 USDxyz = 1_000_000 (6 decimals)
 
     if [ "$CHAIN1_USDXYZ_INCREASE" -ge "$OFFERED_AMOUNT" ]; then
-        log "     ✅ Solver (Solver) received locked USDxyz: +$CHAIN1_USDXYZ_INCREASE USDxyz.10e8 (expected $OFFERED_AMOUNT)"
+        log "     ✅ Solver (Solver) received locked USDxyz: +$CHAIN1_USDXYZ_INCREASE 10e-6.USDxyz (expected $OFFERED_AMOUNT)"
     else
         log_and_echo "❌ ERROR: Solver (Solver) Chain 1 USDxyz balance increase is less than expected"
-        log_and_echo "   Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE USDxyz.10e8"
-        log_and_echo "   Expected: $OFFERED_AMOUNT USDxyz.10e8"
+        log_and_echo "   Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE 10e-6.USDxyz"
+        log_and_echo "   Expected: $OFFERED_AMOUNT 10e-6.USDxyz"
         exit 1
     fi
 
@@ -326,7 +326,7 @@ log "   Hub Request-intent Address: $HUB_INTENT_ADDRESS"
 log "   Transaction Hash: $CONNECTED_CHAIN_TX_HASH"
 log "   Validation Result: VALID"
 log "   Signature Type: $SIGNATURE_TYPE"
-log "   Solver (Solver) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE USDxyz.10e8"
+log "   Solver (Solver) Chain 1 USDxyz increase: $CHAIN1_USDXYZ_INCREASE 10e-6.USDxyz"
 log ""
 log "📖 Outflow Request-intent Summary:"
 log "   1. Requester (Requester) created outflow intent on hub chain (locked 1 USDxyz)"

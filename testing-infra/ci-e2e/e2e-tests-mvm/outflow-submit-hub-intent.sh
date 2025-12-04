@@ -42,12 +42,12 @@ log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 setup_verifier_config
 
 # Get public key from environment variable
-VERIFIER_PUBLIC_KEY_B64="${VERIFIER_PUBLIC_KEY}"
+VERIFIER_PUBLIC_KEY_B64="${E2E_VERIFIER_PUBLIC_KEY}"
 
 if [ -z "$VERIFIER_PUBLIC_KEY_B64" ]; then
-    log_and_echo "❌ ERROR: VERIFIER_PUBLIC_KEY environment variable not set"
+    log_and_echo "❌ ERROR: E2E_VERIFIER_PUBLIC_KEY environment variable not set"
     log_and_echo "   The verifier public key is required for outflow intent creation."
-    log_and_echo "   Please ensure VERIFIER_PUBLIC_KEY is set (setup_verifier_config should do this)."
+    log_and_echo "   Please ensure E2E_VERIFIER_PUBLIC_KEY is set (setup_verifier_config should do this)."
     exit 1
 fi
 
@@ -57,7 +57,7 @@ if [ -z "$VERIFIER_PUBLIC_KEY_HEX" ] || [ ${#VERIFIER_PUBLIC_KEY_HEX} -ne 64 ]; 
     log_and_echo "❌ ERROR: Invalid public key format"
     log_and_echo "   Expected: base64-encoded 32-byte Ed25519 public key"
     log_and_echo "   Got: $VERIFIER_PUBLIC_KEY_B64"
-    log_and_echo "   Please ensure VERIFIER_PUBLIC_KEY is valid base64 and decodes to 32 bytes (64 hex chars)."
+    log_and_echo "   Please ensure E2E_VERIFIER_PUBLIC_KEY is valid base64 and decodes to 32 bytes (64 hex chars)."
     exit 1
 fi
 

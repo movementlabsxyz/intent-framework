@@ -61,8 +61,8 @@ log_and_echo ""
 REQUESTER_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 SOLVER_CHAIN2_USDXYZ_INIT=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
-log "   Requester Chain 2 initial USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_INIT USDxyz.10e8"
-log "   Solver Chain 2 initial USDxyz balance: $SOLVER_CHAIN2_USDXYZ_INIT USDxyz.10e8"
+log "   Requester Chain 2 initial USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_INIT 10e-6.USDxyz"
+log "   Solver Chain 2 initial USDxyz balance: $SOLVER_CHAIN2_USDXYZ_INIT 10e-6.USDxyz"
 
 # ============================================================================
 # SECTION 4: EXECUTE MAIN OPERATION
@@ -102,8 +102,8 @@ if [ $? -eq 0 ]; then
     REQUESTER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
     SOLVER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
-    log "     Requester Chain 2 final USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
-    log "     Solver Chain 2 final USDxyz balance: $SOLVER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
+    log "     Requester Chain 2 final USDxyz balance: $REQUESTER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz"
+    log "     Solver Chain 2 final USDxyz balance: $SOLVER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz"
 
     REQUESTER_CHAIN2_USDXYZ_EXPECTED=$((REQUESTER_CHAIN2_USDXYZ_INIT + TRANSFER_AMOUNT))
 
@@ -111,18 +111,18 @@ if [ $? -eq 0 ]; then
         log "     ✅ Requester (Requester) Chain 2 USDxyz balance increased by $TRANSFER_AMOUNT as expected"
     else
         log_and_echo "❌ ERROR: Requester (Requester) Chain 2 USDxyz balance mismatch"
-        log_and_echo "   Expected: $REQUESTER_CHAIN2_USDXYZ_EXPECTED USDxyz.10e8"
-        log_and_echo "   Got: $REQUESTER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
+        log_and_echo "   Expected: $REQUESTER_CHAIN2_USDXYZ_EXPECTED 10e-6.USDxyz"
+        log_and_echo "   Got: $REQUESTER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz"
         exit 1
     fi
 
     SOLVER_CHAIN2_USDXYZ_DECREASE=$((SOLVER_CHAIN2_USDXYZ_INIT - SOLVER_CHAIN2_USDXYZ_FINAL))
     if [ "$SOLVER_CHAIN2_USDXYZ_DECREASE" -eq "$TRANSFER_AMOUNT" ]; then
-        log "     ✅ Solver (Solver) Chain 2 USDxyz balance decreased by $SOLVER_CHAIN2_USDXYZ_DECREASE USDxyz.10e8 as expected"
+        log "     ✅ Solver (Solver) Chain 2 USDxyz balance decreased by $SOLVER_CHAIN2_USDXYZ_DECREASE 10e-6.USDxyz as expected"
     else
         log_and_echo "❌ ERROR: Solver (Solver) Chain 2 USDxyz balance did not decrease as expected"
-        log_and_echo "   Initial: $SOLVER_CHAIN2_USDXYZ_INIT USDxyz.10e8"
-        log_and_echo "   Final: $SOLVER_CHAIN2_USDXYZ_FINAL USDxyz.10e8"
+        log_and_echo "   Initial: $SOLVER_CHAIN2_USDXYZ_INIT 10e-6.USDxyz"
+        log_and_echo "   Final: $SOLVER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz"
         exit 1
     fi
 

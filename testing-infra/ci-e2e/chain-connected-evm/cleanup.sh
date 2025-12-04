@@ -24,5 +24,12 @@ log_and_echo "🧹 Cleaning up chains and processes..."
 stop_verifier
 stop_solver
 
+# Clean up ephemeral test config to leave clean state
+rm -f "$PROJECT_ROOT/testing-infra/ci-e2e/.verifier-keys.env"
+rm -f "$PROJECT_ROOT/.tmp/intent-info.env"
+rm -f "$PROJECT_ROOT/.tmp/solver-e2e.toml"
+rm -f "$PROJECT_ROOT/trusted-verifier/config/verifier-e2e-ci-testing.toml"
+rm -f "$PROJECT_ROOT/solver/config/solver-e2e-ci-testing.toml"
+
 log_and_echo "✅ Cleanup complete"
 

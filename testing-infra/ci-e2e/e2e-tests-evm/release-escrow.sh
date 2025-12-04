@@ -75,7 +75,7 @@ if [ -z "$SOLVER_CHAIN3_USDXYZ_INIT" ]; then
 fi
 
 log "   Initial balances:"
-log "      Solver Chain 3 USDxyz: $SOLVER_CHAIN3_USDXYZ_INIT USDxyz.10e8"
+log "      Solver Chain 3 USDxyz: $SOLVER_CHAIN3_USDXYZ_INIT 10e-6.USDxyz"
 
 # Track released escrows to avoid duplicate attempts
 RELEASED_ESCROWS=""
@@ -150,7 +150,7 @@ check_and_release_escrows() {
             exit 1
         fi
         
-        log "   - Solver's Chain 3 USDxyz balance before claim: $SOLVER_CHAIN3_USDXYZ_BEFORE USDxyz.10e8"
+        log "   - Solver's Chain 3 USDxyz balance before claim: $SOLVER_CHAIN3_USDXYZ_BEFORE 10e-6.USDxyz"
         
         # Submit escrow release transaction on EVM
         cd evm-intent-framework
@@ -195,7 +195,7 @@ check_and_release_escrows() {
             exit 1
         fi
         
-        log "   - Solver's Chain 3 USDxyz balance after claim: $SOLVER_CHAIN3_USDXYZ_AFTER USDxyz.10e8"
+        log "   - Solver's Chain 3 USDxyz balance after claim: $SOLVER_CHAIN3_USDXYZ_AFTER 10e-6.USDxyz"
         
         # Calculate balance increase
         # Expected: Solver should receive 1 USDxyz (matches intent offered_amount)
@@ -203,22 +203,22 @@ check_and_release_escrows() {
         EXPECTED_USDXYZ="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
         CHAIN3_USDXYZ_INCREASE=$(echo "$SOLVER_CHAIN3_USDXYZ_AFTER $SOLVER_CHAIN3_USDXYZ_BEFORE" | awk '{print $1 - $2}')
         
-        log "   - USDxyz balance increase: $CHAIN3_USDXYZ_INCREASE USDxyz.10e8"
-        log "   - Expected: $EXPECTED_USDXYZ USDxyz.10e8"
+        log "   - USDxyz balance increase: $CHAIN3_USDXYZ_INCREASE 10e-6.USDxyz"
+        log "   - Expected: $EXPECTED_USDXYZ 10e-6.USDxyz"
         
         # Check if balance increased (USDxyz transfer, no gas deduction from token balance)
         if [ -z "$CHAIN3_USDXYZ_INCREASE" ] || [ "$CHAIN3_USDXYZ_INCREASE" = "0" ]; then
             log_and_echo "   ❌ ERROR: Solver did not receive the escrow USDxyz!"
-            log_and_echo "   Solver's Chain 3 USDxyz before: $SOLVER_CHAIN3_USDXYZ_BEFORE USDxyz.10e8"
-            log_and_echo "   Solver's Chain 3 USDxyz after:  $SOLVER_CHAIN3_USDXYZ_AFTER USDxyz.10e8"
-            log_and_echo "   Balance increase:    $CHAIN3_USDXYZ_INCREASE USDxyz.10e8"
-            log_and_echo "   Expected increase:   $EXPECTED_USDXYZ USDxyz.10e8"
+            log_and_echo "   Solver's Chain 3 USDxyz before: $SOLVER_CHAIN3_USDXYZ_BEFORE 10e-6.USDxyz"
+            log_and_echo "   Solver's Chain 3 USDxyz after:  $SOLVER_CHAIN3_USDXYZ_AFTER 10e-6.USDxyz"
+            log_and_echo "   Balance increase:    $CHAIN3_USDXYZ_INCREASE 10e-6.USDxyz"
+            log_and_echo "   Expected increase:   $EXPECTED_USDXYZ 10e-6.USDxyz"
             log_and_echo "   Escrow release FAILED - Solver did not receive USDxyz!"
             exit 1
         fi
         
         log "   ✅ Escrow released successfully on EVM chain!"
-        log "   ✅ Solver received $CHAIN3_USDXYZ_INCREASE USDxyz.10e8 (expected $EXPECTED_USDXYZ USDxyz.10e8)"
+        log "   ✅ Solver received $CHAIN3_USDXYZ_INCREASE 10e-6.USDxyz (expected $EXPECTED_USDXYZ 10e-6.USDxyz)"
         RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
     done
 }
@@ -335,16 +335,16 @@ SOLVER_CHAIN3_USDXYZ_GAIN=$((SOLVER_CHAIN3_USDXYZ_FINAL - SOLVER_CHAIN3_USDXYZ_I
 # Check if escrow was released (Solver on EVM Chain 3 should have received funds)
 if [ "$SOLVER_CHAIN3_USDXYZ_GAIN" -lt "$SOLVER_CHAIN3_USDXYZ_EXPECTED" ]; then
     log_and_echo "❌ ERROR: Solver on EVM Chain 3 USDxyz balance did not increase by expected amount!"
-    log_and_echo "   Initial balance: $SOLVER_CHAIN3_USDXYZ_INIT USDxyz.10e8"
-    log_and_echo "   Final balance: $SOLVER_CHAIN3_USDXYZ_FINAL USDxyz.10e8"
-    log_and_echo "   Balance increase: $SOLVER_CHAIN3_USDXYZ_GAIN USDxyz.10e8"
-    log_and_echo "   Expected increase: $SOLVER_CHAIN3_USDXYZ_EXPECTED USDxyz.10e8"
+    log_and_echo "   Initial balance: $SOLVER_CHAIN3_USDXYZ_INIT 10e-6.USDxyz"
+    log_and_echo "   Final balance: $SOLVER_CHAIN3_USDXYZ_FINAL 10e-6.USDxyz"
+    log_and_echo "   Balance increase: $SOLVER_CHAIN3_USDXYZ_GAIN 10e-6.USDxyz"
+    log_and_echo "   Expected increase: $SOLVER_CHAIN3_USDXYZ_EXPECTED 10e-6.USDxyz"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     exit 1
 fi
 
 log "   ✅ Final balances validated:"
-log "      Solver Chain 3 USDxyz: $SOLVER_CHAIN3_USDXYZ_INIT → $SOLVER_CHAIN3_USDXYZ_FINAL (+$SOLVER_CHAIN3_USDXYZ_GAIN) USDxyz.10e8"
+log "      Solver Chain 3 USDxyz: $SOLVER_CHAIN3_USDXYZ_INIT → $SOLVER_CHAIN3_USDXYZ_FINAL (+$SOLVER_CHAIN3_USDXYZ_GAIN) 10e-6.USDxyz"
 
 log ""
 log "📝 Useful commands:"

@@ -13,6 +13,9 @@ trusted-verifier/target/
 
 .tmp/
 
+# E2E test ephemeral keys (generated during CI/E2E tests)
+testing-infra/ci-e2e/.verifier-keys.env
+
 # Logs
 logs
 *.log

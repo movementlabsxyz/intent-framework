@@ -316,10 +316,13 @@ impl HubChainClient {
             .await
             .context("Failed to query solver registration")?;
 
-        if !response.status().is_success() {
+        let status = response.status();
+        if !status.is_success() {
+            let error_body = response.text().await.unwrap_or_default();
             anyhow::bail!(
-                "Failed to query solver registration: HTTP {}",
-                response.status()
+                "Failed to query solver registration: HTTP {} - {}",
+                status,
+                error_body
             );
         }
 

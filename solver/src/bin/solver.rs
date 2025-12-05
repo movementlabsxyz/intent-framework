@@ -29,7 +29,7 @@ use solver::{
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 #[derive(Parser, Debug)]
 #[command(name = "solver")]
@@ -138,6 +138,7 @@ async fn main() -> Result<()> {
                 This may indicate:\n\
                 - RPC endpoint is unreachable\n\
                 - Module address is incorrect\n\
+                - View function is not available (module may need to be redeployed with #[view] attribute)\n\
                 - Network connectivity issues",
                 e
             );

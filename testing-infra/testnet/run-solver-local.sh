@@ -86,18 +86,18 @@ if grep -qE "(0x123|0x\.\.\.|0x\.\.\.)" "$SOLVER_CONFIG"; then
     exit 1
 fi
 
-# Extract config values for display
-VERIFIER_URL=$(grep "verifier_url" "$SOLVER_CONFIG" | sed 's/.*= *"\(.*\)".*/\1/')
-HUB_RPC=$(grep -A5 "\[hub_chain\]" "$SOLVER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
-HUB_MODULE=$(grep -A5 "\[hub_chain\]" "$SOLVER_CONFIG" | grep "module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
-SOLVER_PROFILE=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "profile" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
-SOLVER_ADDRESS=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+# Extract config values for display (skip comment lines)
+VERIFIER_URL=$(grep "^verifier_url" "$SOLVER_CONFIG" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
+HUB_RPC=$(grep -A5 "\[hub_chain\]" "$SOLVER_CONFIG" | grep "^rpc_url" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
+HUB_MODULE=$(grep -A5 "\[hub_chain\]" "$SOLVER_CONFIG" | grep "^module_address" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
+SOLVER_PROFILE=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "^profile" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
+SOLVER_ADDRESS=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "^address" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
 
 # Check if connected chain is EVM and extract escrow address
-CONNECTED_TYPE=$(grep -A2 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "type" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+CONNECTED_TYPE=$(grep -A2 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "^type" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
 if [ "$CONNECTED_TYPE" = "evm" ]; then
-    ESCROW_CONTRACT=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "escrow_contract_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
-    CONNECTED_RPC=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+    ESCROW_CONTRACT=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "^escrow_contract_address" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
+    CONNECTED_RPC=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "^rpc_url" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
 fi
 
 # Check for API key placeholders in RPC URLs
@@ -131,15 +131,17 @@ echo ""
 
 # Check verifier is reachable
 echo "   Checking verifier health..."
-HEALTH=$(curl -s --max-time 5 "$VERIFIER_URL/health" 2>/dev/null || echo "")
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$VERIFIER_URL/health" 2>/dev/null || echo "000")
 
-if [ "$HEALTH" = '{"status":"ok"}' ]; then
+if [ "$HTTP_CODE" = "200" ]; then
     echo "   ✅ Verifier is healthy"
 else
-    echo "   ⚠️  Verifier not responding at $VERIFIER_URL"
+    echo "   ⚠️  Verifier not responding at $VERIFIER_URL (HTTP $HTTP_CODE)"
     echo ""
     echo "   Make sure verifier is running first:"
     echo "   ./testing-infra/testnet/run-verifier-local.sh"
+    echo ""
+    echo "   Quick check: curl $VERIFIER_URL/health"
     echo ""
     read -p "   Continue anyway? (y/N) " -n 1 -r
     echo
@@ -179,8 +181,11 @@ echo ""
 
 cd "$PROJECT_ROOT/solver"
 
-# Export private key for EVM transactions
+# Export environment variables for solver (needed for nix develop subprocess)
 export BASE_SOLVER_PRIVATE_KEY
+# Export solver addresses for auto-registration (solver reads BASE_SOLVER_ADDRESS or SOLVER_EVM_ADDRESS)
+export BASE_SOLVER_ADDRESS
+export SOLVER_EVM_ADDRESS  # May be empty, that's OK
 
 # Check if --release flag is passed
 if [ "$1" = "--release" ]; then

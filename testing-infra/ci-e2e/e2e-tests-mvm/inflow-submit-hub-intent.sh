@@ -10,6 +10,9 @@ setup_project_root
 setup_logging "submit-hub-intent"
 cd "$PROJECT_ROOT"
 
+# Verify services are running before proceeding
+verify_services_running
+
 # ============================================================================
 # SECTION 1: LOAD DEPENDENCIES
 # ============================================================================

@@ -20,6 +20,8 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
 source "$SCRIPT_DIR/../util_mvm.sh"
+source "$SCRIPT_DIR/../util_evm.sh"
+source "$SCRIPT_DIR/../chain-connected-evm/utils.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -125,6 +127,11 @@ generate_solver_config_evm "$SOLVER_CONFIG"
 # Export solver's EVM address for auto-registration
 # Hardhat account #2 is used for solver
 export SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
+if [ -z "$SOLVER_EVM_ADDRESS" ]; then
+    log_and_echo "❌ ERROR: Failed to get solver EVM address"
+    log_and_echo "   Make sure Hardhat is running and get_hardhat_account_address is available"
+    exit 1
+fi
 log "   Exported SOLVER_EVM_ADDRESS=$SOLVER_EVM_ADDRESS"
 
 # Start the solver service

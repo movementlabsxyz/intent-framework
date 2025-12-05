@@ -303,6 +303,41 @@ check_verifier_health() {
     fi
 }
 
+# Usage: verify_services_running
+# Verifies that verifier and solver services are running
+# Exits with error if services are not running
+verify_services_running() {
+    log ""
+    log "🔍 Verifying services are running..."
+    
+    # Check verifier
+    if [ -z "$VERIFIER_PID" ] || ! ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
+        log_and_echo "❌ ERROR: Verifier is not running"
+        log_and_echo "   Expected PID: ${VERIFIER_PID:-<not set>}"
+        log_and_echo "   Please start verifier first using start-verifier.sh"
+        exit 1
+    fi
+    
+    if ! check_verifier_health; then
+        log_and_echo "❌ ERROR: Verifier health check failed"
+        log_and_echo "   Verifier PID: $VERIFIER_PID"
+        log_and_echo "   Check logs: ${VERIFIER_LOG:-<not set>}"
+        exit 1
+    fi
+    log "   ✅ Verifier is running and healthy (PID: $VERIFIER_PID)"
+    
+    # Check solver
+    if [ -z "$SOLVER_PID" ] || ! ps -p "$SOLVER_PID" > /dev/null 2>&1; then
+        log_and_echo "❌ ERROR: Solver is not running"
+        log_and_echo "   Expected PID: ${SOLVER_PID:-<not set>}"
+        log_and_echo "   Please start solver first using start-solver.sh"
+        exit 1
+    fi
+    log "   ✅ Solver is running (PID: $SOLVER_PID)"
+    
+    log "   ✅ All services verified"
+}
+
 # Start verifier service
 # Usage: start_verifier [log_file] [rust_log_level]
 # Starts trusted-verifier in background and waits for it to be ready
@@ -424,6 +459,7 @@ check_solver_health() {
     # For now, return 1 (not implemented)
     return 1
 }
+
 
 # Start solver service
 # Usage: start_solver [log_file] [rust_log_level] [config_path]

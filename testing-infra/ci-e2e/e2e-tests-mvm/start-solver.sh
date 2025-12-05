@@ -110,6 +110,11 @@ generate_solver_config_mvm "$SOLVER_CONFIG"
 
 # Export solver's connected chain address for auto-registration
 SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
+if [ -z "$SOLVER_CHAIN2_ADDRESS" ]; then
+    log_and_echo "❌ ERROR: Failed to get solver Chain 2 address"
+    log_and_echo "   Make sure solver-chain2 profile exists"
+    exit 1
+fi
 export SOLVER_CONNECTED_MVM_ADDRESS="0x${SOLVER_CHAIN2_ADDRESS}"
 log "   Exported SOLVER_CONNECTED_MVM_ADDRESS=$SOLVER_CONNECTED_MVM_ADDRESS"
 

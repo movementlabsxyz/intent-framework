@@ -11,6 +11,9 @@ setup_project_root
 setup_logging "inflow-submit-hub-intent-evm"
 cd "$PROJECT_ROOT"
 
+# Verify services are running before proceeding
+verify_services_running
+
 # Generate a random intent_id that will be used for both hub and escrow
 INTENT_ID="0x$(openssl rand -hex 32)"
 

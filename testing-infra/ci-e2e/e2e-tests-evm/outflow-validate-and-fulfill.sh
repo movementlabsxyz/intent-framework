@@ -54,14 +54,6 @@ log "   Transaction Hash:        $CONNECTED_CHAIN_TX_HASH"
 log "   Chain Type:              evm (Ethereum Virtual Machine)"
 
 log ""
-log "   - Checking if verifier is running..."
-if ! curl -s "http://127.0.0.1:3333/health" > /dev/null 2>&1; then
-    log_and_echo "❌ ERROR: Verifier is not running"
-    log_and_echo "   Please start the verifier service first"
-    log_and_echo "   The verifier should be started in run-tests-outflow.sh before this script"
-    exit 1
-fi
-log "   ✅ Verifier is running"
 
 # Wait for verifier to poll and cache the intent
 # The verifier polls every 2 seconds, so wait for it to discover the intent

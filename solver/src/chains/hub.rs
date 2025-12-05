@@ -183,7 +183,8 @@ impl HubChainClient {
         intent_address: &str,
         payment_amount: u64,
     ) -> Result<String> {
-        let output = Command::new("movement")
+        // Use aptos CLI for compatibility with E2E tests which create aptos profiles
+        let output = Command::new("aptos")
             .args(&[
                 "move",
                 "run",
@@ -242,7 +243,8 @@ impl HubChainClient {
         // Convert signature bytes to hex string
         let signature_hex = hex::encode(verifier_signature_bytes);
 
-        let output = Command::new("movement")
+        // Use aptos CLI for compatibility with E2E tests which create aptos profiles
+        let output = Command::new("aptos")
             .args(&[
                 "move",
                 "run",
@@ -368,12 +370,13 @@ impl HubChainClient {
         let mvm_addr = mvm_address.unwrap_or("0x0");
         
         // Build command arguments - store formatted strings to avoid temporary value issues
+        // Movement CLI expects 'hex:' for vector<u8> types, not 'vector<u8>:'
         let function_id = format!("{}::solver_registry::register_solver", self.module_address);
-        let public_key_arg = format!("vector<u8>:0x{}", public_key_hex);
+        let public_key_arg = format!("hex:{}", public_key_hex);
         let evm_address_arg = if evm_address_hex.is_empty() {
-            "vector<u8>:0x".to_string()
+            "hex:".to_string()
         } else {
-            format!("vector<u8>:0x{}", evm_address_hex)
+            format!("hex:{}", evm_address_hex)
         };
         let mvm_address_arg = format!("address:{}", mvm_addr);
         
@@ -391,10 +394,12 @@ impl HubChainClient {
             &mvm_address_arg,
         ];
         
-        let output = Command::new("movement")
+        // Use aptos CLI for compatibility with E2E tests which create aptos profiles
+        // (Movement CLI stores config in ~/.movement/config.yaml, aptos CLI uses .aptos/config.yaml)
+        let output = Command::new("aptos")
             .args(&args)
             .output()
-            .context("Failed to execute movement move run for solver registration")?;
+            .context("Failed to execute aptos move run for solver registration")?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);

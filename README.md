@@ -42,6 +42,7 @@ nix develop -c bash -c "./testing-infra/ci-e2e/e2e-tests-mvm/run-tests-inflow.sh
 nix develop -c bash -c "./testing-infra/ci-e2e/e2e-tests-mvm/run-tests-outflow.sh"
 nix develop -c bash -c "./testing-infra/ci-e2e/e2e-tests-evm/run-tests-inflow.sh"
 nix develop -c bash -c "./testing-infra/ci-e2e/e2e-tests-evm/run-tests-outflow.sh"
+nix develop -c bash -c "./testing-infra/ci-e2e/e2e-tests-mvm/run-tests-rust-integration.sh"
 ```
 
 ## License

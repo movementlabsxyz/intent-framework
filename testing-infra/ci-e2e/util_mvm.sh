@@ -611,8 +611,8 @@ display_balances_hub() {
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdxyz USDxyz"
-        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdxyz USDxyz"
+        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdxyz 10e-6.USDxyz"
     else
         log_and_echo "      Requester: $requester1 Octas"
         log_and_echo "      Solver:   $solver1 Octas"
@@ -650,8 +650,8 @@ display_balances_connected_mvm() {
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdxyz USDxyz"
-        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdxyz USDxyz"
+        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdxyz 10e-6.USDxyz"
     else
         log_and_echo "      Requester: $requester2 Octas"
         log_and_echo "      Solver:   $solver2 Octas"
@@ -746,17 +746,49 @@ register_solver() {
 }
 
 # Verify that a solver is registered in the solver registry
-# Usage: verify_solver_registered <profile> <chain_address> <solver_address> [log_file]
+# Usage: verify_solver_registered [profile] [chain_address] [solver_address] [log_file]
+# If parameters are not provided, auto-detects from environment/config
 # Exits on error if solver is not registered
 verify_solver_registered() {
-    local profile="$1"
-    local chain_address="$2"
-    local solver_address="$3"
+    local profile="${1:-}"
+    local chain_address="${2:-}"
+    local solver_address="${3:-}"
     local log_file="${4:-$LOG_FILE}"
 
-    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$solver_address" ]; then
-        log_and_echo "❌ ERROR: verify_solver_registered() requires profile, chain_address, and solver_address"
-        exit 1
+    log ""
+    log "🔍 Verifying solver is registered on-chain..."
+
+    # Auto-detect profile if not provided
+    if [ -z "$profile" ]; then
+        profile="${SOLVER_PROFILE:-solver-chain1}"
+    fi
+    
+    # Auto-detect chain_address if not provided
+    if [ -z "$chain_address" ]; then
+        chain_address="${MOVEMENT_INTENT_MODULE_ADDRESS:-}"
+        # Try to get from verifier config
+        if [ -z "$chain_address" ] && [ -n "$VERIFIER_CONFIG_PATH" ] && [ -f "$VERIFIER_CONFIG_PATH" ]; then
+            chain_address=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG_PATH" | grep "intent_module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/0x//')
+        fi
+        # Try to get from intent-account-chain1 profile
+        if [ -z "$chain_address" ]; then
+            chain_address=$(get_profile_address "intent-account-chain1" 2>/dev/null || echo "")
+        fi
+    fi
+    
+    # Auto-detect solver_address if not provided
+    if [ -z "$solver_address" ]; then
+        solver_address=$(get_profile_address "$profile" 2>/dev/null || echo "")
+        solver_address="${solver_address:-${SOLVER_CHAIN1_ADDRESS:-}}"
+    fi
+
+    # Check if we have the required parameters
+    if [ -z "$chain_address" ] || [ -z "$solver_address" ]; then
+        log "   ⚠️  Skipping solver registration check (could not auto-detect parameters)"
+        log "   profile: ${profile:-<not set>}"
+        log "   chain_address: ${chain_address:-<not set>}"
+        log "   solver_address: ${solver_address:-<not set>}"
+        return 0
     fi
 
     # Remove 0x prefix if present

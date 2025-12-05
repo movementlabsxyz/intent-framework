@@ -13,7 +13,9 @@ setup_logging "submit-outflow-hub-intent-evm"
 cd "$PROJECT_ROOT"
 
 # Verify services are running before proceeding
-verify_services_running
+verify_verifier_running
+verify_solver_running
+verify_solver_registered
 
 # ============================================================================
 # SECTION 1: LOAD DEPENDENCIES

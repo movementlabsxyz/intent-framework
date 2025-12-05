@@ -169,7 +169,8 @@ impl ConnectedMvmClient {
         amount: u64,
         intent_id: &str,
     ) -> Result<String> {
-        let output = Command::new("movement")
+        // Use aptos CLI for compatibility with E2E tests which create aptos profiles
+        let output = Command::new("aptos")
             .args(&[
                 "move",
                 "run",
@@ -185,7 +186,7 @@ impl ConnectedMvmClient {
                 &format!("address:{}", intent_id),
             ])
             .output()
-            .context("Failed to execute movement move run")?;
+            .context("Failed to execute aptos move run")?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -236,7 +237,8 @@ impl ConnectedMvmClient {
         // Convert signature bytes to hex string
         let signature_hex = hex::encode(verifier_signature_bytes);
 
-        let output = Command::new("movement")
+        // Use aptos CLI for compatibility with E2E tests which create aptos profiles
+        let output = Command::new("aptos")
             .args(&[
                 "move",
                 "run",
@@ -251,7 +253,7 @@ impl ConnectedMvmClient {
                 &format!("hex:{}", signature_hex),
             ])
             .output()
-            .context("Failed to execute movement move run")?;
+            .context("Failed to execute aptos move run")?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);

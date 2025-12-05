@@ -39,7 +39,6 @@ enum ConnectedChainClient {
 struct EscrowMatch {
     intent_id: String,
     escrow_id: String,
-    offered_amount: u64,
 }
 
 impl InflowService {
@@ -112,7 +111,6 @@ impl InflowService {
                     .map(|e| EscrowMatch {
                         intent_id: e.intent_id,
                         escrow_id: e.escrow_id,
-                        offered_amount: e.offered_amount.parse().unwrap_or(0),
                     })
                     .collect()
             }
@@ -125,7 +123,6 @@ impl InflowService {
                     .map(|e| EscrowMatch {
                         intent_id: e.intent_id,
                         escrow_id: e.escrow,
-                        offered_amount: 0, // EVM events don't have amount in the event
                     })
                     .collect()
             }

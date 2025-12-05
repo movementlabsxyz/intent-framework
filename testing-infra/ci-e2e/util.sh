@@ -289,6 +289,29 @@ stop_verifier() {
     fi
 }
 
+# Check if port is listening
+# Usage: check_port_listening [port]
+# Returns 0 if port is listening, 1 if not
+check_port_listening() {
+    local port="${1:-3333}"
+    
+    # Try different methods depending on what's available
+    if command -v ss > /dev/null 2>&1; then
+        ss -ln | grep -q ":${port} " && return 0
+    elif command -v netstat > /dev/null 2>&1; then
+        netstat -ln | grep -q ":${port} " && return 0
+    elif command -v lsof > /dev/null 2>&1; then
+        lsof -i ":${port}" > /dev/null 2>&1 && return 0
+    fi
+    
+    # Fallback: try to connect to the port
+    if command -v nc > /dev/null 2>&1; then
+        nc -z 127.0.0.1 "${port}" > /dev/null 2>&1 && return 0
+    fi
+    
+    return 1
+}
+
 # Check verifier health
 # Usage: check_verifier_health [port]
 # Checks if verifier health endpoint responds
@@ -303,28 +326,72 @@ check_verifier_health() {
     fi
 }
 
-# Usage: verify_services_running
-# Verifies that verifier and solver services are running
-# Exits with error if services are not running
-verify_services_running() {
-    log ""
-    log "🔍 Verifying services are running..."
+# Verify verifier is running
+# Usage: verify_verifier_running
+# Checks verifier process, port, and health endpoint
+# Exits with error if verifier is not running
+verify_verifier_running() {
+    # Ensure LOG_DIR is set (for reading PID files)
+    if [ -z "$LOG_DIR" ] && [ -n "$PROJECT_ROOT" ]; then
+        LOG_DIR="$PROJECT_ROOT/.tmp/intent-framework-logs"
+    fi
     
-    # Check verifier
+    log ""
+    log "🔍 Verifying verifier is running..."
+    
+    # Try to load VERIFIER_PID from file if not set
+    if [ -z "$VERIFIER_PID" ] && [ -n "$LOG_DIR" ] && [ -f "$LOG_DIR/verifier.pid" ]; then
+        VERIFIER_PID=$(cat "$LOG_DIR/verifier.pid" 2>/dev/null || echo "")
+        export VERIFIER_PID
+    fi
+    
+    # Check verifier process
     if [ -z "$VERIFIER_PID" ] || ! ps -p "$VERIFIER_PID" > /dev/null 2>&1; then
-        log_and_echo "❌ ERROR: Verifier is not running"
+        log_and_echo "❌ ERROR: Verifier process is not running"
         log_and_echo "   Expected PID: ${VERIFIER_PID:-<not set>}"
         log_and_echo "   Please start verifier first using start-verifier.sh"
         exit 1
     fi
     
-    if ! check_verifier_health; then
-        log_and_echo "❌ ERROR: Verifier health check failed"
+    # Check if verifier port is listening
+    VERIFIER_PORT="${VERIFIER_PORT:-3333}"
+    if ! check_port_listening "$VERIFIER_PORT"; then
+        log_and_echo "❌ ERROR: Verifier is not listening on port $VERIFIER_PORT"
         log_and_echo "   Verifier PID: $VERIFIER_PID"
+        log_and_echo "   Process exists but port is not accessible"
         log_and_echo "   Check logs: ${VERIFIER_LOG:-<not set>}"
         exit 1
     fi
-    log "   ✅ Verifier is running and healthy (PID: $VERIFIER_PID)"
+    
+    # Check verifier health endpoint
+    if ! check_verifier_health "$VERIFIER_PORT"; then
+        log_and_echo "❌ ERROR: Verifier health check failed"
+        log_and_echo "   Verifier PID: $VERIFIER_PID"
+        log_and_echo "   Port $VERIFIER_PORT is listening but /health endpoint failed"
+        log_and_echo "   Check logs: ${VERIFIER_LOG:-<not set>}"
+        exit 1
+    fi
+    log "   ✅ Verifier is running and healthy (PID: $VERIFIER_PID, port: $VERIFIER_PORT)"
+}
+
+# Verify solver is running
+# Usage: verify_solver_running
+# Checks solver process
+# Exits with error if solver is not running
+verify_solver_running() {
+    # Ensure LOG_DIR is set (for reading PID files)
+    if [ -z "$LOG_DIR" ] && [ -n "$PROJECT_ROOT" ]; then
+        LOG_DIR="$PROJECT_ROOT/.tmp/intent-framework-logs"
+    fi
+    
+    log ""
+    log "🔍 Verifying solver is running..."
+    
+    # Try to load SOLVER_PID from file if not set
+    if [ -z "$SOLVER_PID" ] && [ -n "$LOG_DIR" ] && [ -f "$LOG_DIR/solver.pid" ]; then
+        SOLVER_PID=$(cat "$LOG_DIR/solver.pid" 2>/dev/null || echo "")
+        export SOLVER_PID
+    fi
     
     # Check solver
     if [ -z "$SOLVER_PID" ] || ! ps -p "$SOLVER_PID" > /dev/null 2>&1; then
@@ -334,9 +401,11 @@ verify_services_running() {
         exit 1
     fi
     log "   ✅ Solver is running (PID: $SOLVER_PID)"
-    
-    log "   ✅ All services verified"
 }
+
+# Note: verify_solver_registered() is defined in util_mvm.sh with auto-detection
+# Both MVM and EVM E2E tests source util_mvm.sh since the hub chain is always MVM
+
 
 # Start verifier service
 # Usage: start_verifier [log_file] [rust_log_level]
@@ -370,6 +439,14 @@ start_verifier() {
     VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" RUST_LOG="$rust_log" cargo run --bin trusted-verifier > "$log_file" 2>&1 &
     VERIFIER_PID=$!
     popd > /dev/null
+    
+    # Export PID so it persists across subshells
+    export VERIFIER_PID
+    
+    # Save PID to file for cross-script persistence
+    if [ -n "$LOG_DIR" ]; then
+        echo "$VERIFIER_PID" > "$LOG_DIR/verifier.pid"
+    fi
     
     log "   ✅ Verifier started with PID: $VERIFIER_PID"
     
@@ -499,6 +576,14 @@ start_solver() {
     SOLVER_CONFIG_PATH="$config_path" RUST_LOG="$rust_log" cargo run --bin solver > "$log_file" 2>&1 &
     SOLVER_PID=$!
     popd > /dev/null
+    
+    # Export PID so it persists across subshells
+    export SOLVER_PID
+    
+    # Save PID to file for cross-script persistence
+    if [ -n "$LOG_DIR" ]; then
+        echo "$SOLVER_PID" > "$LOG_DIR/solver.pid"
+    fi
     
     log "   ✅ Solver started with PID: $SOLVER_PID"
     

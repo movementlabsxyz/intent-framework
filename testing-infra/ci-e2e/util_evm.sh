@@ -111,8 +111,8 @@ display_balances_connected_evm() {
             exit 1
         fi
         
-        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdxyz USDxyz"
-        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdxyz USDxyz"
+        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdxyz 10e-6.USDxyz"
     else
         log_and_echo "      Requester (Acc 1): ${requester_eth} ETH"
         log_and_echo "      Solver (Acc 2): ${solver_eth} ETH"

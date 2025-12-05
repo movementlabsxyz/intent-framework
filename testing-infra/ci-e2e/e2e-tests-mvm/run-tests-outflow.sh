@@ -39,7 +39,37 @@ echo "==========================================================================
 ./testing-infra/ci-e2e/e2e-tests-mvm/start-verifier.sh
 
 # Start solver service for automatic signing and fulfillment
+echo ""
+echo "🚀 Step 3b: Starting solver service..."
+echo "======================================="
 ./testing-infra/ci-e2e/e2e-tests-mvm/start-solver.sh
+
+# Verify solver started and show logs if it failed
+SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver.log"
+if [ -f "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid" ]; then
+    SOLVER_PID=$(cat "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid")
+    if ps -p "$SOLVER_PID" > /dev/null 2>&1; then
+        echo "✅ Solver is running (PID: $SOLVER_PID)"
+        # Show first few lines of solver log to confirm it initialized
+        if [ -f "$SOLVER_LOG_FILE" ]; then
+            echo "   Solver log (first 20 lines):"
+            head -20 "$SOLVER_LOG_FILE" | sed 's/^/   /'
+        fi
+    else
+        echo "❌ ERROR: Solver process died (PID: $SOLVER_PID)"
+        if [ -f "$SOLVER_LOG_FILE" ]; then
+            echo "   Solver log:"
+            cat "$SOLVER_LOG_FILE" | sed 's/^/   /'
+        fi
+        exit 1
+    fi
+else
+    echo "⚠️  WARNING: Solver PID file not found"
+    if [ -f "$SOLVER_LOG_FILE" ]; then
+        echo "   Solver log:"
+        cat "$SOLVER_LOG_FILE" | sed 's/^/   /'
+    fi
+fi
 
 echo ""
 echo "🚀 Step 4: Testing OUTFLOW intents (hub chain → connected chain)..."

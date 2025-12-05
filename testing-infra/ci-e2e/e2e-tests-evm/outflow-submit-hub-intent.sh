@@ -151,6 +151,43 @@ RETRIEVED_SOLVER=$(echo "$SIGNATURE_DATA" | jq -r '.solver_address')
 
 if [ -z "$RETRIEVED_SIGNATURE" ] || [ "$RETRIEVED_SIGNATURE" = "null" ]; then
     log_and_echo "❌ ERROR: Failed to retrieve signature from verifier"
+    log_and_echo ""
+    log_and_echo "🔍 Diagnostics:"
+    
+    # Check if solver is running
+    SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver-evm.log"
+    if [ -f "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid" ]; then
+        SOLVER_PID=$(cat "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid")
+        if ps -p "$SOLVER_PID" > /dev/null 2>&1; then
+            log_and_echo "   ✅ Solver process is running (PID: $SOLVER_PID)"
+        else
+            log_and_echo "   ❌ Solver process is NOT running (PID: $SOLVER_PID)"
+        fi
+    else
+        log_and_echo "   ❌ Solver PID file not found"
+    fi
+    
+    # Show solver log
+    if [ -f "$SOLVER_LOG_FILE" ]; then
+        log_and_echo ""
+        log_and_echo "   📋 Solver log (last 50 lines):"
+        log_and_echo "   ----------------------------------------"
+        tail -50 "$SOLVER_LOG_FILE" | while read line; do log_and_echo "   $line"; done
+        log_and_echo "   ----------------------------------------"
+    else
+        log_and_echo "   ⚠️  Solver log file not found: $SOLVER_LOG_FILE"
+    fi
+    
+    # Show verifier log
+    VERIFIER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/verifier-evm.log"
+    if [ -f "$VERIFIER_LOG_FILE" ]; then
+        log_and_echo ""
+        log_and_echo "   📋 Verifier log (last 30 lines):"
+        log_and_echo "   ----------------------------------------"
+        tail -30 "$VERIFIER_LOG_FILE" | while read line; do log_and_echo "   $line"; done
+        log_and_echo "   ----------------------------------------"
+    fi
+    
     exit 1
 fi
 log "     ✅ Retrieved signature from solver: $RETRIEVED_SOLVER"

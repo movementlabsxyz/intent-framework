@@ -20,6 +20,19 @@ echo "🧪 E2E Test with Connected Move VM Chain - OUTFLOW"
 echo "=================================================="
 echo ""
 
+echo "🔨 Step 0: Building Rust services (verifier and solver)..."
+echo "==========================================================="
+pushd "$PROJECT_ROOT/trusted-verifier" > /dev/null
+cargo build --bin trusted-verifier 2>&1 | tail -5
+popd > /dev/null
+echo "   ✅ Verifier built"
+
+pushd "$PROJECT_ROOT/solver" > /dev/null
+cargo build --bin solver 2>&1 | tail -5
+popd > /dev/null
+echo "   ✅ Solver built"
+echo ""
+
 echo "🧹 Step 1: Cleaning up any existing chains, accounts and processes..."
 echo "================================================================"
 ./testing-infra/ci-e2e/chain-connected-mvm/cleanup.sh

@@ -24,6 +24,19 @@ log_and_echo "=============================================="
 log_and_echo "📝 All output logged to: $LOG_FILE"
 log_and_echo ""
 
+log_and_echo "🔨 Step 0: Building Rust services (verifier and solver)..."
+log_and_echo "==========================================================="
+pushd "$PROJECT_ROOT/trusted-verifier" > /dev/null
+cargo build --bin trusted-verifier 2>&1 | tail -5
+popd > /dev/null
+log_and_echo "   ✅ Verifier built"
+
+pushd "$PROJECT_ROOT/solver" > /dev/null
+cargo build --bin solver 2>&1 | tail -5
+popd > /dev/null
+log_and_echo "   ✅ Solver built"
+log_and_echo ""
+
 log_and_echo "🧹 Step 1: Cleaning up any existing chains, accounts and processes..."
 log_and_echo "=========================================================="
 ./testing-infra/ci-e2e/chain-connected-evm/cleanup.sh

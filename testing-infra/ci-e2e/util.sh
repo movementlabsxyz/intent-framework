@@ -434,11 +434,17 @@ start_verifier() {
     log "   Using config: $VERIFIER_CONFIG_PATH"
     log "   Log file: $log_file"
     
-    # Change to trusted-verifier directory and start the verifier
-    pushd "$PROJECT_ROOT/trusted-verifier" > /dev/null
-    VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" RUST_LOG="$rust_log" cargo run --bin trusted-verifier > "$log_file" 2>&1 &
+    # Use pre-built binary (must be built first via Step 0)
+    local verifier_binary="$PROJECT_ROOT/trusted-verifier/target/debug/trusted-verifier"
+    if [ ! -f "$verifier_binary" ]; then
+        log_and_echo "   ❌ PANIC: Verifier binary not found: $verifier_binary"
+        log_and_echo "   Please build first: cd trusted-verifier && cargo build --bin trusted-verifier"
+        exit 1
+    fi
+    
+    log "   Using binary: $verifier_binary"
+    VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" RUST_LOG="$rust_log" "$verifier_binary" > "$log_file" 2>&1 &
     VERIFIER_PID=$!
-    popd > /dev/null
     
     # Export PID so it persists across subshells
     export VERIFIER_PID
@@ -563,19 +569,17 @@ start_solver() {
     log "   Using config: $config_path"
     log "   Log file: $log_file"
     
-    # Check if solver binary exists
-    if [ ! -f "$PROJECT_ROOT/solver/target/debug/solver" ] && ! cargo --version > /dev/null 2>&1; then
-        log_and_echo "   ⚠️  WARNING: Solver service not yet built"
-        log_and_echo "   This function will work once solver service is implemented (Task 6-7)"
-        log_and_echo "   For now, tests will use manual signing via sign_intent binary"
-        return 1
+    # Use pre-built binary (must be built first via Step 0)
+    local solver_binary="$PROJECT_ROOT/solver/target/debug/solver"
+    if [ ! -f "$solver_binary" ]; then
+        log_and_echo "   ❌ PANIC: Solver binary not found: $solver_binary"
+        log_and_echo "   Please build first: cd solver && cargo build --bin solver"
+        exit 1
     fi
     
-    # Change to solver directory and start the solver
-    pushd "$PROJECT_ROOT/solver" > /dev/null
-    SOLVER_CONFIG_PATH="$config_path" RUST_LOG="$rust_log" cargo run --bin solver > "$log_file" 2>&1 &
+    log "   Using binary: $solver_binary"
+    SOLVER_CONFIG_PATH="$config_path" RUST_LOG="$rust_log" "$solver_binary" > "$log_file" 2>&1 &
     SOLVER_PID=$!
-    popd > /dev/null
     
     # Export PID so it persists across subshells
     export SOLVER_PID
@@ -587,10 +591,11 @@ start_solver() {
     
     log "   ✅ Solver started with PID: $SOLVER_PID"
     
-    # Wait for solver to be ready
-    log "   - Waiting for solver to initialize..."
+    # Wait for solver to be ready (check for "Starting all services" in log)
+    # This properly waits for compilation + initialization in CI
+    log "   - Waiting for solver to initialize (may take a while if compiling)..."
     RETRY_COUNT=0
-    MAX_RETRIES=60
+    MAX_RETRIES=180  # 3 minutes to allow for compilation in CI
     
     while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         # Check if process is still running
@@ -599,7 +604,7 @@ start_solver() {
             log_and_echo "   Solver log:"
             log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
             if [ -f "$log_file" ]; then
-                log_and_echo "   $(cat "$log_file")"
+                cat "$log_file" | while read line; do log_and_echo "   $line"; done
             else
                 log_and_echo "   Log file not found at: $log_file"
             fi
@@ -607,22 +612,23 @@ start_solver() {
             exit 1
         fi
         
-        # Check health endpoint (once implemented)
-        if check_solver_health; then
+        # Check if solver has initialized by looking for the startup log message
+        if [ -f "$log_file" ] && grep -q "Starting all services" "$log_file" 2>/dev/null; then
             log "   ✅ Solver is ready!"
-            
             SOLVER_LOG="$log_file"
             export SOLVER_PID SOLVER_LOG
             return 0
         fi
         
-        # For now, just wait a bit and assume it's ready if process is running
-        # TODO: Replace with actual health check once solver service is implemented
-        if [ $RETRY_COUNT -gt 5 ]; then
-            log "   ✅ Solver process is running (health check not yet implemented)"
-            SOLVER_LOG="$log_file"
-            export SOLVER_PID SOLVER_LOG
-            return 0
+        # Show progress every 10 seconds
+        if [ $((RETRY_COUNT % 10)) -eq 0 ] && [ $RETRY_COUNT -gt 0 ]; then
+            if [ -f "$log_file" ]; then
+                # Show last line of log to indicate progress
+                local last_line=$(tail -1 "$log_file" 2>/dev/null || echo "")
+                if [ -n "$last_line" ]; then
+                    log "   ... still waiting (${RETRY_COUNT}s): $last_line"
+                fi
+            fi
         fi
         
         sleep 1

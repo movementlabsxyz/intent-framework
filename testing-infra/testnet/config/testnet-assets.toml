@@ -53,7 +53,7 @@ usdc_decimals = 6
 
 [base_sepolia]
 chain_id = 84532
-rpc_url = "https://sepolia.base.org"
+rpc_url = "https://base-sepolia-rpc.publicnode.com"
 
 # Native token (ETH)
 native_token = "ETH"

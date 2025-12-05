@@ -10,10 +10,10 @@
 # Use this to test before deploying to EC2.
 #
 # Prerequisites:
-#   - solver/config/solver_testnet.toml configured with actual values
+#   - solver/config/solver_testnet.toml configured with actual deployed addresses
+#   - .testnet-keys.env with BASE_SOLVER_PRIVATE_KEY
+#   - Movement CLI profile configured for solver (uses MOVEMENT_SOLVER_PRIVATE_KEY from .testnet-keys.env)
 #   - Verifier running (locally or remotely)
-#   - Movement CLI profile configured for solver
-#   - BASE_SOLVER_PRIVATE_KEY environment variable set
 #   - Rust toolchain installed
 #
 # Usage:
@@ -33,17 +33,25 @@ echo ""
 # Load .testnet-keys.env for BASE_SOLVER_PRIVATE_KEY
 TESTNET_KEYS_FILE="$PROJECT_ROOT/.testnet-keys.env"
 
-if [ -f "$TESTNET_KEYS_FILE" ]; then
-    source "$TESTNET_KEYS_FILE"
-    echo "   Loaded keys from .testnet-keys.env"
+if [ ! -f "$TESTNET_KEYS_FILE" ]; then
+    echo "❌ ERROR: .testnet-keys.env not found at $TESTNET_KEYS_FILE"
+    echo ""
+    echo "   Create it from the template:"
+    echo "   cp env.testnet.example .testnet-keys.env"
+    echo ""
+    echo "   Then populate with your testnet keys."
+    exit 1
 fi
 
-# Check BASE_SOLVER_PRIVATE_KEY
+source "$TESTNET_KEYS_FILE"
+
+# Check BASE_SOLVER_PRIVATE_KEY (required for EVM transactions)
 if [ -z "$BASE_SOLVER_PRIVATE_KEY" ]; then
-    echo "⚠️  WARNING: BASE_SOLVER_PRIVATE_KEY not set"
-    echo "   EVM transactions will fail without this."
-    echo "   Set it in .testnet-keys.env or export it manually."
+    echo "❌ ERROR: BASE_SOLVER_PRIVATE_KEY not set in .testnet-keys.env"
     echo ""
+    echo "   This key is required for EVM transactions on Base Sepolia."
+    echo "   Add it to .testnet-keys.env"
+    exit 1
 fi
 
 # Check config exists
@@ -55,32 +63,61 @@ if [ ! -f "$SOLVER_CONFIG" ]; then
     echo "   Create it from the template:"
     echo "   cp solver/config/solver.template.toml solver/config/solver_testnet.toml"
     echo ""
-    echo "   Then fill in values from your .testnet-keys.env"
+    echo "   Then populate with actual deployed contract addresses:"
+    echo "   - module_address (hub_chain section)"
+    echo "   - escrow_contract_address (connected_chain section)"
+    echo "   - address (solver section)"
+    echo "   - verifier_url (service section - use localhost:3333 for local testing)"
     exit 1
 fi
 
-# Validate config doesn't have placeholders
-if grep -q "<.*>" "$SOLVER_CONFIG"; then
-    echo "❌ ERROR: solver_testnet.toml still has placeholder values (<...>)"
+# Validate config has actual addresses (not placeholders)
+# Check for common placeholder patterns
+if grep -qE "(0x123|0x\.\.\.|0x\.\.\.)" "$SOLVER_CONFIG"; then
+    echo "❌ ERROR: solver_testnet.toml still has placeholder addresses"
     echo ""
-    echo "   Fill in actual values from .testnet-keys.env:"
-    echo "   - MOVEMENT_INTENT_MODULE_ADDRESS"
-    echo "   - BASE_ESCROW_CONTRACT_ADDRESS"
-    echo "   - MOVEMENT_SOLVER_ADDRESS"
-    echo "   - EC2_VERIFIER_HOST (or use localhost:3333 for local verifier)"
+    echo "   Update the config file with actual deployed addresses:"
+    echo "   - module_address (hub_chain section)"
+    echo "   - escrow_contract_address (connected_chain section)"
+    echo "   - address (solver section)"
+    echo "   - verifier_url (service section - use localhost:3333 for local testing)"
+    echo ""
+    echo "   Contract addresses should be read from your deployment logs."
     exit 1
 fi
-
-echo "📋 Configuration:"
-echo "   Config file: $SOLVER_CONFIG"
-echo ""
 
 # Extract config values for display
 VERIFIER_URL=$(grep "verifier_url" "$SOLVER_CONFIG" | sed 's/.*= *"\(.*\)".*/\1/')
 HUB_RPC=$(grep -A5 "\[hub_chain\]" "$SOLVER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+HUB_MODULE=$(grep -A5 "\[hub_chain\]" "$SOLVER_CONFIG" | grep "module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+SOLVER_PROFILE=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "profile" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+SOLVER_ADDRESS=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 
-echo "   Verifier URL: $VERIFIER_URL"
-echo "   Hub Chain RPC: $HUB_RPC"
+# Check if connected chain is EVM and extract escrow address
+CONNECTED_TYPE=$(grep -A2 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "type" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+if [ "$CONNECTED_TYPE" = "evm" ]; then
+    ESCROW_CONTRACT=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "escrow_contract_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+fi
+
+echo "📋 Configuration:"
+echo "   Config file: $SOLVER_CONFIG"
+echo "   Keys file:   $TESTNET_KEYS_FILE"
+echo ""
+echo "   Verifier:"
+echo "     URL:              $VERIFIER_URL"
+echo ""
+echo "   Hub Chain:"
+echo "     RPC:              $HUB_RPC"
+echo "     Module Address:    $HUB_MODULE"
+echo ""
+if [ "$CONNECTED_TYPE" = "evm" ]; then
+    echo "   Connected Chain (EVM):"
+    echo "     Escrow Contract:  $ESCROW_CONTRACT"
+    echo ""
+fi
+echo "   Solver:"
+echo "     Profile:          $SOLVER_PROFILE"
+echo "     Address:          $SOLVER_ADDRESS"
 echo ""
 
 # Check verifier is reachable
@@ -105,7 +142,6 @@ fi
 echo ""
 
 # Check Movement CLI profile exists
-SOLVER_PROFILE=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "profile" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 if [ -n "$SOLVER_PROFILE" ]; then
     echo "   Checking Movement CLI profile '$SOLVER_PROFILE'..."
     if movement config show-profiles --profile "$SOLVER_PROFILE" &>/dev/null; then
@@ -119,6 +155,8 @@ if [ -n "$SOLVER_PROFILE" ]; then
         echo "     --rest-url https://testnet.movementnetwork.xyz/v1 \\"
         echo "     --private-key \"\$MOVEMENT_SOLVER_PRIVATE_KEY\" \\"
         echo "     --skip-faucet --assume-yes"
+        echo ""
+        echo "   Note: MOVEMENT_SOLVER_PRIVATE_KEY should be set in .testnet-keys.env"
         echo ""
         read -p "   Continue anyway? (y/N) " -n 1 -r
         echo

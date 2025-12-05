@@ -111,6 +111,16 @@ if [ -z "$BASE_RPC_URL" ]; then
     echo "   Base Sepolia balance checks will fail"
 fi
 
+# Substitute API key in Base Sepolia RPC URL if placeholder is present
+if [[ "$BASE_RPC_URL" == *"ALCHEMY_API_KEY"* ]]; then
+    if [ -n "$ALCHEMY_BASE_SEPOLIA_API_KEY" ]; then
+        BASE_RPC_URL="${BASE_RPC_URL/ALCHEMY_API_KEY/$ALCHEMY_BASE_SEPOLIA_API_KEY}"
+    else
+        echo "⚠️  WARNING: ALCHEMY_BASE_SEPOLIA_API_KEY not set in .testnet-keys.env"
+        echo "   Base Sepolia balance checks will fail"
+    fi
+fi
+
 SEPOLIA_RPC_URL=$(grep -A 5 "^\[ethereum_sepolia\]" "$ASSETS_CONFIG_FILE" | grep "^rpc_url = " | sed 's/.*= "\(.*\)".*/\1/' | tr -d '"' || echo "")
 if [ -z "$SEPOLIA_RPC_URL" ]; then
     echo "⚠️  WARNING: Ethereum Sepolia RPC URL not found in testnet-assets.toml"

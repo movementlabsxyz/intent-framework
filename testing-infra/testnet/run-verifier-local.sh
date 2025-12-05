@@ -9,7 +9,8 @@
 # Use this to test before deploying to EC2.
 #
 # Prerequisites:
-#   - trusted-verifier/config/verifier_testnet.toml configured with actual values
+#   - trusted-verifier/config/verifier_testnet.toml configured with actual deployed addresses
+#   - .testnet-keys.env with VERIFIER_PRIVATE_KEY and VERIFIER_PUBLIC_KEY
 #   - Rust toolchain installed
 #
 # Usage:
@@ -35,7 +36,11 @@ if [ ! -f "$VERIFIER_CONFIG" ]; then
     echo "   Create it from the template:"
     echo "   cp trusted-verifier/config/verifier.template.toml trusted-verifier/config/verifier_testnet.toml"
     echo ""
-    echo "   Then fill in values from your .testnet-keys.env"
+    echo "   Then populate with actual deployed contract addresses:"
+    echo "   - intent_module_address (hub_chain section)"
+    echo "   - escrow_contract_address (connected_chain_evm section)"
+    echo "   - verifier_address (connected_chain_evm section)"
+    echo "   - known_accounts (hub_chain section)"
     exit 1
 fi
 
@@ -44,19 +49,21 @@ TESTNET_KEYS_FILE="$PROJECT_ROOT/.testnet-keys.env"
 
 if [ ! -f "$TESTNET_KEYS_FILE" ]; then
     echo "❌ ERROR: .testnet-keys.env not found at $TESTNET_KEYS_FILE"
+    echo ""
+    echo "   Create it from the template:"
+    echo "   cp env.testnet.example .testnet-keys.env"
+    echo ""
+    echo "   Then populate with your testnet keys."
     exit 1
 fi
 
 # Source keys file to export environment variables
 source "$TESTNET_KEYS_FILE"
 
-# Check required environment variables
+# Check required environment variables (keys only)
 REQUIRED_VARS=(
     "VERIFIER_PRIVATE_KEY"
     "VERIFIER_PUBLIC_KEY"
-    "MOVEMENT_INTENT_MODULE_ADDRESS"
-    "BASE_ESCROW_CONTRACT_ADDRESS"
-    "VERIFIER_ETH_ADDRESS"
 )
 
 MISSING_VARS=()
@@ -71,35 +78,47 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
     for var in "${MISSING_VARS[@]}"; do
         echo "   - $var"
     done
+    echo ""
+    echo "   These keys are required for the verifier to sign approvals."
     exit 1
 fi
 
-# Validate config doesn't have placeholders (except env var references which are OK)
-if grep -q "<MOVEMENT_\|BASE_\|VERIFIER_ETH" "$VERIFIER_CONFIG"; then
-    echo "❌ ERROR: verifier_testnet.toml still has placeholder values"
+# Validate config has actual addresses (not placeholders)
+# Check for common placeholder patterns
+if grep -qE "(0x123|0x\.\.\.|0xalice|0xbob)" "$VERIFIER_CONFIG"; then
+    echo "❌ ERROR: verifier_testnet.toml still has placeholder addresses"
     echo ""
-    echo "   Fill in actual values from .testnet-keys.env:"
-    echo "   - MOVEMENT_INTENT_MODULE_ADDRESS"
-    echo "   - BASE_ESCROW_CONTRACT_ADDRESS"
-    echo "   - VERIFIER_ETH_ADDRESS"
-    echo "   - MOVEMENT_REQUESTER_ADDRESS, MOVEMENT_SOLVER_ADDRESS (for known_accounts)"
+    echo "   Update the config file with actual deployed addresses:"
+    echo "   - intent_module_address (hub_chain section)"
+    echo "   - escrow_contract_address (connected_chain_evm section)"
+    echo "   - verifier_address (connected_chain_evm section)"
+    echo "   - known_accounts (hub_chain section)"
     echo ""
-    echo "   Note: VERIFIER_PRIVATE_KEY and VERIFIER_PUBLIC_KEY are loaded from environment variables."
+    echo "   Contract addresses should be read from your deployment logs."
     exit 1
 fi
 
-echo "📋 Configuration:"
-echo "   Config file: $VERIFIER_CONFIG"
-echo ""
-
-# Extract some config values for display
+# Extract config values for display
 HUB_RPC=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 EVM_RPC=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 API_PORT=$(grep -A5 "\[api\]" "$VERIFIER_CONFIG" | grep "port" | head -1 | sed 's/.*= *\([0-9]*\).*/\1/')
+INTENT_MODULE=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+ESCROW_CONTRACT=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 
-echo "   Hub Chain RPC: $HUB_RPC"
-echo "   EVM Chain RPC: $EVM_RPC"
-echo "   API Port: ${API_PORT:-3333}"
+echo "📋 Configuration:"
+echo "   Config file: $VERIFIER_CONFIG"
+echo "   Keys file:   $TESTNET_KEYS_FILE"
+echo ""
+echo "   Hub Chain:"
+echo "     RPC:              $HUB_RPC"
+echo "     Intent Module:     $INTENT_MODULE"
+echo ""
+echo "   EVM Chain:"
+echo "     RPC:              $EVM_RPC"
+echo "     Escrow Contract:  $ESCROW_CONTRACT"
+echo ""
+echo "   API Server:"
+echo "     Port:             ${API_PORT:-3333}"
 echo ""
 
 cd "$PROJECT_ROOT/trusted-verifier"

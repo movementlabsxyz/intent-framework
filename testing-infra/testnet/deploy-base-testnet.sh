@@ -41,11 +41,27 @@ if [ -z "$VERIFIER_ETH_ADDRESS" ]; then
     exit 1
 fi
 
+# Load assets configuration
+ASSETS_CONFIG_FILE="$PROJECT_ROOT/testing-infra/testnet/config/testnet-assets.toml"
+
+if [ ! -f "$ASSETS_CONFIG_FILE" ]; then
+    echo "❌ ERROR: testnet-assets.toml not found at $ASSETS_CONFIG_FILE"
+    exit 1
+fi
+
+# Read Base Sepolia RPC URL from config
+BASE_SEPOLIA_RPC_URL=$(grep -A 5 "^\[base_sepolia\]" "$ASSETS_CONFIG_FILE" | grep "^rpc_url = " | sed 's/.*= "\(.*\)".*/\1/' | tr -d '"' || echo "")
+
+if [ -z "$BASE_SEPOLIA_RPC_URL" ]; then
+    echo "❌ ERROR: Base Sepolia RPC URL not found in testnet-assets.toml"
+    exit 1
+fi
+
 echo "📋 Configuration:"
 echo "   Deployer Address: $BASE_DEPLOYER_ADDRESS"
 echo "   Verifier Address: $VERIFIER_ETH_ADDRESS"
 echo "   Network: Base Sepolia"
-echo "   RPC URL: https://sepolia.base.org"
+echo "   RPC URL: $BASE_SEPOLIA_RPC_URL"
 echo ""
 
 # Check if Hardhat config exists
@@ -61,7 +77,7 @@ cd "$PROJECT_ROOT/evm-intent-framework"
 # Export environment variables for Hardhat
 export DEPLOYER_PRIVATE_KEY="$BASE_DEPLOYER_PRIVATE_KEY"
 export VERIFIER_ADDRESS="$VERIFIER_ETH_ADDRESS"
-export BASE_SEPOLIA_RPC_URL="https://sepolia.base.org"
+export BASE_SEPOLIA_RPC_URL
 
 echo "📝 Environment configured for Hardhat"
 echo ""

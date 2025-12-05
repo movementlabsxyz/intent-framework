@@ -122,6 +122,11 @@ SOLVER_CONFIG="$PROJECT_ROOT/.tmp/solver-e2e-evm.toml"
 mkdir -p "$(dirname "$SOLVER_CONFIG")"
 generate_solver_config_evm "$SOLVER_CONFIG"
 
+# Export solver's EVM address for auto-registration
+# Hardhat account #2 is used for solver
+export SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
+log "   Exported SOLVER_EVM_ADDRESS=$SOLVER_EVM_ADDRESS"
+
 # Start the solver service
 if start_solver "$LOG_DIR/solver-evm.log" "info" "$SOLVER_CONFIG"; then
     log ""

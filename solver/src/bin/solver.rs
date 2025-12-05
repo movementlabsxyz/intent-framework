@@ -18,10 +18,12 @@
 //! SOLVER_CONFIG_PATH=solver.toml cargo run --bin solver
 //! ```
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use solver::{
+    chains::HubChainClient,
     config::SolverConfig,
+    crypto::{get_private_key_from_profile, sign_intent_hash},
     service::{InflowService, IntentTracker, OutflowService, SigningService},
 };
 use std::sync::Arc;
@@ -69,6 +71,78 @@ async fn main() -> Result<()> {
     info!("Polling interval: {}ms", config.service.polling_interval_ms);
     info!("Hub chain: {} (chain ID: {})", config.hub_chain.name, config.hub_chain.chain_id);
     info!("Solver address: {}", config.solver.address);
+
+    // Check if solver is registered on-chain, and register if not
+    info!("Checking solver registration on hub chain...");
+    let hub_client = HubChainClient::new(&config.hub_chain)?;
+    match hub_client.is_solver_registered(&config.solver.address).await {
+        Ok(true) => {
+            info!("✅ Solver is registered on-chain");
+        }
+        Ok(false) => {
+            info!("Solver is not registered. Registering on-chain...");
+            
+            // Get solver's public key from profile
+            let private_key = get_private_key_from_profile(&config.solver.profile)
+                .context("Failed to get private key from profile for registration")?;
+            
+            // Derive public key from private key (we can use a dummy hash since we only need the public key)
+            let dummy_hash = [0u8; 32];
+            let (_signature, public_key_bytes) = sign_intent_hash(&dummy_hash, &private_key)
+                .context("Failed to derive public key from private key")?;
+            
+            // Get EVM address and MVM address from environment variables
+            // These are set by sourcing the keys file (e.g., .testnet-keys.env or .e2e-tests-keys.env)
+            let (evm_address, mvm_address): (Vec<u8>, Option<String>) = match &config.connected_chain {
+                solver::config::ConnectedChainConfig::Evm(_) => {
+                    // For EVM connected chains, read solver's EVM address from env var
+                    let evm_addr = std::env::var("SOLVER_EVM_ADDRESS")
+                        .or_else(|_| std::env::var("BASE_SOLVER_ADDRESS")) // fallback for testnet
+                        .ok()
+                        .and_then(|addr| {
+                            let addr = addr.strip_prefix("0x").unwrap_or(&addr);
+                            hex::decode(addr).ok()
+                        })
+                        .unwrap_or_default();
+                    (evm_addr, None)
+                }
+                solver::config::ConnectedChainConfig::Mvm(_) => {
+                    // For MVM connected chains, read solver's MVM address from env var
+                    let mvm_addr = std::env::var("SOLVER_CONNECTED_MVM_ADDRESS").ok();
+                    (vec![], mvm_addr)
+                }
+            };
+            
+            // Register the solver
+            match hub_client.register_solver(&public_key_bytes, &evm_address, mvm_address.as_deref()) {
+                Ok(tx_hash) => {
+                    info!("✅ Solver registered successfully. Transaction: {}", tx_hash);
+                }
+                Err(e) => {
+                    // If registration fails (e.g., already registered by another process),
+                    // check again to see if we're now registered
+                    match hub_client.is_solver_registered(&config.solver.address).await {
+                        Ok(true) => {
+                            info!("✅ Solver is now registered (may have been registered by another process)");
+                        }
+                        _ => {
+                            anyhow::bail!("Failed to register solver: {}", e);
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            anyhow::bail!(
+                "Failed to check solver registration: {}\n\
+                This may indicate:\n\
+                - RPC endpoint is unreachable\n\
+                - Module address is incorrect\n\
+                - Network connectivity issues",
+                e
+            );
+        }
+    }
 
     // Create shared intent tracker
     let tracker = Arc::new(IntentTracker::new(&config)?);

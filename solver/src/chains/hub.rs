@@ -79,6 +79,7 @@ impl HubChainClient {
     pub fn new(config: &ChainConfig) -> Result<Self> {
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
+            .no_proxy() // Avoid macOS system-configuration issues in tests
             .build()
             .context("Failed to create HTTP client")?;
 
@@ -277,6 +278,143 @@ impl HubChainClient {
         }
 
         anyhow::bail!("Could not extract transaction hash from output: {}", output_str)
+    }
+
+    /// Checks if a solver is registered in the solver registry
+    ///
+    /// # Arguments
+    ///
+    /// * `solver_address` - Solver address to check
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(bool)` - True if solver is registered, false otherwise
+    /// * `Err(anyhow::Error)` - Failed to query registration status
+    pub async fn is_solver_registered(&self, solver_address: &str) -> Result<bool> {
+        // Normalize address (ensure 0x prefix)
+        let solver_addr = if solver_address.starts_with("0x") {
+            solver_address.to_string()
+        } else {
+            format!("0x{}", solver_address)
+        };
+
+        // Call the view function via RPC
+        let view_url = format!("{}/view", self.base_url);
+        let request_body = serde_json::json!({
+            "function": format!("{}::solver_registry::is_registered", self.module_address),
+            "type_arguments": [],
+            "arguments": [solver_addr]
+        });
+
+        let response = self
+            .client
+            .post(&view_url)
+            .json(&request_body)
+            .send()
+            .await
+            .context("Failed to query solver registration")?;
+
+        if !response.status().is_success() {
+            anyhow::bail!(
+                "Failed to query solver registration: HTTP {}",
+                response.status()
+            );
+        }
+
+        let result: Vec<serde_json::Value> = response
+            .json()
+            .await
+            .context("Failed to parse registration check response")?;
+
+        // The view function returns a bool, which is serialized as a JSON boolean
+        if let Some(first_result) = result.first() {
+            if let Some(is_registered) = first_result.as_bool() {
+                return Ok(is_registered);
+            }
+        }
+
+        anyhow::bail!("Unexpected response format from is_registered view function")
+    }
+
+    /// Registers the solver on-chain
+    ///
+    /// # Arguments
+    ///
+    /// * `public_key_bytes` - Ed25519 public key as bytes (32 bytes)
+    /// * `evm_address` - EVM address on connected chain (20 bytes), or empty vec if not applicable
+    /// * `mvm_address` - Move VM address on connected chain, or None if not applicable
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - Transaction hash
+    /// * `Err(anyhow::Error)` - Failed to register solver
+    pub fn register_solver(
+        &self,
+        public_key_bytes: &[u8],
+        evm_address: &[u8],
+        mvm_address: Option<&str>,
+    ) -> Result<String> {
+        // Convert public key to hex
+        let public_key_hex = hex::encode(public_key_bytes);
+        
+        // Convert EVM address to hex (pad to 20 bytes if needed)
+        let evm_address_hex = if evm_address.is_empty() {
+            "".to_string()
+        } else {
+            hex::encode(evm_address)
+        };
+        
+        // Prepare MVM address (use 0x0 if None)
+        let mvm_addr = mvm_address.unwrap_or("0x0");
+        
+        // Build command arguments - store formatted strings to avoid temporary value issues
+        let function_id = format!("{}::solver_registry::register_solver", self.module_address);
+        let public_key_arg = format!("vector<u8>:0x{}", public_key_hex);
+        let evm_address_arg = if evm_address_hex.is_empty() {
+            "vector<u8>:0x".to_string()
+        } else {
+            format!("vector<u8>:0x{}", evm_address_hex)
+        };
+        let mvm_address_arg = format!("address:{}", mvm_addr);
+        
+        let args = vec![
+            "move",
+            "run",
+            "--profile",
+            &self.profile,
+            "--assume-yes",
+            "--function-id",
+            &function_id,
+            "--args",
+            &public_key_arg,
+            &evm_address_arg,
+            &mvm_address_arg,
+        ];
+        
+        let output = Command::new("movement")
+            .args(&args)
+            .output()
+            .context("Failed to execute movement move run for solver registration")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            anyhow::bail!(
+                "movement move run failed for solver registration:\nstderr: {}\nstdout: {}",
+                stderr,
+                stdout
+            );
+        }
+
+        // Extract transaction hash from output
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
+            if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
+                return Ok(hash.to_string());
+            }
+        }
+
+        anyhow::bail!("Could not extract transaction hash from registration output: {}", output_str)
     }
 }
 

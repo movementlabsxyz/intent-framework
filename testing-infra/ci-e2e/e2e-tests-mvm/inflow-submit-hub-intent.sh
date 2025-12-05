@@ -89,35 +89,7 @@ display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 log_and_echo ""
 
 # ============================================================================
-# SECTION 4: REGISTER SOLVER ON-CHAIN (prerequisite for signature validation)
-# ============================================================================
-log ""
-log "   Registering solver on-chain (prerequisite for verifier validation)..."
-
-# Get solver's public key by running sign_intent with a dummy call to extract key
-log "   - Getting solver public key..."
-SOLVER_PUBLIC_KEY_OUTPUT=$(cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile solver-chain1 --chain-address $CHAIN1_ADDRESS --offered-metadata $OFFERED_METADATA_CHAIN2 --offered-amount $OFFERED_AMOUNT --offered-chain-id $OFFERED_CHAIN_ID --desired-metadata $DESIRED_METADATA_CHAIN1 --desired-amount $DESIRED_AMOUNT --desired-chain-id $DESIRED_CHAIN_ID --expiry-time $EXPIRY_TIME --issuer 0x$REQUESTER_CHAIN1_ADDRESS --solver 0x$SOLVER_CHAIN1_ADDRESS --chain-num 1 2>&1" | tee -a "$LOG_FILE")
-
-SOLVER_PUBLIC_KEY=$(echo "$SOLVER_PUBLIC_KEY_OUTPUT" | grep "PUBLIC_KEY:" | tail -1 | sed 's/.*PUBLIC_KEY://')
-if [ -z "$SOLVER_PUBLIC_KEY" ]; then
-    log_and_echo "❌ Failed to extract solver public key"
-    log_and_echo "Command output:"
-    echo "$SOLVER_PUBLIC_KEY_OUTPUT"
-    exit 1
-fi
-log "     ✅ Solver public key: ${SOLVER_PUBLIC_KEY:0:20}..."
-
-log "   - Registering solver in solver registry..."
-register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY" "$EVM_ADDRESS" "$SOLVER_CHAIN2_ADDRESS" "$LOG_FILE"
-
-log "   - Waiting for solver registration to be confirmed on-chain (5 seconds)..."
-sleep 5
-
-log "   - Verifying solver registration..."
-verify_solver_registered "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_CHAIN1_ADDRESS" "$LOG_FILE"
-
-# ============================================================================
-# SECTION 5: VERIFIER-BASED NEGOTIATION ROUTING
+# SECTION 4: VERIFIER-BASED NEGOTIATION ROUTING
 # ============================================================================
 log ""
 log "🔄 Starting verifier-based negotiation routing..."
@@ -164,7 +136,7 @@ log "     ✅ Retrieved signature from solver: $RETRIEVED_SOLVER"
 log "     Signature: ${RETRIEVED_SIGNATURE:0:20}..."
 
 # ============================================================================
-# SECTION 6: CREATE INTENT ON-CHAIN WITH RETRIEVED SIGNATURE
+# SECTION 5: CREATE INTENT ON-CHAIN WITH RETRIEVED SIGNATURE
 # ============================================================================
 log ""
 log "   Creating cross-chain intent on Chain 1..."
@@ -178,7 +150,7 @@ aptos move run --profile requester-chain1 --assume-yes \
     --args "address:${OFFERED_METADATA_CHAIN2}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
-# SECTION 7: VERIFY RESULTS
+# SECTION 6: VERIFY RESULTS
 # ============================================================================
 if [ $? -eq 0 ]; then
     log "     ✅ Request-intent created on Chain 1!"
@@ -205,7 +177,7 @@ else
 fi
 
 # ============================================================================
-# SECTION 8: FINAL SUMMARY
+# SECTION 7: FINAL SUMMARY
 # ============================================================================
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"

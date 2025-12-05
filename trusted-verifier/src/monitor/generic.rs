@@ -244,6 +244,7 @@ impl EventMonitor {
             .timeout(std::time::Duration::from_millis(
                 config.verifier.validation_timeout_ms,
             ))
+            .no_proxy() // Avoid macOS system-configuration issues in tests
             .build()?;
 
         // Create HTTP client for connected chain with configured timeout
@@ -251,6 +252,7 @@ impl EventMonitor {
             .timeout(std::time::Duration::from_millis(
                 config.verifier.validation_timeout_ms,
             ))
+            .no_proxy() // Avoid macOS system-configuration issues in tests
             .build()?;
 
         // Create validator and crypto instances

@@ -97,6 +97,15 @@ SOLVER_ADDRESS=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "address" | head 
 CONNECTED_TYPE=$(grep -A2 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "type" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 if [ "$CONNECTED_TYPE" = "evm" ]; then
     ESCROW_CONTRACT=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "escrow_contract_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+    CONNECTED_RPC=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+fi
+
+# Check for API key placeholders in RPC URLs
+if [[ "$HUB_RPC" == *"ALCHEMY_API_KEY"* ]] || ([ "$CONNECTED_TYPE" = "evm" ] && [[ "$CONNECTED_RPC" == *"ALCHEMY_API_KEY"* ]]); then
+    echo "⚠️  WARNING: RPC URLs contain API key placeholders (ALCHEMY_API_KEY)"
+    echo "   The solver service does not substitute placeholders - use full URLs in config"
+    echo "   Or use the public RPC URLs from testnet-assets.toml"
+    echo ""
 fi
 
 echo "📋 Configuration:"
@@ -176,7 +185,7 @@ export BASE_SOLVER_PRIVATE_KEY
 # Check if --release flag is passed
 if [ "$1" = "--release" ]; then
     echo "🔨 Building release binary..."
-    cargo build --release
+    nix develop --command bash -c "cd '$PROJECT_ROOT/solver' && cargo build --release"
     echo ""
     echo "🚀 Starting solver (release mode)..."
     echo "   Press Ctrl+C to stop"
@@ -187,6 +196,6 @@ else
     echo "   Press Ctrl+C to stop"
     echo "   (Use --release for faster performance)"
     echo ""
-    SOLVER_CONFIG_PATH="$SOLVER_CONFIG" RUST_LOG=info cargo run --bin solver
+    nix develop --command bash -c "cd '$PROJECT_ROOT/solver' && SOLVER_CONFIG_PATH='$SOLVER_CONFIG' RUST_LOG=info cargo run --bin solver"
 fi
 

@@ -105,6 +105,14 @@ API_PORT=$(grep -A5 "\[api\]" "$VERIFIER_CONFIG" | grep "port" | head -1 | sed '
 INTENT_MODULE=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 ESCROW_CONTRACT=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 
+# Check for API key placeholders in RPC URLs
+if [[ "$HUB_RPC" == *"ALCHEMY_API_KEY"* ]] || [[ "$EVM_RPC" == *"ALCHEMY_API_KEY"* ]]; then
+    echo "⚠️  WARNING: RPC URLs contain API key placeholders (ALCHEMY_API_KEY)"
+    echo "   The verifier service does not substitute placeholders - use full URLs in config"
+    echo "   Or use the public RPC URLs from testnet-assets.toml"
+    echo ""
+fi
+
 echo "📋 Configuration:"
 echo "   Config file: $VERIFIER_CONFIG"
 echo "   Keys file:   $TESTNET_KEYS_FILE"
@@ -130,7 +138,7 @@ export VERIFIER_PUBLIC_KEY
 # Check if --release flag is passed
 if [ "$1" = "--release" ]; then
     echo "🔨 Building release binary..."
-    cargo build --release
+    nix develop --command bash -c "cd '$PROJECT_ROOT/trusted-verifier' && cargo build --release"
     echo ""
     echo "🚀 Starting verifier (release mode)..."
     echo "   Press Ctrl+C to stop"
@@ -141,6 +149,6 @@ else
     echo "   Press Ctrl+C to stop"
     echo "   (Use --release for faster performance)"
     echo ""
-    VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG" RUST_LOG=info cargo run
+    nix develop --command bash -c "cd '$PROJECT_ROOT/trusted-verifier' && VERIFIER_CONFIG_PATH='$VERIFIER_CONFIG' RUST_LOG=info cargo run --bin trusted-verifier"
 fi
 

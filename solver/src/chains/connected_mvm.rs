@@ -62,6 +62,7 @@ impl ConnectedMvmClient {
     pub fn new(config: &ChainConfig) -> Result<Self> {
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
+            .no_proxy() // Avoid macOS system-configuration issues in tests
             .build()
             .context("Failed to create HTTP client")?;
 

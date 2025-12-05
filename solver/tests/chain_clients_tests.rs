@@ -175,6 +175,173 @@ async fn test_get_intent_events_empty() {
     assert_eq!(events.len(), 0);
 }
 
+/// What is tested: is_solver_registered() returns true for registered solver
+/// Why: Ensure we can check if a solver is registered on-chain
+#[tokio::test]
+async fn test_is_solver_registered_true() {
+    let mock_server = MockServer::start().await;
+    let base_url = mock_server.uri().to_string();
+
+    // Mock view function response - returns [true] for registered solver
+    Mock::given(method("POST"))
+        .and(path("/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([true])))
+        .mount(&mock_server)
+        .await;
+
+    let mut config = create_test_hub_config();
+    config.rpc_url = base_url;
+    let client = HubChainClient::new(&config).unwrap();
+
+    let is_registered = client
+        .is_solver_registered("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        .await
+        .unwrap();
+
+    assert!(is_registered);
+}
+
+/// What is tested: is_solver_registered() returns false for unregistered solver
+/// Why: Ensure we correctly detect when a solver is not registered
+#[tokio::test]
+async fn test_is_solver_registered_false() {
+    let mock_server = MockServer::start().await;
+    let base_url = mock_server.uri().to_string();
+
+    // Mock view function response - returns [false] for unregistered solver
+    Mock::given(method("POST"))
+        .and(path("/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([false])))
+        .mount(&mock_server)
+        .await;
+
+    let mut config = create_test_hub_config();
+    config.rpc_url = base_url;
+    let client = HubChainClient::new(&config).unwrap();
+
+    let is_registered = client
+        .is_solver_registered("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+        .await
+        .unwrap();
+
+    assert!(!is_registered);
+}
+
+/// What is tested: is_solver_registered() handles address normalization (with/without 0x prefix)
+/// Why: Ensure address format doesn't matter
+#[tokio::test]
+async fn test_is_solver_registered_address_normalization() {
+    let mock_server = MockServer::start().await;
+    let base_url = mock_server.uri().to_string();
+
+    Mock::given(method("POST"))
+        .and(path("/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([true])))
+        .mount(&mock_server)
+        .await;
+
+    let mut config = create_test_hub_config();
+    config.rpc_url = base_url;
+    let client = HubChainClient::new(&config).unwrap();
+
+    // Test with 0x prefix
+    let is_registered1 = client
+        .is_solver_registered("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        .await
+        .unwrap();
+    assert!(is_registered1);
+
+    // Test without 0x prefix (should still work)
+    let is_registered2 = client
+        .is_solver_registered("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        .await
+        .unwrap();
+    assert!(is_registered2);
+}
+
+/// What is tested: is_solver_registered() handles HTTP errors
+/// Why: Ensure network errors are properly propagated
+#[tokio::test]
+async fn test_is_solver_registered_http_error() {
+    let mock_server = MockServer::start().await;
+    let base_url = mock_server.uri().to_string();
+
+    // Mock HTTP 500 error
+    Mock::given(method("POST"))
+        .and(path("/view"))
+        .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
+        .mount(&mock_server)
+        .await;
+
+    let mut config = create_test_hub_config();
+    config.rpc_url = base_url;
+    let client = HubChainClient::new(&config).unwrap();
+
+    let result = client
+        .is_solver_registered("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        .await;
+
+    assert!(result.is_err());
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Failed to query solver registration"));
+}
+
+/// What is tested: is_solver_registered() handles invalid JSON response
+/// Why: Ensure malformed responses are handled gracefully
+#[tokio::test]
+async fn test_is_solver_registered_invalid_json() {
+    let mock_server = MockServer::start().await;
+    let base_url = mock_server.uri().to_string();
+
+    // Mock invalid JSON response (not an array, or wrong format)
+    Mock::given(method("POST"))
+        .and(path("/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("invalid json"))
+        .mount(&mock_server)
+        .await;
+
+    let mut config = create_test_hub_config();
+    config.rpc_url = base_url;
+    let client = HubChainClient::new(&config).unwrap();
+
+    let result = client
+        .is_solver_registered("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        .await;
+
+    assert!(result.is_err());
+}
+
+/// What is tested: is_solver_registered() handles unexpected response format
+/// Why: Ensure we handle cases where response is not a boolean array
+#[tokio::test]
+async fn test_is_solver_registered_unexpected_format() {
+    let mock_server = MockServer::start().await;
+    let base_url = mock_server.uri().to_string();
+
+    // Mock response with wrong format (empty array or non-boolean)
+    Mock::given(method("POST"))
+        .and(path("/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([])))
+        .mount(&mock_server)
+        .await;
+
+    let mut config = create_test_hub_config();
+    config.rpc_url = base_url;
+    let client = HubChainClient::new(&config).unwrap();
+
+    let result = client
+        .is_solver_registered("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        .await;
+
+    assert!(result.is_err());
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("Unexpected response format"));
+}
+
 // ============================================================================
 // CONNECTED MVM CLIENT TESTS
 // ============================================================================

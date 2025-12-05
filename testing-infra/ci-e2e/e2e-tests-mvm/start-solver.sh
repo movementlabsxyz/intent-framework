@@ -108,6 +108,11 @@ SOLVER_CONFIG="$PROJECT_ROOT/.tmp/solver-e2e.toml"
 mkdir -p "$(dirname "$SOLVER_CONFIG")"
 generate_solver_config_mvm "$SOLVER_CONFIG"
 
+# Export solver's connected chain address for auto-registration
+SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
+export SOLVER_CONNECTED_MVM_ADDRESS="0x${SOLVER_CHAIN2_ADDRESS}"
+log "   Exported SOLVER_CONNECTED_MVM_ADDRESS=$SOLVER_CONNECTED_MVM_ADDRESS"
+
 # Start the solver service
 if start_solver "$LOG_DIR/solver.log" "info" "$SOLVER_CONFIG"; then
     log ""

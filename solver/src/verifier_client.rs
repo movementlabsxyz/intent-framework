@@ -166,6 +166,7 @@ impl VerifierClient {
     pub fn new(base_url: impl Into<String>) -> Self {
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(30))
+            .no_proxy() // Avoid macOS system-configuration issues in tests
             .build()
             .expect("Failed to create HTTP client");
 

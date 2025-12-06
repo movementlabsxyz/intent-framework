@@ -83,6 +83,13 @@ pub struct EvmChainConfig {
     pub escrow_contract_address: String,
     /// Environment variable name containing the EVM private key
     pub private_key_env: String,
+    /// Hardhat network name (e.g., "localhost", "baseSepolia")
+    #[serde(default = "default_network_name")]
+    pub network_name: String,
+}
+
+fn default_network_name() -> String {
+    "localhost".to_string()
 }
 
 /// Acceptance criteria configuration.
@@ -110,20 +117,26 @@ impl SolverConfig {
     /// Loads configuration from a TOML file.
     ///
     /// This function:
-    /// 1. Checks if config/solver.toml exists (or uses SOLVER_CONFIG_PATH env var)
+    /// 1. Checks if config/solver.toml exists (or uses SOLVER_CONFIG_PATH env var or provided path)
     /// 2. If it exists, loads and parses the configuration
     /// 3. Validates the configuration
     /// 4. Converts token pair strings to TokenPair structs
     /// 5. If it doesn't exist, returns an error asking user to copy template
     ///
+    /// # Arguments
+    ///
+    /// * `path` - Optional path to config file. If None, uses SOLVER_CONFIG_PATH env var or default.
+    ///
     /// # Returns
     ///
     /// * `Ok(SolverConfig)` - Successfully loaded and validated configuration
     /// * `Err(anyhow::Error)` - Failed to load configuration, file doesn't exist, or validation failed
-    pub fn load() -> anyhow::Result<Self> {
-        // Check for custom config path via environment variable (for tests)
-        let config_path = std::env::var("SOLVER_CONFIG_PATH")
-            .unwrap_or_else(|_| "config/solver.toml".to_string());
+    pub fn load_from_path(path: Option<&str>) -> anyhow::Result<Self> {
+        // Use provided path, or check for custom config path via environment variable, or use default
+        let config_path = path
+            .map(|p| p.to_string())
+            .or_else(|| std::env::var("SOLVER_CONFIG_PATH").ok())
+            .unwrap_or_else(|| "config/solver.toml".to_string());
 
         if std::path::Path::new(&config_path).exists() {
             // Load existing configuration
@@ -141,6 +154,13 @@ impl SolverConfig {
                 config_path
             ))
         }
+    }
+
+    /// Loads configuration from a TOML file (convenience method that uses default path).
+    ///
+    /// This is equivalent to calling `load_from_path(None)`.
+    pub fn load() -> anyhow::Result<Self> {
+        Self::load_from_path(None)
     }
 
     /// Validates the configuration for consistency and correctness.

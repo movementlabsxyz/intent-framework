@@ -32,38 +32,80 @@ pub fn get_intent_hash(
             solver
         ))?;
 
-    // Determine REST port
-    let rest_port = if chain_num == 1 { "8080" } else { "8082" };
+    // Check if we're in testnet mode (MOVEMENT_SOLVER_PRIVATE_KEY set) or E2E mode
+    let is_testnet_mode = std::env::var("MOVEMENT_SOLVER_PRIVATE_KEY").is_ok();
+    
+    // Determine CLI and RPC URL based on mode
+    let (cli, rpc_url) = if is_testnet_mode {
+        // Testnet mode: use movement CLI and testnet RPC
+        let rpc = std::env::var("HUB_RPC_URL")
+            .unwrap_or_else(|_| "https://testnet.movementnetwork.xyz/v1".to_string());
+        ("movement", rpc)
+    } else {
+        // E2E mode: use aptos CLI and local RPC
+        let rest_port = if chain_num == 1 { "8080" } else { "8082" };
+        ("aptos", format!("http://127.0.0.1:{}/v1", rest_port))
+    };
 
-    // Call Move function (use aptos CLI since profiles are created with aptos init)
-    let output = Command::new("aptos")
-        .args(&[
-            "move",
-            "run",
-            "--profile",
-            profile,
-            "--assume-yes",
-            "--function-id",
-            &format!("0x{}::utils::get_intent_to_sign_hash", chain_address),
-            "--args",
-            &format!("address:{}", offered_metadata),
-            &format!("u64:{}", offered_amount),
-            &format!("u64:{}", offered_chain_id),
-            &format!("address:{}", desired_metadata),
-            &format!("u64:{}", desired_amount),
-            &format!("u64:{}", desired_chain_id),
-            &format!("u64:{}", expiry_time),
-            &format!("address:{}", issuer),
-            &format!("address:{}", solver),
-        ])
+    // Build command arguments
+    let function_id = format!("0x{}::utils::get_intent_to_sign_hash", chain_address);
+    let mut args = vec![
+        "move".to_string(),
+        "run".to_string(),
+    ];
+    
+    // Add authentication based on mode
+    if is_testnet_mode {
+        // Use private key directly for testnet
+        let private_key = std::env::var("MOVEMENT_SOLVER_PRIVATE_KEY")
+            .context("MOVEMENT_SOLVER_PRIVATE_KEY not set")?;
+        let private_key = if private_key.starts_with("0x") {
+            private_key
+        } else {
+            format!("0x{}", private_key)
+        };
+        args.extend(vec![
+            "--private-key".to_string(),
+            private_key,
+            "--url".to_string(),
+            rpc_url.clone(),
+        ]);
+    } else {
+        // Use profile for E2E tests
+        args.extend(vec![
+            "--profile".to_string(),
+            profile.to_string(),
+        ]);
+    }
+    
+    args.extend(vec![
+        "--assume-yes".to_string(),
+        "--function-id".to_string(),
+        function_id,
+        "--args".to_string(),
+        format!("address:{}", offered_metadata),
+        format!("u64:{}", offered_amount),
+        format!("u64:{}", offered_chain_id),
+        format!("address:{}", desired_metadata),
+        format!("u64:{}", desired_amount),
+        format!("u64:{}", desired_chain_id),
+        format!("u64:{}", expiry_time),
+        format!("address:{}", issuer),
+        format!("address:{}", solver),
+    ]);
+
+    // Call Move function
+    let output = Command::new(cli)
+        .args(&args)
         .output()
-        .context("Failed to execute movement move run")?;
+        .context(format!("Failed to execute {} move run", cli))?;
 
     if !output.status.success() {
         let stderr = str::from_utf8(&output.stderr).unwrap_or("");
         let stdout = str::from_utf8(&output.stdout).unwrap_or("");
         anyhow::bail!(
-            "movement move run failed:\nstderr: {}\nstdout: {}",
+            "{} move run failed:\nstderr: {}\nstdout: {}",
+            cli,
             stderr,
             stdout
         );
@@ -73,12 +115,21 @@ pub fn get_intent_hash(
     std::thread::sleep(std::time::Duration::from_secs(2));
 
     // Query REST API for the latest transaction event
+    // RPC URL format: https://testnet.movementnetwork.xyz/v1
+    // We need: https://testnet.movementnetwork.xyz/v1/accounts/0x.../transactions
+    let base_url = rpc_url.trim_end_matches('/');
     let url = format!(
-        "http://127.0.0.1:{}/v1/accounts/{}/transactions?limit=1",
-        rest_port, solver_address
+        "{}/accounts/0x{}/transactions?limit=1",
+        base_url,
+        solver_address
     );
-    let response = reqwest::blocking::get(&url)
-        .context("Failed to query REST API")?
+    let client = reqwest::blocking::Client::builder()
+        .no_proxy()
+        .build()
+        .context("Failed to build HTTP client")?;
+    let response = client.get(&url)
+        .send()
+        .context(format!("Failed to query REST API at {}", url))?
         .json::<Value>()
         .context("Failed to parse REST API response")?;
 

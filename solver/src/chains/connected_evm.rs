@@ -86,6 +86,8 @@ pub struct ConnectedEvmClient {
     /// Chain ID (for future transaction signing)
     #[allow(dead_code)]
     chain_id: u64,
+    /// Hardhat network name (e.g., "localhost", "baseSepolia")
+    network_name: String,
 }
 
 impl ConnectedEvmClient {
@@ -111,6 +113,7 @@ impl ConnectedEvmClient {
             base_url: config.rpc_url.clone(),
             escrow_contract_address: config.escrow_contract_address.clone(),
             chain_id: config.chain_id,
+            network_name: config.network_name.clone(),
         })
     }
 
@@ -274,6 +277,9 @@ impl ConnectedEvmClient {
         };
 
         // Call Hardhat script via nix develop
+        // Pass BASE_SEPOLIA_RPC_URL so Hardhat can configure the baseSepolia network
+        // Pass BASE_SOLVER_PRIVATE_KEY for signing (signers[2] in the script)
+        let solver_private_key = std::env::var("BASE_SOLVER_PRIVATE_KEY").unwrap_or_default();
         let output = Command::new("nix")
             .args(&[
                 "develop",
@@ -282,12 +288,15 @@ impl ConnectedEvmClient {
                 "bash",
                 "-c",
                 &format!(
-                    "cd '{}' && TOKEN_ADDRESS='{}' RECIPIENT='{}' AMOUNT='{}' INTENT_ID='{}' npx hardhat run scripts/transfer-with-intent-id.js --network localhost",
+                    "cd '{}' && BASE_SEPOLIA_RPC_URL='{}' BASE_SOLVER_PRIVATE_KEY='{}' TOKEN_ADDRESS='{}' RECIPIENT='{}' AMOUNT='{}' INTENT_ID='{}' npx hardhat run scripts/transfer-with-intent-id.js --network {}",
                     evm_framework_dir.display(),
+                    self.base_url,
+                    solver_private_key,
                     token_address,
                     recipient,
                     amount,
-                    intent_id_evm
+                    intent_id_evm,
+                    self.network_name
                 ),
             ])
             .output()
@@ -385,6 +394,9 @@ impl ConnectedEvmClient {
 
         // Call Hardhat script via npx (using nix develop to ensure correct environment)
         // This matches the E2E script approach: nix develop "$PROJECT_ROOT" -c bash -c "cd ... && npx hardhat run ..."
+        // Pass BASE_SEPOLIA_RPC_URL so Hardhat can configure the baseSepolia network
+        // Pass BASE_SOLVER_PRIVATE_KEY for signing (signers[2] in the script)
+        let solver_private_key = std::env::var("BASE_SOLVER_PRIVATE_KEY").unwrap_or_default();
         let output = Command::new("nix")
             .args(&[
                 "develop",
@@ -393,11 +405,14 @@ impl ConnectedEvmClient {
                 "bash",
                 "-c",
                 &format!(
-                    "cd '{}' && ESCROW_ADDRESS='{}' INTENT_ID_EVM='{}' SIGNATURE_HEX='{}' npx hardhat run scripts/claim-escrow.js --network localhost",
+                    "cd '{}' && BASE_SEPOLIA_RPC_URL='{}' BASE_SOLVER_PRIVATE_KEY='{}' ESCROW_ADDRESS='{}' INTENT_ID_EVM='{}' SIGNATURE_HEX='{}' npx hardhat run scripts/claim-escrow.js --network {}",
                     evm_framework_dir.display(),
+                    self.base_url,
+                    solver_private_key,
                     escrow_address,
                     intent_id_evm,
-                    signature_hex
+                    signature_hex,
+                    self.network_name
                 ),
             ])
             .output()

@@ -29,7 +29,7 @@ use solver::{
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 #[derive(Parser, Debug)]
 #[command(name = "solver")]
@@ -54,8 +54,7 @@ async fn main() -> Result<()> {
     // Priority: CLI arg > env var > default
     let config = if let Some(path) = args.config {
         info!("Loading configuration from: {}", path);
-        std::env::set_var("SOLVER_CONFIG_PATH", &path);
-        SolverConfig::load()?
+        SolverConfig::load_from_path(Some(&path))?
     } else {
         // Check if SOLVER_CONFIG_PATH is set
         if let Ok(path) = std::env::var("SOLVER_CONFIG_PATH") {
@@ -82,9 +81,23 @@ async fn main() -> Result<()> {
         Ok(false) => {
             info!("Solver is not registered. Registering on-chain...");
             
-            // Get solver's public key from profile
-            let private_key = get_private_key_from_profile(&config.solver.profile)
-                .context("Failed to get private key from profile for registration")?;
+            // Get solver's private key - try environment variable first, then profile
+            let private_key = if let Ok(key_str) = std::env::var("MOVEMENT_SOLVER_PRIVATE_KEY") {
+                // Read from environment variable (hex format)
+                let key_hex = key_str.strip_prefix("0x").unwrap_or(&key_str);
+                let key_bytes = hex::decode(key_hex)
+                    .context("Failed to decode MOVEMENT_SOLVER_PRIVATE_KEY from hex")?;
+                if key_bytes.len() != 32 {
+                    anyhow::bail!("MOVEMENT_SOLVER_PRIVATE_KEY must be 32 bytes (64 hex chars)");
+                }
+                let mut key_array = [0u8; 32];
+                key_array.copy_from_slice(&key_bytes);
+                key_array
+            } else {
+                // Fall back to reading from profile
+                get_private_key_from_profile(&config.solver.profile)
+                    .context("Failed to get private key from profile or MOVEMENT_SOLVER_PRIVATE_KEY env var")?
+            };
             
             // Derive public key from private key (we can use a dummy hash since we only need the public key)
             let dummy_hash = [0u8; 32];
@@ -114,7 +127,13 @@ async fn main() -> Result<()> {
             };
             
             // Register the solver
-            match hub_client.register_solver(&public_key_bytes, &evm_address, mvm_address.as_deref()) {
+            // Pass private key if we have it from env var (testnet mode), otherwise use profile (E2E mode)
+            let pk_for_registration = if std::env::var("MOVEMENT_SOLVER_PRIVATE_KEY").is_ok() {
+                Some(&private_key)
+            } else {
+                None
+            };
+            match hub_client.register_solver(&public_key_bytes, &evm_address, mvm_address.as_deref(), pk_for_registration) {
                 Ok(tx_hash) => {
                     info!("✅ Solver registered successfully. Transaction: {}", tx_hash);
                 }

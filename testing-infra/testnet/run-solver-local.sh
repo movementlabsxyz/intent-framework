@@ -186,6 +186,29 @@ export BASE_SOLVER_PRIVATE_KEY
 # Export solver addresses for auto-registration (solver reads BASE_SOLVER_ADDRESS or SOLVER_EVM_ADDRESS)
 export BASE_SOLVER_ADDRESS
 export SOLVER_EVM_ADDRESS  # May be empty, that's OK
+# Export Movement solver private key for registration (solver reads from env var first, then profile)
+if [ -n "$MOVEMENT_SOLVER_PRIVATE_KEY" ]; then
+    export MOVEMENT_SOLVER_PRIVATE_KEY
+fi
+
+# Export HUB_RPC_URL for hash calculation
+export HUB_RPC_URL="$HUB_RPC"
+
+# Prepare environment variables for nix develop
+# Use debug logging for tracker and hub client to see intent detection
+ENV_VARS="SOLVER_CONFIG_PATH='$SOLVER_CONFIG' RUST_LOG=info,solver::service::tracker=debug,solver::chains::hub=debug HUB_RPC_URL='$HUB_RPC'"
+if [ -n "$BASE_SOLVER_PRIVATE_KEY" ]; then
+    ENV_VARS="$ENV_VARS BASE_SOLVER_PRIVATE_KEY='$BASE_SOLVER_PRIVATE_KEY'"
+fi
+if [ -n "$BASE_SOLVER_ADDRESS" ]; then
+    ENV_VARS="$ENV_VARS BASE_SOLVER_ADDRESS='$BASE_SOLVER_ADDRESS'"
+fi
+if [ -n "$SOLVER_EVM_ADDRESS" ]; then
+    ENV_VARS="$ENV_VARS SOLVER_EVM_ADDRESS='$SOLVER_EVM_ADDRESS'"
+fi
+if [ -n "$MOVEMENT_SOLVER_PRIVATE_KEY" ]; then
+    ENV_VARS="$ENV_VARS MOVEMENT_SOLVER_PRIVATE_KEY='$MOVEMENT_SOLVER_PRIVATE_KEY'"
+fi
 
 # Check if --release flag is passed
 if [ "$1" = "--release" ]; then
@@ -195,12 +218,12 @@ if [ "$1" = "--release" ]; then
     echo "🚀 Starting solver (release mode)..."
     echo "   Press Ctrl+C to stop"
     echo ""
-    SOLVER_CONFIG_PATH="$SOLVER_CONFIG" RUST_LOG=info ./target/release/solver
+    eval "$ENV_VARS ./target/release/solver"
 else
     echo "🚀 Starting solver (debug mode)..."
     echo "   Press Ctrl+C to stop"
     echo "   (Use --release for faster performance)"
     echo ""
-    nix develop --command bash -c "cd '$PROJECT_ROOT/solver' && SOLVER_CONFIG_PATH='$SOLVER_CONFIG' RUST_LOG=info cargo run --bin solver"
+    nix develop --command bash -c "cd '$PROJECT_ROOT/solver' && $ENV_VARS cargo run --bin solver"
 fi
 

@@ -11,6 +11,65 @@ use std::time::Duration;
 
 use crate::config::ChainConfig;
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/// Extracts transaction hash from CLI output (handles both traditional and JSON formats)
+fn extract_transaction_hash(output: &str) -> Option<String> {
+    // Try JSON format first: "transaction_hash": "0x..."
+    if let Some(start) = output.find("\"transaction_hash\"") {
+        let after_key = &output[start..];
+        // Find the value after the colon
+        if let Some(colon_pos) = after_key.find(':') {
+            let value_part = &after_key[colon_pos + 1..];
+            // Find the quoted value
+            if let Some(quote_start) = value_part.find('"') {
+                let after_quote = &value_part[quote_start + 1..];
+                if let Some(quote_end) = after_quote.find('"') {
+                    let hash = &after_quote[..quote_end];
+                    if hash.starts_with("0x") {
+                        return Some(hash.to_string());
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fall back to traditional CLI format: "Transaction hash: 0x..."
+    for line in output.lines() {
+        if line.contains("hash") || line.contains("Hash") {
+            if let Some(hash) = line.split_whitespace().find(|s| s.starts_with("0x")) {
+                return Some(hash.to_string());
+            }
+        }
+    }
+    
+    None
+}
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+/// Move VM Optional wrapper: {"vec": [value]} or {"vec": []}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MoveOption<T> {
+    pub vec: Vec<T>,
+}
+
+impl<T> MoveOption<T> {
+    pub fn into_option(mut self) -> Option<T> {
+        self.vec.pop()
+    }
+}
+
+/// Move VM Inner wrapper: {"inner": value}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MoveInner {
+    pub inner: String,
+}
+
 /// Event emitted when an intent is created on the hub chain
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntentCreatedEvent {
@@ -18,14 +77,14 @@ pub struct IntentCreatedEvent {
     pub intent_address: String,
     /// Intent ID for cross-chain linking
     pub intent_id: String,
-    /// Offered token metadata
-    pub offered_metadata: serde_json::Value,
+    /// Offered token metadata (wrapped in {"inner": "0x..."})
+    pub offered_metadata: MoveInner,
     /// Offered amount
     pub offered_amount: String,
     /// Offered chain ID
     pub offered_chain_id: String,
-    /// Desired token metadata
-    pub desired_metadata: serde_json::Value,
+    /// Desired token metadata (wrapped in {"inner": "0x..."})
+    pub desired_metadata: MoveInner,
     /// Desired amount
     pub desired_amount: String,
     /// Desired chain ID
@@ -34,6 +93,10 @@ pub struct IntentCreatedEvent {
     pub requester: String,
     /// Expiry timestamp
     pub expiry_time: String,
+    /// Requester address on the connected chain (for outflow intents)
+    /// Wrapped in Move Option: {"vec": ["0x..."]} or {"vec": []}
+    #[serde(default)]
+    pub requester_address_connected_chain: Option<MoveOption<String>>,
 }
 
 /// Event emitted when an intent is fulfilled
@@ -83,9 +146,15 @@ impl HubChainClient {
             .build()
             .context("Failed to create HTTP client")?;
 
+        // Normalize base_url: strip trailing /v1 if present (we add it in each request)
+        let base_url = config.rpc_url
+            .trim_end_matches('/')
+            .trim_end_matches("/v1")
+            .to_string();
+        
         Ok(Self {
             client,
-            base_url: config.rpc_url.clone(),
+            base_url,
             module_address: config.module_address.clone(),
             profile: config.profile.clone(),
         })
@@ -116,6 +185,8 @@ impl HubChainClient {
             let account_address = account.strip_prefix("0x").unwrap_or(account);
             let url = format!("{}/v1/accounts/{}/transactions", self.base_url, account_address);
 
+            tracing::debug!("Querying transactions from: {}", url);
+
             let mut query_params = vec![("limit", "100".to_string())];
             if let Some(version) = since_version {
                 query_params.push(("start", version.to_string()));
@@ -129,8 +200,11 @@ impl HubChainClient {
                 .await
                 .context(format!("Failed to query transactions for account {}", account))?;
 
-            if !response.status().is_success() {
-                continue; // Account might not exist or have no transactions
+            let status = response.status();
+            if !status.is_success() {
+                let error_body = response.text().await.unwrap_or_default();
+                tracing::debug!("Query failed for account {}: HTTP {} - {}", account, status, error_body);
+                continue;
             }
 
             let transactions: Vec<serde_json::Value> = response
@@ -138,8 +212,10 @@ impl HubChainClient {
                 .await
                 .context("Failed to parse transactions response")?;
 
+            tracing::debug!("Found {} transaction(s) for account {}", transactions.len(), account);
+
             // Extract intent creation events from transactions
-            for tx in transactions {
+            for tx in &transactions {
                 if let Some(tx_events) = tx.get("events").and_then(|e| e.as_array()) {
                     for event_json in tx_events {
                         let event_type = event_json
@@ -151,10 +227,27 @@ impl HubChainClient {
                         // IMPORTANT: Check OracleLimitOrderEvent BEFORE LimitOrderEvent because
                         // "OracleLimitOrderEvent".contains("LimitOrderEvent") is true!
                         if event_type.contains("OracleLimitOrderEvent") || event_type.contains("LimitOrderEvent") {
-                            if let Ok(event_data) = serde_json::from_value::<IntentCreatedEvent>(
+                            match serde_json::from_value::<IntentCreatedEvent>(
                                 event_json.get("data").cloned().unwrap_or(serde_json::Value::Null),
                             ) {
-                                events.push(event_data);
+                                Ok(event_data) => {
+                                    // Check if event is expired before logging/adding
+                                    let current_time = std::time::SystemTime::now()
+                                        .duration_since(std::time::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_secs();
+                                    if let Ok(expiry) = event_data.expiry_time.parse::<u64>() {
+                                        if expiry >= current_time {
+                                            tracing::debug!("Found intent event: {} - type: {}", 
+                                                event_data.intent_id, event_type);
+                                            events.push(event_data);
+                                        }
+                                        // Skip expired events silently
+                                    }
+                                }
+                                Err(e) => {
+                                    tracing::debug!("Failed to parse event data: {} - data: {:?}", e, event_json.get("data"));
+                                }
                             }
                         }
                     }
@@ -194,7 +287,7 @@ impl HubChainClient {
                 "--function-id",
                 &format!("{}::fa_intent_inflow::fulfill_inflow_intent", self.module_address),
                 "--args",
-                &format!("object:{}", intent_address),
+                &format!("address:{}", intent_address),
                 &format!("u64:{}", payment_amount),
             ])
             .output()
@@ -211,12 +304,12 @@ impl HubChainClient {
         }
 
         // Extract transaction hash from output
-        // The CLI outputs the transaction hash in format: "Transaction hash: 0x..."
+        // Handles both formats:
+        // - Traditional CLI: "Transaction hash: 0x..."
+        // - JSON format: "transaction_hash": "0x..."
         let output_str = String::from_utf8_lossy(&output.stdout);
-        if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
-            if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
-                return Ok(hash.to_string());
-            }
+        if let Some(hash) = extract_transaction_hash(&output_str) {
+            return Ok(hash);
         }
 
         anyhow::bail!("Could not extract transaction hash from output: {}", output_str)
@@ -243,22 +336,39 @@ impl HubChainClient {
         // Convert signature bytes to hex string
         let signature_hex = hex::encode(verifier_signature_bytes);
 
-        // Use aptos CLI for compatibility with E2E tests which create aptos profiles
-        let output = Command::new("aptos")
-            .args(&[
-                "move",
-                "run",
-                "--profile",
-                &self.profile,
-                "--assume-yes",
-                "--function-id",
-                &format!("{}::fa_intent_outflow::fulfill_outflow_intent", self.module_address),
-                "--args",
-                &format!("object:{}", intent_address),
-                &format!("vector<u8>:0x{}", signature_hex),
-            ])
+        // Determine CLI and authentication method
+        // For testnet: use movement CLI with --private-key from env
+        // For E2E tests: use aptos CLI with --profile
+        let mut command;
+        let mut args = vec![
+            "move".to_string(),
+            "run".to_string(),
+            "--assume-yes".to_string(),
+            "--function-id".to_string(),
+            format!("{}::fa_intent_outflow::fulfill_outflow_intent", self.module_address),
+            "--args".to_string(),
+            format!("address:{}", intent_address),
+            format!("hex:{}", signature_hex),
+        ];
+
+        if let Ok(pk_hex) = std::env::var("MOVEMENT_SOLVER_PRIVATE_KEY") {
+            // Testnet: Use movement CLI with private key
+            command = Command::new("movement");
+            args.push("--private-key".to_string());
+            args.push(pk_hex.strip_prefix("0x").unwrap_or(&pk_hex).to_string());
+            args.push("--url".to_string());
+            args.push(format!("{}/v1", self.base_url));
+        } else {
+            // E2E tests: Use aptos CLI with profile
+            command = Command::new("aptos");
+            args.push("--profile".to_string());
+            args.push(self.profile.clone());
+        }
+
+        let output = command
+            .args(&args)
             .output()
-            .context("Failed to execute movement move run")?;
+            .context("Failed to execute move run")?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -271,12 +381,12 @@ impl HubChainClient {
         }
 
         // Extract transaction hash from output
-        // The CLI outputs the transaction hash in format: "Transaction hash: 0x..."
+        // Handles both formats:
+        // - Traditional CLI: "Transaction hash: 0x..."
+        // - JSON format: "transaction_hash": "0x..."
         let output_str = String::from_utf8_lossy(&output.stdout);
-        if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
-            if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
-                return Ok(hash.to_string());
-            }
+        if let Some(hash) = extract_transaction_hash(&output_str) {
+            return Ok(hash);
         }
 
         anyhow::bail!("Could not extract transaction hash from output: {}", output_str)
@@ -301,7 +411,7 @@ impl HubChainClient {
         };
 
         // Call the view function via RPC
-        let view_url = format!("{}/view", self.base_url);
+        let view_url = format!("{}/v1/view", self.base_url);
         let request_body = serde_json::json!({
             "function": format!("{}::solver_registry::is_registered", self.module_address),
             "type_arguments": [],
@@ -348,6 +458,8 @@ impl HubChainClient {
     /// * `public_key_bytes` - Ed25519 public key as bytes (32 bytes)
     /// * `evm_address` - EVM address on connected chain (20 bytes), or empty vec if not applicable
     /// * `mvm_address` - Move VM address on connected chain, or None if not applicable
+    /// * `private_key` - Optional private key bytes. If provided, uses --private-key flag with movement CLI.
+    ///                   If None, uses --profile flag with aptos CLI (for E2E tests).
     ///
     /// # Returns
     ///
@@ -358,6 +470,7 @@ impl HubChainClient {
         public_key_bytes: &[u8],
         evm_address: &[u8],
         mvm_address: Option<&str>,
+        private_key: Option<&[u8; 32]>,
     ) -> Result<String> {
         // Convert public key to hex
         let public_key_hex = hex::encode(public_key_bytes);
@@ -383,43 +496,73 @@ impl HubChainClient {
         };
         let mvm_address_arg = format!("address:{}", mvm_addr);
         
-        let args = vec![
-            "move",
-            "run",
-            "--profile",
-            &self.profile,
-            "--assume-yes",
-            "--function-id",
-            &function_id,
-            "--args",
-            &public_key_arg,
-            &evm_address_arg,
-            &mvm_address_arg,
-        ];
+        // Format private key if provided
+        let private_key_hex = private_key.map(|pk| format!("0x{}", hex::encode(pk)));
         
-        // Use aptos CLI for compatibility with E2E tests which create aptos profiles
-        // (Movement CLI stores config in ~/.movement/config.yaml, aptos CLI uses .aptos/config.yaml)
-        let output = Command::new("aptos")
+        // Build command based on whether we have a private key or profile
+        let (cli, args): (&str, Vec<&str>) = if let Some(ref pk_hex) = private_key_hex {
+            // Use movement CLI with --private-key for testnet
+            (
+                "movement",
+                vec![
+                    "move",
+                    "run",
+                    "--private-key",
+                    pk_hex,
+                    "--url",
+                    &self.base_url,
+                    "--assume-yes",
+                    "--function-id",
+                    &function_id,
+                    "--args",
+                    &public_key_arg,
+                    &evm_address_arg,
+                    &mvm_address_arg,
+                ],
+            )
+        } else {
+            // Use aptos CLI with --profile for E2E tests
+            (
+                "aptos",
+                vec![
+                    "move",
+                    "run",
+                    "--profile",
+                    &self.profile,
+                    "--assume-yes",
+                    "--function-id",
+                    &function_id,
+                    "--args",
+                    &public_key_arg,
+                    &evm_address_arg,
+                    &mvm_address_arg,
+                ],
+            )
+        };
+        
+        let output = Command::new(cli)
             .args(&args)
             .output()
-            .context("Failed to execute aptos move run for solver registration")?;
+            .context(format!("Failed to execute {} move run for solver registration", cli))?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
             anyhow::bail!(
-                "movement move run failed for solver registration:\nstderr: {}\nstdout: {}",
+                "{} move run failed for solver registration:\nstderr: {}\nstdout: {}",
+                cli,
                 stderr,
                 stdout
             );
         }
 
         // Extract transaction hash from output
+        // Handles both formats:
+        // - Traditional CLI: "Transaction hash: 0x..."
+        // - JSON format: "transaction_hash": "0x..."
         let output_str = String::from_utf8_lossy(&output.stdout);
-        if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
-            if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
-                return Ok(hash.to_string());
-            }
+        if let Some(hash) = extract_transaction_hash(&output_str) {
+            return Ok(hash);
         }
 
         anyhow::bail!("Could not extract transaction hash from registration output: {}", output_str)

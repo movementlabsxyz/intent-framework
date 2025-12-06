@@ -77,7 +77,7 @@ async fn test_add_signed_intent() {
             "11111111-1111-1111-1111-111111111111".to_string(),
             draft_data.clone(),
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -109,7 +109,7 @@ async fn test_add_signed_intent_inflow_outflow() {
             "inflow-draft".to_string(),
             inflow_data,
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -124,7 +124,7 @@ async fn test_add_signed_intent_inflow_outflow() {
             "outflow-draft".to_string(),
             outflow_data,
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -150,7 +150,7 @@ async fn test_get_intents_ready_for_fulfillment_state_filter() {
             "draft-1".to_string(),
             draft_data.clone(),
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -186,7 +186,7 @@ async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
             "inflow-draft".to_string(),
             inflow_data,
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -201,7 +201,7 @@ async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
             "outflow-draft".to_string(),
             outflow_data,
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -238,7 +238,7 @@ async fn test_mark_fulfilled() {
             "draft-1".to_string(),
             draft_data,
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -312,7 +312,7 @@ async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
             "draft-1".to_string(),
             draft_data.clone(),
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -322,7 +322,7 @@ async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
             "draft-2".to_string(),
             draft_data,
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -360,7 +360,7 @@ async fn test_get_intents_ready_for_fulfillment_returns_only_created() {
             "draft-1".to_string(),
             draft_data.clone(),
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();
@@ -371,7 +371,7 @@ async fn test_get_intents_ready_for_fulfillment_returns_only_created() {
             "draft-2".to_string(),
             draft_data,
             "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            2000000,
+            9999999999, // Far future expiry
         )
         .await
         .unwrap();

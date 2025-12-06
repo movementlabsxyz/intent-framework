@@ -32,8 +32,20 @@ async function main() {
     throw error;
   }
 
-  const signers = await hre.ethers.getSigners();
-  const solver = signers[2];
+  // Get solver private key from environment (for testnet) or use Hardhat signers (for local testing)
+  let solver;
+  if (process.env.BASE_SOLVER_PRIVATE_KEY) {
+    // Testnet: Create wallet from private key
+    const provider = hre.ethers.provider;
+    solver = new hre.ethers.Wallet(process.env.BASE_SOLVER_PRIVATE_KEY, provider);
+  } else {
+    // Local testing: Use Hardhat signers
+    const signers = await hre.ethers.getSigners();
+    if (signers.length < 3) {
+      throw new Error(`Expected at least 3 signers for local testing, but got ${signers.length}. For testnet, set BASE_SOLVER_PRIVATE_KEY environment variable.`);
+    }
+    solver = signers[2];
+  }
 
   const ERC20 = await hre.ethers.getContractFactory("MockERC20");
   const token = ERC20.attach(tokenAddress);

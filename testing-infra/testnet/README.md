@@ -70,14 +70,28 @@ Test the verifier and solver services locally before deploying to EC2:
 (after both services are running)
 
 ```bash
-# Create inflow intent (USDC Base → USDC Movement)
-./testing-infra/testnet/create-intent.sh inflow
+# Create outflow intent (USDC.e Movement → USDC Base)
+# Amount is in base units (10^-6 USDC), so 1000000 = 1 USDC
+./testing-infra/testnet/create-intent.sh outflow 1000000
 
-# Create outflow intent (USDC Movement → USDC Base)
-./testing-infra/testnet/create-intent.sh outflow
+# Create inflow intent (USDC Base → USDC.e Movement)
+# Also creates escrow on Base Sepolia automatically
+./testing-infra/testnet/create-intent.sh inflow 1000000
+```
 
-# Specify custom amount (default: 1000000 = 1 USDC)
-./testing-infra/testnet/create-intent.sh inflow --amount 2000000
+The script will:
+
+1. Show initial balances on both chains
+2. Submit draft intent to verifier → solver signs it
+3. Create intent on Movement hub chain
+4. For inflow: create escrow on Base Sepolia
+5. Wait for solver fulfillment and show final balance changes
+
+#### Quick Health Check
+
+```bash
+# Check if verifier is running
+curl -s http://localhost:3333/health | jq
 ```
 
 #### Prerequisites for Local Testing

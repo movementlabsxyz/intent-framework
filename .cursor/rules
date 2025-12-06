@@ -38,7 +38,7 @@ Tests pass: Move <amount>, EVM <amount>, Verifier (Rust) <number>, Solver (Rust)
 Get test counts for all components and display in a summary table:
 
 ```bash
-./scripts/test-summary.sh
+./.cursor/test-summary.sh
 ```
 
 This script runs all tests and displays a summary table with passed/failed counts for each component.

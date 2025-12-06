@@ -37,6 +37,7 @@ fn create_test_evm_config() -> EvmChainConfig {
         chain_id: 84532,
         escrow_contract_address: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
         private_key_env: "TEST_PRIVATE_KEY".to_string(),
+        network_name: "localhost".to_string(),
     }
 }
 
@@ -130,7 +131,7 @@ async fn test_get_intent_events_success() {
                             "desired_amount": "2000",
                             "desired_chain_id": "2",
                             "requester": "0xcccccccccccccccccccccccccccccccccccccccc",
-                            "expiry_time": "2000000",
+                            "expiry_time": "9999999999",
                             "revocable": true
                         }
                     }
@@ -183,8 +184,9 @@ async fn test_is_solver_registered_true() {
     let base_url = mock_server.uri().to_string();
 
     // Mock view function response - returns [true] for registered solver
+    // Note: HubChainClient calls /v1/view on the base_url
     Mock::given(method("POST"))
-        .and(path("/view"))
+        .and(path("/v1/view"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!([true])))
         .mount(&mock_server)
         .await;
@@ -209,8 +211,9 @@ async fn test_is_solver_registered_false() {
     let base_url = mock_server.uri().to_string();
 
     // Mock view function response - returns [false] for unregistered solver
+    // Note: HubChainClient calls /v1/view on the base_url
     Mock::given(method("POST"))
-        .and(path("/view"))
+        .and(path("/v1/view"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!([false])))
         .mount(&mock_server)
         .await;
@@ -234,8 +237,9 @@ async fn test_is_solver_registered_address_normalization() {
     let mock_server = MockServer::start().await;
     let base_url = mock_server.uri().to_string();
 
+    // Note: HubChainClient calls /v1/view on the base_url
     Mock::given(method("POST"))
-        .and(path("/view"))
+        .and(path("/v1/view"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!([true])))
         .mount(&mock_server)
         .await;
@@ -267,8 +271,9 @@ async fn test_is_solver_registered_http_error() {
     let base_url = mock_server.uri().to_string();
 
     // Mock HTTP 500 error
+    // Note: HubChainClient calls /v1/view on the base_url
     Mock::given(method("POST"))
-        .and(path("/view"))
+        .and(path("/v1/view"))
         .respond_with(ResponseTemplate::new(500).set_body_string("Internal Server Error"))
         .mount(&mock_server)
         .await;
@@ -296,8 +301,9 @@ async fn test_is_solver_registered_invalid_json() {
     let base_url = mock_server.uri().to_string();
 
     // Mock invalid JSON response (not an array, or wrong format)
+    // Note: HubChainClient calls /v1/view on the base_url
     Mock::given(method("POST"))
-        .and(path("/view"))
+        .and(path("/v1/view"))
         .respond_with(ResponseTemplate::new(200).set_body_string("invalid json"))
         .mount(&mock_server)
         .await;
@@ -321,8 +327,9 @@ async fn test_is_solver_registered_unexpected_format() {
     let base_url = mock_server.uri().to_string();
 
     // Mock response with wrong format (empty array or non-boolean)
+    // Note: HubChainClient calls /v1/view on the base_url
     Mock::given(method("POST"))
-        .and(path("/view"))
+        .and(path("/v1/view"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!([])))
         .mount(&mock_server)
         .await;

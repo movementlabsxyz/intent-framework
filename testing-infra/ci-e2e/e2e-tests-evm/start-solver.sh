@@ -134,6 +134,10 @@ if [ -z "$SOLVER_EVM_ADDRESS" ]; then
 fi
 log "   Exported SOLVER_EVM_ADDRESS=$SOLVER_EVM_ADDRESS"
 
+# Unset testnet keys to prevent accidental use (E2E tests use profiles only)
+unset MOVEMENT_SOLVER_PRIVATE_KEY
+log "   Unset MOVEMENT_SOLVER_PRIVATE_KEY (E2E tests use profile keys only)"
+
 # Start the solver service
 if start_solver "$LOG_DIR/solver-evm.log" "info" "$SOLVER_CONFIG"; then
     log ""

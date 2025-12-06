@@ -362,14 +362,10 @@ address = "0xccc"
 /// Why: Ensure proper error message when config file is missing
 #[test]
 fn test_config_load_file_not_found() {
-    // Set environment variable to non-existent file
-    std::env::set_var("SOLVER_CONFIG_PATH", ".tmp/nonexistent/solver.toml");
-    
-    let result = SolverConfig::load();
+    // Use load_from_path directly with explicit non-existent path
+    // to avoid parallel test interference with environment variables
+    let result = SolverConfig::load_from_path(Some("/tmp/nonexistent/solver.toml"));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("not found"));
-    
-    // Cleanup
-    std::env::remove_var("SOLVER_CONFIG_PATH");
 }
 

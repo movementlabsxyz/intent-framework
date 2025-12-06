@@ -118,6 +118,10 @@ fi
 export SOLVER_CONNECTED_MVM_ADDRESS="0x${SOLVER_CHAIN2_ADDRESS}"
 log "   Exported SOLVER_CONNECTED_MVM_ADDRESS=$SOLVER_CONNECTED_MVM_ADDRESS"
 
+# Unset testnet keys to prevent accidental use (E2E tests use profiles only)
+unset MOVEMENT_SOLVER_PRIVATE_KEY
+log "   Unset MOVEMENT_SOLVER_PRIVATE_KEY (E2E tests use profile keys only)"
+
 # Start the solver service
 if start_solver "$LOG_DIR/solver.log" "info" "$SOLVER_CONFIG"; then
     log ""

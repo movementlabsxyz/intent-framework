@@ -27,6 +27,8 @@ module.exports = {
       baseSepolia: {
         url: process.env.BASE_SEPOLIA_RPC_URL,
         chainId: 84532,
+        // For testnet, scripts use BASE_SOLVER_PRIVATE_KEY directly via Wallet
+        // For local testing, scripts use Hardhat signers
         accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
       },
     } : {}),

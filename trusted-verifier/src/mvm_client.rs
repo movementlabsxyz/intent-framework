@@ -197,9 +197,15 @@ impl MvmClient {
             .build()
             .context("Failed to create HTTP client")?;
 
+        // Normalize base_url: strip trailing /v1 if present (we add it in each request)
+        let base_url = node_url
+            .trim_end_matches('/')
+            .trim_end_matches("/v1")
+            .to_string();
+        
         Ok(Self {
             client,
-            base_url: node_url.to_string(),
+            base_url,
         })
     }
 

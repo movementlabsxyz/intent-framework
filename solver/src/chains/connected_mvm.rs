@@ -181,7 +181,7 @@ impl ConnectedMvmClient {
                 &format!("{}::utils::transfer_with_intent_id", self.module_address),
                 "--args",
                 &format!("address:{}", recipient),
-                &format!("object:{}", metadata),
+                &format!("address:{}", metadata),
                 &format!("u64:{}", amount),
                 &format!("address:{}", intent_id),
             ])
@@ -248,7 +248,7 @@ impl ConnectedMvmClient {
                 "--function-id",
                 &format!("{}::intent_as_escrow_entry::complete_escrow_from_fa", self.module_address),
                 "--args",
-                &format!("object:{}", escrow_intent_address),
+                &format!("address:{}", escrow_intent_address),
                 &format!("u64:{}", payment_amount),
                 &format!("hex:{}", signature_hex),
             ])

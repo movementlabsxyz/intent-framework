@@ -160,12 +160,10 @@ impl OutflowService {
     ///
     /// * `Ok(String)` - Requester address on connected chain
     /// * `Err(anyhow::Error)` - Failed to query intent object
-    async fn get_requester_address_connected_chain(&self, _intent: &TrackedIntent) -> Result<String> {
-        // TODO: Query intent object on hub chain to get requester_address_connected_chain field
-        // For now, return an error to indicate this needs to be implemented
-        anyhow::bail!(
-            "get_requester_address_connected_chain not yet implemented. Need to query intent object on hub chain."
-        )
+    async fn get_requester_address_connected_chain(&self, intent: &TrackedIntent) -> Result<String> {
+        // Get from tracked intent (set when on-chain event was detected)
+        intent.requester_address_connected_chain.clone()
+            .context("requester_address_connected_chain not set. This may happen if the intent is inflow (not outflow) or the event data didn't include this field.")
     }
 
     /// Gets verifier approval for an outflow fulfillment transaction

@@ -394,9 +394,9 @@ pub async fn validate_intent_fulfillment(
 ///
 /// # Errors
 ///
-/// Returns an error if no matching escrow is found for the fulfillment's intent_id.
-/// This should not happen in normal operation, as escrows are validated and cached
-/// before hub fulfillment occurs.
+/// Returns an error if:
+/// - No matching escrow is found for the fulfillment's intent_id
+/// - Escrow validation fails (e.g., amount mismatch, expired intent)
 pub async fn validate_and_approve_fulfillment(
     monitor: &EventMonitor,
     fulfillment: &FulfillmentEvent,
@@ -411,7 +411,7 @@ pub async fn validate_and_approve_fulfillment(
     });
 
     // Find matching escrow in cache
-    let (escrow_id, is_evm_escrow) = match matching_escrow {
+    let (escrow_id, is_evm_escrow, escrow_clone) = match matching_escrow {
         Some(escrow) => {
             // Determine if this is an EVM escrow by checking if reserved_solver looks like an EVM address
             let is_evm = escrow
@@ -421,8 +421,9 @@ pub async fn validate_and_approve_fulfillment(
                 .unwrap_or(false);
 
             let escrow_id = escrow.escrow_id.clone();
+            let escrow_clone = escrow.clone();
             drop(escrow_cache);
-            (escrow_id, is_evm)
+            (escrow_id, is_evm, escrow_clone)
         }
         None => {
             drop(escrow_cache);
@@ -433,6 +434,19 @@ pub async fn validate_and_approve_fulfillment(
             return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
         }
     };
+
+    // Re-validate escrow before generating approval
+    // This prevents approving escrows that were cached before validation or failed validation
+    if let Err(e) = validate_intent_fulfillment(monitor, &escrow_clone).await {
+        error!(
+            "Escrow validation failed before approval: {} (intent_id: {}): {}",
+            escrow_id, fulfillment.intent_id, e
+        );
+        return Err(anyhow::anyhow!(
+            "Escrow validation failed before approval: {}",
+            e
+        ));
+    }
 
     info!(
         "Generating approval after fulfillment observed: intent_id {} (escrow_id: {})",

@@ -99,6 +99,7 @@ fn test_revocable_intent_rejection() {
 }
 
 /// Test that approval is generated when fulfillment and escrow are both present
+/// Why: Verify the core approval flow works when all required data is cached
 #[tokio::test]
 async fn test_generates_approval_when_fulfillment_and_escrow_present() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -107,12 +108,23 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
         .await
         .expect("Failed to create monitor");
 
-    // Arrange: insert escrow with intent_id (valid hex address - even number of hex digits)
+    // Arrange: insert intent with intent_id (required for escrow validation)
     let intent_id = "0x01";
+    {
+        let mut intent_cache = monitor.event_cache.write().await;
+        intent_cache.push(IntentEvent {
+            intent_id: intent_id.to_string(),
+            expiry_time: 9999999999,
+            ..create_base_intent_mvm()
+        });
+    }
+
+    // Arrange: insert escrow with intent_id (valid hex address - even number of hex digits)
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             intent_id: intent_id.to_string(),
+            expiry_time: 9999999999,
             ..create_base_escrow_event()
         });
     }
@@ -143,6 +155,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
 }
 
 /// Test that error is returned when no matching escrow exists
+/// Why: Verify approval generation correctly fails when escrow is not in cache
 #[tokio::test]
 async fn test_returns_error_when_no_matching_escrow() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -186,21 +199,49 @@ async fn test_multiple_concurrent_intents() {
         .await
         .expect("Failed to create monitor");
 
+    // Arrange: create matching intents for each escrow (required for validation)
+    let intents = vec![
+        IntentEvent {
+            intent_id: "0x01".to_string(),
+            expiry_time: 9999999999,
+            ..create_base_intent_mvm()
+        },
+        IntentEvent {
+            intent_id: "0x02".to_string(),
+            expiry_time: 9999999999,
+            ..create_base_intent_mvm()
+        },
+        IntentEvent {
+            intent_id: "0x03".to_string(),
+            expiry_time: 9999999999,
+            ..create_base_intent_mvm()
+        },
+    ];
+
+    // Insert all intents into cache
+    {
+        let mut intent_cache = monitor.event_cache.write().await;
+        intent_cache.extend(intents);
+    }
+
     // Arrange: create multiple escrows with different intent_ids simultaneously (valid hex addresses)
     let escrows = vec![
         EscrowEvent {
             escrow_id: "0xescrow1".to_string(),
             intent_id: "0x01".to_string(),
+            expiry_time: 9999999999,
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow2".to_string(),
             intent_id: "0x02".to_string(),
+            expiry_time: 9999999999,
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow3".to_string(),
             intent_id: "0x03".to_string(),
+            expiry_time: 9999999999,
             ..create_base_escrow_event()
         },
     ];
@@ -496,10 +537,22 @@ async fn test_duplicate_fulfillment_event_handling() {
         .await
         .expect("Failed to create monitor");
 
+    // Add matching intent to cache (required for escrow validation)
+    {
+        let mut intent_cache = monitor.event_cache.write().await;
+        intent_cache.push(IntentEvent {
+            expiry_time: 9999999999,
+            ..create_base_intent_mvm()
+        });
+    }
+
     // Add matching escrow to cache (required for approval generation)
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
-        escrow_cache.push(create_base_escrow_event());
+        escrow_cache.push(EscrowEvent {
+            expiry_time: 9999999999,
+            ..create_base_escrow_event()
+        });
     }
 
     let fulfillment = create_base_fulfillment();
@@ -580,10 +633,22 @@ async fn test_base_helpers_work_with_signature_generation() {
         .await
         .expect("Failed to create monitor");
 
+    // Add intent using base helper (required for escrow validation)
+    {
+        let mut intent_cache = monitor.event_cache.write().await;
+        intent_cache.push(IntentEvent {
+            expiry_time: 9999999999,
+            ..create_base_intent_mvm()
+        });
+    }
+
     // Add escrow using base helper (should have valid hex intent_id)
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
-        escrow_cache.push(create_base_escrow_event());
+        escrow_cache.push(EscrowEvent {
+            expiry_time: 9999999999,
+            ..create_base_escrow_event()
+        });
     }
 
     // Create fulfillment using base helper (should have valid hex intent_id matching escrow)
@@ -591,7 +656,7 @@ async fn test_base_helpers_work_with_signature_generation() {
 
     // This should succeed - base helpers should have valid hex values
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
-    assert!(result.is_ok(), "Base helpers should work with signature generation - intent_id must be valid hex (even number of digits)");
+    assert!(result.is_ok(), "Base helpers should work with signature generation - intent_id must be valid hex (even number of digits): {:?}", result);
 
     // Verify approval was generated
     let approval = monitor
@@ -620,12 +685,24 @@ async fn test_fulfillment_with_odd_length_intent_id() {
     // Odd-length intent_id (63 hex chars): eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     // Normalized to (64 hex chars): 0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     let escrow_intent_id = "0x0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
+    // Add matching intent (required for escrow validation)
+    {
+        let mut intent_cache = monitor.event_cache.write().await;
+        intent_cache.push(IntentEvent {
+            intent_id: escrow_intent_id.to_string(),
+            expiry_time: 9999999999,
+            ..create_base_intent_mvm()
+        });
+    }
+
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             intent_id: escrow_intent_id.to_string(),
             escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222"
                 .to_string(),
+            expiry_time: 9999999999,
             ..create_base_escrow_event()
         });
     }

@@ -39,22 +39,17 @@ describe("IntentEscrow - Initialization", function () {
     const receipt = await tx.wait();
     const block = await ethers.provider.getBlock(receipt.blockNumber);
     
-    await expect(tx)
-      .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
+    const expectedExpiry = BigInt(block.timestamp) + BigInt(await escrow.EXPIRY_DURATION());
     
     await expect(tx)
-      .to.emit(escrow, "DepositMade")
-      .withArgs(intentId, requester.address, amount, amount);
+      .to.emit(escrow, "EscrowInitialized")
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address, amount, expectedExpiry);
 
     const escrowData = await escrow.getEscrow(intentId);
     expect(escrowData.requester).to.equal(requester.address);
     expect(escrowData.token).to.equal(token.target);
     expect(escrowData.amount).to.equal(amount);
     expect(escrowData.isClaimed).to.equal(false);
-    
-    // Verify expiry is set to block.timestamp + EXPIRY_DURATION
-    const expectedExpiry = BigInt(block.timestamp) + BigInt(await escrow.EXPIRY_DURATION());
     expect(escrowData.expiry).to.equal(expectedExpiry);
   });
 

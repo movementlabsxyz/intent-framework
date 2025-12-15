@@ -26,11 +26,14 @@ describe("IntentEscrow - Create Escrow (Deposit)", function () {
     await token.mint(requester.address, amount);
     await token.connect(requester).approve(escrow.target, amount);
 
-    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
+    const tx = await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
+    const receipt = await tx.wait();
+    const block = await ethers.provider.getBlock(receipt.blockNumber);
+    const expectedExpiry = BigInt(block.timestamp) + BigInt(await escrow.EXPIRY_DURATION());
+    
+    await expect(tx)
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address)
-      .and.to.emit(escrow, "DepositMade")
-      .withArgs(intentId, requester.address, amount, amount);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address, amount, expectedExpiry);
 
     expect(await token.balanceOf(escrow.target)).to.equal(amount);
     

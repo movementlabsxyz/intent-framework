@@ -71,10 +71,14 @@ describe("IntentEscrow - Error Conditions", function () {
   it("Should allow ETH escrow creation with address(0)", async function () {
     const amount = ethers.parseEther("1");
     
-    await expect(
-      escrow.connect(requester).createEscrow(intentId, ethers.ZeroAddress, amount, solver.address, { value: amount })
-    ).to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, requester.address, ethers.ZeroAddress, solver.address);
+    const tx = await escrow.connect(requester).createEscrow(intentId, ethers.ZeroAddress, amount, solver.address, { value: amount });
+    const receipt = await tx.wait();
+    const block = await ethers.provider.getBlock(receipt.blockNumber);
+    const expectedExpiry = BigInt(block.timestamp) + BigInt(await escrow.EXPIRY_DURATION());
+    
+    await expect(tx)
+      .to.emit(escrow, "EscrowInitialized")
+      .withArgs(intentId, escrow.target, requester.address, ethers.ZeroAddress, solver.address, amount, expectedExpiry);
     
     const escrowData = await escrow.getEscrow(intentId);
     expect(escrowData.token).to.equal(ethers.ZeroAddress);

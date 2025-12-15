@@ -79,10 +79,10 @@ pub async fn poll_evm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
             intent_id,
             issuer: event.requester.clone(), // requester is the escrow creator
             offered_metadata: format!("{{\"token\":\"{}\"}}", event.token), // Store token address in metadata
-            offered_amount: 0, // We don't have amount from EscrowInitialized event, would need to query contract
-            desired_metadata: "{}".to_string(), // Not available in EscrowInitialized event
-            desired_amount: 0, // Not available in EscrowInitialized event
-            expiry_time: 0, // Not available in EscrowInitialized event (would need to query contract)
+            offered_amount: event.amount, // Amount from event
+            desired_metadata: "{}".to_string(), // Not used for inflow escrows
+            desired_amount: 0, // Not used for inflow escrows
+            expiry_time: event.expiry, // Expiry from event
             revocable: false, // EVM escrows are always non-revocable
             reserved_solver: Some(event.reserved_solver.clone()),
             chain_id: connected_chain_evm.chain_id,

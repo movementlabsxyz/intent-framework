@@ -31,9 +31,14 @@ describe("IntentEscrow - Integration Tests", function () {
     await token.connect(requester).approve(escrow.target, amount);
     
     // Step 2: Create escrow and verify EscrowInitialized event
-    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
+    const tx = await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
+    const receipt = await tx.wait();
+    const block = await ethers.provider.getBlock(receipt.blockNumber);
+    const expectedExpiry = BigInt(block.timestamp) + BigInt(await escrow.EXPIRY_DURATION());
+    
+    await expect(tx)
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address, amount, expectedExpiry);
     
     // Step 3: Verify escrow state
     const escrowDataBefore = await escrow.getEscrow(intentId);
@@ -125,9 +130,14 @@ describe("IntentEscrow - Integration Tests", function () {
     await token.connect(requester).approve(escrow.target, amount);
     
     // Test EscrowInitialized event
-    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
+    const tx = await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
+    const receipt = await tx.wait();
+    const block = await ethers.provider.getBlock(receipt.blockNumber);
+    const expectedExpiry = BigInt(block.timestamp) + BigInt(await escrow.EXPIRY_DURATION());
+    
+    await expect(tx)
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address, amount, expectedExpiry);
     
     // Test EscrowClaimed event
     // Signature is over intentId only (signature itself is the approval)
@@ -152,9 +162,14 @@ describe("IntentEscrow - Integration Tests", function () {
     await token.mint(requester.address, amount);
     await token.connect(requester).approve(escrow.target, amount);
     
-    await expect(escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address))
+    const tx = await escrow.connect(requester).createEscrow(intentId, token.target, amount, solver.address);
+    const receipt = await tx.wait();
+    const block = await ethers.provider.getBlock(receipt.blockNumber);
+    const expectedExpiry = BigInt(block.timestamp) + BigInt(await escrow.EXPIRY_DURATION());
+    
+    await expect(tx)
       .to.emit(escrow, "EscrowInitialized")
-      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address);
+      .withArgs(intentId, escrow.target, requester.address, token.target, solver.address, amount, expectedExpiry);
     
     // Step 2: Verify escrow state before expiry
     const escrowDataBefore = await escrow.getEscrow(intentId);

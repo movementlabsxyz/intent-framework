@@ -32,8 +32,7 @@ contract IntentEscrow {
     mapping(uint256 => Escrow) public escrows;
 
     /// @notice Events
-    event EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver);
-    event DepositMade(uint256 indexed intentId, address indexed requester, uint256 amount, uint256 total);
+    event EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver, uint256 amount, uint256 expiry);
     event EscrowClaimed(uint256 indexed intentId, address indexed recipient, uint256 amount);
     event EscrowCancelled(uint256 indexed intentId, address indexed requester, uint256 amount);
 
@@ -86,8 +85,6 @@ contract IntentEscrow {
             reservedSolver: reservedSolver
         });
 
-        emit EscrowInitialized(intentId, address(this), msg.sender, token, reservedSolver);
-
         // Deposit funds atomically
         if (token == address(0)) {
             // ETH deposit
@@ -100,7 +97,7 @@ contract IntentEscrow {
             escrows[intentId].amount = amount;
         }
 
-        emit DepositMade(intentId, msg.sender, amount, amount);
+        emit EscrowInitialized(intentId, address(this), msg.sender, token, reservedSolver, amount, escrows[intentId].expiry);
     }
 
 

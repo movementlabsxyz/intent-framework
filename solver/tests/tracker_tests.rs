@@ -43,6 +43,7 @@ fn create_test_config() -> SolverConfig {
 
 fn create_test_draft_data() -> DraftintentData {
     DraftintentData {
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
         offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         offered_amount: 1000,
         offered_chain_id: 2, // Connected chain (inflow)

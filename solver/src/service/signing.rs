@@ -322,6 +322,7 @@ pub fn parse_draft_data(draft_data: &Value) -> Result<DraftintentData> {
     // Extract fields from draft_data JSON
     // Expected format (simple strings for metadata, strings for numbers):
     // {
+    //   "intent_id": "0x...",
     //   "offered_metadata": "0x...",
     //   "offered_amount": "1000",
     //   "offered_chain_id": "1",
@@ -329,6 +330,10 @@ pub fn parse_draft_data(draft_data: &Value) -> Result<DraftintentData> {
     //   "desired_amount": "2000",
     //   "desired_chain_id": "2",
     // }
+
+    let intent_id = draft_data["intent_id"]
+        .as_str()
+        .context("Missing or invalid intent_id")?;
 
     let offered_metadata = draft_data["offered_metadata"]
         .as_str()
@@ -363,6 +368,7 @@ pub fn parse_draft_data(draft_data: &Value) -> Result<DraftintentData> {
         .context("desired_chain_id must be a valid number")?;
 
     Ok(DraftintentData {
+        intent_id: intent_id.to_string(),
         offered_token: offered_metadata.to_string(),
         offered_amount,
         offered_chain_id,

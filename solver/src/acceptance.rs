@@ -27,6 +27,7 @@ pub struct AcceptanceConfig {
 /// Draft-intent data from verifier API
 #[derive(Debug, Clone)]
 pub struct DraftintentData {
+    pub intent_id: String,          // Intent ID (hex string)
     pub offered_token: String,      // Contract address
     pub offered_amount: u64,
     pub offered_chain_id: u64,

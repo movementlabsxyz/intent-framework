@@ -14,6 +14,7 @@ use std::sync::Arc;
 /// Create a base draft data JSON with valid test values
 fn create_base_draft_data() -> serde_json::Value {
     json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": "1000",
         "offered_chain_id": "1",
@@ -100,6 +101,7 @@ fn test_parse_draft_data_success() {
 #[test]
 fn test_parse_draft_data_missing_offered_metadata() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_amount": "1000",
         "offered_chain_id": "1",
         "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -117,6 +119,7 @@ fn test_parse_draft_data_missing_offered_metadata() {
 #[test]
 fn test_parse_draft_data_invalid_offered_metadata_type() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": 12345,
         "offered_amount": "1000",
         "offered_chain_id": "1",
@@ -135,6 +138,7 @@ fn test_parse_draft_data_invalid_offered_metadata_type() {
 #[test]
 fn test_parse_draft_data_missing_offered_amount() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_chain_id": "1",
         "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -152,6 +156,7 @@ fn test_parse_draft_data_missing_offered_amount() {
 #[test]
 fn test_parse_draft_data_invalid_offered_amount() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": "not_a_number",
         "offered_chain_id": "1",
@@ -170,6 +175,7 @@ fn test_parse_draft_data_invalid_offered_amount() {
 #[test]
 fn test_parse_draft_data_missing_offered_chain_id() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": "1000",
         "desired_metadata": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -187,6 +193,7 @@ fn test_parse_draft_data_missing_offered_chain_id() {
 #[test]
 fn test_parse_draft_data_missing_desired_metadata() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": "1000",
         "offered_chain_id": "1",
@@ -204,6 +211,7 @@ fn test_parse_draft_data_missing_desired_metadata() {
 #[test]
 fn test_parse_draft_data_missing_desired_amount() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": "1000",
         "offered_chain_id": "1",
@@ -221,6 +229,7 @@ fn test_parse_draft_data_missing_desired_amount() {
 #[test]
 fn test_parse_draft_data_missing_desired_chain_id() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": "1000",
         "offered_chain_id": "1",
@@ -248,6 +257,7 @@ fn test_parse_draft_data_empty_json() {
 #[test]
 fn test_parse_draft_data_zero_amounts() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": "0",
         "offered_chain_id": "1",
@@ -266,6 +276,7 @@ fn test_parse_draft_data_zero_amounts() {
 #[test]
 fn test_parse_draft_data_max_amounts() {
     let draft_data = json!({
+        "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
         "offered_metadata": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "offered_amount": u64::MAX.to_string(),
         "offered_chain_id": "1",

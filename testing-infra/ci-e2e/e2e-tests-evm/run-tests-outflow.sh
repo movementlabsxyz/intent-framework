@@ -111,7 +111,7 @@ log_and_echo "   3. Call verifier to validate and get approval signature"
 log_and_echo "   4. Fulfill the hub intent with approval"
 log_and_echo ""
 
-if ! wait_for_solver_fulfillment "$INTENT_ID" "outflow" 90; then
+if ! wait_for_solver_fulfillment "$INTENT_ID" "outflow" 30; then
     log_and_echo "❌ ERROR: Solver did not fulfill the intent automatically"
     log_and_echo "   Check solver logs for errors"
     exit 1

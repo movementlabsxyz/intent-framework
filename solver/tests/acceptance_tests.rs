@@ -67,6 +67,7 @@ fn test_config() -> AcceptanceConfig {
 /// ```
 fn create_base_draft_data() -> DraftintentData {
     DraftintentData {
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
         offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         offered_amount: 1000000,
         offered_chain_id: 1,

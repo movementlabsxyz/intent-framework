@@ -122,9 +122,8 @@ impl IntentTracker {
         let hub_chain_id = self.hub_config.chain_id;
         let is_inflow = draft_data.offered_chain_id != hub_chain_id;
 
-        // Generate intent_id from draft_id (for now, use draft_id as intent_id)
-        // In production, this would be derived from the draft data
-        let intent_id = draft_id.clone();
+        // Use the actual intent_id from draft data (not the draft UUID)
+        let intent_id = draft_data.intent_id.clone();
 
         let tracked = TrackedIntent {
             draft_id: draft_id.clone(),

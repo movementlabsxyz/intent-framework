@@ -49,6 +49,7 @@ fn create_test_config() -> SolverConfig {
 #[allow(dead_code)]
 fn create_test_outflow_draft_data() -> solver::acceptance::DraftintentData {
     solver::acceptance::DraftintentData {
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
         offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         offered_amount: 1000,
         offered_chain_id: 1, // Hub chain (outflow)

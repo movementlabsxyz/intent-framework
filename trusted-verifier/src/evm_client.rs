@@ -461,5 +461,123 @@ impl EvmClient {
     pub fn base_url(&self) -> &str {
         &self.base_url
     }
+
+    /// Queries escrow details from the IntentEscrow contract
+    ///
+    /// Calls getEscrow(uint256 intentId) which returns:
+    /// (address requester, address token, uint256 amount, bool isClaimed, uint256 expiry, address reservedSolver)
+    ///
+    /// # Arguments
+    ///
+    /// * `intent_id` - Intent ID (hex string with 0x prefix)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(EscrowDetails)` - Escrow details including amount
+    /// * `Err(anyhow::Error)` - Failed to query escrow
+    pub async fn get_escrow(&self, intent_id: &str) -> Result<EscrowDetails> {
+        // getEscrow(uint256) function selector
+        // keccak256("getEscrow(uint256)") = first 4 bytes
+        let mut hasher = Keccak256::new();
+        hasher.update(b"getEscrow(uint256)");
+        let selector = &hasher.finalize()[..4];
+        let selector_hex = hex::encode(selector);
+
+        // Encode intent_id as uint256 (32 bytes, padded)
+        let intent_id_clean = intent_id.strip_prefix("0x").unwrap_or(intent_id);
+        let intent_id_padded = format!("{:0>64}", intent_id_clean);
+
+        let data = format!("0x{}{}", selector_hex, intent_id_padded);
+
+        let request = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "eth_call".to_string(),
+            params: vec![
+                serde_json::json!({
+                    "to": self.escrow_contract_address,
+                    "data": data
+                }),
+                serde_json::json!("latest"),
+            ],
+            id: 1,
+        };
+
+        let response: JsonRpcResponse<String> = self
+            .client
+            .post(&self.base_url)
+            .json(&request)
+            .send()
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to send eth_call (getEscrow) request to {}",
+                    self.base_url
+                )
+            })?
+            .json()
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to parse eth_call (getEscrow) response from {}",
+                    self.base_url
+                )
+            })?;
+
+        if let Some(error) = response.error {
+            return Err(anyhow::anyhow!(
+                "JSON-RPC error from {}: {} (code: {})",
+                self.base_url,
+                error.message,
+                error.code
+            ));
+        }
+
+        let result = response
+            .result
+            .ok_or_else(|| anyhow::anyhow!("No result in getEscrow response"))?;
+
+        // Parse the response: (address, address, uint256, bool, uint256, address)
+        // Each field is 32 bytes (64 hex chars)
+        let data = result.strip_prefix("0x").unwrap_or(&result);
+
+        if data.len() < 384 {
+            // 6 fields * 64 chars = 384
+            return Err(anyhow::anyhow!(
+                "Invalid getEscrow response length: {} (expected 384)",
+                data.len()
+            ));
+        }
+
+        // Parse each 32-byte field
+        let requester = format!("0x{}", &data[24..64]); // address in last 20 bytes
+        let token = format!("0x{}", &data[88..128]);
+        let amount = u64::from_str_radix(&data[128..192], 16)
+            .context("Failed to parse escrow amount")?;
+        let is_claimed = &data[192..256] != "0000000000000000000000000000000000000000000000000000000000000000";
+        let expiry = u64::from_str_radix(&data[256..320], 16)
+            .context("Failed to parse escrow expiry")?;
+        let reserved_solver = format!("0x{}", &data[344..384]);
+
+        Ok(EscrowDetails {
+            requester,
+            token,
+            amount,
+            is_claimed,
+            expiry,
+            reserved_solver,
+        })
+    }
+}
+
+/// Escrow details from the IntentEscrow contract
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct EscrowDetails {
+    pub requester: String,
+    pub token: String,
+    pub amount: u64,
+    pub is_claimed: bool,
+    pub expiry: u64,
+    pub reserved_solver: String,
 }
 

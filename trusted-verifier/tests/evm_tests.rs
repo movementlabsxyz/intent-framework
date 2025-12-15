@@ -19,3 +19,6 @@ mod monitor_tests;
 
 #[path = "evm/cross_chain_tests.rs"]
 mod cross_chain_tests;
+
+#[path = "evm/escrow_parsing_tests.rs"]
+mod escrow_parsing_tests;

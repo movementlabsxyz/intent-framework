@@ -155,7 +155,7 @@ if [ -z "$RETRIEVED_SIGNATURE" ] || [ "$RETRIEVED_SIGNATURE" = "null" ]; then
     log_and_echo "🔍 Diagnostics:"
     
     # Check if solver is running
-    SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver-evm.log"
+    SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver.log"
     if [ -f "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid" ]; then
         SOLVER_PID=$(cat "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid")
         if ps -p "$SOLVER_PID" > /dev/null 2>&1; then

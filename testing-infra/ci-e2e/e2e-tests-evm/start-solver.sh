@@ -139,12 +139,12 @@ unset MOVEMENT_SOLVER_PRIVATE_KEY
 log "   Unset MOVEMENT_SOLVER_PRIVATE_KEY (E2E tests use profile keys only)"
 
 # Start the solver service
-if start_solver "$LOG_DIR/solver-evm.log" "info" "$SOLVER_CONFIG"; then
+if start_solver "$LOG_DIR/solver.log" "info" "$SOLVER_CONFIG"; then
     log ""
     log_and_echo "✅ Solver started successfully"
     log_and_echo "   PID: $SOLVER_PID"
     log_and_echo "   Config: $SOLVER_CONFIG"
-    log_and_echo "   Logs: $LOG_DIR/solver-evm.log"
+    log_and_echo "   Logs: $LOG_DIR/solver.log"
 else
     log ""
     log_and_echo "⚠️  Solver failed to start"
@@ -158,7 +158,7 @@ else
         popd > /dev/null
         
         # Try starting again
-        if start_solver "$LOG_DIR/solver-evm.log" "info" "$SOLVER_CONFIG"; then
+        if start_solver "$LOG_DIR/solver.log" "info" "$SOLVER_CONFIG"; then
             log_and_echo "✅ Solver started successfully after build"
         else
             log_and_echo "❌ Solver still failed to start after build"

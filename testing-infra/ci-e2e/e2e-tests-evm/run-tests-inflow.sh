@@ -64,7 +64,7 @@ log_and_echo "======================================="
 ./testing-infra/ci-e2e/e2e-tests-evm/start-solver.sh
 
 # Verify solver started and show logs if it failed
-SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver-evm.log"
+SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver.log"
 if [ -f "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid" ]; then
     SOLVER_PID=$(cat "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid")
     if ps -p "$SOLVER_PID" > /dev/null 2>&1; then

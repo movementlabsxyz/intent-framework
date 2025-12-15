@@ -1054,10 +1054,7 @@ wait_for_solver_fulfillment() {
     log "========================================"
     
     # Show solver logs
-    local solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver-evm.log"
-    if [ ! -f "$solver_log_file" ]; then
-        solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver-mvm.log"
-    fi
+    local solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver.log"
     
     if [ -f "$solver_log_file" ]; then
         log ""

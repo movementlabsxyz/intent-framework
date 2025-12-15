@@ -60,7 +60,7 @@ SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
 log ""
 log "📊 Capturing initial balances for validation..."
 
-# Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh
+# Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent
 
 # Get Solver's initial USDxyz balance on EVM Chain 3
 cd evm-intent-framework
@@ -310,7 +310,7 @@ log "   - Waiting for transactions to be fully processed..."
 sleep 5
 
 # Get final balances
-# Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh
+# Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent
 
 cd evm-intent-framework
 SOLVER_CHAIN3_USDXYZ_FINAL_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$USDXYZ_ADDRESS' ACCOUNT='$SOLVER_EVM_ADDRESS' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1)
@@ -325,7 +325,7 @@ fi
 
 # For inflow flow:
 # - Solver on EVM Chain 3 should have received 1 USDxyz (matches intent offered_amount) from escrow release
-# Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
+# Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent (hub intent fulfillment)
 
 SOLVER_CHAIN3_USDXYZ_EXPECTED="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
 

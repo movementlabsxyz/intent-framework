@@ -51,7 +51,7 @@ fi
 # ============================================================================
 log ""
 log "📊 Capturing initial balances for validation..."
-# Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
+# Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent
 # We only need to check Solver's balance on Chain 2 (escrow release)
 
 # Get test-tokens addresses for USDxyz balance checks
@@ -456,13 +456,13 @@ log "   - Waiting for transactions to be fully processed..."
 sleep 10
 
 # Get current USDxyz balances
-# Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
+# Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent
 SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
 SOLVER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
 # For inflow flow:
 # - Solver on Chain 2 should have received 1 USDxyz from escrow release
-# Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)
+# Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent
 
 ESCROW_USDXYZ_AMOUNT=1000000  # 1 USDxyz (6 decimals = 1_000_000)
 SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED=1000000  # 1 USDxyz = 1_000_000 (no deduction)

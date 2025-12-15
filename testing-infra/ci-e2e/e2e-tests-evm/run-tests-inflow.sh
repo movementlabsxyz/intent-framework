@@ -95,7 +95,31 @@ log_and_echo "🚀 Step 4: Submitting cross-chain intents via verifier negotiati
 log_and_echo "============================================================================="
 ./testing-infra/ci-e2e/e2e-tests-evm/inflow-submit-hub-intent.sh
 ./testing-infra/ci-e2e/e2e-tests-evm/inflow-submit-escrow.sh
-./testing-infra/ci-e2e/e2e-tests-evm/inflow-fulfill-hub-intent.sh
+
+# Load intent ID for solver fulfillment wait
+if ! load_intent_info "INTENT_ID"; then
+    log_and_echo "❌ ERROR: Failed to load intent info"
+    exit 1
+fi
+
+log_and_echo ""
+log_and_echo "🤖 Step 4b: Waiting for solver to automatically fulfill..."
+log_and_echo "==========================================================="
+log_and_echo "   The solver service is running and will:"
+log_and_echo "   1. Detect the escrow on connected EVM chain"
+log_and_echo "   2. Fulfill the intent on hub chain"
+log_and_echo "   3. Verifier will detect fulfillment and generate approval"
+log_and_echo ""
+
+if ! wait_for_solver_fulfillment "$INTENT_ID" "inflow" 90; then
+    log_and_echo "❌ ERROR: Solver did not fulfill the intent automatically"
+    log_and_echo "   Check solver logs for errors"
+    exit 1
+fi
+
+log_and_echo "✅ Solver fulfilled the intent automatically!"
+log_and_echo ""
+
 ./testing-infra/ci-e2e/e2e-tests-evm/release-escrow.sh
 
 log_and_echo ""
@@ -108,6 +132,8 @@ log_and_echo ""
 log_and_echo "📊 Test Summary:"
 log_and_echo "   ✅ Inflow tests: Tokens transferred from connected EVM chain to hub chain"
 log_and_echo "   ✅ Verifier negotiation routing: Draft submission and signature retrieval"
+log_and_echo "   ✅ Solver automation: Solver automatically detected escrow and fulfilled intent"
+log_and_echo "   ✅ Verifier automation: Verifier detected fulfillment and generated approval"
 
 log_and_echo ""
 log_and_echo "🧹 Step 5: Cleaning up chains, accounts and processes..."

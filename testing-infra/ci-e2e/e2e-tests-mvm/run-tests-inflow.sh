@@ -96,9 +96,32 @@ echo "   - Waiting for transactions to be finalized and events to be queryable..
 sleep 5
 
 echo ""
-echo "🚀 Step 5: Completing inflow flow (fulfillment and escrow release)..."
-echo "==================================================================="
-./testing-infra/ci-e2e/e2e-tests-mvm/inflow-fulfill-hub-intent.sh
+echo "🚀 Step 5: Waiting for solver to automatically fulfill..."
+echo "=========================================================="
+
+# Load intent ID for solver fulfillment wait
+if ! load_intent_info "INTENT_ID"; then
+    echo "❌ ERROR: Failed to load intent info"
+    exit 1
+fi
+
+echo "   The solver service is running and will:"
+echo "   1. Detect the escrow on connected MVM chain"
+echo "   2. Fulfill the intent on hub chain"
+echo "   3. Verifier will detect fulfillment and generate approval"
+echo ""
+
+if ! wait_for_solver_fulfillment "$INTENT_ID" "inflow" 90; then
+    echo "❌ ERROR: Solver did not fulfill the intent automatically"
+    echo "   Check solver logs for errors"
+    exit 1
+fi
+
+echo "✅ Solver fulfilled the intent automatically!"
+echo ""
+
+echo "🔓 Step 5b: Releasing escrow on connected chain..."
+echo "==================================================="
 ./testing-infra/ci-e2e/e2e-tests-mvm/release-escrow.sh
 
 echo ""
@@ -111,6 +134,8 @@ echo ""
 echo "📊 Test Summary:"
 echo "   ✅ Inflow tests: Tokens transferred from connected chain to hub chain"
 echo "   ✅ Verifier negotiation routing: Draft submission and signature retrieval"
+echo "   ✅ Solver automation: Solver automatically detected escrow and fulfilled intent"
+echo "   ✅ Verifier automation: Verifier detected fulfillment and generated approval"
 echo ""
 
 echo "🧹 Step 6: Cleaning up chains, accounts and processes..."

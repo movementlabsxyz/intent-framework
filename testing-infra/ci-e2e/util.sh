@@ -995,3 +995,104 @@ build_draft_data() {
     echo "$json"
 }
 
+# Wait for solver to automatically fulfill an intent
+# Polls the verifier's /events endpoint for fulfillment events matching the intent
+# Usage: wait_for_solver_fulfillment <intent_id> <flow_type> [timeout_seconds]
+#   intent_id: The intent ID to wait for
+#   flow_type: "inflow" or "outflow"
+#   timeout_seconds: Maximum wait time (default: 60)
+# Returns: 0 on success, 1 on timeout
+wait_for_solver_fulfillment() {
+    local intent_id="$1"
+    local flow_type="$2"
+    local timeout_seconds="${3:-60}"
+    local poll_interval=3
+    local elapsed=0
+    
+    local verifier_url="${VERIFIER_URL:-http://127.0.0.1:3333}"
+    
+    log ""
+    log "⏳ Waiting for solver to automatically fulfill $flow_type intent..."
+    log "   Intent ID: $intent_id"
+    log "   Timeout: ${timeout_seconds}s (polling every ${poll_interval}s)"
+    log "   The solver service should detect the escrow/intent and fulfill automatically."
+    log ""
+    
+    # Normalize intent_id for comparison (remove 0x prefix and leading zeros)
+    local normalized_intent_id
+    normalized_intent_id=$(echo "$intent_id" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//' | sed 's/^0*//')
+    
+    while [ $elapsed -lt $timeout_seconds ]; do
+        # Check for fulfillment event in verifier
+        local events_response
+        events_response=$(curl -s "${verifier_url}/events" 2>/dev/null)
+        
+        if [ $? -eq 0 ]; then
+            # Check if fulfillment event exists for this intent
+            local fulfillment_found
+            fulfillment_found=$(echo "$events_response" | jq -r --arg nid "$normalized_intent_id" \
+                '.data.fulfillment_events[]? | select(.intent_id | ascii_downcase | gsub("^0x"; "") | gsub("^0+"; "") == $nid) | .intent_id' \
+                2>/dev/null | head -1)
+            
+            if [ -n "$fulfillment_found" ]; then
+                log "   ✅ Solver fulfilled the intent! (detected after ${elapsed}s)"
+                log "   Fulfillment event found for intent: $fulfillment_found"
+                return 0
+            fi
+        fi
+        
+        printf "   Waiting for solver... (%ds/%ds)\r" $elapsed $timeout_seconds
+        sleep $poll_interval
+        elapsed=$((elapsed + poll_interval))
+    done
+    
+    # Timeout - show diagnostic info
+    log ""
+    log_and_echo "⏰ Timeout waiting for solver fulfillment after ${timeout_seconds}s"
+    log ""
+    log "🔍 Diagnostic Information:"
+    log "========================================"
+    
+    # Show solver logs
+    local solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver-evm.log"
+    if [ ! -f "$solver_log_file" ]; then
+        solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver-mvm.log"
+    fi
+    
+    if [ -f "$solver_log_file" ]; then
+        log ""
+        log "   Solver logs (last 50 lines):"
+        log "   + + + + + + + + + + + + + + + + + + + +"
+        tail -50 "$solver_log_file" | while IFS= read -r line; do log "   $line"; done
+        log "   + + + + + + + + + + + + + + + + + + + +"
+    else
+        log "   Solver log file not found at: $solver_log_file"
+    fi
+    
+    # Show verifier events
+    log ""
+    log "   Verifier events:"
+    local events_response
+    events_response=$(curl -s "${verifier_url}/events" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        local escrow_count fulfillment_count intent_count
+        escrow_count=$(echo "$events_response" | jq -r '.data.escrow_events | length' 2>/dev/null || echo "0")
+        fulfillment_count=$(echo "$events_response" | jq -r '.data.fulfillment_events | length' 2>/dev/null || echo "0")
+        intent_count=$(echo "$events_response" | jq -r '.data.intent_events | length' 2>/dev/null || echo "0")
+        
+        log "      Intent events: $intent_count"
+        log "      Escrow events: $escrow_count"
+        log "      Fulfillment events: $fulfillment_count"
+        
+        if [ "$escrow_count" != "0" ]; then
+            log ""
+            log "      Escrow details:"
+            echo "$events_response" | jq -r '.data.escrow_events[] | "         \(.intent_id) - amount: \(.offered_amount)"' 2>/dev/null || log "         (parse error)"
+        fi
+    else
+        log "      Failed to query verifier events"
+    fi
+    
+    return 1
+}
+

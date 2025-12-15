@@ -255,12 +255,8 @@ impl ConnectedEvmClient {
         amount: u64,
         intent_id: &str,
     ) -> Result<String> {
-        // Determine project root (assume we're in solver/ directory, go up one level)
-        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
-        let project_root = current_dir
-            .parent()
-            .context("Failed to determine project root (expected solver/ to be subdirectory)")?;
-
+        // Solver runs from project root in CI and local E2E tests
+        let project_root = std::env::current_dir().context("Failed to get current directory")?;
         let evm_framework_dir = project_root.join("evm-intent-framework");
         if !evm_framework_dir.exists() {
             anyhow::bail!(
@@ -377,13 +373,8 @@ impl ConnectedEvmClient {
             format!("0x{}", intent_id)
         };
 
-        // Determine project root (assume we're in solver/ directory, go up one level)
-        // This matches how E2E scripts determine PROJECT_ROOT
-        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
-        let project_root = current_dir
-            .parent()
-            .context("Failed to determine project root (expected solver/ to be subdirectory)")?;
-
+        // Solver runs from project root in CI and local E2E tests
+        let project_root = std::env::current_dir().context("Failed to get current directory")?;
         let evm_framework_dir = project_root.join("evm-intent-framework");
         if !evm_framework_dir.exists() {
             anyhow::bail!(
@@ -393,7 +384,6 @@ impl ConnectedEvmClient {
         }
 
         // Call Hardhat script via npx (using nix develop to ensure correct environment)
-        // This matches the E2E script approach: nix develop "$PROJECT_ROOT" -c bash -c "cd ... && npx hardhat run ..."
         // Pass BASE_SEPOLIA_RPC_URL so Hardhat can configure the baseSepolia network
         // Pass BASE_SOLVER_PRIVATE_KEY for signing (signers[2] in the script)
         let solver_private_key = std::env::var("BASE_SOLVER_PRIVATE_KEY").unwrap_or_default();

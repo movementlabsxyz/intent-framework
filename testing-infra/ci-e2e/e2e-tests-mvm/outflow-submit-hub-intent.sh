@@ -169,9 +169,9 @@ if [ -z "$RETRIEVED_SIGNATURE" ] || [ "$RETRIEVED_SIGNATURE" = "null" ]; then
     # Show solver log
     if [ -f "$SOLVER_LOG_FILE" ]; then
         log_and_echo ""
-        log_and_echo "   📋 Solver log (last 50 lines):"
+        log_and_echo "   📋 Solver log (last 100 lines):"
         log_and_echo "   ----------------------------------------"
-        tail -50 "$SOLVER_LOG_FILE" | while read line; do log_and_echo "   $line"; done
+        tail -100 "$SOLVER_LOG_FILE" | while read line; do log_and_echo "   $line"; done
         log_and_echo "   ----------------------------------------"
     else
         log_and_echo "   ⚠️  Solver log file not found: $SOLVER_LOG_FILE"

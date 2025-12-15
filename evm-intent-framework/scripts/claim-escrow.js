@@ -23,19 +23,34 @@ async function main() {
     throw new Error("Missing required environment variables: ESCROW_ADDRESS, INTENT_ID_EVM, SIGNATURE_HEX");
   }
 
-  // Get solver private key from environment (for testnet) or use Hardhat signers (for local testing)
+  // Get solver signer
+  // For in-memory Hardhat network (unit tests): use hre.ethers.getSigners()
+  // For external networks (E2E tests): use raw ethers to avoid HardhatEthersProvider.resolveName bug
   let solver;
-  if (process.env.BASE_SOLVER_PRIVATE_KEY) {
-    // Testnet: Create wallet from private key
-    const provider = hre.ethers.provider;
-    solver = new hre.ethers.Wallet(process.env.BASE_SOLVER_PRIVATE_KEY, provider);
-  } else {
-    // Local testing: Use Hardhat signers
+  
+  if (hre.network.name === "hardhat") {
+    // In-memory Hardhat network (unit tests) - getSigners() works fine here
     const signers = await hre.ethers.getSigners();
     if (signers.length < 3) {
-      throw new Error(`Expected at least 3 signers for local testing, but got ${signers.length}. For testnet, set BASE_SOLVER_PRIVATE_KEY environment variable.`);
+      throw new Error(`Expected at least 3 signers, got ${signers.length}`);
     }
     solver = signers[2];
+  } else if (process.env.BASE_SOLVER_PRIVATE_KEY) {
+    // Testnet: Create wallet from private key using raw ethers
+    const { ethers } = require("ethers");
+    const rpcUrl = hre.network.config.url || "http://127.0.0.1:8545";
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    solver = new ethers.Wallet(process.env.BASE_SOLVER_PRIVATE_KEY, provider);
+  } else {
+    // External network (E2E tests): use raw ethers to avoid resolveName bug
+    const { ethers } = require("ethers");
+    const rpcUrl = hre.network.config.url || "http://127.0.0.1:8545";
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const accounts = await provider.send("eth_accounts", []);
+    if (accounts.length < 3) {
+      throw new Error(`Expected at least 3 accounts from Hardhat node, got ${accounts.length}`);
+    }
+    solver = await provider.getSigner(accounts[2]);
   }
   
   const escrow = await hre.ethers.getContractAt("IntentEscrow", escrowAddress);

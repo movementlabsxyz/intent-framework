@@ -1022,8 +1022,10 @@ wait_for_solver_fulfillment() {
     local normalized_intent_id
     normalized_intent_id=$(echo "$intent_id" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//' | sed 's/^0*//')
     
+    local solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver.log"
+    
     while [ $elapsed -lt $timeout_seconds ]; do
-        # Check for fulfillment event in verifier
+        # Check for fulfillment event in verifier (works for inflow)
         local events_response
         events_response=$(curl -s "${verifier_url}/events" 2>/dev/null)
         
@@ -1035,8 +1037,20 @@ wait_for_solver_fulfillment() {
                 2>/dev/null | head -1)
             
             if [ -n "$fulfillment_found" ]; then
-                log "   ✅ Solver fulfilled the intent! (detected after ${elapsed}s)"
+                log "   ✅ Solver fulfilled the intent! (detected via verifier after ${elapsed}s)"
                 log "   Fulfillment event found for intent: $fulfillment_found"
+                return 0
+            fi
+        fi
+        
+        # Also check solver logs for successful fulfillment (works for outflow)
+        # Note: fa_intent_with_oracle doesn't emit LimitOrderFulfillmentEvent, so we check solver logs
+        # Use normalized_intent_id (without leading zeros) since solver logs may strip them
+        if [ -f "$solver_log_file" ]; then
+            # Search for intent ID with or without leading zeros (0xd86... or 0x000d86...)
+            local intent_id_no_zeros="0x${normalized_intent_id}"
+            if grep -qi "Successfully fulfilled.*${intent_id_no_zeros}" "$solver_log_file" 2>/dev/null; then
+                log "   ✅ Solver fulfilled the intent! (detected via solver logs after ${elapsed}s)"
                 return 0
             fi
         fi
@@ -1053,14 +1067,12 @@ wait_for_solver_fulfillment() {
     log "🔍 Diagnostic Information:"
     log "========================================"
     
-    # Show solver logs
-    local solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver.log"
-    
+    # Show solver logs (solver_log_file already declared above)
     if [ -f "$solver_log_file" ]; then
         log ""
-        log "   Solver logs (last 50 lines):"
+        log "   Solver logs (last 100 lines):"
         log "   + + + + + + + + + + + + + + + + + + + +"
-        tail -50 "$solver_log_file" | while IFS= read -r line; do log "   $line"; done
+        tail -100 "$solver_log_file" | while IFS= read -r line; do log "   $line"; done
         log "   + + + + + + + + + + + + + + + + + + + +"
     else
         log "   Solver log file not found at: $solver_log_file"

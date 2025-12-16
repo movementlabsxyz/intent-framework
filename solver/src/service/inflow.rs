@@ -119,7 +119,9 @@ impl InflowService {
             ConnectedChainClient::Mvm(client) => {
                 // Convert EscrowEvent to a common format for matching
                 let events = client.get_escrow_events(&requester_addresses, None).await?;
-                info!("Found {} MVM escrow events", events.len());
+                if !events.is_empty() {
+                    info!("Found {} MVM escrow events", events.len());
+                }
                 events
                     .into_iter()
                     .map(|e| EscrowMatch {
@@ -136,11 +138,6 @@ impl InflowService {
                     Ok(events) => {
                         if !events.is_empty() {
                             info!("Found {} EVM escrow events", events.len());
-                            for event in &events {
-                                info!("EVM escrow event: intent_id={}, escrow={}", event.intent_id, event.escrow);
-                            }
-                        } else {
-                            info!("Found 0 EVM escrow events");
                         }
                         events
                     }

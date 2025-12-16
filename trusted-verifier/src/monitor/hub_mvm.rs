@@ -217,10 +217,9 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 // used for caching and validation
                 
                 // Determine desired_metadata string format:
-                // - If desired_metadata_address is Some: cross-chain intent, construct {"token":"0x..."} format
-                // - If desired_metadata_address is None: same-chain intent, use Object<Metadata> format {"inner":"0x..."}
+                // Use {"inner":"0x..."} to match Move's native Object<Metadata> serialization
                 let desired_metadata_str = if let Some(addr) = &data.desired_metadata_address {
-                    format!(r#"{{"token":"{}"}}"#, addr)
+                    format!(r#"{{"inner":"{}"}}"#, addr)
                 } else {
                     serde_json::to_string(&data.desired_metadata).unwrap_or_default()
                 };
@@ -274,10 +273,9 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 let reserved_solver = data.reserved_solver.clone();
                 
                 // Determine offered_metadata string format:
-                // - If offered_metadata_address is Some: cross-chain intent, construct {"token":"0x..."} format
-                // - If offered_metadata_address is None: same-chain intent, use Object<Metadata> format {"inner":"0x..."}
+                // Use {"inner":"0x..."} to match Move's native Object<Metadata> serialization
                 let offered_metadata_str = if let Some(addr) = &data.offered_metadata_address {
-                    format!(r#"{{"token":"{}"}}"#, addr)
+                    format!(r#"{{"inner":"{}"}}"#, addr)
                 } else {
                     serde_json::to_string(&data.offered_metadata).unwrap_or_default()
                 };
@@ -343,10 +341,9 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 // used for caching and validation
                 
                 // Determine desired_metadata string format:
-                // - If desired_metadata_address is Some: cross-chain intent, construct {"token":"0x..."} format
-                // - If desired_metadata_address is None: same-chain intent, use Object<Metadata> format {"inner":"0x..."}
+                // Use {"inner":"0x..."} to match Move's native Object<Metadata> serialization
                 let desired_metadata_str = if let Some(addr) = &data.desired_metadata_address {
-                    format!(r#"{{"token":"{}"}}"#, addr)
+                    format!(r#"{{"inner":"{}"}}"#, addr)
                 } else {
                     serde_json::to_string(&data.desired_metadata).unwrap_or_default()
                 };

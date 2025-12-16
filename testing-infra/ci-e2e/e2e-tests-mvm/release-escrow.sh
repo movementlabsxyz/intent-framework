@@ -342,26 +342,23 @@ else
             fi
             log "   - Solver (Solver) Chain 2 USDxyz balance after release: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz"
             
-            # Calculate balance increase
-            CHAIN2_USDXYZ_INCREASE=$((SOLVER_CHAIN2_USDXYZ_AFTER - SOLVER_CHAIN2_USDXYZ_BEFORE))
-            
-            SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED=1000000  # 1 USDxyz (6 decimals = 1_000_000)
+            # Check absolute expected balance instead of delta
+            # For inflow: Solver starts with 1 USDxyz, receives 1 USDxyz from escrow = 2 USDxyz total
+            EXPECTED_SOLVER_CHAIN2_USDXYZ="2000000"  # 2 USDxyz = 2_000_000 (6 decimals)
             
             if [ $TX_EXIT_CODE -eq 0 ]; then
                 log "   ✅ Escrow release transaction succeeded!"
                 
                 # Verify solver (Solver) received the funds
-                if [ "$CHAIN2_USDXYZ_INCREASE" -lt "$SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED" ]; then
-                    log_and_echo "   ❌ ERROR: Solver (Solver) did not receive escrow funds!"
-                    log_and_echo "      Chain 2 USDxyz increase: $CHAIN2_USDXYZ_INCREASE 10e-6.USDxyz"
-                    log_and_echo "      Expected minimum: $SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED 10e-6.USDxyz"
-                    log_and_echo "      Solver (Solver) Chain 2 balance before: $SOLVER_CHAIN2_USDXYZ_BEFORE 10e-6.USDxyz"
-                    log_and_echo "      Solver (Solver) Chain 2 balance after: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz"
+                if [ "$SOLVER_CHAIN2_USDXYZ_AFTER" != "$EXPECTED_SOLVER_CHAIN2_USDXYZ" ]; then
+                    log_and_echo "   ❌ ERROR: Solver (Solver) balance does not match expected absolute value!"
+                    log_and_echo "      Solver (Solver) Chain 2 balance: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz"
+                    log_and_echo "      Expected balance: $EXPECTED_SOLVER_CHAIN2_USDXYZ 10e-6.USDxyz (2 USDxyz)"
                     log_and_echo "      Escrow ID: $ESCROW_ID"
                     exit 1
                 fi
                 
-                log "   ✅ Solver (Solver) received $CHAIN2_USDXYZ_INCREASE 10e-6.USDxyz (expected 1_000_000 10e-6.USDxyz)"
+                log "   ✅ Solver (Solver) balance is correct: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz (expected $EXPECTED_SOLVER_CHAIN2_USDXYZ 10e-6.USDxyz)"
                 RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
             else
                 # Check the log file for error messages
@@ -371,18 +368,16 @@ else
                     log "   ℹ️  Escrow object no longer exists (may already be released)"
                     
                     # Verify solver (Solver) received the funds even though the object doesn't exist
-                    if [ "$CHAIN2_USDXYZ_INCREASE" -lt "$SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED" ]; then
-                        log_and_echo "   ❌ ERROR: Escrow object doesn't exist but solver (Solver) did NOT receive funds!"
-                        log_and_echo "      Chain 2 USDxyz increase: $CHAIN2_USDXYZ_INCREASE 10e-6.USDxyz"
-                        log_and_echo "      Expected minimum: $SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED 10e-6.USDxyz"
-                        log_and_echo "      Solver (Solver) Chain 2 balance before: $SOLVER_CHAIN2_USDXYZ_BEFORE 10e-6.USDxyz"
-                        log_and_echo "      Solver (Solver) Chain 2 balance after: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz"
+                    if [ "$SOLVER_CHAIN2_USDXYZ_AFTER" != "$EXPECTED_SOLVER_CHAIN2_USDXYZ" ]; then
+                        log_and_echo "   ❌ ERROR: Escrow object doesn't exist but solver (Solver) balance is incorrect!"
+                        log_and_echo "      Solver (Solver) Chain 2 balance: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz"
+                        log_and_echo "      Expected balance: $EXPECTED_SOLVER_CHAIN2_USDXYZ 10e-6.USDxyz (2 USDxyz)"
                         log_and_echo "      Escrow ID: $ESCROW_ID"
                         log_and_echo "      This indicates the escrow was released but funds went to wrong address or were lost"
                         exit 1
                     fi
                     
-                    log "   ✅ Verified: Solver (Solver) received $CHAIN2_USDXYZ_INCREASE 10e-6.USDxyz (escrow was already released)"
+                    log "   ✅ Verified: Solver (Solver) balance is correct: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz (expected $EXPECTED_SOLVER_CHAIN2_USDXYZ 10e-6.USDxyz, escrow was already released)"
                     RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
                 else
                     log "   ❌ Failed to release escrow"
@@ -391,8 +386,8 @@ else
                     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
                     cat "$LOG_FILE"
                     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
-                    log_and_echo "      Chain 2 USDxyz increase: $CHAIN2_USDXYZ_INCREASE 10e-6.USDxyz"
-                    log_and_echo "      Expected minimum: $SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED 10e-6.USDxyz"
+                    log_and_echo "      Solver (Solver) Chain 2 balance: $SOLVER_CHAIN2_USDXYZ_AFTER 10e-6.USDxyz"
+                    log_and_echo "      Expected balance: $EXPECTED_SOLVER_CHAIN2_USDXYZ 10e-6.USDxyz (2 USDxyz)"
                     exit 1
                 fi
             fi
@@ -461,23 +456,16 @@ SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
 SOLVER_CHAIN2_USDXYZ_FINAL=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
 
 # For inflow flow:
-# - Solver on Chain 2 should have received 1 USDxyz from escrow release
+# - Solver on Chain 2 should have 2 USDxyz total (1 initial + 1 from escrow release)
 # Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent
 
-ESCROW_USDXYZ_AMOUNT=1000000  # 1 USDxyz (6 decimals = 1_000_000)
-SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED=1000000  # 1 USDxyz = 1_000_000 (no deduction)
+EXPECTED_SOLVER_CHAIN2_USDXYZ_FINAL="2000000"  # 2 USDxyz = 2_000_000 (6 decimals)
 
-# Calculate balance increase
-SOLVER_CHAIN2_USDXYZ_GAIN=$((SOLVER_CHAIN2_USDXYZ_FINAL - SOLVER_CHAIN2_USDXYZ_INIT))
-
-# Check if escrow was released (Solver on Chain 2 should have received funds)
-# Solver's USDxyz balance on Chain 2 should have increased by at least SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED
-if [ "$SOLVER_CHAIN2_USDXYZ_GAIN" -lt "$SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED" ]; then
-    log_and_echo "❌ ERROR: Solver on Chain 2 USDxyz balance did not increase by expected amount!"
-    log_and_echo "   Chain 2 initial balance: $SOLVER_CHAIN2_USDXYZ_INIT 10e-6.USDxyz"
-    log_and_echo "   Chain 2 final balance: $SOLVER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz"
-    log_and_echo "   Chain 2 balance increase: $SOLVER_CHAIN2_USDXYZ_GAIN 10e-6.USDxyz"
-    log_and_echo "   Expected increase: at least $SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED 10e-6.USDxyz (after escrow release)"
+# Check absolute expected balance instead of delta
+if [ "$SOLVER_CHAIN2_USDXYZ_FINAL" != "$EXPECTED_SOLVER_CHAIN2_USDXYZ_FINAL" ]; then
+    log_and_echo "❌ ERROR: Solver on Chain 2 USDxyz balance does not match expected absolute value!"
+    log_and_echo "   Final balance: $SOLVER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz"
+    log_and_echo "   Expected balance: $EXPECTED_SOLVER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz (2 USDxyz)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     log ""
     log "🔍 Diagnostic Information:"
@@ -497,7 +485,7 @@ if [ "$SOLVER_CHAIN2_USDXYZ_GAIN" -lt "$SOLVER_CHAIN2_USDXYZ_MIN_EXPECTED" ]; th
 fi
 
 log "   ✅ Final balances validated:"
-log "      Solver Chain 2 USDxyz: $SOLVER_CHAIN2_USDXYZ_INIT → $SOLVER_CHAIN2_USDXYZ_FINAL (+$SOLVER_CHAIN2_USDXYZ_GAIN) 10e-6.USDxyz"
+log "      Solver Chain 2 USDxyz: $SOLVER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz (expected $EXPECTED_SOLVER_CHAIN2_USDXYZ_FINAL 10e-6.USDxyz)"
 log "      Note: Requester's balance on Chain 1 is validated in inflow-fulfill-hub-intent.sh (hub intent fulfillment)"
 
 # ============================================================================

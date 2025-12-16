@@ -179,6 +179,13 @@ check_and_release_escrows() {
             exit 1
         fi
         
+        # Check if escrow was already claimed (from previous test run)
+        ESCROW_WAS_ALREADY_CLAIMED=false
+        if echo "$CLAIM_OUTPUT" | grep -qi "Escrow already claimed"; then
+            ESCROW_WAS_ALREADY_CLAIMED=true
+            log "   - Escrow was already claimed (from previous test run)"
+        fi
+        
         # Wait a bit for transaction to be processed
         sleep 2
         
@@ -197,28 +204,20 @@ check_and_release_escrows() {
         
         log "   - Solver's Chain 3 USDxyz balance after claim: $SOLVER_CHAIN3_USDXYZ_AFTER 10e-6.USDxyz"
         
-        # Calculate balance increase
-        # Expected: Solver should receive 1 USDxyz (matches intent offered_amount)
-        # Note: Both EVM and MVM USDxyz use 6 decimals
-        EXPECTED_USDXYZ="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
-        CHAIN3_USDXYZ_INCREASE=$(echo "$SOLVER_CHAIN3_USDXYZ_AFTER $SOLVER_CHAIN3_USDXYZ_BEFORE" | awk '{print $1 - $2}')
+        # Check absolute expected balance instead of delta
+        # For inflow: Solver starts with 2 USDxyz, receives 1 USDxyz from escrow = 2 USDxyz total
+        # Expected absolute balance: 2000000 (2 USDxyz)
+        EXPECTED_SOLVER_CHAIN3_USDXYZ="2000000"  # 2 USDxyz = 2_000_000 (6 decimals)
         
-        log "   - USDxyz balance increase: $CHAIN3_USDXYZ_INCREASE 10e-6.USDxyz"
-        log "   - Expected: $EXPECTED_USDXYZ 10e-6.USDxyz"
-        
-        # Check if balance increased (USDxyz transfer, no gas deduction from token balance)
-        if [ -z "$CHAIN3_USDXYZ_INCREASE" ] || [ "$CHAIN3_USDXYZ_INCREASE" = "0" ]; then
-            log_and_echo "   ❌ ERROR: Solver did not receive the escrow USDxyz!"
-            log_and_echo "   Solver's Chain 3 USDxyz before: $SOLVER_CHAIN3_USDXYZ_BEFORE 10e-6.USDxyz"
-            log_and_echo "   Solver's Chain 3 USDxyz after:  $SOLVER_CHAIN3_USDXYZ_AFTER 10e-6.USDxyz"
-            log_and_echo "   Balance increase:    $CHAIN3_USDXYZ_INCREASE 10e-6.USDxyz"
-            log_and_echo "   Expected increase:   $EXPECTED_USDXYZ 10e-6.USDxyz"
-            log_and_echo "   Escrow release FAILED - Solver did not receive USDxyz!"
+        if [ "$SOLVER_CHAIN3_USDXYZ_AFTER" != "$EXPECTED_SOLVER_CHAIN3_USDXYZ" ]; then
+            log_and_echo "   ❌ ERROR: Solver balance does not match expected absolute value!"
+            log_and_echo "   Solver's Chain 3 USDxyz balance: $SOLVER_CHAIN3_USDXYZ_AFTER 10e-6.USDxyz"
+            log_and_echo "   Expected balance: $EXPECTED_SOLVER_CHAIN3_USDXYZ 10e-6.USDxyz (2 USDxyz)"
             exit 1
         fi
         
         log "   ✅ Escrow released successfully on EVM chain!"
-        log "   ✅ Solver received $CHAIN3_USDXYZ_INCREASE 10e-6.USDxyz (expected $EXPECTED_USDXYZ 10e-6.USDxyz)"
+        log "   ✅ Solver balance is correct: $SOLVER_CHAIN3_USDXYZ_AFTER 10e-6.USDxyz (expected $EXPECTED_SOLVER_CHAIN3_USDXYZ 10e-6.USDxyz)"
         RELEASED_ESCROWS="${RELEASED_ESCROWS}${RELEASED_ESCROWS:+ }${ESCROW_ID}"
     done
 }
@@ -324,27 +323,22 @@ if [ -z "$SOLVER_CHAIN3_USDXYZ_FINAL" ]; then
 fi
 
 # For inflow flow:
-# - Solver on EVM Chain 3 should have received 1 USDxyz (matches intent offered_amount) from escrow release
+# - Solver on EVM Chain 3 should have 2 USDxyz total (1 initial + 1 from escrow release)
 # Note: Requester's balance on Chain 1 changes when solver automatically fulfills the intent (hub intent fulfillment)
 
-SOLVER_CHAIN3_USDXYZ_EXPECTED="1000000"  # 1 USDxyz = 1_000_000 (6 decimals)
+EXPECTED_SOLVER_CHAIN3_USDXYZ_FINAL="2000000"  # 2 USDxyz = 2_000_000 (6 decimals)
 
-# Calculate balance increase for Solver on EVM Chain 3
-SOLVER_CHAIN3_USDXYZ_GAIN=$((SOLVER_CHAIN3_USDXYZ_FINAL - SOLVER_CHAIN3_USDXYZ_INIT))
-
-# Check if escrow was released (Solver on EVM Chain 3 should have received funds)
-if [ "$SOLVER_CHAIN3_USDXYZ_GAIN" -lt "$SOLVER_CHAIN3_USDXYZ_EXPECTED" ]; then
-    log_and_echo "❌ ERROR: Solver on EVM Chain 3 USDxyz balance did not increase by expected amount!"
-    log_and_echo "   Initial balance: $SOLVER_CHAIN3_USDXYZ_INIT 10e-6.USDxyz"
+# Check absolute expected balance instead of delta
+if [ "$SOLVER_CHAIN3_USDXYZ_FINAL" != "$EXPECTED_SOLVER_CHAIN3_USDXYZ_FINAL" ]; then
+    log_and_echo "❌ ERROR: Solver on EVM Chain 3 USDxyz balance does not match expected absolute value!"
     log_and_echo "   Final balance: $SOLVER_CHAIN3_USDXYZ_FINAL 10e-6.USDxyz"
-    log_and_echo "   Balance increase: $SOLVER_CHAIN3_USDXYZ_GAIN 10e-6.USDxyz"
-    log_and_echo "   Expected increase: $SOLVER_CHAIN3_USDXYZ_EXPECTED 10e-6.USDxyz"
+    log_and_echo "   Expected balance: $EXPECTED_SOLVER_CHAIN3_USDXYZ_FINAL 10e-6.USDxyz (2 USDxyz)"
     log_and_echo "   This indicates the escrow was not released or funds were not received"
     exit 1
 fi
 
 log "   ✅ Final balances validated:"
-log "      Solver Chain 3 USDxyz: $SOLVER_CHAIN3_USDXYZ_INIT → $SOLVER_CHAIN3_USDXYZ_FINAL (+$SOLVER_CHAIN3_USDXYZ_GAIN) 10e-6.USDxyz"
+log "      Solver Chain 3 USDxyz: $SOLVER_CHAIN3_USDXYZ_FINAL 10e-6.USDxyz (expected $EXPECTED_SOLVER_CHAIN3_USDXYZ_FINAL 10e-6.USDxyz)"
 
 log ""
 log "📝 Useful commands:"

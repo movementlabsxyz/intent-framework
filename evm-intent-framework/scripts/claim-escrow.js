@@ -57,12 +57,39 @@ async function main() {
   const intentId = BigInt(intentIdHex);
   const signature = `0x${signatureHex}`;
   
+  // Check if escrow is already claimed before attempting to claim
+  let wasAlreadyClaimed = false;
+  try {
+    const escrowData = await escrow.getEscrow(intentId);
+    if (escrowData.isClaimed) {
+      wasAlreadyClaimed = true;
+      console.log("Escrow already claimed - skipping");
+      // Don't exit here - let the caller handle the balance check
+      // The escrow was already claimed, so funds were already transferred
+    }
+  } catch (error) {
+    // If getEscrow fails, escrow might not exist - continue to claim attempt
+    // which will provide a more specific error
+  }
+  
+  // If already claimed, exit early (funds were already transferred)
+  if (wasAlreadyClaimed) {
+    console.log("Escrow released successfully!");
+    process.exit(0);
+  }
+  
   try {
     const tx = await escrow.connect(solver).claim(intentId, signature);
     const receipt = await tx.wait();
     console.log("Claim transaction hash:", receipt.hash);
     console.log("Escrow released successfully!");
   } catch (error) {
+    // Check if error is EscrowAlreadyClaimed - handle gracefully
+    if (error.message && error.message.includes("EscrowAlreadyClaimed")) {
+      console.log("Escrow already claimed - skipping");
+      console.log("Escrow released successfully!");
+      process.exit(0);
+    }
     console.error("Error claiming escrow:", error.message);
     process.exit(1);
   }

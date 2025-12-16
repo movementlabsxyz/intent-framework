@@ -15,6 +15,7 @@ module mvmt_intent::fa_tests {
 
     #[test(
         aptos_framework = @0x1,
+        mvmt_intent = @0x123,
         offerer = @0xcafe,
         solver = @0xdead
     )]
@@ -23,9 +24,11 @@ module mvmt_intent::fa_tests {
     /// Verifies that solvers can unlock fungible assets from intents and start trading sessions.
     fun test_fa_limit_order(
         aptos_framework: &signer,
+        mvmt_intent: &signer,
         offerer: &signer,
         solver: &signer,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         let (offered_fa_type, _mint_ref_2) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, solver, 25);
         
@@ -33,6 +36,8 @@ module mvmt_intent::fa_tests {
         let intent = fa_intent::create_fa_to_fa_intent(
             primary_fungible_store::withdraw(offerer, offered_fa_type, 50),
             1, // offered_chain_id
+            option::none(), // No offered_amount_override - tokens locked on this chain
+            option::none(), // No offered_metadata_address_override - tokens locked on this chain
             desired_fa_type,
             25,
             1, // desired_chain_id
@@ -40,7 +45,7 @@ module mvmt_intent::fa_tests {
             signer::address_of(offerer),
             option::none(),
             true, // revocable
-            option::none(), // No cross-chain intent_id for regular intents
+            option::none() // No cross-chain intent_id for regular intents
         );
         // Verify intent was created
         assert!(object::object_address(&intent) != @0x0);
@@ -65,6 +70,7 @@ module mvmt_intent::fa_tests {
 
     #[test(
         aptos_framework = @0x1,
+        mvmt_intent = @0x123,
         offerer1 = @0xcafe,
         offerer2 = @0xbeef,
         solver = @0xdead
@@ -72,10 +78,12 @@ module mvmt_intent::fa_tests {
     /// Test: Solver matches two opposing limit orders and settles both intents.
     fun test_fa_limit_order_cross_match(
         aptos_framework: &signer,
+        mvmt_intent: &signer,
         offerer1: &signer,
         offerer2: &signer,
         solver: &signer,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         let (fa1_metadata, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer1, 100);
         let (fa2_metadata, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer2, 100);
 
@@ -83,6 +91,8 @@ module mvmt_intent::fa_tests {
         let intent1 = fa_intent::create_fa_to_fa_intent(
             primary_fungible_store::withdraw(offerer1, fa1_metadata, 30),
             1, // offered_chain_id
+            option::none(), // No offered_amount_override - tokens locked on this chain
+            option::none(), // No offered_metadata_address_override - tokens locked on this chain
             fa2_metadata,
             15,
             1, // desired_chain_id
@@ -90,13 +100,15 @@ module mvmt_intent::fa_tests {
             signer::address_of(offerer1),
             option::none(),
             true, // revocable
-            option::none(), // No cross-chain intent_id for regular intents
+            option::none() // No cross-chain intent_id for regular intents
         );
 
         // Offerer2 deposits 15 of FA2 requesting 30 of FA1.
         let intent2 = fa_intent::create_fa_to_fa_intent(
             primary_fungible_store::withdraw(offerer2, fa2_metadata, 15),
             1, // offered_chain_id
+            option::none(), // No offered_amount_override - tokens locked on this chain
+            option::none(), // No offered_metadata_address_override - tokens locked on this chain
             fa1_metadata,
             30,
             1, // desired_chain_id
@@ -104,7 +116,7 @@ module mvmt_intent::fa_tests {
             signer::address_of(offerer2),
             option::none(),
             true, // revocable
-            option::none(), // No cross-chain intent_id for regular intents
+            option::none() // No cross-chain intent_id for regular intents
         );
 
         // Solver unlocks both intents to gather the offered assets.
@@ -133,6 +145,7 @@ module mvmt_intent::fa_tests {
 
     #[test(
         aptos_framework = @0x1,
+        mvmt_intent = @0x123,
         offerer = @0xcafe,
         solver = @0xdead
     )]
@@ -140,9 +153,11 @@ module mvmt_intent::fa_tests {
     /// Verifies that revocable fungible asset intents can be cancelled and tokens recovered.
     fun test_revoke_fa_intent_success(
         aptos_framework: &signer,
+        mvmt_intent: &signer,
         offerer: &signer,
         solver: &signer,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         let (offered_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 0);
         
@@ -150,6 +165,8 @@ module mvmt_intent::fa_tests {
         let intent = fa_intent::create_fa_to_fa_intent(
             primary_fungible_store::withdraw(offerer, offered_fa_type, 50),
             1, // offered_chain_id
+            option::none(), // No offered_amount_override - tokens locked on this chain
+            option::none(), // No offered_metadata_address_override - tokens locked on this chain
             desired_fa_type,
             25,
             1, // desired_chain_id
@@ -157,7 +174,7 @@ module mvmt_intent::fa_tests {
             signer::address_of(offerer),
             option::none(),
             true, // revocable
-            option::none(), // No cross-chain intent_id for regular intents
+            option::none() // No cross-chain intent_id for regular intents
         );
         // Check balance before revocation
         assert!(primary_fungible_store::balance(signer::address_of(offerer), offered_fa_type) == 50);
@@ -171,6 +188,7 @@ module mvmt_intent::fa_tests {
 
     #[test(
         aptos_framework = @0x1,
+        mvmt_intent = @0x123,
         offerer = @0xcafe,
         solver = @0xdead
     )]
@@ -179,9 +197,11 @@ module mvmt_intent::fa_tests {
     /// Verifies that the intent framework properly handles cases where the solver provides insufficient tokens to complete the trade.
     fun test_fa_limit_order_insufficient_solver_payment(
         aptos_framework: &signer,
+        mvmt_intent: &signer,
         offerer: &signer,
         solver: &signer,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         let (offered_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _) = test_utils::register_and_mint_tokens(aptos_framework, solver, 5); // Only 5 tokens available
         
@@ -189,6 +209,8 @@ module mvmt_intent::fa_tests {
         let intent = fa_intent::create_fa_to_fa_intent(
             primary_fungible_store::withdraw(offerer, offered_fa_type, 50),
             1, // offered_chain_id
+            option::none(), // No offered_amount_override - tokens locked on this chain
+            option::none(), // No offered_metadata_address_override - tokens locked on this chain
             desired_fa_type,
             25, // Wants 25 but solver only has 5
             1, // desired_chain_id
@@ -196,7 +218,7 @@ module mvmt_intent::fa_tests {
             signer::address_of(offerer),
             option::none(),
             true, // revocable
-            option::none(), // No cross-chain intent_id for regular intents
+            option::none() // No cross-chain intent_id for regular intents
         );
         
         // Solver starts the session and unlocks the 50 offered tokens

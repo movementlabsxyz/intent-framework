@@ -30,6 +30,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         Object<aptos_framework::fungible_asset::Metadata>,
         Object<aptos_framework::fungible_asset::Metadata>,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         timestamp::set_time_has_started_for_testing(aptos_framework);
         
         // Create test fungible assets
@@ -112,6 +113,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor: &signer,
         solver: &signer,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         timestamp::set_time_has_started_for_testing(aptos_framework);
         
         // Create test fungible assets
@@ -202,6 +204,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor: &signer,
         solver: &signer,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         timestamp::set_time_has_started_for_testing(aptos_framework);
         
         // Create test fungible assets for cross-chain swap
@@ -258,6 +261,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         let intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
             1, // offered_chain_id
+            option::none(), // Same chain in test (simplified) - tokens locked on this chain
+            option::none(), // Same chain in test (simplified) - tokens locked on this chain
             desired_metadata,
             100,
             1, // desired_chain_id
@@ -265,7 +270,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             signer::address_of(requestor),
             reservation_result, // Reserved for solver
             false, // Non-revocable
-            option::some(dummy_intent_id),
+            option::some(dummy_intent_id)
         );
         let intent_address = object::object_address(&intent_obj);
         
@@ -381,6 +386,7 @@ module mvmt_intent::fa_intent_inflow_tests {
 
     #[test(
         aptos_framework = @0x1,
+        mvmt_intent = @0x123,
         requestor = @0xcafe,
         solver = @0xdead
     )]
@@ -394,9 +400,11 @@ module mvmt_intent::fa_intent_inflow_tests {
     /// which asserts: provided_amount >= argument.desired_amount
     fun test_fulfill_cross_chain_intent_insufficient_amount(
         aptos_framework: &signer,
+        mvmt_intent: &signer,
         requestor: &signer,
         solver: &signer,
     ) {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         timestamp::set_time_has_started_for_testing(aptos_framework);
         
         // Create test fungible assets for cross-chain swap
@@ -419,6 +427,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         let intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
             1, // offered_chain_id
+            option::none(), // Same chain in test (simplified) - tokens locked on this chain
+            option::none(), // Same chain in test (simplified) - tokens locked on this chain
             desired_metadata,
             1000,
             1, // desired_chain_id
@@ -426,7 +436,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             signer::address_of(requestor),
             option::some(reservation), // Reserved for solver
             false, // Non-revocable
-            option::some(dummy_intent_id),
+            option::some(dummy_intent_id)
         );
         let intent_address = object::object_address(&intent_obj);
         

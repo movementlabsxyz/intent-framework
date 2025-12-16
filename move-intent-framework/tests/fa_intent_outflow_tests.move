@@ -259,6 +259,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             desired_metadata,
             25,
             2, // desired_chain_id: connected chain where tokens are desired
+            option::some(object::object_address(&desired_metadata)), // Cross-chain: pass desired_metadata_address
             expiry_time,
             signer::address_of(requester_signer),
             requirement,

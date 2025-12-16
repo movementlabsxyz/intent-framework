@@ -171,6 +171,8 @@ module mvmt_intent::fa_intent_inflow {
         fa_intent::create_fa_to_fa_intent(
             fa,
             offered_chain_id, // where escrow is created
+            option::some(offered_amount), // Pass explicit offered_amount since tokens are locked on connected chain
+            option::some(offered_metadata_address), // Pass explicit offered_metadata_address since tokens are on connected chain
             desired_metadata,
             desired_amount,
             desired_chain_id, // hub chain where this intent is created

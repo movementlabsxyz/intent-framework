@@ -313,13 +313,10 @@ pub async fn validate_intent_fulfillment(
                 ));
             }
 
-            if escrow_event.desired_metadata != intent.desired_metadata {
-                return Err(anyhow::anyhow!(
-                    "Deposit metadata {} does not match desired metadata {}",
-                    escrow_event.desired_metadata,
-                    intent.desired_metadata
-                ));
-            }
+            // Note: We do NOT validate escrow.desired_metadata against intent.desired_metadata.
+            // For inflow escrows (tokens locked on connected chain), the escrow only stores
+            // what's being offered/locked - not what's desired. The desired_metadata is only
+            // on the hub chain intent (what the requester wants to receive on hub).
 
             let validation_result =
                 crate::validator::inflow_generic::validate_intent_fulfillment(

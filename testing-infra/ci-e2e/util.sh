@@ -1078,6 +1078,23 @@ wait_for_solver_fulfillment() {
         log "   Solver log file not found at: $solver_log_file"
     fi
     
+    # Show verifier logs
+    local verifier_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/verifier-evm.log"
+    if [ ! -f "$verifier_log_file" ]; then
+        # Try alternative location
+        verifier_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/verifier.log"
+    fi
+    if [ -f "$verifier_log_file" ]; then
+        log ""
+        log "   Verifier logs (last 100 lines):"
+        log "   + + + + + + + + + + + + + + + + + + + +"
+        tail -100 "$verifier_log_file" | while IFS= read -r line; do log "   $line"; done
+        log "   + + + + + + + + + + + + + + + + + + + +"
+    else
+        log ""
+        log "   Verifier log file not found (checked: $verifier_log_file)"
+    fi
+    
     # Show verifier events
     log ""
     log "   Verifier events:"

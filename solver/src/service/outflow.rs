@@ -69,7 +69,7 @@ impl OutflowService {
 
     /// Polls for pending outflow intents and executes transfers on connected chain
     ///
-    /// This function queries the tracker for pending outflow intents (Created state, is_inflow = false)
+    /// This function queries the tracker for pending outflow intents (Created state, offered_chain_id == hub_chain_id)
     /// and executes token transfers on the connected chain to the requester's address.
     ///
     /// # Returns
@@ -77,7 +77,7 @@ impl OutflowService {
     /// * `Ok(Vec<(TrackedIntent, String)>)` - List of (intent, transaction_hash) pairs for transfers executed
     /// * `Err(anyhow::Error)` - Failed to execute transfers
     pub async fn poll_and_execute_transfers(&self) -> Result<Vec<(TrackedIntent, String)>> {
-        // Get pending outflow intents (Created state, is_inflow = false)
+        // Get pending outflow intents (Created state, offered_chain_id == hub_chain_id)
         let pending_intents = self
             .tracker
             .get_intents_ready_for_fulfillment(Some(false))

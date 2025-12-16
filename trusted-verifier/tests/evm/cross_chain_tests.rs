@@ -6,7 +6,7 @@
 use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{create_base_escrow_event, create_base_intent_evm};
+use test_helpers::{create_base_escrow_event_evm, create_base_intent_evm};
 
 /// Test that EVM escrow can be matched to hub intent by intent_id
 /// Why: Verify cross-chain matching logic correctly links EVM escrow to hub intent
@@ -16,13 +16,13 @@ fn test_evm_escrow_cross_chain_matching() {
     let hub_intent = create_base_intent_evm();
 
     // Step 2: Create EVM escrow with matching intent_id
-    // For EVM, the intent_id from Move VM is used directly (after conversion to uint256 on-chain)
-    // In the verifier, we match by string intent_id
-    // For EVM, escrow_id must equal intent_id
+    // Use the realistic EVM escrow helper which has empty desired_metadata
     let evm_escrow = EscrowEvent {
+        intent_id: hub_intent.intent_id.clone(),
         escrow_id: hub_intent.intent_id.clone(), // For EVM, escrow_id = intent_id
-        chain_type: trusted_verifier::ChainType::Evm,
-        ..create_base_escrow_event()
+        issuer: hub_intent.requester.clone(),
+        offered_amount: hub_intent.offered_amount,
+        ..create_base_escrow_event_evm()
     };
 
     // Step 3: Verify matching logic (simulating the matching in validate_intent_fulfillment)
@@ -50,6 +50,12 @@ fn test_evm_escrow_cross_chain_matching() {
     assert_eq!(
         evm_escrow.escrow_id, evm_escrow.intent_id,
         "For EVM, escrow_id should equal intent_id"
+    );
+
+    // Verify EVM escrow has empty desired_metadata (realistic behavior)
+    assert_eq!(
+        evm_escrow.desired_metadata, "{}",
+        "EVM escrow desired_metadata should be empty"
     );
 }
 
@@ -128,19 +134,22 @@ fn test_intent_id_conversion_to_evm_format() {
 /// Why: Verify complete cross-chain matching workflow from Move VM hub to EVM escrow
 #[test]
 fn test_evm_escrow_matching_with_hub_intent() {
-    // Step 1: Create  hub intent
+    // Step 1: Create hub intent
     let hub_intent = IntentEvent {
         expiry_time: 2000000,
         ..create_base_intent_evm()
     };
 
     // Step 2: Create EVM escrow on connected chain with matching intent_id
-    // For EVM, escrow_id must equal intent_id
+    // Use the realistic EVM escrow helper which has empty desired_metadata
+    // (because the EVM IntentEscrow contract doesn't store this field)
     let evm_escrow = EscrowEvent {
+        intent_id: hub_intent.intent_id.clone(),
         escrow_id: hub_intent.intent_id.clone(), // EVM: escrow_id = intent_id
-        chain_type: trusted_verifier::ChainType::Evm,
+        issuer: hub_intent.requester.clone(),
+        offered_amount: hub_intent.offered_amount,
         expiry_time: 2000000, // Matches hub intent expiry
-        ..create_base_escrow_event()
+        ..create_base_escrow_event_evm()
     };
 
     // Step 3: Verify cross-chain matching (simulating validate_intent_fulfillment logic)
@@ -179,14 +188,24 @@ fn test_evm_escrow_matching_with_hub_intent() {
         "For EVM, escrow_id should equal intent_id"
     );
 
-    // Verify validation criteria that would be checked in validate_intent_fulfillment
-    // Escrow desired_amount is always 0 (escrow only holds offered funds)
+    // Verify escrow desired_metadata is empty (escrows only store offered tokens, not desired)
+    // For inflow escrows, desired_metadata is only on the hub chain intent.
+    assert_eq!(
+        evm_escrow.desired_metadata, "{}",
+        "Inflow escrow desired_metadata should be empty (only stores offered tokens)"
+    );
+
+    // Verify desired_amount is 0 for inflow escrows (escrow only holds offered funds)
     assert_eq!(
         evm_escrow.desired_amount, 0,
-        "Escrow desired amount must be 0"
+        "Inflow escrow desired_amount must be 0"
     );
-    assert_eq!(
+
+    // Note: Inflow escrow desired_metadata is NOT validated against intent.desired_metadata
+    // because escrows only store what's offered/locked, not what's desired.
+    // The intent's desired_metadata indicates what requester wants on hub chain.
+    assert_ne!(
         evm_escrow.desired_metadata, matched.desired_metadata,
-        "Metadata should match"
+        "Escrow and intent desired_metadata should NOT match (escrow doesn't store it)"
     );
 }

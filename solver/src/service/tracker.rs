@@ -48,8 +48,6 @@ pub struct TrackedIntent {
     pub expiry_time: u64,
     /// Intent object address (set when created on-chain)
     pub intent_address: Option<String>,
-    /// Whether this is an inflow intent (tokens locked on connected chain)
-    pub is_inflow: bool,
     /// Requester address on the connected chain (for outflow intents)
     pub requester_address_connected_chain: Option<String>,
 }
@@ -116,12 +114,6 @@ impl IntentTracker {
         requester_address: String,
         expiry_time: u64,
     ) -> Result<()> {
-        // Determine if this is an inflow or outflow intent
-        // Inflow: tokens locked on connected chain (offered_chain_id != hub_chain_id)
-        // Outflow: tokens locked on hub chain (offered_chain_id == hub_chain_id)
-        let hub_chain_id = self.hub_config.chain_id;
-        let is_inflow = draft_data.offered_chain_id != hub_chain_id;
-
         // Use the actual intent_id from draft data (not the draft UUID)
         let intent_id = draft_data.intent_id.clone();
 
@@ -133,7 +125,6 @@ impl IntentTracker {
             requester_address: requester_address.clone(),
             expiry_time,
             intent_address: None,
-            is_inflow,
             requester_address_connected_chain: None,
         };
 
@@ -272,6 +263,7 @@ impl IntentTracker {
     /// * `Vec<TrackedIntent>` - List of intents (Created state) ready for fulfillment
     pub async fn get_intents_ready_for_fulfillment(&self, inflow_only: Option<bool>) -> Vec<TrackedIntent> {
         let intents = self.intents.read().await;
+        let hub_chain_id = self.hub_config.chain_id;
         let current_time = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -291,8 +283,11 @@ impl IntentTracker {
                 }
 
                 // Filter by inflow/outflow if specified
+                // Inflow: desired_chain_id == hub_chain_id (tokens desired on hub)
+                // Outflow: offered_chain_id == hub_chain_id (tokens offered on hub)
                 if let Some(inflow) = inflow_only {
-                    if intent.is_inflow != inflow {
+                    let is_inflow = intent.draft_data.desired_chain_id == hub_chain_id;
+                    if is_inflow != inflow {
                         return false;
                     }
                 }

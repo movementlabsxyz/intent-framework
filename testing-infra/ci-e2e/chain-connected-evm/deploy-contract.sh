@@ -87,7 +87,8 @@ fi
 
 log "   ✅ USDxyz deployed to: $USDXYZ_ADDRESS"
 
-# Save USDxyz address for other scripts
+# Save escrow and USDxyz addresses for other scripts
+echo "ESCROW_CONTRACT_ADDRESS=$CONTRACT_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
 echo "USDXYZ_EVM_ADDRESS=$USDXYZ_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
 
 # Mint USDxyz to Requester and Solver (accounts 1 and 2)

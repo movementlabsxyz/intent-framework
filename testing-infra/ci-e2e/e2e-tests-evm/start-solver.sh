@@ -55,6 +55,11 @@ generate_solver_config_evm() {
         log_and_echo "❌ ERROR: USDXYZ_EVM_ADDRESS not found in chain-info.env"
         exit 1
     fi
+    local escrow_address="${ESCROW_CONTRACT_ADDRESS:-}"
+    if [ -z "$escrow_address" ]; then
+        log_and_echo "❌ ERROR: ESCROW_CONTRACT_ADDRESS not found in chain-info.env"
+        exit 1
+    fi
     # Lowercase and pad to 32 bytes for Move compatibility
     local evm_token_no_prefix="${evm_token_address#0x}"
     local evm_token_lower=$(echo "$evm_token_no_prefix" | tr '[:upper:]' '[:lower:]')
@@ -67,7 +72,7 @@ generate_solver_config_evm() {
     local hub_chain_id="${CHAIN1_ID:-1}"
     local evm_chain_id="${EVM_CHAIN_ID:-31337}"
     local module_address="0x${chain1_address}"
-    local escrow_contract="${ESCROW_CONTRACT_ADDRESS:-0x0}"
+    local escrow_contract="${escrow_address}"
     local solver_address="0x${solver_chain1_address}"
     local evm_private_key_env="${EVM_PRIVATE_KEY_ENV:-SOLVER_EVM_PRIVATE_KEY}"
     

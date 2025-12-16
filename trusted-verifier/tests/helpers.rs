@@ -160,7 +160,7 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
     }
 }
 
-/// Create a base escrow event with default test values.
+/// Create a base escrow event with default test values for Move VM connected chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
 /// let escrow = create_base_escrow_event();
@@ -188,6 +188,28 @@ pub fn create_base_escrow_event() -> EscrowEvent {
         ),
         chain_id: 2,
         chain_type: ChainType::Mvm,
+        timestamp: 0, // Should be set explicitly in tests
+    }
+}
+
+/// Create a base escrow event with default test values for EVM connected chain.
+/// This reflects real EVM escrow behavior where desired_metadata is always empty
+/// because the EVM IntentEscrow contract doesn't store this field.
+#[allow(dead_code)]
+pub fn create_base_escrow_event_evm() -> EscrowEvent {
+    EscrowEvent {
+        escrow_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(), // For EVM, escrow_id = intent_id
+        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
+        issuer: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(), // EVM address format (20 bytes)
+        offered_metadata: "{\"token\":\"0xcccccccccccccccccccccccccccccccccccccccc\"}".to_string(), // Token address in JSON
+        offered_amount: 1000,
+        desired_metadata: "{}".to_string(), // EVM escrows don't store desired_metadata on-chain
+        desired_amount: 0, // Not used for EVM inflow escrows
+        expiry_time: 0,    // Should be set explicitly in tests
+        revocable: false,
+        reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes)
+        chain_id: 31337, // Matches build_test_config_with_evm
+        chain_type: ChainType::Evm,
         timestamp: 0, // Should be set explicitly in tests
     }
 }

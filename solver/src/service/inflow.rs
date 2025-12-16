@@ -85,13 +85,26 @@ impl InflowService {
     /// * `Ok(Vec<(TrackedIntent, String)>)` - List of (intent, escrow_id) pairs with matching escrows
     /// * `Err(anyhow::Error)` - Failed to poll escrows
     pub async fn poll_for_escrows(&self) -> Result<Vec<(TrackedIntent, String)>> {
-        // Get pending inflow intents (Created state, is_inflow = true)
+        // Get pending inflow intents (Created state, desired_chain_id == hub_chain_id)
         let pending_intents = self
             .tracker
             .get_intents_ready_for_fulfillment(Some(true))
             .await;
 
         if pending_intents.is_empty() {
+            // Debug: check if there are any Created intents at all
+            let all_created = self.tracker.get_intents_ready_for_fulfillment(None).await;
+            if !all_created.is_empty() {
+                for intent in &all_created {
+                    let hub_chain_id = self.config.hub_chain.chain_id;
+                    let is_inflow = intent.draft_data.desired_chain_id == hub_chain_id;
+                    info!(
+                        "Inflow poll: Intent {} in Created state: is_inflow={}, offered_chain={}, desired_chain={}",
+                        intent.intent_id, is_inflow,
+                        intent.draft_data.offered_chain_id, intent.draft_data.desired_chain_id
+                    );
+                }
+            }
             return Ok(Vec::new());
         }
 
@@ -243,6 +256,7 @@ impl InflowService {
     /// The loop runs at the configured polling interval.
     pub async fn run(&self) -> Result<()> {
         let polling_interval = Duration::from_millis(self.config.service.polling_interval_ms);
+        info!("Inflow fulfillment service started (polling every {:?})", polling_interval);
 
         loop {
             match self.poll_for_escrows().await {

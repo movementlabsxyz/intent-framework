@@ -115,6 +115,7 @@ pub fn create_base_intent_mvm() -> IntentEvent {
 
 /// Create a base intent event with default test values for EVM connected chain.
 /// This uses `create_base_intent_mvm()` as a base and overrides EVM-specific fields.
+/// For inflow intents, offered_metadata uses {"token":"0x..."} format to match EVM escrow format.
 /// This can be customized using Rust's struct update syntax:
 /// ```
 /// let intent = create_base_intent_evm();
@@ -127,6 +128,7 @@ pub fn create_base_intent_mvm() -> IntentEvent {
 #[allow(dead_code)]
 pub fn create_base_intent_evm() -> IntentEvent {
     IntentEvent {
+        offered_metadata: r#"{"token":"0xcccccccccccccccccccccccccccccccccccccccc"}"#.to_string(), // EVM token address format for cross-chain
         reserved_solver: Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string()), // EVM address format (20 bytes)
         connected_chain_id: Some(31337), // EVM chain ID (matches build_test_config_with_evm)
         requester_address_connected_chain: Some(

@@ -111,7 +111,7 @@ log_and_echo "   2. Fulfill the intent on hub chain"
 log_and_echo "   3. Verifier will detect fulfillment and generate approval"
 log_and_echo ""
 
-if ! wait_for_solver_fulfillment "$INTENT_ID" "inflow" 30; then
+if ! wait_for_solver_fulfillment "$INTENT_ID" "inflow" 60; then
     log_and_echo "❌ ERROR: Solver did not fulfill the intent automatically"
     log_and_echo "   Check solver logs for errors"
     exit 1

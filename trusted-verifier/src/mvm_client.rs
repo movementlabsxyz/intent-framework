@@ -1292,6 +1292,11 @@ pub struct LimitOrderEvent {
     pub intent_address: String,
     pub intent_id: String,                   // For cross-chain linking
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
+    #[serde(
+        deserialize_with = "deserialize_move_option_string",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub offered_metadata_address: Option<String>, // Raw address for cross-chain tokens, None for same-chain
     pub offered_amount: String,
     pub offered_chain_id: String,
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
@@ -1300,6 +1305,11 @@ pub struct LimitOrderEvent {
     pub requester: String,
     pub expiry_time: String,
     pub revocable: bool,
+    #[serde(
+        deserialize_with = "deserialize_move_option_string",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub reserved_solver: Option<String>, // Solver address if the intent is reserved (None for unreserved intents)
 }
 
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module
@@ -1312,6 +1322,11 @@ pub struct OracleLimitOrderEvent {
     #[serde(deserialize_with = "deserialize_u64_string")]
     pub offered_chain_id: String, // Chain ID where offered tokens are located
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
+    #[serde(
+        deserialize_with = "deserialize_move_option_string",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub desired_metadata_address: Option<String>, // Raw address for cross-chain tokens, None for same-chain
     pub desired_amount: String,
     #[serde(deserialize_with = "deserialize_u64_string")]
     pub desired_chain_id: String, // Chain ID where desired tokens are located

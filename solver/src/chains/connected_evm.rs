@@ -135,12 +135,18 @@ impl ConnectedEvmClient {
         from_block: Option<u64>,
         to_block: Option<u64>,
     ) -> Result<Vec<EscrowInitializedEvent>> {
-        // EscrowInitialized event signature: keccak256("EscrowInitialized(uint256,address,address,address,address)")
-        // Event signature hash: first topic in logs
-        let event_signature = "EscrowInitialized(uint256,address,address,address,address)";
+        use tracing::{info, warn};
+        
+        // EscrowInitialized event signature: keccak256("EscrowInitialized(uint256,address,address,address,address,uint256,uint256)")
+        // Event: EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver, uint256 amount, uint256 expiry)
+        // Note: indexed parameters don't affect the signature, only the types matter
+        let event_signature = "EscrowInitialized(uint256,address,address,address,address,uint256,uint256)";
         let mut hasher = Keccak256::new();
         hasher.update(event_signature.as_bytes());
         let event_topic = format!("0x{}", hex::encode(hasher.finalize()));
+
+        info!("Querying EVM escrow events: contract={}, from_block={:?}, to_block={:?}, event_topic={}", 
+            self.escrow_contract_address, from_block, to_block, event_topic);
 
         // Build filter
         let mut filter = serde_json::json!({
@@ -164,9 +170,11 @@ impl ConnectedEvmClient {
         let request = JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
             method: "eth_getLogs".to_string(),
-            params: vec![filter],
+            params: vec![filter.clone()],
             id: 1,
         };
+
+        info!("Sending eth_getLogs request to {}: filter={}", self.base_url, serde_json::to_string(&filter).unwrap_or_default());
 
         let response: JsonRpcResponse<Vec<EvmLog>> = self
             .client
@@ -180,15 +188,21 @@ impl ConnectedEvmClient {
             .context("Failed to parse eth_getLogs response")?;
 
         if let Some(error) = response.error {
+            warn!("JSON-RPC error: {} ({})", error.message, error.code);
             anyhow::bail!("JSON-RPC error: {} ({})", error.message, error.code);
         }
 
         let logs = response.result.unwrap_or_default();
+        info!("Received {} log entries from eth_getLogs", logs.len());
         let mut events = Vec::new();
 
         for log in logs {
-            // Topics: [event_signature, intent_id, escrow, requester]
-            // Data: token (20 bytes) + reserved_solver (20 bytes) = 64 hex chars
+            // EscrowInitialized(uint256 indexed intentId, address indexed escrow, address indexed requester, address token, address reservedSolver, uint256 amount, uint256 expiry)
+            // topics[0] = event signature
+            // topics[1] = intentId (uint256, padded to 32 bytes)
+            // topics[2] = escrow (address, padded to 32 bytes)
+            // topics[3] = requester (address, padded to 32 bytes)
+            // data = abi.encode(token, reservedSolver, amount, expiry) - 4 fields (256 hex chars = 128 bytes)
             if log.topics.len() < 4 {
                 continue; // Invalid event format
             }
@@ -197,14 +211,14 @@ impl ConnectedEvmClient {
             let escrow = format!("0x{}", &log.topics[2][26..]); // Extract last 20 bytes (40 hex chars)
             let requester = format!("0x{}", &log.topics[3][26..]);
 
-            // Parse data: token (32 bytes) + reserved_solver (32 bytes)
+            // Parse data: token (32 bytes), reservedSolver (32 bytes), amount (32 bytes), expiry (32 bytes)
             let data = log.data.strip_prefix("0x").unwrap_or(&log.data);
-            if data.len() < 128 {
-                continue; // Invalid data length
+            if data.len() < 256 {
+                continue; // Invalid data length (4 fields * 64 hex chars)
             }
 
-            let token = format!("0x{}", &data[24..64]); // Extract last 20 bytes from first 32-byte word
-            let reserved_solver = format!("0x{}", &data[88..128]); // Extract last 20 bytes from second 32-byte word
+            let token = format!("0x{}", &data[24..64]); // Extract address from first 32-byte word (skip padding)
+            let reserved_solver = format!("0x{}", &data[88..128]); // Extract address from second 32-byte word
 
             events.push(EscrowInitializedEvent {
                 intent_id,

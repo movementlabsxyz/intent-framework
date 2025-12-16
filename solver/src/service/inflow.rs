@@ -119,6 +119,7 @@ impl InflowService {
             ConnectedChainClient::Mvm(client) => {
                 // Convert EscrowEvent to a common format for matching
                 let events = client.get_escrow_events(&requester_addresses, None).await?;
+                info!("Found {} MVM escrow events", events.len());
                 events
                     .into_iter()
                     .map(|e| EscrowMatch {
@@ -130,7 +131,24 @@ impl InflowService {
             ConnectedChainClient::Evm(client) => {
                 // EVM client uses from_block/to_block instead of known_accounts
                 // For now, query from block 0 (all blocks) to latest
-                let events = client.get_escrow_events(Some(0), None).await?;
+                info!("Querying EVM chain for escrow events (from_block=0)");
+                let events = match client.get_escrow_events(Some(0), None).await {
+                    Ok(events) => {
+                        if !events.is_empty() {
+                            info!("Found {} EVM escrow events", events.len());
+                            for event in &events {
+                                info!("EVM escrow event: intent_id={}, escrow={}", event.intent_id, event.escrow);
+                            }
+                        } else {
+                            info!("Found 0 EVM escrow events");
+                        }
+                        events
+                    }
+                    Err(e) => {
+                        error!("Failed to query EVM escrow events: {}", e);
+                        return Err(e);
+                    }
+                };
                 events
                     .into_iter()
                     .map(|e| EscrowMatch {
@@ -141,6 +159,11 @@ impl InflowService {
             }
         };
 
+        // Only log matching details if there are escrow events to match against
+        if !escrow_events.is_empty() {
+            info!("Matching {} pending intents against {} escrow events", pending_intents.len(), escrow_events.len());
+        }
+
         // Match escrow events to tracked intents by intent_id
         let mut matched_intents = Vec::new();
         for intent in pending_intents {
@@ -150,10 +173,15 @@ impl InflowService {
             for escrow in escrow_events.iter() {
                 let escrow_intent_id_normalized = normalize_intent_id(&escrow.intent_id);
                 if escrow_intent_id_normalized == intent_id_normalized {
+                    info!("✅ Match found: intent {} matches escrow {}", intent.intent_id, escrow.escrow_id);
                     matched_intents.push((intent.clone(), escrow.escrow_id.clone()));
                     break;
                 }
             }
+        }
+
+        if !matched_intents.is_empty() {
+            info!("Matched {} intents with escrows", matched_intents.len());
         }
 
         Ok(matched_intents)

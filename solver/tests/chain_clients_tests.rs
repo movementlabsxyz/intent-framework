@@ -426,8 +426,8 @@ async fn test_get_escrow_events_evm_success() {
     let base_url = mock_server.uri().to_string();
 
     // EscrowInitialized event signature hash
-    // keccak256("EscrowInitialized(uint256,address,address,address,address)")
-    let event_topic = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    // keccak256("EscrowInitialized(uint256,address,address,address,address,uint256,uint256)")
+    let event_topic = "0x104303e46c846fc43f53cd6c4ab9ce96acdf68dcee176382e71fc812218a25a0";
 
     Mock::given(method("POST"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
@@ -441,7 +441,7 @@ async fn test_get_escrow_events_evm_success() {
                         "0x000000000000000000000000cccccccccccccccccccccccccccccccccccccccc", // escrow
                         "0x000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"  // requester
                     ],
-                    "data": "0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff000000000000000000000000dddddddddddddddddddddddddddddddddddddddd", // token + reserved_solver
+                    "data": "0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff000000000000000000000000dddddddddddddddddddddddddddddddddddddddd00000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000000", // token (32 bytes) + reserved_solver (32 bytes) + amount (32 bytes, 1000000) + expiry (32 bytes, 0)
                     "blockNumber": "0x1000",
                     "transactionHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                 }

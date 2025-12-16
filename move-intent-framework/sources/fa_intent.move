@@ -107,7 +107,8 @@ module mvmt_intent::fa_intent {
         desired_chain_id: u64,
         requester: address,
         expiry_time: u64,
-        revocable: bool
+        revocable: bool,
+        reserved_solver: Option<address> // Solver address if the intent is reserved (None for unreserved intents)
     }
 
     #[event]
@@ -201,6 +202,15 @@ module mvmt_intent::fa_intent {
             object::object_from_constructor_ref<FungibleStore>(&coin_store_ref),
             offered_fungible_asset
         );
+        
+        // Extract solver from reservation if present (before reservation is moved into create_intent)
+        let reserved_solver = if (option::is_some(&reservation)) {
+            let reservation_ref = option::borrow(&reservation);
+            option::some(intent_reservation::solver(reservation_ref))
+        } else {
+            option::none<address>()
+        };
+        
         let intent_obj =
             intent::create_intent<FungibleStoreManager, FungibleAssetLimitOrder, FungibleAssetRecipientWitness>(
                 FungibleStoreManager { extend_ref, delete_ref },
@@ -241,7 +251,8 @@ module mvmt_intent::fa_intent {
                 desired_chain_id,
                 expiry_time,
                 requester,
-                revocable
+                revocable,
+                reserved_solver
             }
         );
 

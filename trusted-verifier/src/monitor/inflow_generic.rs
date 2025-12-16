@@ -75,9 +75,8 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
         match inflow_mvm::poll_mvm_escrow_events(&monitor.config).await {
             Ok(events) => {
                 for event in events {
-                    info!("Received escrow event: {:?}", event);
-
-                    {
+                    // Cache the escrow event (deduplicate by escrow_id + chain_id)
+                    let is_new_event = {
                         let escrow_id = event.escrow_id.clone();
                         let chain_id = event.chain_id;
                         let mut escrow_cache = monitor.escrow_cache.write().await;
@@ -85,18 +84,19 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
                             cached.escrow_id == escrow_id && cached.chain_id == chain_id
                         }) {
                             escrow_cache.push(event.clone());
-                        }
-                    }
-
-                    // Validate that this escrow fulfills an existing intent
-                    // Note: It's normal for escrow to exist before intent (escrow created first)
-                    if let Err(e) = validate_intent_fulfillment(monitor, &event).await {
-                        // If no matching intent found, just log info (intent may be created later)
-                        if e.to_string().contains("No matching intent found") {
-                            info!("Registered escrow {} for intent_id {} (intent not yet created on hub chain)", event.escrow_id, event.intent_id);
+                            true
                         } else {
-                            error!("Intent fulfillment validation failed: {}", e);
+                            false
                         }
+                    };
+
+                    // Only validate and log new events (not duplicates from polling)
+                    if is_new_event {
+                        info!("Received new MVM escrow: escrow_id={}, intent_id={}, amount={}", 
+                            event.escrow_id, event.intent_id, event.offered_amount);
+
+                        // Try validation for this escrow's intent
+                        try_validate_for_intent(monitor, &event.intent_id).await?;
                     }
                 }
             }
@@ -154,10 +154,8 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
         match inflow_evm::poll_evm_escrow_events(&monitor.config).await {
             Ok(events) => {
                 for event in events {
-                    info!("Received EVM escrow event: {:?}", event);
-
                     // Cache the escrow event (deduplicate by escrow_id + chain_id)
-                    {
+                    let is_new_event = {
                         let escrow_id = event.escrow_id.clone();
                         let chain_id = event.chain_id;
                         let mut escrow_cache = monitor.escrow_cache.write().await;
@@ -165,18 +163,19 @@ pub async fn monitor_evm_chain(monitor: &EventMonitor) -> Result<()> {
                             cached.escrow_id == escrow_id && cached.chain_id == chain_id
                         }) {
                             escrow_cache.push(event.clone());
-                        }
-                    }
-
-                    // Validate that this escrow fulfills an existing intent
-                    // Note: It's normal for escrow to exist before intent (escrow created first)
-                    if let Err(e) = validate_intent_fulfillment(monitor, &event).await {
-                        // If no matching intent found, just log info (intent may be created later)
-                        if e.to_string().contains("No matching intent found") {
-                            info!("Registered escrow {} for intent_id {} (intent not yet created on hub chain)", event.escrow_id, event.intent_id);
+                            true
                         } else {
-                            error!("Intent fulfillment validation failed for EVM escrow: {}", e);
+                            false
                         }
+                    };
+
+                    // Only validate and log new events (not duplicates from polling)
+                    if is_new_event {
+                        info!("Received new EVM escrow: escrow_id={}, intent_id={}, amount={}", 
+                            event.escrow_id, event.intent_id, event.offered_amount);
+
+                        // Try validation for this escrow's intent
+                        try_validate_for_intent(monitor, &event.intent_id).await?;
                     }
                 }
             }
@@ -300,11 +299,6 @@ pub async fn validate_intent_fulfillment(
 
     match matching_intent {
         Some(intent) => {
-            info!(
-                "Found matching intent: {} for escrow: {}",
-                intent.intent_id, escrow_event.escrow_id
-            );
-
             if escrow_event.offered_amount < intent.desired_amount {
                 return Err(anyhow::anyhow!(
                     "Deposit amount {} is less than required amount {}",
@@ -392,6 +386,88 @@ pub async fn validate_intent_fulfillment(
 /// # Errors
 ///
 /// Returns an error if:
+/// Attempts validation for all escrows and fulfillments related to a given intent_id.
+/// Called whenever any relevant event arrives (intent, escrow, or fulfillment).
+///
+/// # Arguments
+///
+/// * `monitor` - The event monitor instance
+/// * `intent_id` - The intent ID to validate escrows and fulfillments for
+///
+/// # Returns
+///
+/// * `Ok(())` - Validation attempts completed (may have succeeded or failed)
+/// * `Err(anyhow::Error)` - Unexpected error during validation
+pub async fn try_validate_for_intent(
+    monitor: &EventMonitor,
+    intent_id: &str,
+) -> Result<()> {
+    let normalized_intent_id = crate::monitor::generic::normalize_intent_id(intent_id);
+    
+    // Try validating all escrows for this intent
+    let escrows_to_validate: Vec<EscrowEvent> = {
+        let escrow_cache = monitor.escrow_cache.read().await;
+        escrow_cache
+            .iter()
+            .filter(|escrow| {
+                crate::monitor::generic::normalize_intent_id(&escrow.intent_id) == normalized_intent_id
+            })
+            .cloned()
+            .collect()
+    };
+    
+    for escrow in escrows_to_validate {
+        if let Err(e) = validate_intent_fulfillment(monitor, &escrow).await {
+            if !e.to_string().contains("No matching intent found") {
+                error!("Escrow validation failed: {}", e);
+            }
+        }
+    }
+    
+    // Try validating all fulfillments for this intent
+    let fulfillments_to_validate: Vec<FulfillmentEvent> = {
+        let fulfillment_cache = monitor.fulfillment_cache.read().await;
+        fulfillment_cache
+            .iter()
+            .filter(|fulfillment| {
+                crate::monitor::generic::normalize_intent_id(&fulfillment.intent_id) == normalized_intent_id
+            })
+            .cloned()
+            .collect()
+    };
+    
+    for fulfillment in fulfillments_to_validate {
+        if let Err(e) = validate_and_approve_fulfillment(monitor, &fulfillment).await {
+            if !e.to_string().contains("No matching intent found") {
+                error!("Fulfillment validation failed: {}", e);
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+/// Validates a fulfillment event and generates approval signature if valid.
+///
+/// This function is called when a fulfillment event is received from the hub chain.
+/// It validates that:
+/// - A matching escrow exists for the fulfillment's intent_id
+/// - The escrow validation passes (amount, metadata, solver, expiry checks)
+/// - Approval signature is generated and cached
+///
+/// # Arguments
+///
+/// * `monitor` - The event monitor instance
+/// * `fulfillment` - The fulfillment event to validate
+///
+/// # Returns
+///
+/// * `Ok(())` - Validation successful, approval generated
+/// * `Err(anyhow::Error)` - Validation failed
+///
+/// # Errors
+///
+/// Returns an error if:
 /// - No matching escrow is found for the fulfillment's intent_id
 /// - Escrow validation fails (e.g., amount mismatch, expired intent)
 pub async fn validate_and_approve_fulfillment(
@@ -435,6 +511,15 @@ pub async fn validate_and_approve_fulfillment(
     // Re-validate escrow before generating approval
     // This prevents approving escrows that were cached before validation or failed validation
     if let Err(e) = validate_intent_fulfillment(monitor, &escrow_clone).await {
+        // If intent not found yet, log info and return early (intent event may arrive later)
+        // The next polling cycle will retry validation once the intent is processed
+        if e.to_string().contains("No matching intent found") {
+            info!(
+                "Intent not yet processed for fulfillment: {} (intent_id: {}). Will retry on next polling cycle.",
+                escrow_id, fulfillment.intent_id
+            );
+            return Ok(());
+        }
         error!(
             "Escrow validation failed before approval: {} (intent_id: {}): {}",
             escrow_id, fulfillment.intent_id, e

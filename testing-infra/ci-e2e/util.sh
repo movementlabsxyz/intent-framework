@@ -427,6 +427,11 @@ start_verifier() {
     # Ensure log directory exists
     mkdir -p "$(dirname "$log_file")"
     
+    # Delete existing log file to start fresh for this test run
+    if [ -f "$log_file" ]; then
+        rm -f "$log_file"
+    fi
+    
     # Stop any existing verifier first
     stop_verifier
     
@@ -443,7 +448,7 @@ start_verifier() {
     fi
     
     log "   Using binary: $verifier_binary"
-    VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" RUST_LOG="$rust_log" "$verifier_binary" > "$log_file" 2>&1 &
+    VERIFIER_CONFIG_PATH="$VERIFIER_CONFIG_PATH" RUST_LOG="$rust_log" "$verifier_binary" >> "$log_file" 2>&1 &
     VERIFIER_PID=$!
     
     # Export PID so it persists across subshells
@@ -562,6 +567,11 @@ start_solver() {
     # Ensure log directory exists
     mkdir -p "$(dirname "$log_file")"
     
+    # Delete existing log file to start fresh for this test run
+    if [ -f "$log_file" ]; then
+        rm -f "$log_file"
+    fi
+    
     # Stop any existing solver first
     stop_solver
     
@@ -578,7 +588,7 @@ start_solver() {
     fi
     
     log "   Using binary: $solver_binary"
-    SOLVER_CONFIG_PATH="$config_path" RUST_LOG="$rust_log" "$solver_binary" > "$log_file" 2>&1 &
+    SOLVER_CONFIG_PATH="$config_path" RUST_LOG="$rust_log" "$solver_binary" >> "$log_file" 2>&1 &
     SOLVER_PID=$!
     
     # Export PID so it persists across subshells

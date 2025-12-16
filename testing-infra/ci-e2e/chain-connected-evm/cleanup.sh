@@ -18,6 +18,9 @@ cd "$PROJECT_ROOT"
 
 log_and_echo "🧹 Cleaning up chains and processes..."
 
+# Delete logs folder for fresh start
+rm -rf "$PROJECT_ROOT/.tmp/intent-framework-logs"
+
 ./testing-infra/ci-e2e/chain-connected-evm/stop-chain.sh || true
 ./testing-infra/ci-e2e/chain-hub/stop-chain.sh
 ./testing-infra/ci-e2e/chain-connected-mvm/stop-chain.sh
@@ -27,6 +30,7 @@ stop_solver
 # Clean up ephemeral test config to leave clean state
 rm -f "$PROJECT_ROOT/testing-infra/ci-e2e/.verifier-keys.env"
 rm -f "$PROJECT_ROOT/.tmp/intent-info.env"
+rm -f "$PROJECT_ROOT/.tmp/chain-info.env"
 rm -f "$PROJECT_ROOT/.tmp/solver-e2e.toml"
 rm -f "$PROJECT_ROOT/trusted-verifier/config/verifier-e2e-ci-testing.toml"
 rm -f "$PROJECT_ROOT/solver/config/solver-e2e-ci-testing.toml"

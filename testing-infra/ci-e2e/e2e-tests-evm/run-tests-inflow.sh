@@ -120,20 +120,17 @@ fi
 log_and_echo "✅ Solver fulfilled the intent automatically!"
 log_and_echo ""
 
-./testing-infra/ci-e2e/e2e-tests-evm/release-escrow.sh
+# Wait for solver to claim escrow (it does this automatically after fulfillment)
+log_and_echo "⏳ Waiting for solver to claim escrow (5 seconds)..."
+sleep 5
 
 log_and_echo ""
-log_and_echo "💰 Final Balance View"
+log_and_echo "💰 Final Balance Validation"
 log_and_echo "=========================================="
-./testing-infra/ci-e2e/e2e-tests-evm/balance-check.sh || true
+./testing-infra/ci-e2e/e2e-tests-evm/balance-check.sh
+
 log_and_echo ""
-log_and_echo "✅ E2E test flow completed!"
-log_and_echo ""
-log_and_echo "📊 Test Summary:"
-log_and_echo "   ✅ Inflow tests: Tokens transferred from connected EVM chain to hub chain"
-log_and_echo "   ✅ Verifier negotiation routing: Draft submission and signature retrieval"
-log_and_echo "   ✅ Solver automation: Solver automatically detected escrow and fulfilled intent"
-log_and_echo "   ✅ Verifier automation: Verifier detected fulfillment and generated approval"
+log_and_echo "✅ E2E inflow test completed!"
 
 log_and_echo ""
 log_and_echo "🧹 Step 5: Cleaning up chains, accounts and processes..."

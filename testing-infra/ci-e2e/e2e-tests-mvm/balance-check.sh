@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Balance Check Script for MVM E2E Tests
-# Displays final balances for Hub (Chain 1) and Connected MVM (Chain 2)
+# Displays and validates final balances for Hub (Chain 1) and Connected MVM (Chain 2)
 
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,3 +29,15 @@ else
     display_balances_connected_mvm "0x$TEST_TOKENS_CHAIN2"
 fi
 
+# Validate solver received escrow funds
+# For inflow: Solver starts with 1 USDxyz, receives 1 from escrow = 2 USDxyz
+EXPECTED_SOLVER_USDXYZ="2000000"
+SOLVER_CHAIN2_USDXYZ=$(get_usdxyz_balance "solver-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
+
+if [ "$SOLVER_CHAIN2_USDXYZ" != "$EXPECTED_SOLVER_USDXYZ" ]; then
+    echo "❌ ERROR: Solver balance mismatch!"
+    echo "   Actual:   $SOLVER_CHAIN2_USDXYZ 10e-6.USDxyz"
+    echo "   Expected: $EXPECTED_SOLVER_USDXYZ 10e-6.USDxyz"
+    exit 1
+fi
+echo "✅ Solver balance validated: $SOLVER_CHAIN2_USDXYZ 10e-6.USDxyz"

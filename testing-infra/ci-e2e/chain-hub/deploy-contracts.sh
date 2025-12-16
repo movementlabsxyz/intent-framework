@@ -86,7 +86,7 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# Export USDxyz address for other scripts
+# Export USDxyz address for other scripts (cleanup deletes this file, so append is safe - creates file if it doesn't exist)
 echo "TEST_TOKENS_CHAIN1_ADDRESS=$TEST_TOKENS_CHAIN1_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
 log "   ✅ USDxyz address saved: $TEST_TOKENS_CHAIN1_ADDRESS"
 

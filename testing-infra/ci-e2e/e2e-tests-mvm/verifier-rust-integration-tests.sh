@@ -16,8 +16,8 @@ setup_project_root
 setup_logging "verifier-rust-integration-tests"
 cd "$PROJECT_ROOT"
 
-# Setup verifier config (loads keys from .verifier-keys.env written by start-verifier.sh)
-setup_verifier_config
+# Load verifier keys (generated during deployment)
+load_verifier_keys
 
 
 # Create a temporary integration test entry point

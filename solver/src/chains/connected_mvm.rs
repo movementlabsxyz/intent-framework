@@ -169,6 +169,32 @@ impl ConnectedMvmClient {
         amount: u64,
         intent_id: &str,
     ) -> Result<String> {
+        use tracing::{info, warn};
+        
+        // Debug: Get solver's address from profile
+        let address_check = Command::new("aptos")
+            .args(&["config", "show-profiles"])
+            .output();
+        
+        if let Ok(address_output) = address_check {
+            let address_str = String::from_utf8_lossy(&address_output.stdout);
+            info!("Transfer attempt - profile: {}, recipient: {}, amount: {}, metadata: {}", 
+                  self.profile, recipient, amount, metadata);
+            info!("Aptos profiles: {}", address_str);
+        }
+        
+        // Debug: Check solver's balance before transfer
+        let balance_check = Command::new("aptos")
+            .args(&["account", "balance", "--profile", &self.profile])
+            .output();
+        
+        if let Ok(balance_output) = balance_check {
+            let balance_str = String::from_utf8_lossy(&balance_output.stdout);
+            info!("Solver balance check (profile: {}): {}", self.profile, balance_str);
+        } else {
+            warn!("Failed to check solver balance for profile: {}", self.profile);
+        }
+        
         // Use aptos CLI for compatibility with E2E tests which create aptos profiles
         let output = Command::new("aptos")
             .args(&[

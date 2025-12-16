@@ -30,8 +30,8 @@ log "🔧 Configuring verifier..."
 # Configure hub chain section (use source to preserve env vars like E2E_VERIFIER_PRIVATE_KEY)
 source "$PROJECT_ROOT/testing-infra/ci-e2e/chain-hub/configure-verifier.sh"
 
-# Configure connected MVM chain section (also comments out EVM)
-# Must use source so setup_verifier_config() sees the keys from hub config
+# Configure connected MVM chain section
+# Must use source to preserve env vars from hub config
 source "$PROJECT_ROOT/testing-infra/ci-e2e/chain-connected-mvm/configure-verifier.sh"
 
 # ============================================================================

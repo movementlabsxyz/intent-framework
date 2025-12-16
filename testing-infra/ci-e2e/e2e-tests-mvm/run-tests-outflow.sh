@@ -118,14 +118,9 @@ echo ""
 echo "💰 Final Balance View"
 echo "=========================================="
 ./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh || true
+
 echo ""
-echo "✅ E2E outflow test flow completed!"
-echo ""
-echo "📊 Test Summary:"
-echo "   ✅ Outflow tests: Tokens transferred from hub chain to connected chain"
-echo "   ✅ Verifier negotiation routing: Draft submission and signature retrieval"
-echo "   ✅ Solver automation: Solver automatically transferred and fulfilled intent"
-echo "   ✅ Verifier automation: Verifier validated transfer and provided approval"
+echo "✅ E2E outflow test completed!"
 echo ""
 
 echo "🧹 Step 5: Cleaning up chains, accounts and processes..."

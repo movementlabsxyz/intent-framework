@@ -120,22 +120,17 @@ fi
 echo "✅ Solver fulfilled the intent automatically!"
 echo ""
 
-echo "🔓 Step 5b: Releasing escrow on connected chain..."
-echo "==================================================="
-./testing-infra/ci-e2e/e2e-tests-mvm/release-escrow.sh
+# Wait for solver to claim escrow (it does this automatically after fulfillment)
+echo "⏳ Waiting for solver to claim escrow (5 seconds)..."
+sleep 5
 
 echo ""
-echo "💰 Final Balance View"
+echo "💰 Final Balance Validation"
 echo "=========================================="
-./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh || true
+./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh
+
 echo ""
-echo "✅ E2E inflow test flow completed!"
-echo ""
-echo "📊 Test Summary:"
-echo "   ✅ Inflow tests: Tokens transferred from connected chain to hub chain"
-echo "   ✅ Verifier negotiation routing: Draft submission and signature retrieval"
-echo "   ✅ Solver automation: Solver automatically detected escrow and fulfilled intent"
-echo "   ✅ Verifier automation: Verifier detected fulfillment and generated approval"
+echo "✅ E2E inflow test completed!"
 echo ""
 
 echo "🧹 Step 6: Cleaning up chains, accounts and processes..."

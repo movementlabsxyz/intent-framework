@@ -100,7 +100,7 @@ log "   - Using intent_id from hub chain: $INTENT_ID"
 
 log "   - Creating escrow intent on Chain 2..."
 log "     Offered metadata: $OFFERED_METADATA_CHAIN2"
-log "     Reserved solver (Solver): $SOLVER_CHAIN2_ADDRESS"
+log "     Reserved solver (Connected Chain 2 Solver): $SOLVER_CHAIN2_ADDRESS"
 
 aptos move run --profile requester-chain2 --assume-yes \
     --function-id "0x${CHAIN2_ADDRESS}::intent_as_escrow_entry::create_escrow_from_fa" \

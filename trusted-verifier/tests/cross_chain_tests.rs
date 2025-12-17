@@ -3,10 +3,94 @@
 //! These tests verify that escrow events can be matched to intent events
 //! across different chains using intent_id.
 
+use serde_json::json;
+use trusted_verifier::config::Config;
 use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
+use trusted_verifier::validator::CrossChainValidator;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::{create_base_escrow_event, create_base_intent_mvm};
+use test_helpers::{build_test_config_with_mvm, create_base_escrow_event, create_base_intent_mvm};
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/// Build a test config with a mock server URL
+fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
+    let mut config = build_test_config_with_mvm();
+    config.hub_chain.rpc_url = mock_server_url.to_string();
+    config
+}
+
+/// Helper to create a mock SolverRegistry resource response with MVM address
+fn create_solver_registry_resource_with_mvm_address(
+    registry_address: &str,
+    solver_address: &str,
+    connected_chain_mvm_address: Option<&str>,
+) -> serde_json::Value {
+    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": [mvm_addr]},
+                "registered_at": 1234567890
+            }
+        })
+    } else {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": []},
+                "registered_at": 1234567890
+            }
+        })
+    };
+
+    json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
+        }
+    }])
+}
+
+/// Setup a mock server with solver registry for MVM tests
+async fn setup_mock_server_with_solver_registry(
+    solver_address: Option<&str>,
+    connected_chain_mvm_address: Option<&str>,
+) -> (MockServer, CrossChainValidator) {
+    let mock_server = MockServer::start().await;
+    let registry_address = "0x1";
+
+    if let Some(solver_addr) = solver_address {
+        let resources_response = create_solver_registry_resource_with_mvm_address(
+            registry_address,
+            solver_addr,
+            connected_chain_mvm_address,
+        );
+
+        Mock::given(method("GET"))
+            .and(path(format!("/v1/accounts/{}/resources", registry_address)))
+            .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
+            .mount(&mock_server)
+            .await;
+    }
+
+    let config = build_test_config_with_mock_server(&mock_server.uri());
+    let validator = CrossChainValidator::new(&config)
+        .await
+        .expect("Failed to create validator");
+
+    (mock_server, validator)
+}
 
 // ============================================================================
 // TESTS
@@ -80,17 +164,19 @@ fn test_cross_chain_intent_matching() {
 /// Why: Verify that escrow chain_id matches the intent's offered_chain_id when provided
 #[tokio::test]
 async fn test_escrow_chain_id_validation() {
-    use test_helpers::build_test_config_with_mvm;
-    use trusted_verifier::validator::CrossChainValidator;
-
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
+    // Setup mock server (no solver needed for this test since we're removing solvers)
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(None, None).await;
 
     // Test that escrow chain_id must match intent's offered_chain_id when provided
-    let valid_intent = create_base_intent_mvm();
-    let valid_escrow = create_base_escrow_event();
+    // Remove solvers to avoid solver validation interfering with chain_id test
+    let valid_intent = IntentEvent {
+        reserved_solver: None,
+        ..create_base_intent_mvm()
+    };
+    let valid_escrow = EscrowEvent {
+        reserved_solver: None,
+        ..create_base_escrow_event()
+    };
 
     // This should pass the connected_chain_id check (may fail other validations, but not this one)
     let result = trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(
@@ -109,9 +195,8 @@ async fn test_escrow_chain_id_validation() {
             "Should not fail due to missing connected_chain_id when chain_id is provided"
         );
     }
-    // Assert 2: Validation may fail on other checks (like solver registry query), but should not fail on connected_chain_id
-    // Note: This might fail other validations (like solver address mismatch if not properly mocked),
-    // but for a complete test, we'd need to ensure all conditions are met
+    // Assert 2: Validation may fail on other checks, but should not fail on connected_chain_id
+    // Note: This might fail other validations, but for a complete test, we'd need to ensure all conditions are met
     // We just verify it doesn't fail on connected_chain_id check
 }
 
@@ -119,20 +204,25 @@ async fn test_escrow_chain_id_validation() {
 /// Why: Verify that escrow amount validation works correctly
 #[tokio::test]
 async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
-    use test_helpers::build_test_config_with_mvm;
-    use trusted_verifier::validator::CrossChainValidator;
+    // Setup mock server with solver registry
+    let solver_address = "0xsolver_mvm";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
 
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
-
-    // Create a hub intent with offered_amount = 1000
-    let hub_intent = create_base_intent_mvm();
+    // Create a hub intent with offered_amount = 1000 and solver
+    let hub_intent = IntentEvent {
+        reserved_solver: Some(solver_address.to_string()),
+        ..create_base_intent_mvm()
+    };
 
     // Create an escrow with mismatched offered_amount (500 != 1000)
     let escrow_mismatch = EscrowEvent {
         offered_amount: 500,
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -155,7 +245,10 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
     );
 
     // Now test with matching amounts
-    let escrow_match = create_base_escrow_event();
+    let escrow_match = EscrowEvent {
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
+        ..create_base_escrow_event()
+    };
 
     let validation_result =
         trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(
@@ -183,19 +276,26 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
 /// Why: Verify that metadata matching validation works correctly for successful cases
 #[tokio::test]
 async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_success() {
-    use test_helpers::build_test_config_with_mvm;
-    use trusted_verifier::validator::CrossChainValidator;
+    // Setup mock server with solver registry
+    let solver_address = "0xsolver_mvm";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
 
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
-
-    // Create a hub intent with specific offered_metadata
-    let hub_intent = create_base_intent_mvm();
+    // Create a hub intent with specific offered_metadata and solver
+    let hub_intent = IntentEvent {
+        reserved_solver: Some(solver_address.to_string()),
+        ..create_base_intent_mvm()
+    };
 
     // Create an escrow with matching offered_metadata
-    let escrow_match = create_base_escrow_event();
+    let escrow_match = EscrowEvent {
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
+        ..create_base_escrow_event()
+    };
 
     let validation_result =
         trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(
@@ -262,21 +362,24 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_rej
 /// Why: Verify that empty metadata strings are handled correctly (both empty should match, one empty one not should fail)
 #[tokio::test]
 async fn test_escrow_offered_metadata_empty_strings() {
-    use test_helpers::build_test_config_with_mvm;
-    use trusted_verifier::validator::CrossChainValidator;
-
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
+    // Setup mock server with solver registry
+    let solver_address = "0xsolver_mvm";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
 
     // Test case 1: Both empty - should pass
     let hub_intent_empty = IntentEvent {
         offered_metadata: "".to_string(),
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
     let escrow_empty = EscrowEvent {
         offered_metadata: "".to_string(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -297,10 +400,12 @@ async fn test_escrow_offered_metadata_empty_strings() {
     // Test case 2: Hub intent has metadata, escrow is empty - should fail
     let hub_intent_with_meta = IntentEvent {
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
     let escrow_empty_2 = EscrowEvent {
         offered_metadata: "".to_string(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -325,10 +430,12 @@ async fn test_escrow_offered_metadata_empty_strings() {
     // Test case 3: Hub intent is empty, escrow has metadata - should fail
     let hub_intent_empty_3 = IntentEvent {
         offered_metadata: "".to_string(),
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
     let escrow_with_meta = EscrowEvent {
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -355,23 +462,26 @@ async fn test_escrow_offered_metadata_empty_strings() {
 /// Why: Verify that exact string matching works for complex nested JSON, escaped characters, etc.
 #[tokio::test]
 async fn test_escrow_offered_metadata_complex_json() {
-    use test_helpers::build_test_config_with_mvm;
-    use trusted_verifier::validator::CrossChainValidator;
-
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
+    // Setup mock server with solver registry
+    let solver_address = "0xsolver_mvm";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
 
     // Test case 1: Complex nested JSON - should pass when exact match
     let complex_metadata = r#"{"nested":{"level1":{"level2":"value","array":[1,2,3],"escaped":"\"quoted\""},"timestamp":1234567890},"metadata":"complex"}"#;
 
     let hub_intent_complex = IntentEvent {
         offered_metadata: complex_metadata.to_string(),
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
     let escrow_complex_match = EscrowEvent {
         offered_metadata: complex_metadata.to_string(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -396,6 +506,7 @@ async fn test_escrow_offered_metadata_complex_json() {
 
     let escrow_complex_mismatch = EscrowEvent {
         offered_metadata: complex_metadata_2.to_string(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -422,6 +533,7 @@ async fn test_escrow_offered_metadata_complex_json() {
 
     let escrow_complex_mismatch_2 = EscrowEvent {
         offered_metadata: complex_metadata_3.to_string(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -448,19 +560,26 @@ async fn test_escrow_offered_metadata_complex_json() {
 /// Why: Verify that escrow desired_amount validation works correctly for successful cases
 #[tokio::test]
 async fn test_escrow_desired_amount_must_be_zero_success() {
-    use test_helpers::build_test_config_with_mvm;
-    use trusted_verifier::validator::CrossChainValidator;
+    // Setup mock server with solver registry
+    let solver_address = "0xsolver_mvm";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
 
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
-
-    // Create a hub intent
-    let hub_intent = create_base_intent_mvm();
+    // Create a hub intent with solver
+    let hub_intent = IntentEvent {
+        reserved_solver: Some(solver_address.to_string()),
+        ..create_base_intent_mvm()
+    };
 
     // Validation passes when desired_amount is 0
-    let escrow_valid = create_base_escrow_event();
+    let escrow_valid = EscrowEvent {
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
+        ..create_base_escrow_event()
+    };
     // Ensure desired_amount is 0 (it's already set to 0 in the helper)
     assert_eq!(
         escrow_valid.desired_amount, 0,

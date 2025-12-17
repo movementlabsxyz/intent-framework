@@ -8,6 +8,7 @@ use tracing::info;
 
 use super::generic::{CrossChainValidator, ValidationResult};
 use super::inflow_evm;
+use super::inflow_mvm;
 use crate::monitor::{ChainType, EscrowEvent, IntentEvent};
 
 /// Validates fulfillment of intent conditions on the connected chain.
@@ -110,22 +111,21 @@ pub async fn validate_intent_fulfillment(
     // must fulfill on the hub chain before the verifier approves escrow release
 
     // Validate solver addresses match between escrow and intent
-    // For Move VM escrows: Check if escrow's reserved_solver (Move VM address) matches hub intent's solver (Move VM address)
+    // For Move VM escrows: Check if escrow's reserved_solver (connected chain MVM address) matches registered solver's connected chain MVM address
     // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
-    if let (Some(escrow_solver), Some(intent_solver)) = (
+    if let (Some(escrow_solver), Some(_intent_solver)) = (
         &escrow_event.reserved_solver,
         &intent_event.reserved_solver,
     ) {
         // Determine chain type from the chain_type field set by the monitor
         let is_evm_escrow = escrow_event.chain_type == ChainType::Evm;
+        let hub_rpc_url = &validator.config.hub_chain.rpc_url;
+        let registry_address = &validator.config.hub_chain.intent_module_address; // Registry is at module address
 
         if is_evm_escrow {
             // EVM escrow: Compare EVM addresses
             // The escrow_solver is an EVM address, intent_solver is a Move VM address
             // We need to query the solver registry to get the EVM address for intent_solver
-            let hub_rpc_url = &validator.config.hub_chain.rpc_url;
-            let registry_address = &validator.config.hub_chain.intent_module_address; // Registry is at module address
-
             let validation_result = inflow_evm::validate_evm_escrow_solver(
                 intent_event,
                 escrow_solver,
@@ -138,16 +138,19 @@ pub async fn validate_intent_fulfillment(
                 return Ok(validation_result);
             }
         } else {
-            // Move VM escrow: Compare Move VM addresses directly
-            if escrow_solver != intent_solver {
-                return Ok(ValidationResult {
-                    valid: false,
-                    message: format!(
-                        "Escrow reserved solver '{}' does not match hub intent solver '{}'",
-                        escrow_solver, intent_solver
-                    ),
-                    timestamp: chrono::Utc::now().timestamp() as u64,
-                });
+            // Move VM escrow: Look up connected chain MVM address from registry
+            // The escrow_solver is a connected chain MVM address, intent_solver is a hub chain MVM address
+            // We need to query the solver registry to get the connected chain MVM address for intent_solver
+            let validation_result = inflow_mvm::validate_mvm_escrow_solver(
+                intent_event,
+                escrow_solver,
+                hub_rpc_url,
+                registry_address,
+            )
+            .await?;
+
+            if !validation_result.valid {
+                return Ok(validation_result);
             }
         }
     } else if escrow_event.reserved_solver.is_some()

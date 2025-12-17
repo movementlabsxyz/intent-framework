@@ -3,13 +3,96 @@
 //! These tests verify Move VM-specific escrow validation logic, including
 //! solver address matching for Move VM escrows.
 
+use serde_json::json;
+use trusted_verifier::config::Config;
 use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
 use trusted_verifier::validator::CrossChainValidator;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_escrow_event, create_base_intent_mvm,
 };
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/// Build a test config with a mock server URL
+fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
+    let mut config = build_test_config_with_mvm();
+    config.hub_chain.rpc_url = mock_server_url.to_string();
+    config
+}
+
+/// Helper to create a mock SolverRegistry resource response with MVM address
+fn create_solver_registry_resource_with_mvm_address(
+    registry_address: &str,
+    solver_address: &str,
+    connected_chain_mvm_address: Option<&str>,
+) -> serde_json::Value {
+    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": [mvm_addr]},
+                "registered_at": 1234567890
+            }
+        })
+    } else {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": []},
+                "registered_at": 1234567890
+            }
+        })
+    };
+
+    json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
+        }
+    }])
+}
+
+/// Setup a mock server with solver registry for MVM tests
+async fn setup_mock_server_with_solver_registry(
+    solver_address: Option<&str>,
+    connected_chain_mvm_address: Option<&str>,
+) -> (MockServer, CrossChainValidator) {
+    let mock_server = MockServer::start().await;
+    let registry_address = "0x1";
+
+    if let Some(solver_addr) = solver_address {
+        let resources_response = create_solver_registry_resource_with_mvm_address(
+            registry_address,
+            solver_addr,
+            connected_chain_mvm_address,
+        );
+
+        Mock::given(method("GET"))
+            .and(path(format!("/v1/accounts/{}/resources", registry_address)))
+            .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
+            .mount(&mock_server)
+            .await;
+    }
+
+    let config = build_test_config_with_mock_server(&mock_server.uri());
+    let validator = CrossChainValidator::new(&config)
+        .await
+        .expect("Failed to create validator");
+
+    (mock_server, validator)
+}
 
 // ============================================================================
 // MOVE VM ESCROW SOLVER VALIDATION TESTS
@@ -19,20 +102,24 @@ use test_helpers::{
 /// Why: Verify that solver address matching validation works correctly for successful cases
 #[tokio::test]
 async fn test_escrow_solver_address_matching_success() {
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
+    // Setup mock server with solver registry
+    let solver_address = "0xsolver_mvm";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
 
     // Create a hub intent with a solver
     let hub_intent = IntentEvent {
-        reserved_solver: Some("0xsolver_mvm".to_string()),
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
 
-    // Create an escrow with matching solver address (Move VM escrow)
+    // Create an escrow with matching connected chain MVM solver address
     let escrow_match = EscrowEvent {
-        reserved_solver: Some("0xsolver_mvm".to_string()),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -60,20 +147,25 @@ async fn test_escrow_solver_address_matching_success() {
 /// Why: Verify that solver address mismatch validation works correctly
 #[tokio::test]
 async fn test_escrow_solver_address_mismatch_rejection() {
-    let config = build_test_config_with_mvm();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
+    // Setup mock server with solver registry
+    let solver_address = "0xsolver_mvm";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let different_solver_address = "0xdifferent_solver_address_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, validator) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
 
     // Create a hub intent with a solver
     let hub_intent = IntentEvent {
-        reserved_solver: Some("0xsolver_mvm".to_string()),
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
 
-    // Create an escrow with different solver address (Move VM escrow)
+    // Create an escrow with different solver address (doesn't match registered connected chain MVM address)
     let escrow_mismatch = EscrowEvent {
-        reserved_solver: Some("0xdifferent_solver".to_string()),
+        reserved_solver: Some(different_solver_address.to_string()),
         ..create_base_escrow_event()
     };
 

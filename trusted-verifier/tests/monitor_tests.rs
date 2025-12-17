@@ -4,7 +4,11 @@
 //! without requiring external services.
 
 use futures::future;
+use serde_json::json;
+use trusted_verifier::config::Config;
 use trusted_verifier::monitor::{EscrowEvent, EventMonitor, FulfillmentEvent, IntentEvent};
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "mod.rs"]
 mod test_helpers;
 use test_helpers::{
@@ -19,6 +23,77 @@ use test_helpers::{
 /// Helper function for validation logic
 fn is_safe_for_escrow(event: &IntentEvent) -> bool {
     !event.revocable
+}
+
+/// Build a test config with a mock server URL
+fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
+    let mut config = build_test_config_with_mvm();
+    config.hub_chain.rpc_url = mock_server_url.to_string();
+    config
+}
+
+/// Helper to create a mock SolverRegistry resource response with MVM address
+fn create_solver_registry_resource_with_mvm_address(
+    registry_address: &str,
+    solver_address: &str,
+    connected_chain_mvm_address: Option<&str>,
+) -> serde_json::Value {
+    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": [mvm_addr]},
+                "registered_at": 1234567890
+            }
+        })
+    } else {
+        json!({
+            "key": solver_address,
+            "value": {
+                "public_key": [1, 2, 3, 4],
+                "connected_chain_evm_address": {"vec": []},
+                "connected_chain_mvm_address": {"vec": []},
+                "registered_at": 1234567890
+            }
+        })
+    };
+
+    json!([{
+        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
+        "data": {
+            "solvers": {
+                "data": [solver_entry]
+            }
+        }
+    }])
+}
+
+/// Setup a mock server with solver registry for monitor tests
+async fn setup_mock_server_with_solver_registry(
+    solver_address: Option<&str>,
+    connected_chain_mvm_address: Option<&str>,
+) -> (MockServer, Config) {
+    let mock_server = MockServer::start().await;
+    let registry_address = "0x1";
+
+    if let Some(solver_addr) = solver_address {
+        let resources_response = create_solver_registry_resource_with_mvm_address(
+            registry_address,
+            solver_addr,
+            connected_chain_mvm_address,
+        );
+
+        Mock::given(method("GET"))
+            .and(path(format!("/v1/accounts/{}/resources", registry_address)))
+            .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
+            .mount(&mock_server)
+            .await;
+    }
+
+    let config = build_test_config_with_mock_server(&mock_server.uri());
+    (mock_server, config)
 }
 
 // ============================================================================
@@ -103,7 +178,14 @@ fn test_revocable_intent_rejection() {
 #[tokio::test]
 async fn test_generates_approval_when_fulfillment_and_escrow_present() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config_with_mvm();
+    // Setup mock server with solver registry
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
@@ -115,6 +197,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
         intent_cache.push(IntentEvent {
             intent_id: intent_id.to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(solver_address.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -125,6 +208,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
         escrow_cache.push(EscrowEvent {
             intent_id: intent_id.to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(connected_chain_mvm_address.to_string()),
             ..create_base_escrow_event()
         });
     }
@@ -194,7 +278,14 @@ async fn test_returns_error_when_no_matching_escrow() {
 #[tokio::test]
 async fn test_multiple_concurrent_intents() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config_with_mvm();
+    // Setup mock server with solver registry
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
@@ -204,16 +295,19 @@ async fn test_multiple_concurrent_intents() {
         IntentEvent {
             intent_id: "0x01".to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(solver_address.to_string()),
             ..create_base_intent_mvm()
         },
         IntentEvent {
             intent_id: "0x02".to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(solver_address.to_string()),
             ..create_base_intent_mvm()
         },
         IntentEvent {
             intent_id: "0x03".to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(solver_address.to_string()),
             ..create_base_intent_mvm()
         },
     ];
@@ -230,18 +324,21 @@ async fn test_multiple_concurrent_intents() {
             escrow_id: "0xescrow1".to_string(),
             intent_id: "0x01".to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(connected_chain_mvm_address.to_string()),
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow2".to_string(),
             intent_id: "0x02".to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(connected_chain_mvm_address.to_string()),
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow3".to_string(),
             intent_id: "0x03".to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(connected_chain_mvm_address.to_string()),
             ..create_base_escrow_event()
         },
     ];
@@ -325,7 +422,14 @@ async fn test_multiple_concurrent_intents() {
 #[tokio::test]
 async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config_with_mvm();
+    // Setup mock server with solver registry
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
@@ -340,6 +444,7 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     let expired_intent = IntentEvent {
         intent_id: "0xexpired_intent".to_string(),
         expiry_time: past_expiry,
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
 
@@ -353,9 +458,10 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     // The escrow must pass other validations first (amount, metadata, solver)
     // Note: escrow.offered_amount (1000) >= intent.desired_amount (0) ✓
     //       escrow.desired_metadata ("{}") == intent.desired_metadata ("{}") ✓
-    //       Both have no solver reservation, so solver validation passes ✓
+    //       Escrow solver must match registered connected chain MVM address ✓
     let escrow_event = EscrowEvent {
         intent_id: expired_intent.intent_id.clone(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -380,7 +486,14 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
 #[tokio::test]
 async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config_with_mvm();
+    // Setup mock server with solver registry
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
@@ -395,6 +508,7 @@ async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     let non_expired_intent = IntentEvent {
         intent_id: "0xvalid_intent".to_string(),
         expiry_time: future_expiry,
+        reserved_solver: Some(solver_address.to_string()),
         ..create_base_intent_mvm()
     };
 
@@ -408,9 +522,10 @@ async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     // The escrow must pass all other validations to reach the expiry check:
     // - escrow.offered_amount (1000) >= intent.desired_amount (0) ✓
     // - escrow.desired_metadata ("{}") == intent.desired_metadata ("{}") ✓
-    // - Both have no solver reservation, so solver validation passes ✓
+    // - Escrow solver must match registered connected chain MVM address ✓
     let valid_escrow = EscrowEvent {
         intent_id: non_expired_intent.intent_id.clone(),
+        reserved_solver: Some(connected_chain_mvm_address.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -532,7 +647,14 @@ async fn test_duplicate_intent_event_rejection() {
 #[tokio::test]
 async fn test_duplicate_fulfillment_event_handling() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config_with_mvm();
+    // Setup mock server with solver registry
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
@@ -542,6 +664,7 @@ async fn test_duplicate_fulfillment_event_handling() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             expiry_time: 9999999999,
+            reserved_solver: Some(solver_address.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -551,6 +674,7 @@ async fn test_duplicate_fulfillment_event_handling() {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             expiry_time: 9999999999,
+            reserved_solver: Some(connected_chain_mvm_address.to_string()),
             ..create_base_escrow_event()
         });
     }
@@ -628,7 +752,14 @@ async fn test_duplicate_fulfillment_event_handling() {
 #[tokio::test]
 async fn test_base_helpers_work_with_signature_generation() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config_with_mvm();
+    // Setup mock server with solver registry
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
@@ -638,6 +769,7 @@ async fn test_base_helpers_work_with_signature_generation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             expiry_time: 9999999999,
+            reserved_solver: Some(solver_address.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -647,6 +779,7 @@ async fn test_base_helpers_work_with_signature_generation() {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             expiry_time: 9999999999,
+            reserved_solver: Some(connected_chain_mvm_address.to_string()),
             ..create_base_escrow_event()
         });
     }
@@ -676,7 +809,14 @@ async fn test_base_helpers_work_with_signature_generation() {
 #[tokio::test]
 async fn test_fulfillment_with_odd_length_intent_id() {
     let _ = tracing_subscriber::fmt::try_init();
-    let config = build_test_config_with_mvm();
+    // Setup mock server with solver registry
+    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+        Some(solver_address),
+        Some(connected_chain_mvm_address),
+    )
+    .await;
     let monitor = EventMonitor::new(&config)
         .await
         .expect("Failed to create monitor");
@@ -692,6 +832,7 @@ async fn test_fulfillment_with_odd_length_intent_id() {
         intent_cache.push(IntentEvent {
             intent_id: escrow_intent_id.to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(solver_address.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -703,6 +844,7 @@ async fn test_fulfillment_with_odd_length_intent_id() {
             escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222"
                 .to_string(),
             expiry_time: 9999999999,
+            reserved_solver: Some(connected_chain_mvm_address.to_string()),
             ..create_base_escrow_event()
         });
     }

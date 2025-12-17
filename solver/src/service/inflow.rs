@@ -212,7 +212,7 @@ impl InflowService {
     /// Releases an escrow on the connected chain after getting verifier approval
     ///
     /// This function:
-    /// 1. Polls the verifier for an approval signature matching the intent_id
+    /// 1. Polls the verifier for an approval signature matching the intent_id (with retries)
     /// 2. Converts the signature to the appropriate format (Ed25519 for MVM, ECDSA for EVM)
     /// 3. Calls the escrow release function on the connected chain
     ///
@@ -232,25 +232,45 @@ impl InflowService {
         escrow_id: &str,
         payment_amount: u64,
     ) -> Result<String> {
-        // Poll verifier for approval (use spawn_blocking to avoid blocking client in async context)
+        // Poll verifier for approval until escrow expiry
         let verifier_url = self.verifier_url.clone();
-        let approvals = tokio::task::spawn_blocking(move || {
-            let client = VerifierClient::new(&verifier_url);
-            client.get_approvals()
-        })
-        .await
-        .context("Failed to spawn blocking task")?
-        .context("Failed to get approvals")?;
-
-        // Find approval matching this intent_id
         let intent_id_normalized = normalize_intent_id(&intent.intent_id);
-        let approval = approvals
-            .iter()
-            .find(|approval| {
+        let poll_interval = Duration::from_secs(2);
+        let expiry_time = intent.expiry_time;
+        
+        let approval = loop {
+            let current_time = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            
+            if current_time >= expiry_time {
+                anyhow::bail!("Escrow expired while waiting for approval (expiry: {})", expiry_time);
+            }
+            
+            let approvals = tokio::task::spawn_blocking({
+                let verifier_url = verifier_url.clone();
+                move || {
+                    let client = VerifierClient::new(&verifier_url);
+                    client.get_approvals()
+                }
+            })
+            .await
+            .context("Failed to spawn blocking task")?
+            .context("Failed to get approvals")?;
+
+            // Find approval matching this intent_id
+            if let Some(approval) = approvals.iter().find(|approval| {
                 let approval_intent_id_normalized = normalize_intent_id(&approval.intent_id);
                 approval_intent_id_normalized == intent_id_normalized
-            })
-            .context("No approval found for intent_id")?;
+            }) {
+                info!("Found approval for intent {}", intent.intent_id);
+                break approval.clone();
+            }
+
+            // Approval not found yet, wait and retry
+            tokio::time::sleep(poll_interval).await;
+        };
 
         // Decode base64 signature to bytes
         let signature_bytes = STANDARD
@@ -299,6 +319,11 @@ impl InflowService {
                                     "Fulfilled inflow intent {} on hub chain: {}",
                                     intent.intent_id, tx_hash
                                 );
+                                // Mark intent as fulfilled IMMEDIATELY after successful fulfillment
+                                // This prevents retrying fulfillment on next poll
+                                if let Err(e) = self.tracker.mark_fulfilled(&intent.draft_id).await {
+                                    warn!("Failed to mark intent as fulfilled: {}", e);
+                                }
                             }
                             Err(e) => {
                                 error!("Failed to fulfill inflow intent {}: {}", intent.intent_id, e);
@@ -318,10 +343,6 @@ impl InflowService {
                                     "Released escrow {} for intent {}: {}",
                                     escrow_id, intent.intent_id, tx_hash
                                 );
-                                // Mark intent as fulfilled
-                                if let Err(e) = self.tracker.mark_fulfilled(&intent.draft_id).await {
-                                    warn!("Failed to mark intent as fulfilled: {}", e);
-                                }
                             }
                             Err(e) => {
                                 error!(

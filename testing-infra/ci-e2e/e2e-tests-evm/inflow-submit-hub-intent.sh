@@ -154,7 +154,7 @@ if [ -z "$RETRIEVED_SIGNATURE" ] || [ "$RETRIEVED_SIGNATURE" = "null" ]; then
     fi
     
     # Show verifier log
-    VERIFIER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/verifier-evm.log"
+    VERIFIER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/verifier.log"
     if [ -f "$VERIFIER_LOG_FILE" ]; then
         log_and_echo ""
         log_and_echo "   📋 Verifier log (last 30 lines):"

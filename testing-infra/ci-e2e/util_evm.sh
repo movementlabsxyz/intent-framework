@@ -118,3 +118,34 @@ display_balances_connected_evm() {
         log_and_echo "      Solver (Acc 2): ${solver_eth} ETH"
     fi
 }
+
+# Check if an escrow is claimed
+# Usage: is_escrow_claimed <escrow_address> <intent_id_evm>
+# Returns: "true" if claimed, "false" if not claimed, exits with error if check fails
+is_escrow_claimed() {
+    local escrow_address="$1"
+    local intent_id_evm="$2"
+    
+    if [ -z "$escrow_address" ] || [ -z "$intent_id_evm" ]; then
+        echo "❌ PANIC: is_escrow_claimed requires escrow_address and intent_id_evm" >&2
+        exit 1
+    fi
+    
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+    
+    local output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$escrow_address' INTENT_ID_EVM='$intent_id_evm' npx hardhat run scripts/get-escrow-status.js --network localhost" 2>&1)
+    
+    # Check for "isClaimed: true" or "isClaimed: false" in output
+    if echo "$output" | grep -q "isClaimed: true"; then
+        echo "true"
+    elif echo "$output" | grep -q "isClaimed: false"; then
+        echo "false"
+    else
+        echo "❌ PANIC: is_escrow_claimed failed to get escrow status" >&2
+        echo "   escrow_address: $escrow_address, intent_id_evm: $intent_id_evm" >&2
+        echo "   output: $output" >&2
+        exit 1
+    fi
+}

@@ -39,7 +39,7 @@ source "$PROJECT_ROOT/testing-infra/ci-e2e/chain-connected-evm/configure-verifie
 # ============================================================================
 log ""
 log "   Starting verifier service..."
-start_verifier "$LOG_DIR/verifier-evm.log" "info"
+start_verifier "$LOG_DIR/verifier.log" "info"
 
 log ""
 log_and_echo "✅ Verifier configured and started successfully"

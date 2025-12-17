@@ -28,6 +28,11 @@ rm -rf "$PROJECT_ROOT/.tmp/intent-framework-logs"
 stop_verifier
 stop_solver
 
+# Delete target folders to ensure fresh binaries are built
+log_and_echo "   Deleting target folders for fresh builds..."
+rm -rf "$PROJECT_ROOT/trusted-verifier/target"
+rm -rf "$PROJECT_ROOT/solver/target"
+
 # Clean up ephemeral test config to leave clean state
 rm -f "$PROJECT_ROOT/testing-infra/ci-e2e/.verifier-keys.env"
 rm -f "$PROJECT_ROOT/.tmp/intent-info.env"

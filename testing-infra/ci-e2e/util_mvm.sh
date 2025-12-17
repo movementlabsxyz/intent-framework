@@ -584,6 +584,32 @@ get_usdxyz_balance() {
     echo "$balance"
 }
 
+# Assert USDxyz balance matches expected value or PANIC
+# Usage: assert_usdxyz_balance <profile> <chain_num> <test_tokens_addr> <expected_balance> <checkpoint_name>
+# Example: assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint"
+# Exits with error if balance doesn't match expected value
+assert_usdxyz_balance() {
+    local profile="$1"
+    local chain_num="$2"
+    local test_tokens_addr="$3"
+    local expected="$4"
+    local checkpoint="$5"
+    
+    local actual=$(get_usdxyz_balance "$profile" "$chain_num" "$test_tokens_addr")
+    
+    if [ -z "$actual" ]; then
+        log_and_echo "❌ PANIC at $checkpoint: Failed to get USDxyz balance for $profile"
+        exit 1
+    fi
+    
+    if [ "$actual" != "$expected" ]; then
+        log_and_echo "❌ PANIC at $checkpoint: $profile USDxyz balance mismatch!"
+        log_and_echo "   Expected: $expected, Actual: $actual"
+        exit 1
+    fi
+    log_and_echo "   ✅ $checkpoint: $profile has $actual USDxyz (expected: $expected)"
+}
+
 # Display balances for Chain 1 (Hub)
 # Usage: display_balances_hub [test_tokens_address]
 # Fetches and displays Requester and Solver balances on the Hub chain

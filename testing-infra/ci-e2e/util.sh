@@ -413,6 +413,51 @@ verify_solver_running() {
 # Note: verify_solver_registered() is defined in util_mvm.sh with auto-detection
 # Both MVM and EVM E2E tests source util_mvm.sh since the hub chain is always MVM
 
+# Display solver and verifier logs for debugging
+# Usage: display_service_logs [context_message]
+# Shows last 100 lines of solver.log and verifier.log if they exist
+display_service_logs() {
+    local context="${1:-Error occurred}"
+    
+    if [ -z "$PROJECT_ROOT" ]; then
+        setup_project_root
+    fi
+    
+    local log_dir="$PROJECT_ROOT/.tmp/intent-framework-logs"
+    local solver_log="$log_dir/solver.log"
+    local verifier_log="$log_dir/verifier.log"
+    
+    # Get current timestamp in ISO format (matches Rust log format)
+    local error_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.%NZ" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+    
+    log_and_echo ""
+    log_and_echo "📋 Service Logs ($context)"
+    log_and_echo "=========================================="
+    log_and_echo "⏰ Error occurred at: $error_timestamp"
+    log_and_echo ""
+    
+    if [ -f "$verifier_log" ]; then
+        log_and_echo ""
+        log_and_echo "🔍 Verifier logs (last 100 lines):"
+        log_and_echo "-----------------------------------"
+        tail -100 "$verifier_log" | sed 's/^/   /'
+    else
+        log_and_echo ""
+        log_and_echo "⚠️  Verifier log not found: $verifier_log"
+    fi
+    
+    if [ -f "$solver_log" ]; then
+        log_and_echo ""
+        log_and_echo "🔍 Solver logs (last 100 lines):"
+        log_and_echo "-----------------------------------"
+        tail -100 "$solver_log" | sed 's/^/   /'
+    else
+        log_and_echo ""
+        log_and_echo "⚠️  Solver log not found: $solver_log"
+    fi
+    
+    log_and_echo ""
+}
 
 # Start verifier service
 # Usage: start_verifier [log_file] [rust_log_level]
@@ -1099,11 +1144,7 @@ wait_for_solver_fulfillment() {
     fi
     
     # Show verifier logs
-    local verifier_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/verifier-evm.log"
-    if [ ! -f "$verifier_log_file" ]; then
-        # Try alternative location
-        verifier_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/verifier.log"
-    fi
+    local verifier_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/verifier.log"
     if [ -f "$verifier_log_file" ]; then
         log ""
         log "   Verifier logs (last 100 lines):"

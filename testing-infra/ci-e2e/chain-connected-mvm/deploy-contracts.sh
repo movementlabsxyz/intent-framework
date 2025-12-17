@@ -124,6 +124,10 @@ fi
 
 log_and_echo "✅ USDxyz minted to Requester and Solver on connected chain (1 USDxyz each)"
 
+# Assert balances are correct after minting
+assert_usdxyz_balance "requester-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint-requester"
+assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint-solver"
+
 # Display balances (APT + USDxyz)
 display_balances_connected_mvm "$TEST_TOKENS_CHAIN2_ADDRESS"
 

@@ -62,24 +62,24 @@ log "   Desired amount: $DESIRED_AMOUNT (1 USDhub on hub chain, Chain 1)"
 log ""
 log "   - Getting USD token metadata addresses..."
 log "     Getting USDhub metadata on Chain 1..."
-USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
-if [ -z "$USDXYZ_METADATA_CHAIN1" ]; then
+USDHUB_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
+if [ -z "$USDHUB_METADATA_CHAIN1" ]; then
     log_and_echo "❌ Failed to get USDhub metadata on Chain 1"
     exit 1
 fi
-log "     ✅ Got USDhub metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
+log "     ✅ Got USDhub metadata on Chain 1: $USDHUB_METADATA_CHAIN1"
 
 log "     Getting USDcon metadata on Chain 2..."
-USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
-if [ -z "$USDXYZ_METADATA_CHAIN2" ]; then
+USDCON_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
+if [ -z "$USDCON_METADATA_CHAIN2" ]; then
     log_and_echo "❌ Failed to get USDcon metadata on Chain 2"
     exit 1
 fi
-log "     ✅ Got USDcon metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
+log "     ✅ Got USDcon metadata on Chain 2: $USDCON_METADATA_CHAIN2"
 
 # For INFLOW: offered tokens are on connected chain (Chain 2), desired tokens are on hub (Chain 1)
-OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
-DESIRED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN2="$USDCON_METADATA_CHAIN2"
+DESIRED_METADATA_CHAIN1="$USDHUB_METADATA_CHAIN1"
 log "     Inflow configuration:"
 log "       Offered metadata (connected chain 2): $OFFERED_METADATA_CHAIN2"
 log "       Desired metadata (hub chain 1): $DESIRED_METADATA_CHAIN1"

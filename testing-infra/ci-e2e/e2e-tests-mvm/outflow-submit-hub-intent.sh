@@ -91,14 +91,14 @@ TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 log ""
 log "   - Getting USD token metadata addresses..."
 log "     Getting USDhub metadata on Chain 1..."
-USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
-log "     ✅ Got USDhub metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
-OFFERED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
+USDHUB_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
+log "     ✅ Got USDhub metadata on Chain 1: $USDHUB_METADATA_CHAIN1"
+OFFERED_METADATA_CHAIN1="$USDHUB_METADATA_CHAIN1"
 
 log "     Getting USDcon metadata on Chain 2..."
-USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
-log "     ✅ Got USDcon metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
-DESIRED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
+USDCON_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
+log "     ✅ Got USDcon metadata on Chain 2: $USDCON_METADATA_CHAIN2"
+DESIRED_METADATA_CHAIN2="$USDCON_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE

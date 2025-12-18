@@ -74,13 +74,13 @@ log "   Intent ID: $INTENT_ID"
 
 log ""
 log "   - Getting USDcon metadata on Chain 2..."
-USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
-if [ -z "$USDXYZ_METADATA_CHAIN2" ]; then
+USDCON_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
+if [ -z "$USDCON_METADATA_CHAIN2" ]; then
     log_and_echo "❌ Failed to get USDcon metadata on Chain 2"
     exit 1
 fi
-log "     ✅ Got USDcon metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
-OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
+log "     ✅ Got USDcon metadata on Chain 2: $USDCON_METADATA_CHAIN2"
+OFFERED_METADATA_CHAIN2="$USDCON_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE

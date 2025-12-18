@@ -78,9 +78,9 @@ log "✅ IntentEscrow deployed"
 log ""
 log "💵 Deploying USDcon token to EVM chain..."
 
-USDXYZ_OUTPUT=$(run_hardhat_command "npx hardhat run test-scripts/deploy-usdxyz.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+USDCON_OUTPUT=$(run_hardhat_command "npx hardhat run test-scripts/deploy-usdxyz.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 # Extract token address from Hardhat output (line containing 'deployed to:')
-USDCON_TOKEN_ADDRESS=$(echo "$USDXYZ_OUTPUT" | grep "deployed to:" | awk '{print $NF}' | tr -d '\n')
+USDCON_TOKEN_ADDRESS=$(echo "$USDCON_OUTPUT" | grep "deployed to:" | awk '{print $NF}' | tr -d '\n')
 
 if [ -z "$USDCON_TOKEN_ADDRESS" ]; then
     log_and_echo "❌ USDcon deployment failed!"

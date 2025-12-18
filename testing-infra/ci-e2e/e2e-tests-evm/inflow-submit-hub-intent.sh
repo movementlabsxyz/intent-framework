@@ -79,8 +79,8 @@ log_and_echo ""
 log ""
 log "   - Getting USD token metadata addresses..."
 log "     Getting USDhub metadata on Chain 1 (hub)..."
-USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
-log "     ✅ Got USDhub metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
+USDHUB_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
+log "     ✅ Got USDhub metadata on Chain 1: $USDHUB_METADATA_CHAIN1"
 
 # For EVM inflow: offered token is on EVM chain (connected), desired token is on hub
 # Convert 20-byte Ethereum address to 32-byte Move address by padding with zeros
@@ -88,7 +88,7 @@ log "     ✅ Got USDhub metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
 EVM_TOKEN_ADDRESS_NO_PREFIX="${USDCON_EVM_ADDRESS#0x}"
 EVM_TOKEN_ADDRESS_LOWER=$(echo "$EVM_TOKEN_ADDRESS_NO_PREFIX" | tr '[:upper:]' '[:lower:]')
 OFFERED_METADATA_EVM="0x000000000000000000000000${EVM_TOKEN_ADDRESS_LOWER}"
-DESIRED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
+DESIRED_METADATA_CHAIN1="$USDHUB_METADATA_CHAIN1"
 log "     EVM USDcon token address: $USDCON_EVM_ADDRESS"
 log "     Padded to 32-byte format: $OFFERED_METADATA_EVM"
 log "     Inflow configuration:"

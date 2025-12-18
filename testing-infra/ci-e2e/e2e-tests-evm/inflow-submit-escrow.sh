@@ -84,8 +84,8 @@ log "   - Creating escrow for intent (USDcon ERC20 escrow) with funds..."
 # Reserved solver: Solver - funds will go to Solver when escrow is claimed
 SOLVER_ADDRESS=$(get_hardhat_account_address "2")
 # Escrow amount must match the intent's offered_amount (1 USDcon)
-USDXYZ_AMOUNT="1000000"  # 1 USDcon = 1_000_000 (6 decimals)
-CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' TOKEN_ADDRESS='$USDCON_TOKEN_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' AMOUNT='$USDXYZ_AMOUNT' RESERVED_SOLVER='$SOLVER_ADDRESS' npx hardhat run scripts/create-escrow-e2e-tests.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+USDCON_AMOUNT="1000000"  # 1 USDcon = 1_000_000 (6 decimals)
+CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' TOKEN_ADDRESS='$USDCON_TOKEN_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' AMOUNT='$USDCON_AMOUNT' RESERVED_SOLVER='$SOLVER_ADDRESS' npx hardhat run scripts/create-escrow-e2e-tests.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 CREATE_EXIT_CODE=$?
 
 # Check if creation was successful

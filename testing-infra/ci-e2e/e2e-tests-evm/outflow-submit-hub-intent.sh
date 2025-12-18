@@ -36,7 +36,7 @@ SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 REQUESTER_EVM_ADDRESS=$(get_hardhat_account_address "1")
 SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
 source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
-USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
+USDCON_TOKEN_ADDRESS="$USDCON_EVM_ADDRESS"
 
 log ""
 log "📋 Chain Information:"
@@ -95,10 +95,10 @@ log "     ✅ Got USDhub metadata on Chain 1: $OFFERED_METADATA_CHAIN1"
 # Convert 20-byte Ethereum address to 32-byte Move address by padding with zeros
 # e.g., 0x1234...5678 -> 0x0000000000000000000000001234...5678
 # Lowercase for consistent matching with solver acceptance config
-EVM_TOKEN_ADDRESS_NO_PREFIX="${USDXYZ_ADDRESS#0x}"
+EVM_TOKEN_ADDRESS_NO_PREFIX="${USDCON_TOKEN_ADDRESS#0x}"
 EVM_TOKEN_ADDRESS_LOWER=$(echo "$EVM_TOKEN_ADDRESS_NO_PREFIX" | tr '[:upper:]' '[:lower:]')
 DESIRED_METADATA_EVM="0x000000000000000000000000${EVM_TOKEN_ADDRESS_LOWER}"
-log "     EVM USDcon token address: $USDXYZ_ADDRESS"
+log "     EVM USDcon token address: $USDCON_TOKEN_ADDRESS"
 log "     Padded to 32-byte format: $DESIRED_METADATA_EVM"
 
 # ============================================================================
@@ -106,7 +106,7 @@ log "     Padded to 32-byte format: $DESIRED_METADATA_EVM"
 # ============================================================================
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_ADDRESS"
+display_balances_connected_evm "$USDCON_TOKEN_ADDRESS"
 log_and_echo ""
 
 # ============================================================================
@@ -244,7 +244,7 @@ fi
 # ============================================================================
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_ADDRESS"
+display_balances_connected_evm "$USDCON_TOKEN_ADDRESS"
 log_and_echo ""
 
 log ""

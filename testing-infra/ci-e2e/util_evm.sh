@@ -43,7 +43,7 @@ get_usdxyz_balance_evm() {
 # Display balances for Chain 3 (Connected EVM)
 # Usage: display_balances_connected_evm [usdxyz_token_address]
 # Fetches and displays Requester and Solver balances on the Connected EVM chain
-# If usdxyz_token_address is provided, also displays USDxyz balances
+# If usdxyz_token_address is provided, also displays USDcon balances
 # Only displays if EVM chain is running (skips silently if it's not)
 display_balances_connected_evm() {
     local usdxyz_addr="$1"
@@ -104,7 +104,7 @@ display_balances_connected_evm() {
         
         # PANIC if we passed a token address but couldn't get balances
         if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
-            log_and_echo "❌ PANIC: display_balances_connected_evm failed to get USDxyz balances"
+            log_and_echo "❌ PANIC: display_balances_connected_evm failed to get USDcon balances"
             log_and_echo "   usdxyz_addr: $usdxyz_addr"
             log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
             log_and_echo "   solver_usdxyz: '$solver_usdxyz'"

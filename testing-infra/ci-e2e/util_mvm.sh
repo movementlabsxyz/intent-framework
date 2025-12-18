@@ -511,9 +511,9 @@ initialize_solver_registry() {
     fi
 }
 
-# Get USDxyz metadata address
+# Get USDhub/USDcon metadata address
 # Usage: get_usdxyz_metadata <test_tokens_address> <chain_num>
-# Returns the USDxyz metadata object address
+# Returns the USDhub/USDcon metadata object address
 get_usdxyz_metadata() {
     local test_tokens_addr="$1"
     local chain_num="$2"
@@ -537,9 +537,9 @@ get_usdxyz_metadata() {
     echo "$metadata"
 }
 
-# Get USDxyz balance for an account
+# Get USDhub/USDcon balance for an account
 # Usage: get_usdxyz_balance <profile> <chain_num> <test_tokens_address>
-# Returns the USDxyz balance for the given profile
+# Returns the USDhub/USDcon balance for the given profile
 get_usdxyz_balance() {
     local profile="$1"
     local chain_num="$2"
@@ -584,7 +584,7 @@ get_usdxyz_balance() {
     echo "$balance"
 }
 
-# Assert USDxyz balance matches expected value or PANIC
+# Assert USDhub/USDcon balance matches expected value or PANIC
 # Usage: assert_usdxyz_balance <profile> <chain_num> <test_tokens_addr> <expected_balance> <checkpoint_name>
 # Example: assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint"
 # Exits with error if balance doesn't match expected value
@@ -598,16 +598,16 @@ assert_usdxyz_balance() {
     local actual=$(get_usdxyz_balance "$profile" "$chain_num" "$test_tokens_addr")
     
     if [ -z "$actual" ]; then
-        log_and_echo "❌ PANIC at $checkpoint: Failed to get USDxyz balance for $profile"
+        log_and_echo "❌ PANIC at $checkpoint: Failed to get USDhub/USDcon balance for $profile"
         exit 1
     fi
     
     if [ "$actual" != "$expected" ]; then
-        log_and_echo "❌ PANIC at $checkpoint: $profile USDxyz balance mismatch!"
+        log_and_echo "❌ PANIC at $checkpoint: $profile USDhub/USDcon balance mismatch!"
         log_and_echo "   Expected: $expected, Actual: $actual"
         exit 1
     fi
-    log_and_echo "   ✅ $checkpoint: $profile has $actual USDxyz (expected: $expected)"
+    log_and_echo "   ✅ $checkpoint: $profile has $actual 10e-6 USDhub/USDcon (expected: $expected)"
     return 0
 }
 

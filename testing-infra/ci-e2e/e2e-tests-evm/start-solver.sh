@@ -50,9 +50,9 @@ generate_solver_config_evm() {
     if [ -f "$PROJECT_ROOT/.tmp/chain-info.env" ]; then
         source "$PROJECT_ROOT/.tmp/chain-info.env"
     fi
-    local evm_token_address="${USDXYZ_EVM_ADDRESS:-}"
+    local evm_token_address="${USDCON_EVM_ADDRESS:-}"
     if [ -z "$evm_token_address" ]; then
-        log_and_echo "❌ ERROR: USDXYZ_EVM_ADDRESS not found in chain-info.env"
+        log_and_echo "❌ ERROR: USDCON_EVM_ADDRESS not found in chain-info.env"
         exit 1
     fi
     local escrow_address="${ESCROW_CONTRACT_ADDRESS:-}"

@@ -42,7 +42,7 @@ fi
 
 # Get USDcon EVM address
 source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
-USDXYZ_EVM_ADDRESS="${USDXYZ_EVM_ADDRESS:-}"
+USDCON_EVM_ADDRESS="${USDCON_EVM_ADDRESS:-}"
 
 log ""
 log "📋 Chain Information:"
@@ -72,7 +72,7 @@ log "   Desired amount: $DESIRED_AMOUNT (1 USDhub on hub chain, Chain 1)"
 # Check and display initial balances using common function
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_EVM_ADDRESS"
+display_balances_connected_evm "$USDCON_EVM_ADDRESS"
 log_and_echo ""
 
 # Get USDhub metadata addresses (hub) and USDcon metadata (connected) as needed
@@ -85,11 +85,11 @@ log "     ✅ Got USDhub metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
 # For EVM inflow: offered token is on EVM chain (connected), desired token is on hub
 # Convert 20-byte Ethereum address to 32-byte Move address by padding with zeros
 # Lowercase for consistent matching with solver acceptance config
-EVM_TOKEN_ADDRESS_NO_PREFIX="${USDXYZ_EVM_ADDRESS#0x}"
+EVM_TOKEN_ADDRESS_NO_PREFIX="${USDCON_EVM_ADDRESS#0x}"
 EVM_TOKEN_ADDRESS_LOWER=$(echo "$EVM_TOKEN_ADDRESS_NO_PREFIX" | tr '[:upper:]' '[:lower:]')
 OFFERED_METADATA_EVM="0x000000000000000000000000${EVM_TOKEN_ADDRESS_LOWER}"
 DESIRED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
-log "     EVM USDcon token address: $USDXYZ_EVM_ADDRESS"
+log "     EVM USDcon token address: $USDCON_EVM_ADDRESS"
 log "     Padded to 32-byte format: $OFFERED_METADATA_EVM"
 log "     Inflow configuration:"
 log "       Offered metadata (EVM connected chain): $OFFERED_METADATA_EVM"
@@ -250,6 +250,6 @@ save_intent_info "$INTENT_ID" "$HUB_INTENT_ADDRESS"
 
 # Check final balances using common function
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_EVM_ADDRESS"
+display_balances_connected_evm "$USDCON_EVM_ADDRESS"
 log_and_echo ""
 

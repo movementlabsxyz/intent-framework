@@ -4,7 +4,7 @@
 # Displays and validates final balances for Hub (Chain 1, USDhub) and Connected EVM (Chain 3, USDcon)
 # Usage: balance-check.sh <solver_chain_hub> <requester_chain_hub> <solver_chain_connected> <requester_chain_connected>
 #   - Pass -1 for any parameter to skip that check
-#   - Values are in 10e-6.USDxyz units (e.g., 2000000 = 2 USDxyz)
+#   - Values are in 10e-6.USDhub / 10e-6.USDcon units (e.g., 2000000 = 2 USDhub or 2 USDcon)
 
 # Source common utilities
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -24,7 +24,7 @@ REQUESTER_CHAIN_CONNECTED_EXPECTED="${4:-}"
 # Get test tokens addresses
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1" 2>/dev/null) || true
 source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
-USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
+USDCON_TOKEN_ADDRESS="$USDCON_EVM_ADDRESS"
 
 # Display balances
 if [ -z "$TEST_TOKENS_CHAIN1" ]; then
@@ -34,11 +34,11 @@ else
     display_balances_hub "0x$TEST_TOKENS_CHAIN1"
 fi
 
-if [ -z "$USDXYZ_ADDRESS" ]; then
-    echo "⚠️  Warning: USDXYZ_EVM_ADDRESS not found, skipping USDcon balances"
+if [ -z "$USDCON_TOKEN_ADDRESS" ]; then
+    echo "⚠️  Warning: USDCON_EVM_ADDRESS not found, skipping USDcon balances"
     display_balances_connected_evm
 else
-    display_balances_connected_evm "$USDXYZ_ADDRESS"
+    display_balances_connected_evm "$USDCON_TOKEN_ADDRESS"
 fi
 
 # Validate solver balance on Chain 1 (Hub)
@@ -76,11 +76,11 @@ if [ -n "$REQUESTER_CHAIN_HUB_EXPECTED" ] && [ "$REQUESTER_CHAIN_HUB_EXPECTED" !
 fi
 
 # Validate solver balance on Chain 3 (Connected EVM)
-if [ -n "$SOLVER_CHAIN_CONNECTED_EXPECTED" ] && [ "$SOLVER_CHAIN_CONNECTED_EXPECTED" != "-1" ] && [ -n "$USDXYZ_ADDRESS" ]; then
+if [ -n "$SOLVER_CHAIN_CONNECTED_EXPECTED" ] && [ "$SOLVER_CHAIN_CONNECTED_EXPECTED" != "-1" ] && [ -n "$USDCON_TOKEN_ADDRESS" ]; then
     SOLVER_EVM_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
     
     if [ -n "$SOLVER_EVM_ADDRESS" ]; then
-        SOLVER_CHAIN_CONNECTED_ACTUAL=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$USDXYZ_ADDRESS' ACCOUNT='$SOLVER_EVM_ADDRESS' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | tail -1)
+        SOLVER_CHAIN_CONNECTED_ACTUAL=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$USDCON_TOKEN_ADDRESS' ACCOUNT='$SOLVER_EVM_ADDRESS' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | tail -1)
         
         if [ "$SOLVER_CHAIN_CONNECTED_ACTUAL" != "$SOLVER_CHAIN_CONNECTED_EXPECTED" ]; then
             log_and_echo "❌ ERROR: Solver balance mismatch on Chain 3 (Connected EVM)!"
@@ -94,11 +94,11 @@ if [ -n "$SOLVER_CHAIN_CONNECTED_EXPECTED" ] && [ "$SOLVER_CHAIN_CONNECTED_EXPEC
 fi
 
 # Validate requester balance on Chain 3 (Connected EVM)
-if [ -n "$REQUESTER_CHAIN_CONNECTED_EXPECTED" ] && [ "$REQUESTER_CHAIN_CONNECTED_EXPECTED" != "-1" ] && [ -n "$USDXYZ_ADDRESS" ]; then
+if [ -n "$REQUESTER_CHAIN_CONNECTED_EXPECTED" ] && [ "$REQUESTER_CHAIN_CONNECTED_EXPECTED" != "-1" ] && [ -n "$USDCON_TOKEN_ADDRESS" ]; then
     REQUESTER_EVM_ADDRESS=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
     
     if [ -n "$REQUESTER_EVM_ADDRESS" ]; then
-        REQUESTER_CHAIN_CONNECTED_ACTUAL=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$USDXYZ_ADDRESS' ACCOUNT='$REQUESTER_EVM_ADDRESS' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | tail -1)
+        REQUESTER_CHAIN_CONNECTED_ACTUAL=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$USDCON_TOKEN_ADDRESS' ACCOUNT='$REQUESTER_EVM_ADDRESS' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1 | grep -E '^[0-9]+$' | tail -1)
         
         if [ "$REQUESTER_CHAIN_CONNECTED_ACTUAL" != "$REQUESTER_CHAIN_CONNECTED_EXPECTED" ]; then
             log_and_echo "❌ ERROR: Requester balance mismatch on Chain 3 (Connected EVM)!"

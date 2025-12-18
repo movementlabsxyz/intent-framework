@@ -43,9 +43,9 @@ EXPIRY_TIME=$(date -d "+1 hour" +%s)
 # Get USDcon token address from chain-info.env
 if [ -f "$PROJECT_ROOT/.tmp/chain-info.env" ]; then
     source "$PROJECT_ROOT/.tmp/chain-info.env"
-    USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
+    USDCON_TOKEN_ADDRESS="$USDCON_EVM_ADDRESS"
 fi
-if [ -z "$USDXYZ_ADDRESS" ]; then
+if [ -z "$USDCON_TOKEN_ADDRESS" ]; then
     log_and_echo "❌ ERROR: Could not find USDcon token address. Please ensure USDcon is deployed."
     exit 1
 fi
@@ -57,13 +57,13 @@ log ""
 log "🔑 Configuration:"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Intent ID (for escrow): $INTENT_ID"
-log "   USDcon token address: $USDXYZ_ADDRESS"
+log "   USDcon token address: $USDCON_TOKEN_ADDRESS"
 log "   Escrow amount: 1 USDcon (matches intent offered_amount)"
 
 # Check and display initial balances using common function
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_ADDRESS"
+display_balances_connected_evm "$USDCON_TOKEN_ADDRESS"
 log_and_echo ""
 
 log ""
@@ -85,7 +85,7 @@ log "   - Creating escrow for intent (USDcon ERC20 escrow) with funds..."
 SOLVER_ADDRESS=$(get_hardhat_account_address "2")
 # Escrow amount must match the intent's offered_amount (1 USDcon)
 USDXYZ_AMOUNT="1000000"  # 1 USDcon = 1_000_000 (6 decimals)
-CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' TOKEN_ADDRESS='$USDXYZ_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' AMOUNT='$USDXYZ_AMOUNT' RESERVED_SOLVER='$SOLVER_ADDRESS' npx hardhat run scripts/create-escrow-e2e-tests.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
+CREATE_OUTPUT=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$ESCROW_ADDRESS' TOKEN_ADDRESS='$USDCON_TOKEN_ADDRESS' INTENT_ID_EVM='$INTENT_ID_EVM' AMOUNT='$USDXYZ_AMOUNT' RESERVED_SOLVER='$SOLVER_ADDRESS' npx hardhat run scripts/create-escrow-e2e-tests.js --network localhost" 2>&1 | tee -a "$LOG_FILE")
 CREATE_EXIT_CODE=$?
 
 # Check if creation was successful
@@ -126,7 +126,7 @@ log "   Locked Amount: 1 USDcon (matches intent offered_amount)"
 
 # Check final balances using common function
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_ADDRESS"
+display_balances_connected_evm "$USDCON_TOKEN_ADDRESS"
 log_and_echo ""
 
 

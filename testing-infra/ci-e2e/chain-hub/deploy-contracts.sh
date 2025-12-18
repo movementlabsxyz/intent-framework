@@ -96,12 +96,12 @@ log "💵 Minting USDhub to Requester and Solver on Chain 1..."
 
 REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
-USDXYZ_MINT_AMOUNT="1000000"  # 1 USDhub (6 decimals = 1_000_000)
+USDHUB_MINT_AMOUNT="1000000"  # 1 USDhub (6 decimals = 1_000_000)
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDhub to Requester ($REQUESTER_CHAIN1_ADDRESS)..."
+log "   - Minting $USDHUB_MINT_AMOUNT 10e-6.USDhub to Requester ($REQUESTER_CHAIN1_ADDRESS)..."
 aptos move run --profile test-tokens-chain1 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
-    --args address:$REQUESTER_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$REQUESTER_CHAIN1_ADDRESS u64:$USDHUB_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "   ✅ Minted USDhub to Requester"
@@ -110,10 +110,10 @@ else
     exit 1
 fi
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDhub to Solver ($SOLVER_CHAIN1_ADDRESS)..."
+log "   - Minting $USDHUB_MINT_AMOUNT 10e-6.USDhub to Solver ($SOLVER_CHAIN1_ADDRESS)..."
 aptos move run --profile test-tokens-chain1 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
-    --args address:$SOLVER_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$SOLVER_CHAIN1_ADDRESS u64:$USDHUB_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     log "   ✅ Minted USDhub to Solver"

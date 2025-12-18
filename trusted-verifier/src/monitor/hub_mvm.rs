@@ -145,7 +145,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                     };
 
                     // Cache the fulfillment event
-                    {
+                    let is_new_fulfillment = {
                         let intent_id = fulfillment_event.intent_id.clone();
                         let mut fulfillment_cache = monitor.fulfillment_cache.write().await;
                         // Check if this intent_id already exists in the cache (normalize for comparison)
@@ -160,21 +160,18 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                                 "Received fulfillment event for intent {} by solver {}",
                                 data.intent_id, data.solver
                             );
+                            true
                         } else {
                             // Already cached, skip validation to avoid duplicate processing
-                            continue;
+                            false
                         }
-                    }
+                    };
 
-                    // Validate fulfillment event and generate approval if valid (for inflow intents)
-                    // This triggers connected chain escrow release approval
-                    if let Err(e) = inflow_generic::validate_and_approve_fulfillment(
-                        monitor,
-                        &fulfillment_event,
-                    )
-                    .await
-                    {
-                        error!("Fulfillment validation failed: {}", e);
+                    // If this is a new fulfillment, try validation for this intent
+                    if is_new_fulfillment {
+                        if let Err(e) = inflow_generic::try_validate_for_intent(monitor, &fulfillment_event.intent_id).await {
+                            error!("Failed to validate for intent {}: {}", fulfillment_event.intent_id, e);
+                        }
                     }
                 }
             } else if event_type.contains("OracleLimitOrderEvent") {
@@ -218,14 +215,22 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 // Convert Move event (OracleLimitOrderEvent) to verifier's internal IntentEvent structure
                 // IntentEvent is NOT an on-chain event - it's the verifier's internal representation
                 // used for caching and validation
+                
+                // Determine desired_metadata string format:
+                // Use {"inner":"0x..."} to match Move's native Object<Metadata> serialization
+                let desired_metadata_str = if let Some(addr) = &data.desired_metadata_address {
+                    format!(r#"{{"inner":"{}"}}"#, addr)
+                } else {
+                    serde_json::to_string(&data.desired_metadata).unwrap_or_default()
+                };
+                
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
-                    desired_metadata: serde_json::to_string(&data.desired_metadata)
-                        .unwrap_or_default(),
+                    desired_metadata: desired_metadata_str,
                     desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
                     expiry_time: data
                         .expiry_time
@@ -265,15 +270,20 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                     None // Regular single-chain intent
                 };
 
-                // LimitOrderEvent doesn't include reserved_solver in the event data
-                // For inflow intents created via create_inflow_intent, the solver is verified
-                // but not stored in the event. We'll set it to None and it will be matched via intent_id
-                // when the escrow event is processed (which has the reserved_solver).
+                let reserved_solver = data.reserved_solver.clone();
+                
+                // Determine offered_metadata string format:
+                // Use {"inner":"0x..."} to match Move's native Object<Metadata> serialization
+                let offered_metadata_str = if let Some(addr) = &data.offered_metadata_address {
+                    format!(r#"{{"inner":"{}"}}"#, addr)
+                } else {
+                    serde_json::to_string(&data.offered_metadata).unwrap_or_default()
+                };
+                
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
                     requester: data.requester.clone(),
-                    offered_metadata: serde_json::to_string(&data.offered_metadata)
-                        .unwrap_or_default(),
+                    offered_metadata: offered_metadata_str,
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
@@ -283,7 +293,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                         .parse::<u64>()
                         .context("Failed to parse expiry_time")?,
                     revocable: data.revocable,
-                    reserved_solver: None, // Not available in LimitOrderEvent, will be matched from escrow event
+                    reserved_solver,
                     connected_chain_id,
                     requester_address_connected_chain: None, // Not available from event
                     timestamp,
@@ -329,14 +339,22 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 // Convert Move event (OracleLimitOrderEvent) to verifier's internal IntentEvent structure
                 // IntentEvent is NOT an on-chain event - it's the verifier's internal representation
                 // used for caching and validation
+                
+                // Determine desired_metadata string format:
+                // Use {"inner":"0x..."} to match Move's native Object<Metadata> serialization
+                let desired_metadata_str = if let Some(addr) = &data.desired_metadata_address {
+                    format!(r#"{{"inner":"{}"}}"#, addr)
+                } else {
+                    serde_json::to_string(&data.desired_metadata).unwrap_or_default()
+                };
+                
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
                     requester: data.requester.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
-                    desired_metadata: serde_json::to_string(&data.desired_metadata)
-                        .unwrap_or_default(),
+                    desired_metadata: desired_metadata_str,
                     desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
                     expiry_time: data
                         .expiry_time

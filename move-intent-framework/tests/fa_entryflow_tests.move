@@ -42,6 +42,8 @@ module mvmt_intent::fa_entryflow_tests {
         let intent = fa_intent::create_fa_to_fa_intent(
             offered_fa,
             1, // offered_chain_id
+            option::none(), // No offered_amount_override - tokens locked on this chain
+            option::none(), // No offered_metadata_address_override - tokens locked on this chain
             desired_fa,
             desired_amount,
             1, // desired_chain_id
@@ -50,6 +52,7 @@ module mvmt_intent::fa_entryflow_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
+            option::none() // No requester_address_connected_chain for same-chain intents
         );
 
         move_to(offerer, PendingIntent { intent });
@@ -82,15 +85,18 @@ module mvmt_intent::fa_entryflow_tests {
 
     #[test(
         aptos_framework = @0x1,
+        mvmt_intent = @0x123,
         offerer = @0xcafe,
         solver = @0xdead
     )]
     /// Integration-style test exercising requester and solver transactions end-to-end.
     fun test_fa_limit_order(
         aptos_framework: &signer,
+        mvmt_intent: &signer,
         offerer: &signer,
         solver: &signer,
     ) acquires PendingIntent {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
         // Each actor starts with 100 tokens of their respective asset.
@@ -116,6 +122,7 @@ module mvmt_intent::fa_entryflow_tests {
 
     #[test(
         aptos_framework = @0x1,
+        mvmt_intent = @0x123,
         offerer = @0xcafe,
         solver = @0xdead
     )]
@@ -123,9 +130,11 @@ module mvmt_intent::fa_entryflow_tests {
     /// Solver fails to settle when providing fewer tokens than required.
     fun test_fa_limit_order_insufficient_solver_payment(
         aptos_framework: &signer,
+        mvmt_intent: &signer,
         offerer: &signer,
         solver: &signer,
     ) acquires PendingIntent {
+        fa_intent::initialize(mvmt_intent, 1); // Initialize ChainInfo with chain_id = 1
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
         let (offered_fa, _) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);

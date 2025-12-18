@@ -48,6 +48,19 @@ fi
 
 cd ..
 
+# Initialize fa_intent chain info (required for cross-chain intent detection)
+log ""
+log "🔧 Initializing fa_intent chain info (chain_id=2)..."
+aptos move run --profile intent-account-chain2 --assume-yes \
+    --function-id ${CHAIN2_ADDRESS}::fa_intent::initialize \
+    --args u64:2 >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    log "   ✅ fa_intent chain info initialized (chain_id=2)"
+else
+    log "   ⚠️  fa_intent chain info may already be initialized (ignoring)"
+fi
+
 # Initialize solver registry (idempotent - will fail silently if already initialized)
 log ""
 log "🔧 Initializing solver registry..."
@@ -110,6 +123,10 @@ else
 fi
 
 log_and_echo "✅ USDxyz minted to Requester and Solver on connected chain (1 USDxyz each)"
+
+# Assert balances are correct after minting
+assert_usdxyz_balance "requester-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint-requester"
+assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint-solver"
 
 # Display balances (APT + USDxyz)
 display_balances_connected_mvm "$TEST_TOKENS_CHAIN2_ADDRESS"

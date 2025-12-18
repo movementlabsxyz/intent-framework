@@ -48,6 +48,19 @@ fi
 
 cd ..
 
+# Initialize fa_intent chain info (required for cross-chain intent detection)
+log ""
+log "🔧 Initializing fa_intent chain info (chain_id=1)..."
+aptos move run --profile intent-account-chain1 --assume-yes \
+    --function-id ${CHAIN1_ADDRESS}::fa_intent::initialize \
+    --args u64:1 >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    log "   ✅ fa_intent chain info initialized (chain_id=1)"
+else
+    log "   ⚠️  fa_intent chain info may already be initialized (ignoring)"
+fi
+
 # Initialize solver registry (idempotent - will fail silently if already initialized)
 log ""
 log "🔧 Initializing solver registry..."
@@ -73,7 +86,7 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# Export USDxyz address for other scripts
+# Export USDxyz address for other scripts (cleanup deletes this file, so append is safe - creates file if it doesn't exist)
 echo "TEST_TOKENS_CHAIN1_ADDRESS=$TEST_TOKENS_CHAIN1_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
 log "   ✅ USDxyz address saved: $TEST_TOKENS_CHAIN1_ADDRESS"
 

@@ -108,29 +108,51 @@ impl InflowService {
             return Ok(Vec::new());
         }
 
-        // Collect requester addresses from pending intents
-        let requester_addresses: Vec<String> = pending_intents
+        // Collect requester_address_connected_chain from pending intents (for inflow escrow lookup)
+        // Inflow intents have escrows created on the connected chain by the connected chain requester,
+        // not the hub chain requester.
+        let connected_chain_requester_addresses: Vec<String> = pending_intents
             .iter()
-            .map(|intent| intent.requester_address.clone())
+            .filter_map(|intent| intent.requester_address_connected_chain.clone())
             .collect();
 
         // Query connected chain for escrow events
         let escrow_events: Vec<EscrowMatch> = match &self.connected_client {
             ConnectedChainClient::Mvm(client) => {
-                // Convert EscrowEvent to a common format for matching
-                let events = client.get_escrow_events(&requester_addresses, None).await?;
-                events
-                    .into_iter()
-                    .map(|e| EscrowMatch {
-                        intent_id: e.intent_id,
-                        escrow_id: e.escrow_id,
-                    })
-                    .collect()
+                if connected_chain_requester_addresses.is_empty() {
+                    info!("No connected chain requester addresses found for inflow intents");
+                    Vec::new()
+                } else {
+                    // Convert EscrowEvent to a common format for matching
+                    let events = client.get_escrow_events(&connected_chain_requester_addresses, None).await?;
+                    if !events.is_empty() {
+                        info!("Found {} MVM escrow events", events.len());
+                    }
+                    events
+                        .into_iter()
+                        .map(|e| EscrowMatch {
+                            intent_id: e.intent_id,
+                            escrow_id: e.escrow_id,
+                        })
+                        .collect()
+                }
             }
             ConnectedChainClient::Evm(client) => {
                 // EVM client uses from_block/to_block instead of known_accounts
                 // For now, query from block 0 (all blocks) to latest
-                let events = client.get_escrow_events(Some(0), None).await?;
+                info!("Querying EVM chain for escrow events (from_block=0)");
+                let events = match client.get_escrow_events(Some(0), None).await {
+                    Ok(events) => {
+                        if !events.is_empty() {
+                            info!("Found {} EVM escrow events", events.len());
+                        }
+                        events
+                    }
+                    Err(e) => {
+                        error!("Failed to query EVM escrow events: {}", e);
+                        return Err(e);
+                    }
+                };
                 events
                     .into_iter()
                     .map(|e| EscrowMatch {
@@ -141,6 +163,11 @@ impl InflowService {
             }
         };
 
+        // Only log matching details if there are escrow events to match against
+        if !escrow_events.is_empty() {
+            info!("Matching {} pending intents against {} escrow events", pending_intents.len(), escrow_events.len());
+        }
+
         // Match escrow events to tracked intents by intent_id
         let mut matched_intents = Vec::new();
         for intent in pending_intents {
@@ -150,10 +177,15 @@ impl InflowService {
             for escrow in escrow_events.iter() {
                 let escrow_intent_id_normalized = normalize_intent_id(&escrow.intent_id);
                 if escrow_intent_id_normalized == intent_id_normalized {
+                    info!("✅ Match found: intent {} matches escrow {}", intent.intent_id, escrow.escrow_id);
                     matched_intents.push((intent.clone(), escrow.escrow_id.clone()));
                     break;
                 }
             }
+        }
+
+        if !matched_intents.is_empty() {
+            info!("Matched {} intents with escrows", matched_intents.len());
         }
 
         Ok(matched_intents)
@@ -187,15 +219,17 @@ impl InflowService {
     /// Releases an escrow on the connected chain after getting verifier approval
     ///
     /// This function:
-    /// 1. Polls the verifier for an approval signature matching the intent_id
+    /// 1. Polls the verifier for an approval signature matching the intent_id (with retries)
     /// 2. Converts the signature to the appropriate format (Ed25519 for MVM, ECDSA for EVM)
     /// 3. Calls the escrow release function on the connected chain
+    ///
+    /// For inflow escrows, the payment_amount is always 0 because the solver already
+    /// fulfilled on the hub chain. The escrow just releases the locked tokens to the solver.
     ///
     /// # Arguments
     ///
     /// * `intent` - Tracked intent with matching escrow
     /// * `escrow_id` - Escrow object/contract address
-    /// * `payment_amount` - Amount to provide as payment (typically matches desired_amount)
     ///
     /// # Returns
     ///
@@ -205,27 +239,46 @@ impl InflowService {
         &self,
         intent: &TrackedIntent,
         escrow_id: &str,
-        payment_amount: u64,
     ) -> Result<String> {
-        // Poll verifier for approval (use spawn_blocking to avoid blocking client in async context)
+        // Poll verifier for approval until escrow expiry
         let verifier_url = self.verifier_url.clone();
-        let approvals = tokio::task::spawn_blocking(move || {
-            let client = VerifierClient::new(&verifier_url);
-            client.get_approvals()
-        })
-        .await
-        .context("Failed to spawn blocking task")?
-        .context("Failed to get approvals")?;
-
-        // Find approval matching this intent_id
         let intent_id_normalized = normalize_intent_id(&intent.intent_id);
-        let approval = approvals
-            .iter()
-            .find(|approval| {
+        let poll_interval = Duration::from_secs(2);
+        let expiry_time = intent.expiry_time;
+        
+        let approval = loop {
+            let current_time = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            
+            if current_time >= expiry_time {
+                anyhow::bail!("Escrow expired while waiting for approval (expiry: {})", expiry_time);
+            }
+            
+            let approvals = tokio::task::spawn_blocking({
+                let verifier_url = verifier_url.clone();
+                move || {
+                    let client = VerifierClient::new(&verifier_url);
+                    client.get_approvals()
+                }
+            })
+            .await
+            .context("Failed to spawn blocking task")?
+            .context("Failed to get approvals")?;
+
+            // Find approval matching this intent_id
+            if let Some(approval) = approvals.iter().find(|approval| {
                 let approval_intent_id_normalized = normalize_intent_id(&approval.intent_id);
                 approval_intent_id_normalized == intent_id_normalized
-            })
-            .context("No approval found for intent_id")?;
+            }) {
+                info!("Found approval for intent {}", intent.intent_id);
+                break approval.clone();
+            }
+
+            // Approval not found yet, wait and retry
+            tokio::time::sleep(poll_interval).await;
+        };
 
         // Decode base64 signature to bytes
         let signature_bytes = STANDARD
@@ -233,10 +286,11 @@ impl InflowService {
             .context("Failed to decode base64 signature")?;
 
         // Release escrow based on chain type
+        // For inflow: payment_amount = 0 (solver already fulfilled on hub chain)
         match &self.connected_client {
             ConnectedChainClient::Mvm(client) => {
                 // For MVM, use complete_escrow_from_fa with Ed25519 signature
-                client.complete_escrow_from_fa(escrow_id, payment_amount, &signature_bytes)
+                client.complete_escrow_from_fa(escrow_id, 0, &signature_bytes)
             }
             ConnectedChainClient::Evm(client) => {
                 // For EVM, use claim() with ECDSA signature via Hardhat script
@@ -274,6 +328,11 @@ impl InflowService {
                                     "Fulfilled inflow intent {} on hub chain: {}",
                                     intent.intent_id, tx_hash
                                 );
+                                // Mark intent as fulfilled IMMEDIATELY after successful fulfillment
+                                // This prevents retrying fulfillment on next poll
+                                if let Err(e) = self.tracker.mark_fulfilled(&intent.draft_id).await {
+                                    warn!("Failed to mark intent as fulfilled: {}", e);
+                                }
                             }
                             Err(e) => {
                                 error!("Failed to fulfill inflow intent {}: {}", intent.intent_id, e);
@@ -285,7 +344,7 @@ impl InflowService {
                         tokio::time::sleep(Duration::from_secs(2)).await;
 
                         match self
-                            .release_escrow(&intent, &escrow_id, intent.draft_data.desired_amount)
+                            .release_escrow(&intent, &escrow_id)
                             .await
                         {
                             Ok(tx_hash) => {
@@ -293,10 +352,6 @@ impl InflowService {
                                     "Released escrow {} for intent {}: {}",
                                     escrow_id, intent.intent_id, tx_hash
                                 );
-                                // Mark intent as fulfilled
-                                if let Err(e) = self.tracker.mark_fulfilled(&intent.draft_id).await {
-                                    warn!("Failed to mark intent as fulfilled: {}", e);
-                                }
                             }
                             Err(e) => {
                                 error!(

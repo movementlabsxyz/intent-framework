@@ -223,6 +223,7 @@ module mvmt_intent::fa_intent_outflow {
             placeholder_metadata, // Use same metadata as locked tokens (placeholder for payment check)
             desired_amount, // Original desired_amount (for the connected chain) - payment validation will use 0 on hub
             desired_chain_id, // Chain ID where desired tokens are located (connected chain)
+            option::some(desired_metadata_address), // Pass explicit desired_metadata_address since tokens are on connected chain
             expiry_time,
             signer::address_of(requester_signer),
             requirement,

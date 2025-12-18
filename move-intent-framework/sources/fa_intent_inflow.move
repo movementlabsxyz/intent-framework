@@ -113,6 +113,7 @@ module mvmt_intent::fa_intent_inflow {
     /// - `intent_id`: Intent ID for cross-chain linking
     /// - `solver`: Address of the solver authorized to fulfill this intent (must be registered)
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
+    /// - `requester_address_connected_chain`: Requester's address on the connected chain (for escrow lookup)
     ///
     /// # Returns
     /// - `Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>>`: The created intent object
@@ -131,7 +132,8 @@ module mvmt_intent::fa_intent_inflow {
         expiry_time: u64,
         intent_id: address,
         solver: address,
-        solver_signature: vector<u8>
+        solver_signature: vector<u8>,
+        requester_address_connected_chain: address
     ): Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>> {
         // Withdraw 0 tokens of DESIRED type (not offered type).
         // Why: The offered token metadata is on the connected chain, so the Object doesn't exist here.
@@ -171,6 +173,8 @@ module mvmt_intent::fa_intent_inflow {
         fa_intent::create_fa_to_fa_intent(
             fa,
             offered_chain_id, // where escrow is created
+            option::some(offered_amount), // Pass explicit offered_amount since tokens are locked on connected chain
+            option::some(offered_metadata_address), // Pass explicit offered_metadata_address since tokens are on connected chain
             desired_metadata,
             desired_amount,
             desired_chain_id, // hub chain where this intent is created
@@ -179,7 +183,8 @@ module mvmt_intent::fa_intent_inflow {
             reservation_result, // Reserved for specific solver
             false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable (including the hub intent)
             // Ensures consistent safety guarantees for verifiers across chains
-            option::some(intent_id) // Store the cross-chain intent_id for fulfillment event
+            option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
+            option::some(requester_address_connected_chain) // Store requester address on connected chain for escrow lookup
         )
     }
 
@@ -200,7 +205,8 @@ module mvmt_intent::fa_intent_inflow {
         expiry_time: u64,
         intent_id: address,
         solver: address,
-        solver_signature: vector<u8>
+        solver_signature: vector<u8>,
+        requester_address_connected_chain: address
     ) {
         let _intent_obj =
             create_inflow_intent(
@@ -214,7 +220,8 @@ module mvmt_intent::fa_intent_inflow {
                 expiry_time,
                 intent_id,
                 solver,
-                solver_signature
+                solver_signature,
+                requester_address_connected_chain
             );
     }
 }

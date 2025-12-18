@@ -56,8 +56,8 @@ log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
-log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz)"
-log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz)"
+log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz on connected MVM chain, Chain 2)"
+log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz on hub chain, Chain 1)"
 
 log ""
 log "   - Getting USDxyz metadata addresses..."
@@ -189,7 +189,7 @@ log "     Solver address: $RETRIEVED_SOLVER"
 SOLVER_SIGNATURE_HEX="${RETRIEVED_SIGNATURE#0x}"
 aptos move run --profile requester-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_intent_entry" \
-    --args "address:${OFFERED_METADATA_CHAIN2}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_CHAIN2}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" "address:${REQUESTER_CHAIN2_ADDRESS}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 6: VERIFY RESULTS

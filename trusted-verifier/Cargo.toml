@@ -9,6 +9,16 @@ description = "Trusted verifier service for cross-chain escrow validation"
 name = "trusted_verifier"
 path = "src/lib.rs"
 
+[[bin]]
+name = "generate_keys"
+path = "src/bin/generate_keys.rs"
+test = false
+
+[[bin]]
+name = "get_verifier_eth_address"
+path = "src/bin/get_verifier_eth_address.rs"
+test = false
+
 [dependencies]
 # Async runtime (matching aptos-core version)
 tokio = { version = "1.35.1", features = ["full"] }

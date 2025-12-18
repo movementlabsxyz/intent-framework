@@ -82,6 +82,7 @@ module mvmt_intent::intent_as_escrow {
             placeholder_metadata,
             placeholder_amount, // desired_amount: use placeholder_amount (payment validation will check chain IDs)
             desired_chain_id, // Chain ID where desired tokens are located (hub chain for inflow)
+            option::none(), // Escrows don't validate desired_metadata_address - validation happens on hub chain
             expiry_time,
             signer::address_of(requester_signer),
             requirement,

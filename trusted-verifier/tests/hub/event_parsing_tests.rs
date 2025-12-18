@@ -39,6 +39,7 @@ fn create_mock_oracle_limit_order_event(
             "offered_amount": "1000",
             "offered_chain_id": "1",
             "desired_metadata": {"inner": "0xdesired_meta"},
+            "desired_metadata_address": {"vec": []}, // None for same-chain (test uses same chain IDs)
             "desired_amount": "500",
             "desired_chain_id": "2",
             "requester": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

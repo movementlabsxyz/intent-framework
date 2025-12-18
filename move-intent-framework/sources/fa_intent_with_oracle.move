@@ -35,6 +35,8 @@ module mvmt_intent::fa_intent_with_oracle {
 
     /// Oracle-reported value did not satisfy the minimum threshold.
     const EORACLE_VALUE_TOO_LOW: u64 = 4;
+    /// The desired metadata address is invalid or missing for cross-chain intents.
+    const EINVALID_METADATA_ADDRESS: u64 = 5;
 
     // ============================================================================
     // DATA TYPES
@@ -83,7 +85,8 @@ module mvmt_intent::fa_intent_with_oracle {
         offered_metadata: Object<Metadata>,
         offered_amount: u64,
         offered_chain_id: u64,  // Chain ID where offered tokens are located
-        desired_metadata: Object<Metadata>,
+        desired_metadata: Object<Metadata>, // Required for type compatibility, but may be placeholder for cross-chain
+        desired_metadata_address: Option<address>, // Raw address for cross-chain tokens, None for same-chain
         desired_amount: u64,    // Original desired amount (for the chain specified by desired_chain_id)
         desired_chain_id: u64,  // Chain ID where desired tokens are located
         requester: address,
@@ -131,6 +134,7 @@ module mvmt_intent::fa_intent_with_oracle {
     /// - `desired_metadata`: Metadata handle of the asset the requester wants to receive
     /// - `desired_amount`: Minimum amount of the desired asset that must be paid
     /// - `desired_chain_id`: Chain ID where desired tokens are located
+    /// - `desired_metadata_address`: Optional explicit desired metadata address (required when desired_chain_id != offered_chain_id)
     /// - `expiry_time`: Unix timestamp after which the intent can no longer be filled
     /// - `requester`: Address of the intent creator
     /// - `requirement`: Oracle public key and minimum reported value used for verification
@@ -147,6 +151,7 @@ module mvmt_intent::fa_intent_with_oracle {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         desired_chain_id: u64,
+        desired_metadata_address: Option<address>, // Optional explicit desired metadata address for cross-chain intents
         expiry_time: u64,
         requester: address,
         requirement: OracleSignatureRequirement,
@@ -158,6 +163,17 @@ module mvmt_intent::fa_intent_with_oracle {
         // Capture metadata and amount before depositing
         let offered_metadata = fungible_asset::asset_metadata(&offered_fa);
         let offered_amount = fungible_asset::amount(&offered_fa);
+        
+        // Determine desired_metadata_address:
+        // - If desired_chain_id == offered_chain_id: same-chain intent, use None (use desired_metadata object)
+        // - If desired_chain_id != offered_chain_id: cross-chain intent, use provided address if available
+        //   Note: Escrows don't validate desired metadata (validation happens on hub chain), so None is allowed
+        let event_desired_metadata_address = if (desired_chain_id == offered_chain_id) {
+            option::none<address>() // Same-chain: use desired_metadata object
+        } else {
+            // Cross-chain: use provided address if available (None allowed for escrows)
+            desired_metadata_address
+        };
         
         let coin_store_ref = object::create_object(requester);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
@@ -199,6 +215,7 @@ module mvmt_intent::fa_intent_with_oracle {
             offered_amount,
             offered_chain_id,
             desired_metadata,
+            desired_metadata_address: event_desired_metadata_address,
             desired_amount,
             desired_chain_id,
             requester,

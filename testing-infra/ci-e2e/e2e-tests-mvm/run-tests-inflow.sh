@@ -20,7 +20,12 @@ echo "🧪 E2E Test with Connected Move VM Chain - INFLOW"
 echo "================================================="
 echo ""
 
-echo "🔨 Step 0: Building Rust services (verifier and solver)..."
+echo "🧹 Step 1: Cleaning up any existing chains, accounts and processes..."
+echo "================================================================"
+./testing-infra/ci-e2e/chain-connected-mvm/cleanup.sh
+
+echo ""
+echo "🔨 Step 2: Building Rust services (verifier and solver)..."
 echo "==========================================================="
 pushd "$PROJECT_ROOT/trusted-verifier" > /dev/null
 cargo build --bin trusted-verifier 2>&1 | tail -5
@@ -33,11 +38,7 @@ popd > /dev/null
 echo "   ✅ Solver built"
 echo ""
 
-echo "🧹 Step 1: Cleaning up any existing chains, accounts and processes..."
-echo "================================================================"
-./testing-infra/ci-e2e/chain-connected-mvm/cleanup.sh
-
-echo "🚀 Step 2: Setting up chains, deploying contracts, funding accounts"
+echo "🚀 Step 3: Setting up chains, deploying contracts, funding accounts"
 echo "===================================================================="
 ./testing-infra/ci-e2e/chain-hub/setup-chain.sh
 ./testing-infra/ci-e2e/chain-hub/setup-requester-solver.sh
@@ -47,56 +48,34 @@ echo "===================================================================="
 ./testing-infra/ci-e2e/chain-connected-mvm/deploy-contracts.sh
 
 echo ""
-echo "🚀 Step 3: Configuring and starting verifier (for negotiation routing)..."
+echo "🚀 Step 4: Configuring and starting verifier (for negotiation routing)..."
 echo "=========================================================================="
 ./testing-infra/ci-e2e/e2e-tests-mvm/start-verifier.sh
 
 # Start solver service for automatic signing and fulfillment
 echo ""
-echo "🚀 Step 3b: Starting solver service..."
+echo "🚀 Step 4b: Starting solver service..."
 echo "======================================="
 ./testing-infra/ci-e2e/e2e-tests-mvm/start-solver.sh
 
-# Verify solver started and show logs if it failed
-SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver.log"
-if [ -f "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid" ]; then
-    SOLVER_PID=$(cat "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid")
-    if ps -p "$SOLVER_PID" > /dev/null 2>&1; then
-        echo "✅ Solver is running (PID: $SOLVER_PID)"
-        # Show first few lines of solver log to confirm it initialized
-        if [ -f "$SOLVER_LOG_FILE" ]; then
-            echo "   Solver log (first 20 lines):"
-            head -20 "$SOLVER_LOG_FILE" | sed 's/^/   /'
-        fi
-    else
-        echo "❌ ERROR: Solver process died (PID: $SOLVER_PID)"
-        if [ -f "$SOLVER_LOG_FILE" ]; then
-            echo "   Solver log:"
-            cat "$SOLVER_LOG_FILE" | sed 's/^/   /'
-        fi
-        exit 1
-    fi
-else
-    echo "⚠️  WARNING: Solver PID file not found"
-    if [ -f "$SOLVER_LOG_FILE" ]; then
-        echo "   Solver log:"
-        cat "$SOLVER_LOG_FILE" | sed 's/^/   /'
-    fi
-fi
+# Verify solver started successfully
+./testing-infra/ci-e2e/verify-solver-running.sh
 
 echo ""
-echo "🚀 Step 4: Testing INFLOW intents (connected chain → hub chain)..."
+echo "🚀 Step 5: Testing INFLOW intents (connected chain → hub chain)..."
 echo "==================================================================="
 echo "   Submitting inflow cross-chain intents via verifier negotiation routing..."
 ./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-hub-intent.sh
+echo ""
+echo "💰 Pre-Escrow Balance Validation"
+echo "=========================================="
+# Nobody should have done anything yet: all four actors start with 1 USDxyz
+./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh 1000000 1000000 1000000 1000000
+
 ./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-escrow.sh
 
 echo ""
-echo "   - Waiting for transactions to be finalized and events to be queryable..."
-sleep 5
-
-echo ""
-echo "🚀 Step 5: Waiting for solver to automatically fulfill..."
+echo "🚀 Step 6: Waiting for solver to automatically fulfill..."
 echo "=========================================================="
 
 # Load intent ID for solver fulfillment wait
@@ -111,34 +90,30 @@ echo "   2. Fulfill the intent on hub chain"
 echo "   3. Verifier will detect fulfillment and generate approval"
 echo ""
 
-if ! wait_for_solver_fulfillment "$INTENT_ID" "inflow" 30; then
+if ! wait_for_solver_fulfillment "$INTENT_ID" "inflow" 60; then
     echo "❌ ERROR: Solver did not fulfill the intent automatically"
-    echo "   Check solver logs for errors"
+    display_service_logs "Solver fulfillment timeout"
     exit 1
 fi
 
 echo "✅ Solver fulfilled the intent automatically!"
 echo ""
 
-echo "🔓 Step 5b: Releasing escrow on connected chain..."
-echo "==================================================="
-./testing-infra/ci-e2e/e2e-tests-mvm/release-escrow.sh
+# Wait for solver to claim escrow (verifies escrow object was deleted)
+./testing-infra/ci-e2e/e2e-tests-mvm/wait-for-escrow-claim.sh
 
 echo ""
-echo "💰 Final Balance View"
+echo "💰 Final Balance Validation"
 echo "=========================================="
-./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh || true
+# Inflow: Solver transfers to hub requester (0 on hub, 2000000 on MVM from escrow)
+#         Requester receives on hub (2000000 on hub, 0 on MVM locked in escrow)
+./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh 0 2000000 2000000 0
+
 echo ""
-echo "✅ E2E inflow test flow completed!"
-echo ""
-echo "📊 Test Summary:"
-echo "   ✅ Inflow tests: Tokens transferred from connected chain to hub chain"
-echo "   ✅ Verifier negotiation routing: Draft submission and signature retrieval"
-echo "   ✅ Solver automation: Solver automatically detected escrow and fulfilled intent"
-echo "   ✅ Verifier automation: Verifier detected fulfillment and generated approval"
+echo "✅ E2E inflow test completed!"
 echo ""
 
-echo "🧹 Step 6: Cleaning up chains, accounts and processes..."
+echo "🧹 Step 7: Cleaning up chains, accounts and processes..."
 echo "========================================================"
 ./testing-infra/ci-e2e/chain-connected-mvm/cleanup.sh
 

@@ -143,6 +143,7 @@ module mvmt_intent::fa_intent_with_oracle_tests {
             desired_fa_type,
             DESIRED_AMOUNT,
             1, // desired_chain_id: same chain for regular intents
+            std::option::none(), // Same-chain: no desired_metadata_address override needed
             timestamp::now_seconds() + 3600,
             signer::address_of(offerer),
             requirement,

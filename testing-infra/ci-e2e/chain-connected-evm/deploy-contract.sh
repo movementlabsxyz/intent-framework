@@ -29,11 +29,12 @@ log ""
 log "🔑 Configuration:"
 log "   Computing verifier Ethereum address from config..."
 
-# Setup verifier config (always generates fresh ephemeral keys for CI/E2E testing)
-setup_verifier_config
+# Generate fresh ephemeral keys for CI/E2E testing
+generate_verifier_keys
 
-# Get verifier Ethereum address from config (derived from ECDSA public key)
+# Get verifier Ethereum address (derived from ECDSA public key)
 VERIFIER_DIR="$PROJECT_ROOT/trusted-verifier"
+export VERIFIER_CONFIG_PATH="$PROJECT_ROOT/trusted-verifier/config/verifier-e2e-ci-testing.toml"
 CONFIG_PATH="$VERIFIER_CONFIG_PATH"
 
 VERIFIER_ETH_OUTPUT=$(cd "$PROJECT_ROOT" && env HOME="${HOME}" VERIFIER_CONFIG_PATH="$CONFIG_PATH" nix develop -c bash -c "cd trusted-verifier && cargo run --bin get_verifier_eth_address 2>&1" | tee -a "$LOG_FILE")

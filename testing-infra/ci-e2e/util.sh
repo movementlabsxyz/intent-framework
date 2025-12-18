@@ -57,12 +57,14 @@ setup_logging() {
 log_and_echo() {
     echo "$@"
     [ -n "$LOG_FILE" ] && echo "$@" >> "$LOG_FILE"
+    return 0  # Prevent set -e from exiting on [ -n "$LOG_FILE" ] returning false
 }
 
 # Helper function to write only to log file (not terminal)
 log() {
     echo "$@"
     [ -n "$LOG_FILE" ] && echo "$@" >> "$LOG_FILE"
+    return 0  # Prevent set -e from exiting on [ -n "$LOG_FILE" ] returning false
 }
 
 # Setup verifier configuration

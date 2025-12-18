@@ -608,6 +608,7 @@ assert_usdxyz_balance() {
         exit 1
     fi
     log_and_echo "   ✅ $checkpoint: $profile has $actual USDxyz (expected: $expected)"
+    return 0
 }
 
 # Display balances for Chain 1 (Hub)

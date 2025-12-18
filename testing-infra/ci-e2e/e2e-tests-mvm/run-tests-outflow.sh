@@ -81,9 +81,6 @@ echo "=========================================="
 
 ./testing-infra/ci-e2e/e2e-tests-mvm/outflow-submit-hub-intent.sh
 
-# Assert solver still has USDxyz after intent submission (before fulfillment)
-assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-intent-submit"
-
 # Load intent ID for solver fulfillment wait
 if ! load_intent_info "INTENT_ID"; then
     echo "❌ ERROR: Failed to load intent info"

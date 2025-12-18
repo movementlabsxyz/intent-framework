@@ -19,7 +19,7 @@ cd "$PROJECT_ROOT"
 log_and_echo "🧹 Cleaning up chains and processes..."
 
 # Delete logs folder for fresh start
-rm -rf "$PROJECT_ROOT/.tmp/intent-framework-logs"
+rm -rf "$PROJECT_ROOT/.tmp/e2e-tests"
 
 ./testing-infra/ci-e2e/chain-connected-evm/stop-chain.sh || true
 ./testing-infra/ci-e2e/chain-hub/stop-chain.sh

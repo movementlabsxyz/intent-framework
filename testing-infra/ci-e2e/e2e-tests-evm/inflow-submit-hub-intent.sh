@@ -141,9 +141,9 @@ if [ -z "$RETRIEVED_SIGNATURE" ] || [ "$RETRIEVED_SIGNATURE" = "null" ]; then
     log_and_echo "🔍 Diagnostics:"
     
     # Check if solver is running
-    SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver.log"
-    if [ -f "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid" ]; then
-        SOLVER_PID=$(cat "$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid")
+    SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/e2e-tests/solver.log"
+    if [ -f "$PROJECT_ROOT/.tmp/e2e-tests/solver.pid" ]; then
+        SOLVER_PID=$(cat "$PROJECT_ROOT/.tmp/e2e-tests/solver.pid")
         if ps -p "$SOLVER_PID" > /dev/null 2>&1; then
             log_and_echo "   ✅ Solver process is running (PID: $SOLVER_PID)"
         else
@@ -165,7 +165,7 @@ if [ -z "$RETRIEVED_SIGNATURE" ] || [ "$RETRIEVED_SIGNATURE" = "null" ]; then
     fi
     
     # Show verifier log
-    VERIFIER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/verifier.log"
+    VERIFIER_LOG_FILE="$PROJECT_ROOT/.tmp/e2e-tests/verifier.log"
     if [ -f "$VERIFIER_LOG_FILE" ]; then
         log_and_echo ""
         log_and_echo "   📋 Verifier log (last 30 lines):"

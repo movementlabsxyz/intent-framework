@@ -38,7 +38,7 @@ setup_project_root() {
 
 # Setup logging functions and directory
 # Usage: setup_logging "script-name"
-# Creates log file: .tmp/intent-framework-logs/script-name_TIMESTAMP.log
+# Creates log file: .tmp/e2e-tests/script-name.log
 setup_logging() {
     local script_name="${1:-script}"
     
@@ -46,7 +46,7 @@ setup_logging() {
         setup_project_root
     fi
     
-    LOG_DIR="$PROJECT_ROOT/.tmp/intent-framework-logs"
+    LOG_DIR="$PROJECT_ROOT/.tmp/e2e-tests"
     mkdir -p "$LOG_DIR"
     LOG_FILE="$LOG_DIR/${script_name}.log"
     
@@ -342,7 +342,7 @@ check_verifier_health() {
 verify_verifier_running() {
     # Ensure LOG_DIR is set (for reading PID files)
     if [ -z "$LOG_DIR" ] && [ -n "$PROJECT_ROOT" ]; then
-        LOG_DIR="$PROJECT_ROOT/.tmp/intent-framework-logs"
+        LOG_DIR="$PROJECT_ROOT/.tmp/e2e-tests"
     fi
     
     log ""
@@ -390,7 +390,7 @@ verify_verifier_running() {
 verify_solver_running() {
     # Ensure LOG_DIR is set (for reading PID files)
     if [ -z "$LOG_DIR" ] && [ -n "$PROJECT_ROOT" ]; then
-        LOG_DIR="$PROJECT_ROOT/.tmp/intent-framework-logs"
+        LOG_DIR="$PROJECT_ROOT/.tmp/e2e-tests"
     fi
     
     log ""
@@ -425,7 +425,7 @@ display_service_logs() {
         setup_project_root
     fi
     
-    local log_dir="$PROJECT_ROOT/.tmp/intent-framework-logs"
+    local log_dir="$PROJECT_ROOT/.tmp/e2e-tests"
     local solver_log="$log_dir/solver.log"
     local verifier_log="$log_dir/verifier.log"
     
@@ -1089,7 +1089,7 @@ wait_for_solver_fulfillment() {
     local normalized_intent_id
     normalized_intent_id=$(echo "$intent_id" | tr '[:upper:]' '[:lower:]' | sed 's/^0x//' | sed 's/^0*//')
     
-    local solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/solver.log"
+    local solver_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/e2e-tests}/solver.log"
     
     while [ $elapsed -lt $timeout_seconds ]; do
         # Check for fulfillment event in verifier (works for inflow)
@@ -1146,7 +1146,7 @@ wait_for_solver_fulfillment() {
     fi
     
     # Show verifier logs
-    local verifier_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/intent-framework-logs}/verifier.log"
+    local verifier_log_file="${LOG_DIR:-$PROJECT_ROOT/.tmp/e2e-tests}/verifier.log"
     if [ -f "$verifier_log_file" ]; then
         log ""
         log "   Verifier logs (last 100 lines):"

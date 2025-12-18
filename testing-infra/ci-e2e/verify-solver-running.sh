@@ -11,8 +11,8 @@ source "$SCRIPT_DIR/util.sh"
 # Setup project root
 setup_project_root
 
-SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver.log"
-SOLVER_PID_FILE="$PROJECT_ROOT/.tmp/intent-framework-logs/solver.pid"
+SOLVER_LOG_FILE="$PROJECT_ROOT/.tmp/e2e-tests/solver.log"
+SOLVER_PID_FILE="$PROJECT_ROOT/.tmp/e2e-tests/solver.pid"
 
 # Check if PID file exists
 if [ ! -f "$SOLVER_PID_FILE" ]; then

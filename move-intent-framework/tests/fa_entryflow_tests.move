@@ -89,7 +89,8 @@ module mvmt_intent::fa_entryflow_tests {
         offerer = @0xcafe,
         solver = @0xdead
     )]
-    /// Integration-style test exercising requester and solver transactions end-to-end.
+    /// What is tested: requester and solver entry functions complete a FA limit order end-to-end
+    /// Why: Validate the integration path that real transactions will follow on-chain
     fun test_fa_limit_order(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -127,7 +128,8 @@ module mvmt_intent::fa_entryflow_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 65537, location = fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
-    /// Solver fails to settle when providing fewer tokens than required.
+    /// What is tested: solver settlement aborts when it provides fewer tokens than required
+    /// Why: Enforce the EAMOUNT_NOT_MEET guard on integrated inflow/outflow flows
     fun test_fa_limit_order_insufficient_solver_payment(
         aptos_framework: &signer,
         mvmt_intent: &signer,

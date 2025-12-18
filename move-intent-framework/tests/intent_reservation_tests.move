@@ -23,8 +23,8 @@ module mvmt_intent::intent_reservation_tests {
         offerer = @0xcafe,
         desired_fa_holder = @0xefca
     )]
-    /// Test: Signature Verification Success
-    /// Verifies that signature verification succeeds when using the correct solver key.
+    /// What is tested: verify_and_create_reservation_with_public_key succeeds with correct key and data
+    /// Why: Ensure draft intents can be reserved when signed by the intended solver key
     fun test_fa_limit_order_signature_verification_success(
         aptos_framework: &signer,
         offerer: &signer,
@@ -67,8 +67,8 @@ module mvmt_intent::intent_reservation_tests {
         offerer = @0xcafe,
         desired_fa_holder = @0xefca
     )]
-    /// Test: Wrong Data Signature Verification Failure
-    /// Verifies that signature verification fails when signing wrong data with correct key.
+    /// What is tested: verification fails when the solver signs the wrong data with a valid key
+    /// Why: Prevent accepting signatures over anything but the canonical intent hash
     fun test_fa_limit_order_wrong_data_signature_verification_failure(
         aptos_framework: &signer,
         offerer: &signer,
@@ -111,8 +111,8 @@ module mvmt_intent::intent_reservation_tests {
         offerer = @0xcafe,
         desired_fa_holder = @0xefca
     )]
-    /// Test: Wrong Signature Verification Failure
-    /// Verifies that signature verification fails when using a completely wrong signature.
+    /// What is tested: verification fails for a random 64-byte signature even with a valid public key
+    /// Why: Ensure only valid Ed25519 signatures over the intent hash are accepted
     fun test_fa_limit_order_wrong_signature_verification_failure(
         aptos_framework: &signer,
         offerer: &signer,
@@ -155,11 +155,8 @@ module mvmt_intent::intent_reservation_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 65540, location = intent_reservation)] // error::invalid_argument(EINVALID_AUTH_KEY_FORMAT)
-    /// Test: Invalid Authentication Key Format Rejection
-    /// Verifies that accounts with new authentication key format (32 bytes) are rejected.
-    /// Test accounts use the new format, so they fail at authentication key extraction.
-    /// This tests that verify_and_create_reservation correctly rejects accounts that don't have
-    /// the old 33-byte authentication key format needed to extract the Ed25519 public key.
+    /// What is tested: verify_and_create_reservation rejects accounts with unsupported auth key format
+    /// Why: Only legacy auth key layouts that expose an Ed25519 public key are supported
     fun test_fa_limit_order_invalid_auth_key_format_rejection(
         aptos_framework: &signer,
         offerer: &signer,
@@ -183,10 +180,8 @@ module mvmt_intent::intent_reservation_tests {
         offerer = @0xcafe,
         desired_fa_holder = @0xefca
     )]
-    /// Test: Invalid Signature Rejection with Public Key
-    /// Verifies that signature verification fails when using an invalid signature with a valid public key.
-    /// This tests the signature verification logic when the public key is provided explicitly
-    /// (as required for new authentication key format accounts).
+    /// What is tested: verify_and_create_reservation_with_public_key rejects an invalid signature
+    /// Why: Protect reservation flow when the solver public key is provided explicitly
     fun test_fa_limit_order_invalid_signature_rejection(
         aptos_framework: &signer,
         offerer: &signer,
@@ -231,11 +226,8 @@ module mvmt_intent::intent_reservation_tests {
         solver = @0xdead,
         desired_fa_holder = @0xefca
     )]
-    /// Test: Signature Verification Using Solver Registry
-    /// Demonstrates how to use verify_and_create_reservation_from_registry.
-    /// The solver registers their public key in the registry, then when the offerer
-    /// submits a transaction with the solver's signature, the contract verifies
-    /// the signature on-chain by looking up the public key from the registry.
+    /// What is tested: verify_and_create_reservation_from_registry uses the on-chain solver registry key
+    /// Why: Allow reservation verification without providing the solver public key in each transaction
     fun test_verify_reservation_from_registry(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -299,9 +291,8 @@ module mvmt_intent::intent_reservation_tests {
         desired_fa_holder = @0xefca
     )]
     #[expected_failure(abort_code = 65542, location = intent_reservation)] // error::invalid_argument(ESOLVER_NOT_REGISTERED)
-    /// Test: Verification Fails When Solver Not Registered
-    /// Verifies that verify_and_create_reservation_from_registry fails when
-    /// the solver is not registered in the solver registry.
+    /// What is tested: verify_and_create_reservation_from_registry aborts if the solver is not registered
+    /// Why: Require solvers to register their public key before reservations can be verified
     fun test_verify_reservation_from_registry_unregistered_solver(
         aptos_framework: &signer,
         mvmt_intent: &signer,

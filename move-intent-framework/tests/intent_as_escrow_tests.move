@@ -20,7 +20,8 @@ module mvmt_intent::intent_as_escrow_tests {
         solver = @0xdead,
         _verifier = @0xbeef
     )]
-    /// Test successful escrow with verifier approval
+    /// What is tested: complete_escrow succeeds when the verifier signature and payment are valid
+    /// Why: Ensure the happy-path escrow flow correctly settles between requester and solver
     fun test_escrow_with_verifier_approval(
         aptos_framework: &signer,
         user: &signer,
@@ -84,7 +85,8 @@ module mvmt_intent::intent_as_escrow_tests {
         _verifier = @0xbeef
     )]
     #[expected_failure(abort_code = 65539, location = fa_intent_with_oracle)] // error::invalid_argument(EINVALID_SIGNATURE)
-    /// Test that signature verification fails when signed intent_id doesn't match escrow's intent_id
+    /// What is tested: escrow completion fails when the verifier signs the wrong intent_id
+    /// Why: Prevent misuse of approvals by binding signatures to a specific escrow intent_id
     fun test_escrow_with_wrong_intent_id_signature(
         aptos_framework: &signer,
         user: &signer,
@@ -140,8 +142,8 @@ module mvmt_intent::intent_as_escrow_tests {
         _verifier = @0xbeef
     )]
     #[expected_failure(abort_code = 65539, location = fa_intent_with_oracle)] // error::invalid_argument(EINVALID_SIGNATURE)
-    /// Test that a signature for one intent_id cannot be reused on a different escrow with a different intent_id
-    /// This explicitly tests signature replay prevention - signatures are bound to specific intent_ids
+    /// What is tested: a signature for one escrow intent_id cannot be replayed on another escrow
+    /// Why: Enforce replay protection by binding verifier signatures to a single intent_id
     fun test_signature_replay_prevention(
         aptos_framework: &signer,
         user: &signer,
@@ -213,7 +215,8 @@ module mvmt_intent::intent_as_escrow_tests {
         _verifier = @0xbeef
     )]
     #[expected_failure(abort_code = 327684, location = mvmt_intent::intent)] // error::permission_denied(ENOT_REVOCABLE)
-    /// Test that escrow intents cannot be revoked (they are non-revocable by design)
+    /// What is tested: attempting to revoke an escrow intent aborts with ENOT_REVOCABLE
+    /// Why: Escrow intents must be non-revocable to guarantee solver safety
     fun test_escrow_revocation(
         aptos_framework: &signer,
         user: &signer,
@@ -248,7 +251,8 @@ module mvmt_intent::intent_as_escrow_tests {
         user = @0xcafe,
         solver = @0xbeef
     )]
-    /// Test the CLI-friendly wrapper function for creating escrow with any fungible asset
+    /// What is tested: create_escrow_from_fa locks tokens and creates an escrow intent
+    /// Why: Verify the entry function correctly withdraws tokens and reserves solver
     fun test_create_escrow_from_fa(
         aptos_framework: &signer,
         user: &signer,

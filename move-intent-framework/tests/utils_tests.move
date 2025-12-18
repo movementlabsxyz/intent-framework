@@ -14,8 +14,8 @@ module mvmt_intent::utils_tests {
         sender = @0xcafe,
         recipient = @0xdead
     )]
-    /// Test: Successful transfer with intent_id
-    /// Verifies that transfer_with_intent_id correctly transfers tokens from sender to recipient
+    /// What is tested: transfer_with_intent_id moves tokens from sender to recipient
+    /// Why: Ensure basic transfers tagged with an intent_id work correctly
     fun test_transfer_with_intent_id_success(
         aptos_framework: &signer,
         sender: &signer,
@@ -48,8 +48,8 @@ module mvmt_intent::utils_tests {
         sender = @0xcafe,
         recipient = @0xdead
     )]
-    /// Test: Transfer zero amount
-    /// Verifies that transfer_with_intent_id handles zero amount transfers
+    /// What is tested: transfer_with_intent_id with zero amount leaves balances unchanged
+    /// Why: Zero-value transfers should be safe no-ops
     fun test_transfer_with_intent_id_zero_amount(
         aptos_framework: &signer,
         sender: &signer,
@@ -79,8 +79,8 @@ module mvmt_intent::utils_tests {
         recipient = @0xdead
     )]
     #[expected_failure(abort_code = 65540, location = aptos_framework::fungible_asset)] // error::invalid_argument(EINSUFFICIENT_BALANCE)
-    /// Test: Insufficient balance error
-    /// Verifies that transfer_with_intent_id aborts when sender has insufficient balance
+    /// What is tested: transfer_with_intent_id aborts when sender balance is insufficient
+    /// Why: Prevent underfunded transfers that would overdraw the sender
     fun test_transfer_with_intent_id_insufficient_balance(
         aptos_framework: &signer,
         sender: &signer,
@@ -105,8 +105,8 @@ module mvmt_intent::utils_tests {
         sender = @0xcafe,
         recipient = @0xdead
     )]
-    /// Test: Multiple transfers with different intent_ids
-    /// Verifies that transfer_with_intent_id works correctly with different intent_ids
+    /// What is tested: multiple transfers with different intent_ids are processed correctly
+    /// Why: Intent IDs should not affect normal transfer semantics across calls
     fun test_transfer_with_intent_id_multiple_transfers(
         aptos_framework: &signer,
         sender: &signer,

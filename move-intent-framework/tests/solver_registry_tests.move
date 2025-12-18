@@ -13,7 +13,8 @@ module mvmt_intent::solver_registry_tests {
     // ============================================================================
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Initialize solver registry
+    /// What is tested: init_for_test initializes an empty solver registry at mvmt_intent
+    /// Why: Ensure the registry starts with no pre-registered solvers
     fun test_initialize_registry(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -27,7 +28,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Register solver successfully
+    /// What is tested: register_solver stores solver public key and EVM address correctly
+    /// Why: Verifier relies on accurate registry entries for signature and address checks
     fun test_register_solver(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -64,7 +66,8 @@ module mvmt_intent::solver_registry_tests {
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
     #[expected_failure(abort_code = solver_registry::E_PUBLIC_KEY_LENGTH_INVALID)]
-    /// Test: Register solver with invalid public key length
+    /// What is tested: register_solver aborts when the public key length is invalid
+    /// Why: Reject malformed public keys before they are stored on-chain
     fun test_register_solver_invalid_public_key_length(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -90,7 +93,8 @@ module mvmt_intent::solver_registry_tests {
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
     #[expected_failure(abort_code = solver_registry::E_EVM_ADDRESS_LENGTH_INVALID)]
-    /// Test: Register solver with invalid EVM address length
+    /// What is tested: register_solver aborts when the EVM address length is invalid
+    /// Why: Ensure only well-formed EVM addresses are recorded for solvers
     fun test_register_solver_invalid_evm_address_length(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -117,7 +121,8 @@ module mvmt_intent::solver_registry_tests {
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
     #[expected_failure(abort_code = solver_registry::E_SOLVER_ALREADY_REGISTERED)]
-    /// Test: Register solver twice should fail
+    /// What is tested: a second register_solver call for the same solver aborts
+    /// Why: Prevent accidental overwrites of existing solver registrations
     fun test_register_solver_twice(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -141,8 +146,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Update solver information
-    /// Verifies that a registered solver can update their own information
+    /// What is tested: update_solver lets a registered solver change key and EVM address
+    /// Why: Support key rotation and address updates for long-lived solvers
     fun test_update_solver(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -182,7 +187,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Get solver info
+    /// What is tested: get_solver_info returns full data for a registered solver
+    /// Why: Allow off-chain services to introspect solver registry entries
     fun test_get_solver_info(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -214,7 +220,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Get solver info for unregistered solver
+    /// What is tested: get_solver_info returns empty data for an unregistered solver
+    /// Why: Callers can safely detect missing solver entries
     fun test_get_solver_info_unregistered(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -234,7 +241,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Get public key unvalidated
+    /// What is tested: get_public_key_unvalidated returns an Option-wrapped public key
+    /// Why: Support verification flows that work with unvalidated public keys
     fun test_get_public_key_unvalidated(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -260,7 +268,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Deregister solver successfully
+    /// What is tested: deregister_solver removes a solver and clears associated data
+    /// Why: Allow solvers to opt out and free on-chain registry state
     fun test_deregister_solver(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -296,7 +305,8 @@ module mvmt_intent::solver_registry_tests {
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
     #[expected_failure(abort_code = solver_registry::E_SOLVER_NOT_FOUND)]
-    /// Test: Deregister unregistered solver should fail
+    /// What is tested: deregister_solver aborts when the solver is not registered
+    /// Why: Avoid silently succeeding on invalid deregistration requests
     fun test_deregister_unregistered_solver(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -310,7 +320,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe)]
-    /// Test: Re-register after deregistering
+    /// What is tested: a solver can re-register with new credentials after deregistration
+    /// Why: Allow clean credential rotation by deregistering and registering again
     fun test_reregister_after_deregister(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -356,7 +367,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe, solver2 = @0xbeef)]
-    /// Test: Register multiple solvers and verify they are all registered
+    /// What is tested: multiple distinct solvers can be registered simultaneously
+    /// Why: Support many competing solvers in the registry
     fun test_register_multiple_solvers(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -386,9 +398,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe, solver2 = @0xbeef, caller = @0xabcd)]
-    /// Test: List all registered solvers
-    /// Verifies that list_all_solvers can be called and doesn't abort
-    /// Note: We can't easily verify events in Move unit tests, but we can verify the function executes successfully
+    /// What is tested: list_all_solvers runs without abort and leaves registry intact
+    /// Why: Ensure listing solvers by emitting events is safe to call on-chain
     fun test_list_all_solvers(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -424,8 +435,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, caller = @0xabcd)]
-    /// Test: List all solvers when registry is empty
-    /// Verifies that list_all_solvers handles empty registry gracefully
+    /// What is tested: list_all_solvers works when the registry is empty
+    /// Why: Listing should be safe even before any solvers are registered
     fun test_list_all_solvers_empty_registry(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -439,8 +450,8 @@ module mvmt_intent::solver_registry_tests {
     }
 
     #[test(aptos_framework = @0x1, mvmt_intent = @0x123, solver = @0xcafe, solver2 = @0xbeef, caller = @0xabcd)]
-    /// Test: List all solvers after deregistering one
-    /// Verifies that solver_addresses vector is correctly maintained when deregistering
+    /// What is tested: list_all_solvers works correctly after one solver is deregistered
+    /// Why: Ensure the internal solver_addresses list stays consistent across removals
     fun test_list_all_solvers_after_deregister(
         aptos_framework: &signer,
         mvmt_intent: &signer,

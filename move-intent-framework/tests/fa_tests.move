@@ -19,9 +19,8 @@ module mvmt_intent::fa_tests {
         offerer = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Fungible Asset Session with success
-    /// Verifies that fungible asset orders can be created and events are emitted.
-    /// Verifies that solvers can unlock fungible assets from intents and start trading sessions.
+    /// What is tested: a basic FA limit order can be created, unlocked, and settled successfully
+    /// Why: Validate the core same-chain FA intent flow for offerer and solver
     fun test_fa_limit_order(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -76,7 +75,8 @@ module mvmt_intent::fa_tests {
         offerer2 = @0xbeef,
         solver = @0xdead
     )]
-    /// Test: Solver matches two opposing limit orders and settles both intents.
+    /// What is tested: a solver can cross-match two opposing FA limit orders and settle both
+    /// Why: Demonstrate multi-intent matching without leaving the solver with a net position
     fun test_fa_limit_order_cross_match(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -152,8 +152,8 @@ module mvmt_intent::fa_tests {
         offerer = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Fungible Asset Intent Revocation Success (revocable = true)
-    /// Verifies that revocable fungible asset intents can be cancelled and tokens recovered.
+    /// What is tested: revocable FA intents can be revoked and funds returned to the offerer
+    /// Why: Allow users to safely cancel open intents when revocable = true
     fun test_revoke_fa_intent_success(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -197,8 +197,8 @@ module mvmt_intent::fa_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 65537, location = fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
-    /// Test: Insufficient Tokens Error
-    /// Verifies that the intent framework properly handles cases where the solver provides insufficient tokens to complete the trade.
+    /// What is tested: FA intent settlement aborts when the solver provides insufficient payment
+    /// Why: Enforce the EAMOUNT_NOT_MEET guard for same-chain FA limit orders
     fun test_fa_limit_order_insufficient_solver_payment(
         aptos_framework: &signer,
         mvmt_intent: &signer,

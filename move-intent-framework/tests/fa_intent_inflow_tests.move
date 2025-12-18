@@ -103,11 +103,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Inflow intent creation
-    /// Verifies that create_inflow_intent:
-    /// 1. Locks 0 tokens on hub chain (unlike outflow which locks actual tokens)
-    /// 2. Creates a FungibleAssetLimitOrder intent (no verifier signature required)
-    /// 3. Creates an intent that can be retrieved and used
+    /// What is tested: create_inflow_intent creates a FungibleAssetLimitOrder without locking hub tokens
+    /// Why: Inflow intents should reference escrow on the connected chain, not lock assets on the hub
     fun test_create_inflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -196,10 +193,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Cross-chain intent fulfillment
-    /// Verifies that a solver can fulfill a cross-chain intent where the requestor
-    /// has 0 tokens locked on the hub chain (tokens are in escrow on a different chain).
-    /// This is Step 3 of the cross-chain escrow flow.
+    /// What is tested: a solver can fulfill a cross-chain intent where the requester locks 0 tokens on hub
+    /// Why: Confirm the hub-side flow works when value is actually held in connected-chain escrow
     fun test_fulfill_cross_chain_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -305,9 +300,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         requestor = @0xcafe,
         solver = @0xdead
     )]
-    /// Test: Inflow intent creation and fulfillment end-to-end
-    /// Verifies that create_inflow_intent creates an intent correctly,
-    /// and that fulfill_inflow_intent can fulfill it.
+    /// What is tested: create_inflow_intent followed by fulfill_inflow_intent completes an inflow trade
+    /// Why: Exercise the full inflow intent lifecycle from creation to solver fulfillment
     fun test_fulfill_inflow_intent(
         aptos_framework: &signer,
         mvmt_intent: &signer,
@@ -350,10 +344,9 @@ module mvmt_intent::fa_intent_inflow_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 393223, location = aptos_framework::object)] // error::not_found(ERESOURCE_DOES_NOT_EXIST)
-    /// Test: Cannot fulfill inflow intent with fulfill_outflow_intent
-    /// Verifies type safety - an inflow intent (FungibleAssetLimitOrder) cannot be fulfilled
-    /// using fulfill_outflow_intent which expects OracleGuardedLimitOrder.
-    /// 
+    /// What is tested: fulfilling an inflow intent with the outflow function aborts with ERESOURCE_DOES_NOT_EXIST
+    /// Why: Enforce type safety between FungibleAssetLimitOrder and OracleGuardedLimitOrder intents
+    ///
     /// Note: The error ERESOURCE_DOES_NOT_EXIST occurs because object::address_to_object<T> checks
     /// if an object of type T exists at the address. The object exists, but not as the requested type,
     /// so the runtime reports that a resource of that type does not exist at that address.
@@ -394,12 +387,10 @@ module mvmt_intent::fa_intent_inflow_tests {
         solver = @0xdead
     )]
     #[expected_failure(abort_code = 65537, location = mvmt_intent::fa_intent)] // error::invalid_argument(EAMOUNT_NOT_MEET)
-    /// Test: Cross-chain intent fulfillment with insufficient amount
-    /// Verifies that fulfillment fails when provided_amount < desired_amount.
+    /// What is tested: cross-chain inflow fulfillment aborts when provided_amount < desired_amount
+    /// Why: Reuse the EAMOUNT_NOT_MEET guard for insufficent payment in cross-chain inflow flows
     ///
-    /// Expected behavior: Fulfillment fails with EAMOUNT_NOT_MEET when provided_amount < desired_amount.
-    ///
-    /// Actual validation is in fa_intent::finish_fa_receiving_session_with_event()
+    /// Note: Actual validation is in fa_intent::finish_fa_receiving_session_with_event()
     /// which asserts: provided_amount >= argument.desired_amount
     fun test_fulfill_cross_chain_intent_insufficient_amount(
         aptos_framework: &signer,

@@ -44,7 +44,7 @@ generate_solver_config_evm() {
     local chain1_address=$(get_profile_address "intent-account-chain1")
     
     # Get USDhub metadata on hub chain (32-byte Move address)
-    local usdxyz_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
+    local usdhub_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
     
     # Get EVM USDcon address from chain-info.env and pad to 32 bytes
     if [ -f "$PROJECT_ROOT/.tmp/chain-info.env" ]; then
@@ -63,7 +63,7 @@ generate_solver_config_evm() {
     # Lowercase and pad to 32 bytes for Move compatibility
     local evm_token_no_prefix="${evm_token_address#0x}"
     local evm_token_lower=$(echo "$evm_token_no_prefix" | tr '[:upper:]' '[:lower:]')
-    local usdxyz_metadata_evm="0x000000000000000000000000${evm_token_lower}"
+    local usdcon_metadata_evm="0x000000000000000000000000${evm_token_lower}"
     
     # Use environment variables from test setup
     local verifier_url="${VERIFIER_URL:-http://127.0.0.1:3333}"
@@ -83,8 +83,8 @@ generate_solver_config_evm() {
     log "   - Hub module address: $module_address"
     log "   - EVM escrow contract: $escrow_contract"
     log "   - Solver address: $solver_address"
-    log "   - USDhub metadata (hub): $usdxyz_metadata_chain1"
-    log "   - USDcon metadata (EVM, padded): $usdxyz_metadata_evm"
+    log "   - USDhub metadata (hub): $usdhub_metadata_chain1"
+    log "   - USDcon metadata (EVM, padded): $usdcon_metadata_evm"
     
     cat > "$config_file" << EOF
 # Auto-generated solver config for EVM E2E tests
@@ -112,9 +112,9 @@ private_key_env = "$evm_private_key_env"
 [acceptance]
 # Accept USDhub/USDcon swaps at 1:1 rate for E2E testing
 # Inflow: offered on EVM (connected), desired on hub
-"$evm_chain_id:$usdxyz_metadata_evm:$hub_chain_id:$usdxyz_metadata_chain1" = 1.0
+"$evm_chain_id:$usdcon_metadata_evm:$hub_chain_id:$usdhub_metadata_chain1" = 1.0
 # Outflow: offered on hub, desired on EVM (connected)
-"$hub_chain_id:$usdxyz_metadata_chain1:$evm_chain_id:$usdxyz_metadata_evm" = 1.0
+"$hub_chain_id:$usdhub_metadata_chain1:$evm_chain_id:$usdcon_metadata_evm" = 1.0
 
 [solver]
 profile = "solver-chain1"

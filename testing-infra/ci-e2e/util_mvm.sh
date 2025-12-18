@@ -626,20 +626,20 @@ display_balances_hub() {
     log_and_echo "   Chain 1 (Hub):"
     
     if [ -n "$test_tokens_addr" ]; then
-        local requester_usdxyz=$(get_usdxyz_balance "requester-chain1" "1" "$test_tokens_addr")
-        local solver_usdxyz=$(get_usdxyz_balance "solver-chain1" "1" "$test_tokens_addr")
+        local requester_usdhub=$(get_usdxyz_balance "requester-chain1" "1" "$test_tokens_addr")
+        local solver_usdhub=$(get_usdxyz_balance "solver-chain1" "1" "$test_tokens_addr")
         
         # PANIC if we passed a token address but couldn't get balances
-        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
+        if [ -z "$requester_usdhub" ] || [ -z "$solver_usdhub" ]; then
             log_and_echo "❌ PANIC: display_balances_hub failed to get USDhub balances"
             log_and_echo "   test_tokens_addr: $test_tokens_addr"
-            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
-            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+            log_and_echo "   requester_usdhub: '$requester_usdhub'"
+            log_and_echo "   solver_usdhub: '$solver_usdhub'"
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdxyz 10e-6.USDhub"
-        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdxyz 10e-6.USDhub"
+        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdhub 10e-6.USDhub"
+        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdhub 10e-6.USDhub"
     else
         log_and_echo "      Requester: $requester1 Octas"
         log_and_echo "      Solver:   $solver1 Octas"
@@ -665,20 +665,20 @@ display_balances_connected_mvm() {
     log_and_echo "   Chain 2 (Connected MVM):"
     
     if [ -n "$test_tokens_addr" ]; then
-        local requester_usdxyz=$(get_usdxyz_balance "requester-chain2" "2" "$test_tokens_addr")
-        local solver_usdxyz=$(get_usdxyz_balance "solver-chain2" "2" "$test_tokens_addr")
+        local requester_usdcon=$(get_usdxyz_balance "requester-chain2" "2" "$test_tokens_addr")
+        local solver_usdcon=$(get_usdxyz_balance "solver-chain2" "2" "$test_tokens_addr")
         
         # PANIC if we passed a token address but couldn't get balances
-        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
+        if [ -z "$requester_usdcon" ] || [ -z "$solver_usdcon" ]; then
             log_and_echo "❌ PANIC: display_balances_connected_mvm failed to get USDcon balances"
             log_and_echo "   test_tokens_addr: $test_tokens_addr"
-            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
-            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+            log_and_echo "   requester_usdcon: '$requester_usdcon'"
+            log_and_echo "   solver_usdcon: '$solver_usdcon'"
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdxyz 10e-6.USDcon"
-        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdxyz 10e-6.USDcon"
+        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdcon 10e-6.USDcon"
+        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdcon 10e-6.USDcon"
     else
         log_and_echo "      Requester: $requester2 Octas"
         log_and_echo "      Solver:   $solver2 Octas"

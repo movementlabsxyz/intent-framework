@@ -29,6 +29,10 @@ public entry fun cleanup_expired(caller, intent_id)  // permissionless, verifies
 
 #[view]
 public fun get_active_requesters(): vector<address>
+#[view]
+public fun is_intent_registered(intent_id): bool
+#[view]
+public fun get_intent_count(requester): u64
 ```
 
 **Integration:**

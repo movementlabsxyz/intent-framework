@@ -8,6 +8,7 @@ module mvmt_intent::fa_intent_inflow {
     use mvmt_intent::fa_intent::{Self, FungibleStoreManager, FungibleAssetLimitOrder};
     use mvmt_intent::intent::{Self as intent, Intent};
     use mvmt_intent::intent_reservation;
+    use mvmt_intent::intent_registry;
 
     /// The solver signature is invalid and cannot be verified.
     const EINVALID_SIGNATURE: u64 = 2;
@@ -88,6 +89,9 @@ module mvmt_intent::fa_intent_inflow {
             intent_address,
             solver_address
         );
+
+        // 5. Unregister intent from the registry
+        intent_registry::unregister_intent(intent_address);
     }
 
     /// Creates an inflow intent and returns the intent object.
@@ -170,7 +174,7 @@ module mvmt_intent::fa_intent_inflow {
             error::invalid_argument(EINVALID_SIGNATURE)
         );
 
-        fa_intent::create_fa_to_fa_intent(
+        let intent_obj = fa_intent::create_fa_to_fa_intent(
             fa,
             offered_chain_id, // where escrow is created
             option::some(offered_amount), // Pass explicit offered_amount since tokens are locked on connected chain
@@ -185,7 +189,13 @@ module mvmt_intent::fa_intent_inflow {
             // Ensures consistent safety guarantees for verifiers across chains
             option::some(intent_id), // Store the cross-chain intent_id for fulfillment event
             option::some(requester_address_connected_chain) // Store requester address on connected chain for escrow lookup
-        )
+        );
+
+        // Register intent in the registry for dynamic account discovery
+        let intent_addr = object::object_address(&intent_obj);
+        intent_registry::register_intent(signer::address_of(account), intent_addr, expiry_time);
+
+        intent_obj
     }
 
     /// Entry function to create an inflow intent.

@@ -11,6 +11,7 @@ module mvmt_intent::fa_intent_inflow_tests {
     use mvmt_intent::fa_intent;
     use mvmt_intent::intent::Intent;
     use mvmt_intent::intent_reservation;
+    use mvmt_intent::intent_registry;
     use mvmt_intent::solver_registry;
     use mvmt_intent::test_utils;
 
@@ -43,6 +44,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         
         // Initialize solver registry
         solver_registry::init_for_test(mvmt_intent);
+        intent_registry::init_for_test(mvmt_intent);
         
         // Generate key pair for solver
         let (solver_secret_key, validated_solver_pk) = ed25519::generate_keys();
@@ -124,8 +126,9 @@ module mvmt_intent::fa_intent_inflow_tests {
         let offered_amount = 100u64;
         let desired_amount = 100u64;
         
-        // Initialize solver registry
+        // Initialize solver registry and intent registry
         solver_registry::init_for_test(mvmt_intent);
+        intent_registry::init_for_test(mvmt_intent);
         
         // Generate key pairs for solver
         let (solver_secret_key, validated_solver_pk) = ed25519::generate_keys();
@@ -217,6 +220,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         
         // Initialize solver registry
         solver_registry::init_for_test(mvmt_intent);
+        intent_registry::init_for_test(mvmt_intent);
         
         // Generate key pair for solver (simulating off-chain key generation)
         let (solver_secret_key, validated_public_key) = ed25519::generate_keys();
@@ -251,7 +255,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             intent_to_sign,
             solver_signature_bytes,
         );
-        assert!(option::is_some(&reservation_result), 0);
+        assert!(option::is_some(&reservation_result));
         
         // Create the intent with the verified reservation
         let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, offered_metadata, 0);
@@ -316,9 +320,11 @@ module mvmt_intent::fa_intent_inflow_tests {
             solver,
         );
         
-        // Verify intent was created
+        // Verify intent was created and registered
         let intent_address = object::object_address(&intent_obj);
         assert!(intent_address != @0x0);
+        assert!(intent_registry::is_intent_registered(intent_address));
+        assert!(intent_registry::get_intent_count(signer::address_of(requestor)) == 1);
         
         // Convert to generic Object type for entry function
         let intent_obj_generic = object::address_to_object(intent_address);
@@ -335,6 +341,10 @@ module mvmt_intent::fa_intent_inflow_tests {
         
         // Verify solver's balance decreased (100 - 100 = 0)
         assert!(primary_fungible_store::balance(signer::address_of(solver), desired_metadata) == 0);
+        
+        // Verify intent was unregistered from registry after fulfillment
+        assert!(!intent_registry::is_intent_registered(intent_address));
+        assert!(intent_registry::get_intent_count(signer::address_of(requestor)) == 0);
     }
 
     #[test(

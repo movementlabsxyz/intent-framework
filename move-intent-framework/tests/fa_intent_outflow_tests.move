@@ -12,6 +12,7 @@ module mvmt_intent::fa_intent_outflow_tests {
     use mvmt_intent::fa_intent_with_oracle;
     use mvmt_intent::intent::Intent;
     use mvmt_intent::intent_reservation;
+    use mvmt_intent::intent_registry;
     use mvmt_intent::solver_registry;
     use mvmt_intent::test_utils;
 
@@ -51,8 +52,9 @@ module mvmt_intent::fa_intent_outflow_tests {
         let offered_amount = 50u64;
         let desired_amount = 25u64;
         
-        // Initialize solver registry
+        // Initialize solver registry and intent registry
         solver_registry::init_for_test(mvmt_intent);
+        intent_registry::init_for_test(mvmt_intent);
         
         // Generate key pairs for solver and verifier
         let (solver_secret_key, validated_solver_pk) = ed25519::generate_keys();
@@ -200,7 +202,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         // Verify intent was created successfully by checking the intent object
         let intent_address = object::object_address(&intent_obj);
-        assert!(intent_address != @0x0, 1); // Intent address should not be zero
+        assert!(intent_address != @0x0); // Intent address should not be zero
     }
 
     #[test(
@@ -230,8 +232,9 @@ module mvmt_intent::fa_intent_outflow_tests {
         let requester_address_connected_chain = @0x1234; // Address on connected chain
         let expiry_time = timestamp::now_seconds() + 3600;
         
-        // Initialize solver registry
+        // Initialize solver registry and intent registry
         solver_registry::init_for_test(mvmt_intent);
+        intent_registry::init_for_test(mvmt_intent);
         
         // Generate key pairs
         let (_, validated_solver_pk) = ed25519::generate_keys();
@@ -310,9 +313,11 @@ module mvmt_intent::fa_intent_outflow_tests {
             solver_signer,
         );
         
-        // Verify intent was created
+        // Verify intent was created and registered
         let intent_address = object::object_address(&intent_obj);
         assert!(intent_address != @0x0);
+        assert!(intent_registry::is_intent_registered(intent_address));
+        assert!(intent_registry::get_intent_count(signer::address_of(requester_signer)) == 1);
         
         // Verify tokens were locked (requester_signer's balance decreased)
         assert!(primary_fungible_store::balance(signer::address_of(requester_signer), offered_metadata) == 50);
@@ -333,6 +338,10 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         // Verify requester_signer's balance is still 50 (tokens were locked, then solver got them)
         assert!(primary_fungible_store::balance(signer::address_of(requester_signer), offered_metadata) == 50);
+        
+        // Verify intent was unregistered from registry after fulfillment
+        assert!(!intent_registry::is_intent_registered(intent_address));
+        assert!(intent_registry::get_intent_count(signer::address_of(requester_signer)) == 0);
     }
 
     #[test(

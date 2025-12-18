@@ -8,6 +8,7 @@ module mvmt_intent::fa_intent_outflow {
     use mvmt_intent::fa_intent_with_oracle;
     use mvmt_intent::intent::Intent;
     use mvmt_intent::intent_reservation;
+    use mvmt_intent::intent_registry;
     use aptos_std::ed25519;
 
     /// The solver signature is invalid and cannot be verified.
@@ -68,6 +69,7 @@ module mvmt_intent::fa_intent_outflow {
         verifier_signature_bytes: vector<u8>
     ) {
         let solver_address = signer::address_of(solver);
+        let intent_address = aptos_framework::object::object_address(&intent);
 
         // 1. Start the session (unlocks actual tokens that were locked on hub - these are the solver's reward)
         let (unlocked_fa, session) =
@@ -107,6 +109,9 @@ module mvmt_intent::fa_intent_outflow {
             solver_payment,
             option::some(witness)
         );
+
+        // 8. Unregister intent from the registry
+        intent_registry::unregister_intent(intent_address);
     }
 
     /// Creates an outflow intent and returns the intent object.
@@ -217,7 +222,7 @@ module mvmt_intent::fa_intent_outflow {
         // The payment validation will check if desired_chain_id != offered_chain_id and use 0 for payment on hub
         let placeholder_metadata = fungible_asset::asset_metadata(&fa);
 
-        fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
+        let intent_obj = fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
             fa,
             offered_chain_id, // Chain ID where offered tokens are located (hub chain)
             placeholder_metadata, // Use same metadata as locked tokens (placeholder for payment check)
@@ -232,7 +237,13 @@ module mvmt_intent::fa_intent_outflow {
             intent_id,
             option::some(requester_address_connected_chain), // Store where solver should send tokens on connected chain
             reservation_result // Reserved for specific solver
-        )
+        );
+
+        // Register intent in the registry for dynamic account discovery
+        let intent_addr = aptos_framework::object::object_address(&intent_obj);
+        intent_registry::register_intent(signer::address_of(requester_signer), intent_addr, expiry_time);
+
+        intent_obj
     }
 
     /// Entry function to create an outflow intent.

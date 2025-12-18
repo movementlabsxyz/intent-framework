@@ -66,11 +66,11 @@ echo "🚀 Step 5: Testing INFLOW intents (connected chain → hub chain)..."
 echo "==================================================================="
 echo "   Submitting inflow cross-chain intents via verifier negotiation routing..."
 ./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-hub-intent.sh
-
+echo ""
 echo "💰 Pre-Escrow Balance Validation"
-# nobody should have done something yet. 
+echo "=========================================="
+# Nobody should have done anything yet: all four actors start with 1 USDxyz
 ./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh 1000000 1000000 1000000 1000000
-
 
 ./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-escrow.sh
 

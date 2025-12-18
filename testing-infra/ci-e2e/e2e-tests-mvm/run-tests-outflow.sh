@@ -73,6 +73,12 @@ echo ""
 echo "🚀 Step 5: Testing OUTFLOW intents (hub chain → connected chain)..."
 echo "===================================================================="
 echo "   Submitting outflow cross-chain intents via verifier negotiation routing..."
+echo ""
+echo "💰 Pre-Intent Balance Validation"
+echo "=========================================="
+# Everybody starts with 1 USDxyz on their origin chain before outflow
+./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh 1000000 1000000 1000000 1000000
+
 ./testing-infra/ci-e2e/e2e-tests-mvm/outflow-submit-hub-intent.sh
 
 # Assert solver still has USDxyz after intent submission (before fulfillment)

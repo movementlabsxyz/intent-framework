@@ -5,6 +5,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../util.sh"
 source "$SCRIPT_DIR/../util_mvm.sh"
 source "$SCRIPT_DIR/../util_evm.sh"
+source "$SCRIPT_DIR/../chain-connected-evm/utils.sh"
 
 # Setup project root and logging
 setup_project_root
@@ -26,9 +27,18 @@ CONNECTED_CHAIN_ID=31337
 CHAIN1_ADDRESS=$(get_profile_address "intent-account-chain1")
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 
-# Get Requester and Solver addresses
+# Get Requester and Solver addresses on hub
 REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
+
+# Get Requester address on connected EVM chain (Account 1)
+REQUESTER_EVM_ADDRESS=$(get_hardhat_account_address "1")
+if [ -z "$REQUESTER_EVM_ADDRESS" ]; then
+    log_and_echo "❌ ERROR: Failed to get Requester EVM address (Hardhat account 1)"
+    log_and_echo "   Make sure Hardhat node is running and chain-connected-evm/utils.sh is available"
+    display_service_logs "Missing Requester EVM address for inflow hub intent"
+    exit 1
+fi
 
 # Get USDxyz EVM address
 source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
@@ -36,9 +46,10 @@ USDXYZ_EVM_ADDRESS="${USDXYZ_EVM_ADDRESS:-}"
 
 log ""
 log "📋 Chain Information:"
-log "   Hub Chain (Chain 1):     $CHAIN1_ADDRESS"
-log "   Requester Chain 1 (hub):     $REQUESTER_CHAIN1_ADDRESS"
-log "   Solver Chain 1 (hub):       $SOLVER_CHAIN1_ADDRESS"
+log "   Hub Chain (Chain 1):            $CHAIN1_ADDRESS"
+log "   Requester Chain 1 (hub):        $REQUESTER_CHAIN1_ADDRESS"
+log "   Solver Chain 1 (hub):           $SOLVER_CHAIN1_ADDRESS"
+log "   Requester EVM (connected):      $REQUESTER_EVM_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 
@@ -55,8 +66,8 @@ log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
-log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz)"
-log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz)"
+log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz on connected EVM chain, Chain 3)"
+log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz on hub chain, Chain 1)"
 
 # Check and display initial balances using common function
 log ""
@@ -180,7 +191,7 @@ log "     Solver address: $RETRIEVED_SOLVER"
 SOLVER_SIGNATURE_HEX="${RETRIEVED_SIGNATURE#0x}"
 aptos move run --profile requester-chain1 --assume-yes \
     --function-id "0x${CHAIN1_ADDRESS}::fa_intent_inflow::create_inflow_intent_entry" \
-    --args "address:${OFFERED_METADATA_EVM}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" >> "$LOG_FILE" 2>&1
+    --args "address:${OFFERED_METADATA_EVM}" "u64:${OFFERED_AMOUNT}" "u64:${CONNECTED_CHAIN_ID}" "address:${DESIRED_METADATA_CHAIN1}" "u64:${DESIRED_AMOUNT}" "u64:${HUB_CHAIN_ID}" "u64:${EXPIRY_TIME}" "address:${INTENT_ID}" "address:${RETRIEVED_SOLVER}" "hex:${SOLVER_SIGNATURE_HEX}" "address:${REQUESTER_EVM_ADDRESS}" >> "$LOG_FILE" 2>&1
 
 # ============================================================================
 # SECTION 6: VERIFY RESULTS
@@ -207,6 +218,8 @@ else
     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
     cat "$LOG_FILE"
     log_and_echo "   + + + + + + + + + + + + + + + + + + + +"
+    # Include service logs (verifier/solver) for easier debugging
+    display_service_logs "EVM inflow hub intent creation failed"
     exit 1
 fi
 

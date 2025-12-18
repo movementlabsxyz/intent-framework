@@ -70,8 +70,13 @@ log_and_echo ""
 log_and_echo "🚀 Step 5: Submitting cross-chain intents via verifier negotiation routing..."
 log_and_echo "============================================================================="
 ./testing-infra/ci-e2e/e2e-tests-evm/inflow-submit-hub-intent.sh
-./testing-infra/ci-e2e/e2e-tests-evm/inflow-submit-escrow.sh
+log_and_echo ""
+log_and_echo "💰 Pre-Escrow Balance Validation"
+log_and_echo "=========================================="
+log_and_echo "   Nobody should have moved funds yet; all four actors start with 1 USDxyz"
+./testing-infra/ci-e2e/e2e-tests-evm/balance-check.sh 1000000 1000000 1000000 1000000
 
+./testing-infra/ci-e2e/e2e-tests-evm/inflow-submit-escrow.sh
 # Load intent ID for solver fulfillment wait
 if ! load_intent_info "INTENT_ID"; then
     log_and_echo "❌ ERROR: Failed to load intent info"

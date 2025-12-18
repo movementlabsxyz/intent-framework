@@ -8,17 +8,17 @@
 #
 # Note: This file depends on functions from util.sh (log, log_and_echo, setup_project_root, etc.)
 
-# Get USDxyz balance for an EVM account
-# Usage: get_usdxyz_balance_evm <account_address> <usdxyz_token_address>
-# Returns the USDxyz balance for the given account
+# Get USDcon balance for an EVM account
+# Usage: get_usdcon_balance_evm <account_address> <usd_token_address>
+# Returns the USDcon balance for the given account
 # PANICS if inputs are missing or balance lookup fails
-get_usdxyz_balance_evm() {
+get_usdcon_balance_evm() {
     local account="$1"
     local token_address="$2"
     
     # Validate inputs
     if [ -z "$account" ] || [ -z "$token_address" ]; then
-        echo "❌ PANIC: get_usdxyz_balance_evm requires account and token_address" >&2
+        echo "❌ PANIC: get_usdcon_balance_evm requires account and token_address" >&2
         echo "   account: '$account', token_address: '$token_address'" >&2
         exit 1
     fi
@@ -31,7 +31,7 @@ get_usdxyz_balance_evm() {
     local balance=$(echo "$balance_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
     
     if [ -z "$balance" ]; then
-        echo "❌ PANIC: get_usdxyz_balance_evm failed to get balance" >&2
+        echo "❌ PANIC: get_usdcon_balance_evm failed to get balance" >&2
         echo "   account: $account, token_address: $token_address" >&2
         echo "   output: $balance_output" >&2
         exit 1
@@ -41,12 +41,12 @@ get_usdxyz_balance_evm() {
 }
 
 # Display balances for Chain 3 (Connected EVM)
-# Usage: display_balances_connected_evm [usdxyz_token_address]
+# Usage: display_balances_connected_evm [usdcon_token_address]
 # Fetches and displays Requester and Solver balances on the Connected EVM chain
-# If usdxyz_token_address is provided, also displays USDxyz balances
+# If usdcon_token_address is provided, also displays USDcon balances
 # Only displays if EVM chain is running (skips silently if it's not)
 display_balances_connected_evm() {
-    local usdxyz_addr="$1"
+    local usdcon_addr="$1"
     
     # Check if EVM chain is running
     if ! curl -s -X POST http://127.0.0.1:8545 \
@@ -70,7 +70,7 @@ display_balances_connected_evm() {
     local solver_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
     local solver_evm=$(echo "$solver_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
     
-    # Get account addresses for USDxyz balance lookup
+    # Get account addresses for USDcon balance lookup
     local requester_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
     local solver_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
     
@@ -90,7 +90,7 @@ display_balances_connected_evm() {
         solver_eth=$(echo "scale=4; $solver_evm / 1000000000000000000" | bc 2>/dev/null || echo "N/A")
     fi
     
-    if [ -n "$usdxyz_addr" ]; then
+    if [ -n "$usdcon_addr" ]; then
         # PANIC if we passed a token address but couldn't get account addresses
         if [ -z "$requester_addr" ] || [ -z "$solver_addr" ]; then
             log_and_echo "❌ PANIC: display_balances_connected_evm failed to get account addresses"
@@ -99,20 +99,20 @@ display_balances_connected_evm() {
             exit 1
         fi
         
-        local requester_usdxyz=$(get_usdxyz_balance_evm "$requester_addr" "$usdxyz_addr")
-        local solver_usdxyz=$(get_usdxyz_balance_evm "$solver_addr" "$usdxyz_addr")
+        local requester_usdcon=$(get_usdcon_balance_evm "$requester_addr" "$usdcon_addr")
+        local solver_usdcon=$(get_usdcon_balance_evm "$solver_addr" "$usdcon_addr")
         
         # PANIC if we passed a token address but couldn't get balances
-        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
-            log_and_echo "❌ PANIC: display_balances_connected_evm failed to get USDxyz balances"
-            log_and_echo "   usdxyz_addr: $usdxyz_addr"
-            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
-            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+        if [ -z "$requester_usdcon" ] || [ -z "$solver_usdcon" ]; then
+            log_and_echo "❌ PANIC: display_balances_connected_evm failed to get USDcon balances"
+            log_and_echo "   usdcon_addr: $usdcon_addr"
+            log_and_echo "   requester_usdcon: '$requester_usdcon'"
+            log_and_echo "   solver_usdcon: '$solver_usdcon'"
             exit 1
         fi
         
-        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdxyz 10e-6.USDxyz"
-        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdcon 10e-6.USDcon"
+        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdcon 10e-6.USDcon"
     else
         log_and_echo "      Requester (Acc 1): ${requester_eth} ETH"
         log_and_echo "      Solver (Acc 2): ${solver_eth} ETH"

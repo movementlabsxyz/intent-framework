@@ -72,7 +72,7 @@ log_and_echo "   Submitting outflow cross-chain intents via verifier negotiation
 log_and_echo ""
 log_and_echo "💰 Pre-Intent Balance Validation"
 log_and_echo "=========================================="
-log_and_echo "   Everybody starts with 1 USDxyz on their origin chain before outflow"
+log_and_echo "   Everybody starts with 1 USDhub/USDcon on each chain"
 ./testing-infra/ci-e2e/e2e-tests-evm/balance-check.sh 1000000 1000000 1000000 1000000
 
 ./testing-infra/ci-e2e/e2e-tests-evm/outflow-submit-hub-intent.sh

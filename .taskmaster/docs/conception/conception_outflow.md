@@ -8,7 +8,7 @@ For general use cases applicable to all flows, see [conception_generic.md](conce
 
 ### Users (Requester)
 
-- As a requester, I want to swap some USDxyz from M1 chain to a connected chain so that I get my USDxyz on the connected chain fast and with low fee.
+- As a requester, I want to swap some USDhub from M1 chain to a connected chain so that I get my USDcon on the connected chain fast and with low fee.
 
 ## Protocol
 
@@ -48,18 +48,18 @@ sequenceDiagram
 ### Requester makes an outflow swap intent
 
 0. Given the requester
-   - owns the USDxyz that they want to transfer on M1 chain
+   - owns the USDhub that they want to transfer on M1 chain
    - owns some MOVE to execute Tx on M1 chain
    - can access the connected chain and M1 chain RPC
 1. When the requester wants to realize a swap from M1 chain to connected chain
    - then the requester requests a signed quote from a solver for the desired intent
    - then the requester sends a request-intent Tx to the M1 chain with escrow (locks tokens on Hub)
    - then the requester waits for a confirmation of the swap
-   - then the requester has received the requested amount of USDxyz in their connected chain account.
+   - then the requester has received the requested amount of USDcon in their connected chain account.
 
 #### Possible issues (Requester)
 
-1. The requester didn't get the right expected amount of USDxyz on connected chain.
+1. The requester didn't get the right expected amount of USDcon on connected chain.
     - _Mitigation: The verifier verifies that the transfer amount on connected chain matches the request-intent desired amount. Only if the amount is correct, the verifier signs the approval for escrow release._
 2. The solver never fulfills on connected chain. How can the requester withdraw their tokens?
     - _Mitigation: The escrow on Hub eventually times out and the requester can withdraw their tokens._
@@ -69,7 +69,7 @@ sequenceDiagram
 0. Given the solver
    - is registered in the solver registry on Hub chain
    - owns some MOVE to execute Tx on M1 chain
-   - owns enough USDxyz on the connected chain
+   - owns enough USDcon on the connected chain
    - can access both chains' RPC
 1. When the requester creates a draft intent and sends it to the solver
    - Then the solver signs the draft intent off-chain and returns signature
@@ -99,7 +99,7 @@ sequenceDiagram
 0. Given the adversary takes the requester role to do a swap
 1. When the adversary wants to extract more funds than the adversary has provided
    - Then the adversary sends a request-intent Tx to the M1 chain with less tokens in escrow than declared.
-   - Then the adversary hopes to get more USDxyz on the connected chain than they have provided.
+   - Then the adversary hopes to get more USDcon on the connected chain than they have provided on the hub.
    - _Mitigation: The escrow amount is locked at request-intent creation. The contract enforces the offered amount._
 2. When the adversary attempts to stall the request-intent holding solver funds hostage.
    - Then the adversary creates the intent

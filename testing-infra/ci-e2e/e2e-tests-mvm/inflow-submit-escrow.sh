@@ -73,14 +73,14 @@ log "   Expiry time: $EXPIRY_TIME"
 log "   Intent ID: $INTENT_ID"
 
 log ""
-log "   - Getting USDxyz metadata on Chain 2..."
-USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
-if [ -z "$USDXYZ_METADATA_CHAIN2" ]; then
-    log_and_echo "❌ Failed to get USDxyz metadata on Chain 2"
+log "   - Getting USDcon metadata on Chain 2..."
+USDCON_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
+if [ -z "$USDCON_METADATA_CHAIN2" ]; then
+    log_and_echo "❌ Failed to get USDcon metadata on Chain 2"
     exit 1
 fi
-log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
-OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
+log "     ✅ Got USDcon metadata on Chain 2: $USDCON_METADATA_CHAIN2"
+OFFERED_METADATA_CHAIN2="$USDCON_METADATA_CHAIN2"
 
 # ============================================================================
 # SECTION 3: DISPLAY INITIAL STATE
@@ -95,14 +95,14 @@ log_and_echo ""
 # ============================================================================
 log ""
 log "   Creating escrow on connected chain..."
-log "   - Requester (Requester) locks 1 USDxyz in escrow on Chain 2 (connected chain)"
+log "   - Requester (Requester) locks 1 USDcon in escrow on Chain 2 (connected chain)"
 log "   - Using intent_id from hub chain: $INTENT_ID"
 
 # DEBUG: Check requester balance BEFORE escrow creation
 log ""
 log "   DEBUG: Checking requester balance BEFORE escrow creation..."
 BEFORE_BALANCE=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
-log_and_echo "   DEBUG: Requester USDxyz balance BEFORE escrow: $BEFORE_BALANCE"
+log_and_echo "   DEBUG: Requester USDcon balance BEFORE escrow: $BEFORE_BALANCE"
 
 log "   - Creating escrow intent on Chain 2..."
 log "     Offered metadata: $OFFERED_METADATA_CHAIN2"
@@ -126,7 +126,7 @@ if [ $ESCROW_EXIT_CODE -eq 0 ]; then
     log ""
     log "   DEBUG: Checking requester balance AFTER escrow creation..."
     AFTER_BALANCE=$(get_usdxyz_balance "requester-chain2" "2" "0x$TEST_TOKENS_CHAIN2")
-    log_and_echo "   DEBUG: Requester USDxyz balance AFTER escrow: $AFTER_BALANCE"
+    log_and_echo "   DEBUG: Requester USDcon balance AFTER escrow: $AFTER_BALANCE"
     
     if [ "$BEFORE_BALANCE" = "$AFTER_BALANCE" ]; then
         log_and_echo "   ⚠️  WARNING: Requester balance did NOT change after escrow creation!"
@@ -178,10 +178,10 @@ if [ $ESCROW_EXIT_CODE -eq 0 ]; then
     fi
 
     if [ "$LOCKED_AMOUNT" = "1000000" ]; then
-        log "     ✅ Escrow has correct locked amount (1 USDxyz)"
+        log "     ✅ Escrow has correct locked amount (1 USDcon)"
     else
         log_and_echo "❌ ERROR: Escrow has unexpected locked amount: $LOCKED_AMOUNT"
-        log_and_echo "   Expected: 100_000_000 (1 USDxyz)"
+        log_and_echo "   Expected: 100_000_000 (1 USDcon)"
         exit 1
     fi
 

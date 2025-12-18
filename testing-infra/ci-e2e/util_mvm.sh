@@ -511,9 +511,9 @@ initialize_solver_registry() {
     fi
 }
 
-# Get USDxyz metadata address
+# Get USDhub/USDcon metadata address
 # Usage: get_usdxyz_metadata <test_tokens_address> <chain_num>
-# Returns the USDxyz metadata object address
+# Returns the USDhub/USDcon metadata object address
 get_usdxyz_metadata() {
     local test_tokens_addr="$1"
     local chain_num="$2"
@@ -537,9 +537,9 @@ get_usdxyz_metadata() {
     echo "$metadata"
 }
 
-# Get USDxyz balance for an account
+# Get USDhub/USDcon balance for an account
 # Usage: get_usdxyz_balance <profile> <chain_num> <test_tokens_address>
-# Returns the USDxyz balance for the given profile
+# Returns the USDhub/USDcon balance for the given profile
 get_usdxyz_balance() {
     local profile="$1"
     local chain_num="$2"
@@ -584,7 +584,7 @@ get_usdxyz_balance() {
     echo "$balance"
 }
 
-# Assert USDxyz balance matches expected value or PANIC
+# Assert USDhub/USDcon balance matches expected value or PANIC
 # Usage: assert_usdxyz_balance <profile> <chain_num> <test_tokens_addr> <expected_balance> <checkpoint_name>
 # Example: assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint"
 # Exits with error if balance doesn't match expected value
@@ -598,23 +598,23 @@ assert_usdxyz_balance() {
     local actual=$(get_usdxyz_balance "$profile" "$chain_num" "$test_tokens_addr")
     
     if [ -z "$actual" ]; then
-        log_and_echo "❌ PANIC at $checkpoint: Failed to get USDxyz balance for $profile"
+        log_and_echo "❌ PANIC at $checkpoint: Failed to get USDhub/USDcon balance for $profile"
         exit 1
     fi
     
     if [ "$actual" != "$expected" ]; then
-        log_and_echo "❌ PANIC at $checkpoint: $profile USDxyz balance mismatch!"
+        log_and_echo "❌ PANIC at $checkpoint: $profile USDhub/USDcon balance mismatch!"
         log_and_echo "   Expected: $expected, Actual: $actual"
         exit 1
     fi
-    log_and_echo "   ✅ $checkpoint: $profile has $actual USDxyz (expected: $expected)"
+    log_and_echo "   ✅ $checkpoint: $profile has $actual 10e-6 USDhub/USDcon (expected: $expected)"
     return 0
 }
 
 # Display balances for Chain 1 (Hub)
 # Usage: display_balances_hub [test_tokens_address]
 # Fetches and displays Requester and Solver balances on the Hub chain
-# If test_tokens_address is provided, also displays USDxyz balances (PANICS if USDxyz lookup fails)
+# If test_tokens_address is provided, also displays USDhub balances (PANICS if lookup fails)
 # Note: Hub chain is always a Move VM chain, so this uses aptos commands
 display_balances_hub() {
     local test_tokens_addr="$1"
@@ -626,20 +626,20 @@ display_balances_hub() {
     log_and_echo "   Chain 1 (Hub):"
     
     if [ -n "$test_tokens_addr" ]; then
-        local requester_usdxyz=$(get_usdxyz_balance "requester-chain1" "1" "$test_tokens_addr")
-        local solver_usdxyz=$(get_usdxyz_balance "solver-chain1" "1" "$test_tokens_addr")
+        local requester_usdhub=$(get_usdxyz_balance "requester-chain1" "1" "$test_tokens_addr")
+        local solver_usdhub=$(get_usdxyz_balance "solver-chain1" "1" "$test_tokens_addr")
         
         # PANIC if we passed a token address but couldn't get balances
-        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
-            log_and_echo "❌ PANIC: display_balances_hub failed to get USDxyz balances"
+        if [ -z "$requester_usdhub" ] || [ -z "$solver_usdhub" ]; then
+            log_and_echo "❌ PANIC: display_balances_hub failed to get USDhub balances"
             log_and_echo "   test_tokens_addr: $test_tokens_addr"
-            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
-            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+            log_and_echo "   requester_usdhub: '$requester_usdhub'"
+            log_and_echo "   solver_usdhub: '$solver_usdhub'"
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdxyz 10e-6.USDxyz"
-        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdhub 10e-6.USDhub"
+        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdhub 10e-6.USDhub"
     else
         log_and_echo "      Requester: $requester1 Octas"
         log_and_echo "      Solver:   $solver1 Octas"
@@ -649,7 +649,7 @@ display_balances_hub() {
 # Display balances for Chain 2 (Connected Move VM)
 # Usage: display_balances_connected_mvm [test_tokens_address]
 # Fetches and displays Requester and Solver balances on the Connected Move VM chain
-# If test_tokens_address is provided, also displays USDxyz balances (PANICS if USDxyz lookup fails)
+# If test_tokens_address is provided, also displays USDcon balances (PANICS if lookup fails)
 # Only displays if Chain 2 profiles exist (skips silently if they don't)
 display_balances_connected_mvm() {
     local test_tokens_addr="$1"
@@ -665,20 +665,20 @@ display_balances_connected_mvm() {
     log_and_echo "   Chain 2 (Connected MVM):"
     
     if [ -n "$test_tokens_addr" ]; then
-        local requester_usdxyz=$(get_usdxyz_balance "requester-chain2" "2" "$test_tokens_addr")
-        local solver_usdxyz=$(get_usdxyz_balance "solver-chain2" "2" "$test_tokens_addr")
+        local requester_usdcon=$(get_usdxyz_balance "requester-chain2" "2" "$test_tokens_addr")
+        local solver_usdcon=$(get_usdxyz_balance "solver-chain2" "2" "$test_tokens_addr")
         
         # PANIC if we passed a token address but couldn't get balances
-        if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
-            log_and_echo "❌ PANIC: display_balances_connected_mvm failed to get USDxyz balances"
+        if [ -z "$requester_usdcon" ] || [ -z "$solver_usdcon" ]; then
+            log_and_echo "❌ PANIC: display_balances_connected_mvm failed to get USDcon balances"
             log_and_echo "   test_tokens_addr: $test_tokens_addr"
-            log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
-            log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
+            log_and_echo "   requester_usdcon: '$requester_usdcon'"
+            log_and_echo "   solver_usdcon: '$solver_usdcon'"
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdxyz 10e-6.USDxyz"
-        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdcon 10e-6.USDcon"
+        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdcon 10e-6.USDcon"
     else
         log_and_echo "      Requester: $requester2 Octas"
         log_and_echo "      Solver:   $solver2 Octas"

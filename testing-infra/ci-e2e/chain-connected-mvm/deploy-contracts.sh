@@ -66,69 +66,69 @@ log ""
 log "🔧 Initializing solver registry..."
 initialize_solver_registry "intent-account-chain2" "$CHAIN2_ADDRESS" "$LOG_FILE"
 
-# Deploy USDxyz test token
+# Deploy USDcon test token
 log ""
-log "💵 Deploying USDxyz test token to Chain 2..."
+log "💵 Deploying USDcon test token to Chain 2..."
 
 TEST_TOKENS_CHAIN2_ADDRESS=$(get_profile_address "test-tokens-chain2")
 
-log "   - Deploying USDxyz with address: $TEST_TOKENS_CHAIN2_ADDRESS"
+log "   - Deploying USDcon with address: $TEST_TOKENS_CHAIN2_ADDRESS"
 cd testing-infra/ci-e2e/test-tokens
 aptos move publish --profile test-tokens-chain2 --named-addresses test_tokens=$TEST_TOKENS_CHAIN2_ADDRESS --assume-yes >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ USDxyz deployment successful on Chain 2!"
-    log_and_echo "✅ USDxyz test token deployed on connected chain"
+    log "   ✅ USDcon deployment successful on Chain 2!"
+    log_and_echo "✅ USDcon test token deployed on connected chain"
 else
-    log_and_echo "   ❌ USDxyz deployment failed on Chain 2!"
+    log_and_echo "   ❌ USDcon deployment failed on Chain 2!"
     exit 1
 fi
 
 cd "$PROJECT_ROOT"
 
-# Export USDxyz address for other scripts
+# Export USDcon address for other scripts
 echo "TEST_TOKENS_CHAIN2_ADDRESS=$TEST_TOKENS_CHAIN2_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
-log "   ✅ USDxyz address saved: $TEST_TOKENS_CHAIN2_ADDRESS"
+log "   ✅ USDcon address saved: $TEST_TOKENS_CHAIN2_ADDRESS"
 
-# Mint USDxyz to Requester and Solver
+# Mint USDcon to Requester and Solver
 log ""
-log "💵 Minting USDxyz to Requester and Solver on Chain 2..."
+log "💵 Minting USDcon to Requester and Solver on Chain 2..."
 
 REQUESTER_CHAIN2_ADDRESS=$(get_profile_address "requester-chain2")
 SOLVER_CHAIN2_ADDRESS=$(get_profile_address "solver-chain2")
-USDXYZ_MINT_AMOUNT="1000000"  # 1 USDxyz (6 decimals = 1_000_000)
+USDCON_MINT_AMOUNT="1000000"  # 1 USDcon (6 decimals = 1_000_000)
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Requester ($REQUESTER_CHAIN2_ADDRESS)..."
+log "   - Minting $USDCON_MINT_AMOUNT 10e-6.USDcon to Requester ($REQUESTER_CHAIN2_ADDRESS)..."
 aptos move run --profile test-tokens-chain2 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN2_ADDRESS}::usdxyz::mint \
-    --args address:$REQUESTER_CHAIN2_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$REQUESTER_CHAIN2_ADDRESS u64:$USDCON_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ Minted USDxyz to Requester"
+    log "   ✅ Minted USDcon to Requester"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Requester"
+    log_and_echo "   ❌ Failed to mint USDcon to Requester"
     exit 1
 fi
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Solver ($SOLVER_CHAIN2_ADDRESS)..."
+log "   - Minting $USDCON_MINT_AMOUNT 10e-6.USDcon to Solver ($SOLVER_CHAIN2_ADDRESS)..."
 aptos move run --profile test-tokens-chain2 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN2_ADDRESS}::usdxyz::mint \
-    --args address:$SOLVER_CHAIN2_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$SOLVER_CHAIN2_ADDRESS u64:$USDCON_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ Minted USDxyz to Solver"
+    log "   ✅ Minted USDcon to Solver"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Solver"
+    log_and_echo "   ❌ Failed to mint USDcon to Solver"
     exit 1
 fi
 
-log_and_echo "✅ USDxyz minted to Requester and Solver on connected chain (1 USDxyz each)"
+log_and_echo "✅ USDcon minted to Requester and Solver on connected chain (1 USDcon each)"
 
 # Assert balances are correct after minting
 assert_usdxyz_balance "requester-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint-requester"
 assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "post-mint-solver"
 
-# Display balances (APT + USDxyz)
+# Display balances (APT + USDcon)
 display_balances_connected_mvm "$TEST_TOKENS_CHAIN2_ADDRESS"
 
 log ""

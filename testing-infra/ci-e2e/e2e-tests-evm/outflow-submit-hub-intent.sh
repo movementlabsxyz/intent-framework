@@ -32,11 +32,11 @@ TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
 
-# Get EVM addresses and USDxyz token
+# Get EVM addresses and USDcon token
 REQUESTER_EVM_ADDRESS=$(get_hardhat_account_address "1")
 SOLVER_EVM_ADDRESS=$(get_hardhat_account_address "2")
 source "$PROJECT_ROOT/.tmp/chain-info.env" 2>/dev/null || true
-USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
+USDCON_TOKEN_ADDRESS="$USDCON_EVM_ADDRESS"
 
 log ""
 log "📋 Chain Information:"
@@ -71,8 +71,8 @@ fi
 
 VERIFIER_PUBLIC_KEY="0x${VERIFIER_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-OFFERED_AMOUNT="1000000"  # 1 USDxyz = 1_000_000 (6 decimals, on hub chain)
-DESIRED_AMOUNT="1000000"  # 1 USDxyz = 1_000_000 (6 decimals, on EVM chain)
+OFFERED_AMOUNT="1000000"  # 1 USDhub = 1_000_000 (6 decimals, on hub chain)
+DESIRED_AMOUNT="1000000"  # 1 USDcon = 1_000_000 (6 decimals, on EVM connected chain)
 OFFERED_CHAIN_ID=1
 DESIRED_CHAIN_ID=$CONNECTED_CHAIN_ID
 HUB_CHAIN_ID=1
@@ -82,23 +82,23 @@ log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Verifier public key: $VERIFIER_PUBLIC_KEY"
-log "   Offered amount: $OFFERED_AMOUNT 10e-6.USDxyz (1 USDxyz on hub chain)"
-log "   Desired amount: $DESIRED_AMOUNT 10e-6.USDxyz (1 USDxyz on EVM chain)"
+log "   Offered amount: $OFFERED_AMOUNT 10e-6.USDhub (1 USDhub on hub chain)"
+log "   Desired amount: $DESIRED_AMOUNT 10e-6.USDcon (1 USDcon on EVM connected chain)"
 
 log ""
-log "   - Getting USDxyz metadata addresses..."
-log "     Getting USDxyz metadata on Chain 1 (hub)..."
+log "   - Getting USD token metadata addresses..."
+log "     Getting USDhub metadata on Chain 1 (hub)..."
 OFFERED_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
-log "     ✅ Got USDxyz metadata on Chain 1: $OFFERED_METADATA_CHAIN1"
+log "     ✅ Got USDhub metadata on Chain 1: $OFFERED_METADATA_CHAIN1"
 
 # For EVM outflow, desired token is on EVM chain (connected chain)
 # Convert 20-byte Ethereum address to 32-byte Move address by padding with zeros
 # e.g., 0x1234...5678 -> 0x0000000000000000000000001234...5678
 # Lowercase for consistent matching with solver acceptance config
-EVM_TOKEN_ADDRESS_NO_PREFIX="${USDXYZ_ADDRESS#0x}"
+EVM_TOKEN_ADDRESS_NO_PREFIX="${USDCON_TOKEN_ADDRESS#0x}"
 EVM_TOKEN_ADDRESS_LOWER=$(echo "$EVM_TOKEN_ADDRESS_NO_PREFIX" | tr '[:upper:]' '[:lower:]')
 DESIRED_METADATA_EVM="0x000000000000000000000000${EVM_TOKEN_ADDRESS_LOWER}"
-log "     EVM USDxyz token address: $USDXYZ_ADDRESS"
+log "     EVM USDcon token address: $USDCON_TOKEN_ADDRESS"
 log "     Padded to 32-byte format: $DESIRED_METADATA_EVM"
 
 # ============================================================================
@@ -106,7 +106,7 @@ log "     Padded to 32-byte format: $DESIRED_METADATA_EVM"
 # ============================================================================
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_ADDRESS"
+display_balances_connected_evm "$USDCON_TOKEN_ADDRESS"
 log_and_echo ""
 
 # ============================================================================
@@ -198,8 +198,8 @@ log "     Signature: ${RETRIEVED_SIGNATURE:0:20}..."
 # ============================================================================
 log ""
 log "   Creating outflow intent on hub chain..."
-log "   - Requester locks 1 USDxyz on hub chain"
-log "   - Requester wants 1 USDxyz on connected chain (EVM)"
+log "   - Requester locks 1 USDhub on hub chain"
+log "   - Requester wants 1 USDcon on connected chain (EVM)"
 log "     Offered metadata (hub): $OFFERED_METADATA_CHAIN1"
 log "     Desired metadata (connected): $DESIRED_METADATA_EVM"
 log "     Solver address: $RETRIEVED_SOLVER"
@@ -244,7 +244,7 @@ fi
 # ============================================================================
 log ""
 display_balances_hub "0x$TEST_TOKENS_CHAIN1"
-display_balances_connected_evm "$USDXYZ_ADDRESS"
+display_balances_connected_evm "$USDCON_TOKEN_ADDRESS"
 log_and_echo ""
 
 log ""

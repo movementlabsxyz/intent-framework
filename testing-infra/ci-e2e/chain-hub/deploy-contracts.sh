@@ -66,65 +66,65 @@ log ""
 log "🔧 Initializing solver registry..."
 initialize_solver_registry "intent-account-chain1" "$CHAIN1_ADDRESS" "$LOG_FILE"
 
-# Deploy USDxyz test token
+# Deploy USDhub test token
 log ""
-log "💵 Deploying USDxyz test token to Chain 1..."
+log "💵 Deploying USDhub test token to Chain 1..."
 
 TEST_TOKENS_CHAIN1_ADDRESS=$(get_profile_address "test-tokens-chain1")
 
-log "   - Deploying USDxyz with address: $TEST_TOKENS_CHAIN1_ADDRESS"
+log "   - Deploying USDhub with address: $TEST_TOKENS_CHAIN1_ADDRESS"
 cd testing-infra/ci-e2e/test-tokens
 aptos move publish --profile test-tokens-chain1 --named-addresses test_tokens=$TEST_TOKENS_CHAIN1_ADDRESS --assume-yes >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ USDxyz deployment successful on Chain 1!"
-    log_and_echo "✅ USDxyz test token deployed on hub chain"
+    log "   ✅ USDhub deployment successful on Chain 1!"
+    log_and_echo "✅ USDhub test token deployed on hub chain"
 else
-    log_and_echo "   ❌ USDxyz deployment failed on Chain 1!"
+    log_and_echo "   ❌ USDhub deployment failed on Chain 1!"
     exit 1
 fi
 
 cd "$PROJECT_ROOT"
 
-# Export USDxyz address for other scripts (cleanup deletes this file, so append is safe - creates file if it doesn't exist)
+# Export USDhub address for other scripts (cleanup deletes this file, so append is safe - creates file if it doesn't exist)
 echo "TEST_TOKENS_CHAIN1_ADDRESS=$TEST_TOKENS_CHAIN1_ADDRESS" >> "$PROJECT_ROOT/.tmp/chain-info.env"
-log "   ✅ USDxyz address saved: $TEST_TOKENS_CHAIN1_ADDRESS"
+log "   ✅ USDhub address saved: $TEST_TOKENS_CHAIN1_ADDRESS"
 
-# Mint USDxyz to Requester and Solver
+# Mint USDhub to Requester and Solver
 log ""
-log "💵 Minting USDxyz to Requester and Solver on Chain 1..."
+log "💵 Minting USDhub to Requester and Solver on Chain 1..."
 
 REQUESTER_CHAIN1_ADDRESS=$(get_profile_address "requester-chain1")
 SOLVER_CHAIN1_ADDRESS=$(get_profile_address "solver-chain1")
-USDXYZ_MINT_AMOUNT="1000000"  # 1 USDxyz (6 decimals = 1_000_000)
+USDHUB_MINT_AMOUNT="1000000"  # 1 USDhub (6 decimals = 1_000_000)
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Requester ($REQUESTER_CHAIN1_ADDRESS)..."
+log "   - Minting $USDHUB_MINT_AMOUNT 10e-6.USDhub to Requester ($REQUESTER_CHAIN1_ADDRESS)..."
 aptos move run --profile test-tokens-chain1 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
-    --args address:$REQUESTER_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$REQUESTER_CHAIN1_ADDRESS u64:$USDHUB_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ Minted USDxyz to Requester"
+    log "   ✅ Minted USDhub to Requester"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Requester"
+    log_and_echo "   ❌ Failed to mint USDhub to Requester"
     exit 1
 fi
 
-log "   - Minting $USDXYZ_MINT_AMOUNT USDxyz to Solver ($SOLVER_CHAIN1_ADDRESS)..."
+log "   - Minting $USDHUB_MINT_AMOUNT 10e-6.USDhub to Solver ($SOLVER_CHAIN1_ADDRESS)..."
 aptos move run --profile test-tokens-chain1 --assume-yes \
     --function-id ${TEST_TOKENS_CHAIN1_ADDRESS}::usdxyz::mint \
-    --args address:$SOLVER_CHAIN1_ADDRESS u64:$USDXYZ_MINT_AMOUNT >> "$LOG_FILE" 2>&1
+    --args address:$SOLVER_CHAIN1_ADDRESS u64:$USDHUB_MINT_AMOUNT >> "$LOG_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
-    log "   ✅ Minted USDxyz to Solver"
+    log "   ✅ Minted USDhub to Solver"
 else
-    log_and_echo "   ❌ Failed to mint USDxyz to Solver"
+    log_and_echo "   ❌ Failed to mint USDhub to Solver"
     exit 1
 fi
 
-log_and_echo "✅ USDxyz minted to Requester and Solver on hub chain (1 USDxyz each)"
+log_and_echo "✅ USDhub minted to Requester and Solver on hub chain (1 USDhub each)"
 
-# Display balances (APT + USDxyz)
+# Display balances (APT + USDhub)
 display_balances_hub "$TEST_TOKENS_CHAIN1_ADDRESS"
 
 log ""

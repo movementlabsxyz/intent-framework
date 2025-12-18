@@ -110,3 +110,6 @@ if [ -n "$REQUESTER_CHAIN_CONNECTED_EXPECTED" ] && [ "$REQUESTER_CHAIN_CONNECTED
         log_and_echo "✅ Requester balance validated on Chain 3 (Connected EVM): $REQUESTER_CHAIN_CONNECTED_ACTUAL 10e-6.USDxyz"
     fi
 fi
+
+# Explicit success exit (prevents set -e issues from log_and_echo return code)
+exit 0

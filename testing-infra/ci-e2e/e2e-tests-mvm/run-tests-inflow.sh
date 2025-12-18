@@ -66,11 +66,13 @@ echo "🚀 Step 5: Testing INFLOW intents (connected chain → hub chain)..."
 echo "==================================================================="
 echo "   Submitting inflow cross-chain intents via verifier negotiation routing..."
 ./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-hub-intent.sh
-./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-escrow.sh
 
-echo ""
-echo "   - Waiting for transactions to be finalized and events to be queryable..."
-sleep 5
+echo "💰 Pre-Escrow Balance Validation"
+# nobody should have done something yet. 
+./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh 1000000 1000000 1000000 1000000
+
+
+./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-escrow.sh
 
 echo ""
 echo "🚀 Step 6: Waiting for solver to automatically fulfill..."
@@ -97,9 +99,8 @@ fi
 echo "✅ Solver fulfilled the intent automatically!"
 echo ""
 
-# Wait for solver to claim escrow (it does this automatically after fulfillment)
-echo "⏳ Waiting for solver to claim escrow (5 seconds)..."
-sleep 5
+# Wait for solver to claim escrow (verifies escrow object was deleted)
+./testing-infra/ci-e2e/e2e-tests-mvm/wait-for-escrow-claim.sh
 
 echo ""
 echo "💰 Final Balance Validation"

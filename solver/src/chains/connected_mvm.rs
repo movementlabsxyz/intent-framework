@@ -8,17 +8,33 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::time::Duration;
+use tracing::{debug, warn};
 
 use crate::config::ChainConfig;
 
+/// Move VM Optional wrapper: {"vec": [value]} or {"vec": []}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MoveOption<T> {
+    pub vec: Vec<T>,
+}
+
+impl<T> MoveOption<T> {
+    pub fn into_option(mut self) -> Option<T> {
+        self.vec.pop()
+    }
+}
+
 /// Escrow event emitted when an escrow is created on the connected chain
+/// This matches the OracleLimitOrderEvent structure from Move
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EscrowEvent {
-    /// Escrow object address
+    /// Escrow object address (called intent_address in Move OracleLimitOrderEvent)
+    #[serde(rename = "intent_address")]
     pub escrow_id: String,
     /// Intent ID for cross-chain linking
     pub intent_id: String,
-    /// Requester address
+    /// Requester address (called requester in Move)
+    #[serde(rename = "requester")]
     pub issuer: String,
     /// Offered token metadata
     pub offered_metadata: serde_json::Value,
@@ -32,8 +48,9 @@ pub struct EscrowEvent {
     pub expiry_time: String,
     /// Whether the escrow is revocable
     pub revocable: bool,
-    /// Reserved solver address (if any)
-    pub reserved_solver: Option<String>,
+    /// Reserved solver address (wrapped in Move Option: {"vec": [...]})
+    #[serde(default)]
+    pub reserved_solver: Option<MoveOption<String>>,
 }
 
 /// Client for interacting with a connected Move VM chain
@@ -97,12 +114,15 @@ impl ConnectedMvmClient {
 
         for account in known_accounts {
             let account_address = account.strip_prefix("0x").unwrap_or(account);
-            let url = format!("{}/v1/accounts/{}/transactions", self.base_url, account_address);
+            // Note: base_url already includes /v1 (e.g., http://127.0.0.1:8082/v1)
+            let url = format!("{}/accounts/{}/transactions", self.base_url, account_address);
 
             let mut query_params = vec![("limit", "100".to_string())];
             if let Some(version) = since_version {
                 query_params.push(("start", version.to_string()));
             }
+
+            debug!("Querying escrow events from URL: {}", url);
 
             let response = self
                 .client
@@ -110,16 +130,24 @@ impl ConnectedMvmClient {
                 .query(&query_params)
                 .send()
                 .await
-                .context(format!("Failed to query transactions for account {}", account))?;
+                .context(format!("Failed to query transactions for account {} (URL: {})", account, url))?;
 
             if !response.status().is_success() {
-                continue; // Account might not exist or have no transactions
+                let status = response.status();
+                let body = response.text().await.unwrap_or_else(|_| "<failed to read body>".to_string());
+                warn!(
+                    "Failed to query transactions for account {} (URL: {}): HTTP {} - {}",
+                    account, url, status, body
+                );
+                continue;
             }
 
             let transactions: Vec<serde_json::Value> = response
                 .json()
                 .await
-                .context("Failed to parse transactions response")?;
+                .context(format!("Failed to parse transactions response for account {}", account))?;
+
+            debug!("Found {} transactions for account {}", transactions.len(), account);
 
             // Extract escrow events from transactions
             for tx in transactions {
@@ -132,10 +160,18 @@ impl ConnectedMvmClient {
 
                         // Escrows use oracle-guarded intents, so we look for OracleLimitOrderEvent
                         if event_type.contains("OracleLimitOrderEvent") {
-                            if let Ok(event_data) = serde_json::from_value::<EscrowEvent>(
+                            match serde_json::from_value::<EscrowEvent>(
                                 event_json.get("data").cloned().unwrap_or(serde_json::Value::Null),
                             ) {
-                                events.push(event_data);
+                                Ok(event_data) => {
+                                    debug!("Found escrow event: intent_id={}, escrow_id={}", 
+                                           event_data.intent_id, event_data.escrow_id);
+                                    events.push(event_data);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to parse OracleLimitOrderEvent: {} - data: {:?}", 
+                                          e, event_json.get("data"));
+                                }
                             }
                         }
                     }
@@ -143,6 +179,7 @@ impl ConnectedMvmClient {
             }
         }
 
+        debug!("Total escrow events found: {}", events.len());
         Ok(events)
     }
 
@@ -225,11 +262,31 @@ impl ConnectedMvmClient {
         }
 
         // Extract transaction hash from output
-        // The CLI outputs the transaction hash in format: "Transaction hash: 0x..."
         let output_str = String::from_utf8_lossy(&output.stdout);
+
+        // Try to parse as JSON first (aptos CLI outputs JSON with Result wrapper)
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&output_str) {
+            // Handle {"Result": {"transaction_hash": "0x...", ...}}
+            if let Some(hash) = json
+                .get("Result")
+                .and_then(|r| r.get("transaction_hash"))
+                .and_then(|h| h.as_str())
+            {
+                return Ok(hash.to_string());
+            }
+        }
+
+        // Fallback: line-based parsing for "Transaction hash: 0x..." format
         if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
+            // Try finding 0x directly or quoted "0x
             if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
                 return Ok(hash.to_string());
+            }
+            // Handle quoted hash like "0x..."
+            if let Some(start) = hash_line.find("\"0x") {
+                if let Some(end) = hash_line[start + 1..].find('"') {
+                    return Ok(hash_line[start + 1..start + 1 + end].to_string());
+                }
             }
         }
 
@@ -293,9 +350,30 @@ impl ConnectedMvmClient {
 
         // Extract transaction hash from output
         let output_str = String::from_utf8_lossy(&output.stdout);
+
+        // Try to parse as JSON first (aptos CLI outputs JSON with Result wrapper)
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&output_str) {
+            // Handle {"Result": {"transaction_hash": "0x...", ...}}
+            if let Some(hash) = json
+                .get("Result")
+                .and_then(|r| r.get("transaction_hash"))
+                .and_then(|h| h.as_str())
+            {
+                return Ok(hash.to_string());
+            }
+        }
+
+        // Fallback: line-based parsing for "Transaction hash: 0x..." format
         if let Some(hash_line) = output_str.lines().find(|l| l.contains("hash") || l.contains("Hash")) {
+            // Try finding 0x directly or quoted "0x
             if let Some(hash) = hash_line.split_whitespace().find(|s| s.starts_with("0x")) {
                 return Ok(hash.to_string());
+            }
+            // Handle quoted hash like "0x..."
+            if let Some(start) = hash_line.find("\"0x") {
+                if let Some(end) = hash_line[start + 1..].find('"') {
+                    return Ok(hash_line[start + 1..start + 1 + end].to_string());
+                }
             }
         }
 

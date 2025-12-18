@@ -72,26 +72,30 @@ fn test_intent_created_event_deserialization() {
 
 /// What is tested: EscrowEvent deserialization (MVM)
 /// Why: Ensure we can parse escrow events from connected MVM chain
+/// Note: Field names match Move's OracleLimitOrderEvent (intent_address, requester, reserved_solver as Move Option)
 #[test]
 fn test_escrow_event_deserialization() {
     let json = json!({
-        "escrow_id": "0x1111111111111111111111111111111111111111",
+        "intent_address": "0x1111111111111111111111111111111111111111",
         "intent_id": "0x2222222222222222222222222222222222222222",
-        "issuer": "0xcccccccccccccccccccccccccccccccccccccccc",
+        "requester": "0xcccccccccccccccccccccccccccccccccccccccc",
         "offered_metadata": {"inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
         "offered_amount": "1000",
         "desired_metadata": {"inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
         "desired_amount": "2000",
         "expiry_time": "2000000",
         "revocable": true,
-        "reserved_solver": "0xdddddddddddddddddddddddddddddddddddddddd"
+        "reserved_solver": {"vec": ["0xdddddddddddddddddddddddddddddddddddddddd"]}
     });
 
     let event: solver::chains::connected_mvm::EscrowEvent = serde_json::from_value(json).unwrap();
     assert_eq!(event.escrow_id, "0x1111111111111111111111111111111111111111");
     assert_eq!(event.intent_id, "0x2222222222222222222222222222222222222222");
+    assert_eq!(event.issuer, "0xcccccccccccccccccccccccccccccccccccccccc");
     assert_eq!(event.offered_amount, "1000");
-    assert_eq!(event.reserved_solver, Some("0xdddddddddddddddddddddddddddddddddddddddd".to_string()));
+    // reserved_solver is a Move Option wrapper
+    let solver = event.reserved_solver.and_then(|opt| opt.into_option());
+    assert_eq!(solver, Some("0xdddddddddddddddddddddddddddddddddddddddd".to_string()));
 }
 
 // ============================================================================
@@ -366,7 +370,8 @@ fn test_mvm_client_new() {
 #[tokio::test]
 async fn test_get_escrow_events_success() {
     let mock_server = MockServer::start().await;
-    let base_url = mock_server.uri().to_string();
+    // Note: base_url simulates the full RPC URL including /v1 suffix
+    let base_url = format!("{}/v1", mock_server.uri());
 
     Mock::given(method("GET"))
         .and(path("/v1/accounts/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/transactions"))
@@ -376,16 +381,16 @@ async fn test_get_escrow_events_success() {
                     {
                         "type": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb::fa_intent_with_oracle::OracleLimitOrderEvent",
                         "data": {
-                            "escrow_id": "0x1111111111111111111111111111111111111111",
+                            "intent_address": "0x1111111111111111111111111111111111111111",
                             "intent_id": "0x2222222222222222222222222222222222222222",
-                            "issuer": "0xcccccccccccccccccccccccccccccccccccccccc",
+                            "requester": "0xcccccccccccccccccccccccccccccccccccccccc",
                             "offered_metadata": {"inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
                             "offered_amount": "1000",
                             "desired_metadata": {"inner": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
                             "desired_amount": "2000",
                             "expiry_time": "2000000",
                             "revocable": true,
-                            "reserved_solver": "0xdddddddddddddddddddddddddddddddddddddddd"
+                            "reserved_solver": {"vec": ["0xdddddddddddddddddddddddddddddddddddddddd"]}
                         }
                     }
                 ]

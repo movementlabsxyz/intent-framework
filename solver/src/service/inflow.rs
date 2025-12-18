@@ -108,27 +108,34 @@ impl InflowService {
             return Ok(Vec::new());
         }
 
-        // Collect requester addresses from pending intents
-        let requester_addresses: Vec<String> = pending_intents
+        // Collect requester_address_connected_chain from pending intents (for inflow escrow lookup)
+        // Inflow intents have escrows created on the connected chain by the connected chain requester,
+        // not the hub chain requester.
+        let connected_chain_requester_addresses: Vec<String> = pending_intents
             .iter()
-            .map(|intent| intent.requester_address.clone())
+            .filter_map(|intent| intent.requester_address_connected_chain.clone())
             .collect();
 
         // Query connected chain for escrow events
         let escrow_events: Vec<EscrowMatch> = match &self.connected_client {
             ConnectedChainClient::Mvm(client) => {
-                // Convert EscrowEvent to a common format for matching
-                let events = client.get_escrow_events(&requester_addresses, None).await?;
-                if !events.is_empty() {
-                    info!("Found {} MVM escrow events", events.len());
+                if connected_chain_requester_addresses.is_empty() {
+                    info!("No connected chain requester addresses found for inflow intents");
+                    Vec::new()
+                } else {
+                    // Convert EscrowEvent to a common format for matching
+                    let events = client.get_escrow_events(&connected_chain_requester_addresses, None).await?;
+                    if !events.is_empty() {
+                        info!("Found {} MVM escrow events", events.len());
+                    }
+                    events
+                        .into_iter()
+                        .map(|e| EscrowMatch {
+                            intent_id: e.intent_id,
+                            escrow_id: e.escrow_id,
+                        })
+                        .collect()
                 }
-                events
-                    .into_iter()
-                    .map(|e| EscrowMatch {
-                        intent_id: e.intent_id,
-                        escrow_id: e.escrow_id,
-                    })
-                    .collect()
             }
             ConnectedChainClient::Evm(client) => {
                 // EVM client uses from_block/to_block instead of known_accounts
@@ -216,11 +223,13 @@ impl InflowService {
     /// 2. Converts the signature to the appropriate format (Ed25519 for MVM, ECDSA for EVM)
     /// 3. Calls the escrow release function on the connected chain
     ///
+    /// For inflow escrows, the payment_amount is always 0 because the solver already
+    /// fulfilled on the hub chain. The escrow just releases the locked tokens to the solver.
+    ///
     /// # Arguments
     ///
     /// * `intent` - Tracked intent with matching escrow
     /// * `escrow_id` - Escrow object/contract address
-    /// * `payment_amount` - Amount to provide as payment (typically matches desired_amount)
     ///
     /// # Returns
     ///
@@ -230,7 +239,6 @@ impl InflowService {
         &self,
         intent: &TrackedIntent,
         escrow_id: &str,
-        payment_amount: u64,
     ) -> Result<String> {
         // Poll verifier for approval until escrow expiry
         let verifier_url = self.verifier_url.clone();
@@ -278,10 +286,11 @@ impl InflowService {
             .context("Failed to decode base64 signature")?;
 
         // Release escrow based on chain type
+        // For inflow: payment_amount = 0 (solver already fulfilled on hub chain)
         match &self.connected_client {
             ConnectedChainClient::Mvm(client) => {
                 // For MVM, use complete_escrow_from_fa with Ed25519 signature
-                client.complete_escrow_from_fa(escrow_id, payment_amount, &signature_bytes)
+                client.complete_escrow_from_fa(escrow_id, 0, &signature_bytes)
             }
             ConnectedChainClient::Evm(client) => {
                 // For EVM, use claim() with ECDSA signature via Hardhat script
@@ -335,7 +344,7 @@ impl InflowService {
                         tokio::time::sleep(Duration::from_secs(2)).await;
 
                         match self
-                            .release_escrow(&intent, &escrow_id, intent.draft_data.desired_amount)
+                            .release_escrow(&intent, &escrow_id)
                             .await
                         {
                             Ok(tx_hash) => {

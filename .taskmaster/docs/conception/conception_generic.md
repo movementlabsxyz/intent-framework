@@ -25,7 +25,7 @@ The framework can also function as an escrow mechanism, allowing funds to be loc
 
 ## Actors
 
-- Requester: the requester that wants to swap some USDxyz from one chain to another using the intent process. One of the chains is always M1 chain.
+- Requester: the requester that wants to swap some USDhub/USDcon from one chain to another using the intent process.
 - Solver: actor that solves the swap intent. Can be anyone in a permissionless setting.
 - Movement (Mvmt): Represents the Movement corporation that operates the intent application. Depending on the protocol but it can be a trusted entity if it runs some part of the protocol like the verifier.
 - Adversary: a malicious actor that wants to steal some funds or disturb the system.
@@ -148,7 +148,7 @@ Only one solver can fulfill an intent, even if multiple solvers attempt simultan
 ### Stolen funds risk
 
 - the escrow account can be hacked.
-- the final transfer contract that sends the intent USDxyz amount to the initial chain can be hacked and do false transfers.
+- the final transfer step can be hacked and do false transfers.
 
 ### Disturb the service
 

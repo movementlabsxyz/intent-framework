@@ -8,7 +8,7 @@ For general use cases applicable to all flows, see [conception_generic.md](conce
 
 ### Users (Requester)
 
-- As a requester, I want to swap some USDxyz from a connected chain to M1 chain so that I get my USDxyz on M1 chain fast and with low fee.
+- As a requester, I want to swap some USDcon from a connected chain to M1 chain so that I get my USDhub on M1 chain fast and with low fee.
 
 ## Protocol
 
@@ -53,7 +53,7 @@ sequenceDiagram
 ### Requester makes an inflow swap intent
 
 0. Given the requester
-   - owns the USDxyz that they want to transfer
+   - owns the USDcon that they want to transfer
    - owns some MOVE to execute Tx on M1 chain
    - owns offered tokens on connected chain
    - can access the connected chain and M1 chain RPC
@@ -61,15 +61,15 @@ sequenceDiagram
 1. When the requester wants to realize a swap from connected chain to M1 chain
    - then the requester requests a signed quote from a solver for the desired intent
    - then the requester sends a request-intent Tx to the M1 chain. ( 2) Requester initiates intent protocol step)
-   - then the requester sends a Tx to connected chain to transfer the needed USDxyz + total fees token to an escrow. ( 1) Requester deposit protocol step)
+   - then the requester sends a Tx to connected chain to transfer the needed USDcon + total fees token to an escrow. ( 1) Requester deposit protocol step)
    - then the requester waits for a confirmation of the swap
-   - then the requester has received the requested amount of USDxyz in their M1 chain account.
+   - then the requester has received the requested amount of USDhub in their M1 chain account.
 
 #### Possible issues (Requester)
 
 1. The requester initial escrow transfer is too little or too much.
     - _Mitigation: The verifier verifies that the escrow transfer amount is the same as the request-intent offered amount._
-1. The requester didn't get the right expected amount of USDxyz.
+1. The requester didn't get the right expected amount of USDhub.
     - _Mitigation: The verifier verifies that the escrow transfer amount is the same as the request-intent amount._
 1. The escrow deposit on the connected chain fails. How can the requester withdraw their tokens?
     - _Mitigation: The escrow eventually times out and the requester can withdraw their tokens._
@@ -78,14 +78,14 @@ sequenceDiagram
 
 #### Questions
 
-- Are the fees in USDxyz or in the chain token?
+- Are the fees in USDcon or in the chain token?
 
 ### Solver resolves an inflow swap intent
 
 0. Given the solver
    - is registered in the solver registry on Hub chain
    - owns some MOVE to execute Tx on M1 chain
-   - owns enough USDxyz on M1 chain
+   - owns enough USDhub on M1 chain
    - can access both chains' RPC
 1. When the requester creates a draft intent and sends it to the solver
    - Then the solver signs the draft intent off-chain and returns signature
@@ -116,9 +116,9 @@ sequenceDiagram
 0. Given the adversary takes the requester role to do a swap
 1. When the adversary wants to extract more funds than the adversary has provided
    - Then the adversary sends a request-intent Tx to the M1 chain.
-   - Then the adversary sends a Tx to the connected chain that transfers too little USDxyz token to an escrow.
-   - Then the adversary hopes to get more USDxyz on the M1 chain than they have provided.
-      - _Mitigation: The solver verifies that the correct offered amount (USDxyz requested amount + fee) has been transferred to the escrow._
+   - Then the adversary sends a Tx to the connected chain that transfers too little USDcon token to an escrow.
+   - Then the adversary hopes to get more USDhub on the M1 chain than they have provided.
+      - _Mitigation: The solver verifies that the correct offered amount (USDcon requested amount + fee) has been transferred to the escrow._
       - _Mitigation: The verifier verifies that the escrow transfer amount is the same as the request-intent offered amount._
 2. When the adversary attempts to stall the request-intent holding solver funds hostage.
    - Then the adversary reserves the intent

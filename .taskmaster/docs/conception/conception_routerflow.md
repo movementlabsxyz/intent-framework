@@ -8,7 +8,7 @@ For general use cases applicable to all flows, see [conception_generic.md](conce
 
 ### Users (Requester)
 
-- As a requester, I want to swap some USDxyz from one connected chain to another connected chain so that I get my USDxyz on the destination chain fast and with low fee.
+- As a requester, I want to swap some USDcon from one connected chain to another connected chain so that I get my USDcon on the destination chain fast and with low fee.
 
 ## Protocol
 
@@ -56,22 +56,22 @@ sequenceDiagram
 ### Requester makes a router-flow swap intent
 
 0. Given the requester
-   - owns the USDxyz that they want to transfer on source connected chain
+   - owns the USDcon that they want to transfer on source connected chain
    - owns some MOVE to execute Tx on M1 chain
    - can access both connected chains and M1 chain RPC
 
 1. When the requester wants to realize a swap from source connected chain to destination connected chain
    - then the requester requests a signed quote from a solver for the intent
    - then the requester sends a request-intent Tx to the M1 chain
-   - then the requester sends a Tx to source connected chain to transfer the needed USDxyz + total fees to an escrow
+   - then the requester sends a Tx to source connected chain to transfer the needed USDcon + total fees to an escrow
    - then the requester waits for a confirmation of the swap
-   - then the requester has received the requested amount of USDxyz in their destination connected chain account.
+   - then the requester has received the requested amount of USDcon in their destination connected chain account.
 
 #### Possible issues (Requester)
 
 1. The requester initial escrow transfer is too little or too much.
     - _Mitigation: The solver verifies that the escrow transfer amount is the same as the request-intent offered amount before transferring the funds on the destination connected chain. Alternatively, the solver queries the verifier which verifies that the escrow transfer amount is the same as the request-intent offered amount and informs the solver._
-2. The requester didn't get the right expected amount of USDxyz on the destination connected chain.
+2. The requester didn't get the right expected amount of USDcon on the destination connected chain.
     - _Mitigation: The verifier verifies that the transfer amount on the destination connected chain matches the request-intent desired amount. Only if the amount is correct, the verifier signs the approval for escrow release._
 3. The escrow deposit on the source connected chain fails. How can the requester withdraw their tokens?
     - _Mitigation: The escrow eventually times out and the requester can withdraw their tokens._
@@ -82,7 +82,7 @@ sequenceDiagram
 
 0. Given the solver
    - is registered in the solver registry on Hub chain
-   - owns enough USDxyz on the destination connected chain
+   - owns enough USDcon on the destination connected chain
    - can access all chains' RPC
 
 1. When the requester creates a draft intent and sends it to the solver
@@ -116,8 +116,8 @@ sequenceDiagram
 0. Given the adversary takes the requester role to do a swap
 1. When the adversary wants to extract more funds than the adversary has provided on the source connected chain
    - Then the adversary sends a request-intent Tx to the M1 chain.
-   - Then the adversary sends a Tx to the source connected chain that transfers too little USDxyz token to an escrow.
-   - Then the adversary hopes to get more USDxyz on the destination chain than they have provided.
+   - Then the adversary sends a Tx to the source connected chain that transfers too little USDcon token to an escrow.
+   - Then the adversary hopes to get more USDcon on the destination chain than they have provided.
       - _Mitigation: The solver verifies that the correct offered amount has been transferred to the escrow before fulfilling._
       - _Mitigation: The verifier verifies that the escrow transfer amount is the same as the request-intent offered amount and informs the solver._
 2. When the adversary attempts to stall the intent, holding solver funds hostage.

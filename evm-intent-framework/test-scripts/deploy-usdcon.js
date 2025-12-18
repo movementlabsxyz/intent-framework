@@ -7,7 +7,7 @@ const hre = require("hardhat");
 /// Deploys USDcon token
 ///
 /// Deploys a MockERC20 contract with name "USDcon" and symbol "USDcon".
-/// Uses 6 decimals (matching MVM USDxyz, like USDC/USDT).
+/// Uses 6 decimals (like USDC/USDT).
 ///
 /// # Returns
 /// Outputs token address on success.

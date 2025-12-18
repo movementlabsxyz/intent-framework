@@ -8,9 +8,9 @@
 #
 # Note: This file depends on functions from util.sh (log, log_and_echo, setup_project_root, etc.)
 
-# Get USDxyz balance for an EVM account
-# Usage: get_usdxyz_balance_evm <account_address> <usdxyz_token_address>
-# Returns the USDxyz balance for the given account
+# Get USDcon balance for an EVM account
+# Usage: get_usdxyz_balance_evm <account_address> <usd_token_address>
+# Returns the USDcon balance for the given account
 # PANICS if inputs are missing or balance lookup fails
 get_usdxyz_balance_evm() {
     local account="$1"
@@ -70,7 +70,7 @@ display_balances_connected_evm() {
     local solver_evm_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-balance.js --network localhost" 2>&1)
     local solver_evm=$(echo "$solver_evm_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n' || echo "0")
     
-    # Get account addresses for USDxyz balance lookup
+    # Get account addresses for USDcon balance lookup
     local requester_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=1 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
     local solver_addr=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ACCOUNT_INDEX=2 npx hardhat run scripts/get-account-address.js --network localhost" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1)
     
@@ -111,8 +111,8 @@ display_balances_connected_evm() {
             exit 1
         fi
         
-        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdxyz 10e-6.USDxyz"
-        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Requester (Acc 1): ${requester_eth} ETH, $requester_usdxyz 10e-6.USDcon"
+        log_and_echo "      Solver (Acc 2): ${solver_eth} ETH, $solver_usdxyz 10e-6.USDcon"
     else
         log_and_echo "      Requester (Acc 1): ${requester_eth} ETH"
         log_and_echo "      Solver (Acc 2): ${solver_eth} ETH"

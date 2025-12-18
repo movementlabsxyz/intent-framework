@@ -68,9 +68,9 @@ fi
 
 VERIFIER_PUBLIC_KEY="0x${VERIFIER_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-# USDxyz amounts: 1 USDxyz (6 decimals = 1_000_000)
-OFFERED_AMOUNT="1000000"  # 1 USDxyz = 1_000_000
-DESIRED_AMOUNT="1000000"  # 1 USDxyz = 1_000_000
+# Token amounts: 1 USDhub / 1 USDcon (6 decimals = 1_000_000)
+OFFERED_AMOUNT="1000000"  # 1 USDhub = 1_000_000 (6 decimals, on hub chain)
+DESIRED_AMOUNT="1000000"  # 1 USDcon = 1_000_000 (6 decimals, on connected MVM chain)
 OFFERED_CHAIN_ID=1
 DESIRED_CHAIN_ID=$CONNECTED_CHAIN_ID
 HUB_CHAIN_ID=1
@@ -81,23 +81,23 @@ log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
 log "   Verifier public key: $VERIFIER_PUBLIC_KEY"
-log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz)"
-log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz)"
+log "   Offered amount: $OFFERED_AMOUNT (1 USDhub on hub chain)"
+log "   Desired amount: $DESIRED_AMOUNT (1 USDcon on connected MVM chain)"
 
 # Get test tokens addresses from profiles
 TEST_TOKENS_CHAIN1=$(get_profile_address "test-tokens-chain1")
 TEST_TOKENS_CHAIN2=$(get_profile_address "test-tokens-chain2")
 
 log ""
-log "   - Getting USDxyz metadata addresses..."
-log "     Getting USDxyz metadata on Chain 1..."
+log "   - Getting USD token metadata addresses..."
+log "     Getting USDhub metadata on Chain 1..."
 USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
-log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
+log "     ✅ Got USDhub metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
 OFFERED_METADATA_CHAIN1="$USDXYZ_METADATA_CHAIN1"
 
-log "     Getting USDxyz metadata on Chain 2..."
+log "     Getting USDcon metadata on Chain 2..."
 USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
-log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
+log "     ✅ Got USDcon metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
 DESIRED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"
 
 # ============================================================================
@@ -197,8 +197,8 @@ log "     Signature: ${RETRIEVED_SIGNATURE:0:20}..."
 # ============================================================================
 log ""
 log "   Creating outflow intent on hub chain..."
-log "   - Requester locks 1 USDxyz on hub chain"
-log "   - Requester wants 1 USDxyz on connected chain (Chain 2)"
+log "   - Requester locks 1 USDhub on hub chain"
+log "   - Requester wants 1 USDcon on connected chain (Chain 2)"
 log "     Offered metadata (hub): $OFFERED_METADATA_CHAIN1"
 log "     Desired metadata (connected): $DESIRED_METADATA_CHAIN2"
 log "     Solver address: $RETRIEVED_SOLVER"

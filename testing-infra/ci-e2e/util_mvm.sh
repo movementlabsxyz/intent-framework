@@ -614,7 +614,7 @@ assert_usdxyz_balance() {
 # Display balances for Chain 1 (Hub)
 # Usage: display_balances_hub [test_tokens_address]
 # Fetches and displays Requester and Solver balances on the Hub chain
-# If test_tokens_address is provided, also displays USDxyz balances (PANICS if USDxyz lookup fails)
+# If test_tokens_address is provided, also displays USDhub balances (PANICS if lookup fails)
 # Note: Hub chain is always a Move VM chain, so this uses aptos commands
 display_balances_hub() {
     local test_tokens_addr="$1"
@@ -631,15 +631,15 @@ display_balances_hub() {
         
         # PANIC if we passed a token address but couldn't get balances
         if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
-            log_and_echo "❌ PANIC: display_balances_hub failed to get USDxyz balances"
+            log_and_echo "❌ PANIC: display_balances_hub failed to get USDhub balances"
             log_and_echo "   test_tokens_addr: $test_tokens_addr"
             log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
             log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdxyz 10e-6.USDxyz"
-        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Requester: $requester1 Octas APT, $requester_usdxyz 10e-6.USDhub"
+        log_and_echo "      Solver:   $solver1 Octas APT, $solver_usdxyz 10e-6.USDhub"
     else
         log_and_echo "      Requester: $requester1 Octas"
         log_and_echo "      Solver:   $solver1 Octas"
@@ -649,7 +649,7 @@ display_balances_hub() {
 # Display balances for Chain 2 (Connected Move VM)
 # Usage: display_balances_connected_mvm [test_tokens_address]
 # Fetches and displays Requester and Solver balances on the Connected Move VM chain
-# If test_tokens_address is provided, also displays USDxyz balances (PANICS if USDxyz lookup fails)
+# If test_tokens_address is provided, also displays USDcon balances (PANICS if lookup fails)
 # Only displays if Chain 2 profiles exist (skips silently if they don't)
 display_balances_connected_mvm() {
     local test_tokens_addr="$1"
@@ -670,15 +670,15 @@ display_balances_connected_mvm() {
         
         # PANIC if we passed a token address but couldn't get balances
         if [ -z "$requester_usdxyz" ] || [ -z "$solver_usdxyz" ]; then
-            log_and_echo "❌ PANIC: display_balances_connected_mvm failed to get USDxyz balances"
+            log_and_echo "❌ PANIC: display_balances_connected_mvm failed to get USDcon balances"
             log_and_echo "   test_tokens_addr: $test_tokens_addr"
             log_and_echo "   requester_usdxyz: '$requester_usdxyz'"
             log_and_echo "   solver_usdxyz: '$solver_usdxyz'"
             exit 1
         fi
         
-        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdxyz 10e-6.USDxyz"
-        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdxyz 10e-6.USDxyz"
+        log_and_echo "      Requester: $requester2 Octas APT, $requester_usdxyz 10e-6.USDcon"
+        log_and_echo "      Solver:   $solver2 Octas APT, $solver_usdxyz 10e-6.USDcon"
     else
         log_and_echo "      Requester: $requester2 Octas"
         log_and_echo "      Solver:   $solver2 Octas"

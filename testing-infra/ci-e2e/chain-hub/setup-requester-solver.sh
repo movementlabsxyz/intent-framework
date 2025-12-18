@@ -41,7 +41,7 @@ init_aptos_profile "requester-chain1" "1" "$LOG_FILE"
 log "Creating solver-chain1 account for Chain 1..."
 init_aptos_profile "solver-chain1" "1" "$LOG_FILE"
 
-# Create test-tokens account for Chain 1 (for USDxyz deployment)
+# Create test-tokens account for Chain 1 (for USDhub deployment)
 log "Creating test-tokens-chain1 account for Chain 1..."
 init_aptos_profile "test-tokens-chain1" "1" "$LOG_FILE"
 

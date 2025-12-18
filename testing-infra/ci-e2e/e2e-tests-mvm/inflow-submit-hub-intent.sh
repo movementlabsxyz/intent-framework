@@ -44,9 +44,9 @@ log "   Requester Chain 2 (connected): $REQUESTER_CHAIN2_ADDRESS"
 log "   Solver Chain 2 (connected): $SOLVER_CHAIN2_ADDRESS"
 
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
-# Requester and Solver get funded with 1 USDxyz each, transfer 1 USDxyz
-OFFERED_AMOUNT="1000000"  # 1 USDxyz (6 decimals = 1_000_000)
-DESIRED_AMOUNT="1000000"  # 1 USDxyz (6 decimals = 1_000_000)
+# Requester and Solver get funded with 1 USDhub / 1 USDcon each (6 decimals = 1_000_000)
+OFFERED_AMOUNT="1000000"  # 1 USDcon (connected chain, 6 decimals = 1_000_000)
+DESIRED_AMOUNT="1000000"  # 1 USDhub (hub chain, 6 decimals = 1_000_000)
 OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID
 DESIRED_CHAIN_ID=1
 HUB_CHAIN_ID=1
@@ -56,26 +56,26 @@ log ""
 log "🔑 Configuration:"
 log "   Intent ID: $INTENT_ID"
 log "   Expiry time: $EXPIRY_TIME"
-log "   Offered amount: $OFFERED_AMOUNT (1 USDxyz on connected MVM chain, Chain 2)"
-log "   Desired amount: $DESIRED_AMOUNT (1 USDxyz on hub chain, Chain 1)"
+log "   Offered amount: $OFFERED_AMOUNT (1 USDcon on connected MVM chain, Chain 2)"
+log "   Desired amount: $DESIRED_AMOUNT (1 USDhub on hub chain, Chain 1)"
 
 log ""
-log "   - Getting USDxyz metadata addresses..."
-log "     Getting USDxyz metadata on Chain 1..."
+log "   - Getting USD token metadata addresses..."
+log "     Getting USDhub metadata on Chain 1..."
 USDXYZ_METADATA_CHAIN1=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN1" "1")
 if [ -z "$USDXYZ_METADATA_CHAIN1" ]; then
-    log_and_echo "❌ Failed to get USDxyz metadata on Chain 1"
+    log_and_echo "❌ Failed to get USDhub metadata on Chain 1"
     exit 1
 fi
-log "     ✅ Got USDxyz metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
+log "     ✅ Got USDhub metadata on Chain 1: $USDXYZ_METADATA_CHAIN1"
 
-log "     Getting USDxyz metadata on Chain 2..."
+log "     Getting USDcon metadata on Chain 2..."
 USDXYZ_METADATA_CHAIN2=$(get_usdxyz_metadata "0x$TEST_TOKENS_CHAIN2" "2")
 if [ -z "$USDXYZ_METADATA_CHAIN2" ]; then
-    log_and_echo "❌ Failed to get USDxyz metadata on Chain 2"
+    log_and_echo "❌ Failed to get USDcon metadata on Chain 2"
     exit 1
 fi
-log "     ✅ Got USDxyz metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
+log "     ✅ Got USDcon metadata on Chain 2: $USDXYZ_METADATA_CHAIN2"
 
 # For INFLOW: offered tokens are on connected chain (Chain 2), desired tokens are on hub (Chain 1)
 OFFERED_METADATA_CHAIN2="$USDXYZ_METADATA_CHAIN2"

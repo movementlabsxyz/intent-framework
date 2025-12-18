@@ -69,7 +69,7 @@ echo "   Submitting inflow cross-chain intents via verifier negotiation routing.
 echo ""
 echo "💰 Pre-Escrow Balance Validation"
 echo "=========================================="
-# Nobody should have done anything yet: all four actors start with 1 USDxyz
+# Nobody should have done anything yet: all four actors start with 1 USDhub/USDcon on each chain
 ./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh 1000000 1000000 1000000 1000000
 
 ./testing-infra/ci-e2e/e2e-tests-mvm/inflow-submit-escrow.sh

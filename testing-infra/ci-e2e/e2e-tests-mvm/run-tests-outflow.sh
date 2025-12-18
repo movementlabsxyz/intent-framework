@@ -56,7 +56,7 @@ echo "🚀 Step 4: Configuring and starting verifier (for negotiation routing)..
 echo "=========================================================================="
 ./testing-infra/ci-e2e/e2e-tests-mvm/start-verifier.sh
 
-# Assert solver has USDxyz before starting (should have 1 USDxyz from deploy)
+# Assert solver has USDcon before starting (should have 1 USDcon from deploy)
 assert_usdxyz_balance "solver-chain2" "2" "$TEST_TOKENS_CHAIN2_ADDRESS" "1000000" "pre-solver-start"
 echo "   [DEBUG] Balance assertion completed, continuing..."
 
@@ -76,7 +76,7 @@ echo "   Submitting outflow cross-chain intents via verifier negotiation routing
 echo ""
 echo "💰 Pre-Intent Balance Validation"
 echo "=========================================="
-# Everybody starts with 1 USDxyz on their origin chain before outflow
+# Everybody starts with 1 USDhub/USDcon on each chain
 ./testing-infra/ci-e2e/e2e-tests-mvm/balance-check.sh 1000000 1000000 1000000 1000000
 
 ./testing-infra/ci-e2e/e2e-tests-mvm/outflow-submit-hub-intent.sh

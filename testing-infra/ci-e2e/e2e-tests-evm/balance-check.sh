@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Balance Check Script for EVM E2E Tests
-# Displays and validates final balances for Hub (Chain 1) and Connected EVM (Chain 3)
+# Displays and validates final balances for Hub (Chain 1, USDhub) and Connected EVM (Chain 3, USDcon)
 # Usage: balance-check.sh <solver_chain_hub> <requester_chain_hub> <solver_chain_connected> <requester_chain_connected>
 #   - Pass -1 for any parameter to skip that check
 #   - Values are in 10e-6.USDxyz units (e.g., 2000000 = 2 USDxyz)
@@ -28,14 +28,14 @@ USDXYZ_ADDRESS="$USDXYZ_EVM_ADDRESS"
 
 # Display balances
 if [ -z "$TEST_TOKENS_CHAIN1" ]; then
-    echo "⚠️  Warning: test-tokens-chain1 profile not found, skipping USDxyz balances"
+    echo "⚠️  Warning: test-tokens-chain1 profile not found, skipping USDhub balances"
     display_balances_hub
 else
     display_balances_hub "0x$TEST_TOKENS_CHAIN1"
 fi
 
 if [ -z "$USDXYZ_ADDRESS" ]; then
-    echo "⚠️  Warning: USDXYZ_EVM_ADDRESS not found, skipping USDxyz balances"
+    echo "⚠️  Warning: USDXYZ_EVM_ADDRESS not found, skipping USDcon balances"
     display_balances_connected_evm
 else
     display_balances_connected_evm "$USDXYZ_ADDRESS"
@@ -49,12 +49,12 @@ if [ -n "$SOLVER_CHAIN_HUB_EXPECTED" ] && [ "$SOLVER_CHAIN_HUB_EXPECTED" != "-1"
         
         if [ "$SOLVER_CHAIN_HUB_ACTUAL" != "$SOLVER_CHAIN_HUB_EXPECTED" ]; then
             log_and_echo "❌ ERROR: Solver balance mismatch on Chain 1 (Hub)!"
-            log_and_echo "   Actual:   $SOLVER_CHAIN_HUB_ACTUAL 10e-6.USDxyz"
-            log_and_echo "   Expected: $SOLVER_CHAIN_HUB_EXPECTED 10e-6.USDxyz"
+            log_and_echo "   Actual:   $SOLVER_CHAIN_HUB_ACTUAL 10e-6.USDhub"
+            log_and_echo "   Expected: $SOLVER_CHAIN_HUB_EXPECTED 10e-6.USDhub"
             display_service_logs "Solver balance mismatch on Chain 1 (Hub)"
             exit 1
         fi
-        log_and_echo "✅ Solver balance validated on Chain 1 (Hub): $SOLVER_CHAIN_HUB_ACTUAL 10e-6.USDxyz"
+        log_and_echo "✅ Solver balance validated on Chain 1 (Hub): $SOLVER_CHAIN_HUB_ACTUAL 10e-6.USDhub"
     fi
 fi
 
@@ -66,12 +66,12 @@ if [ -n "$REQUESTER_CHAIN_HUB_EXPECTED" ] && [ "$REQUESTER_CHAIN_HUB_EXPECTED" !
         
         if [ "$REQUESTER_CHAIN_HUB_ACTUAL" != "$REQUESTER_CHAIN_HUB_EXPECTED" ]; then
             log_and_echo "❌ ERROR: Requester balance mismatch on Chain 1 (Hub)!"
-            log_and_echo "   Actual:   $REQUESTER_CHAIN_HUB_ACTUAL 10e-6.USDxyz"
-            log_and_echo "   Expected: $REQUESTER_CHAIN_HUB_EXPECTED 10e-6.USDxyz"
+            log_and_echo "   Actual:   $REQUESTER_CHAIN_HUB_ACTUAL 10e-6.USDhub"
+            log_and_echo "   Expected: $REQUESTER_CHAIN_HUB_EXPECTED 10e-6.USDhub"
             display_service_logs "Requester balance mismatch on Chain 1 (Hub)"
             exit 1
         fi
-        log_and_echo "✅ Requester balance validated on Chain 1 (Hub): $REQUESTER_CHAIN_HUB_ACTUAL 10e-6.USDxyz"
+        log_and_echo "✅ Requester balance validated on Chain 1 (Hub): $REQUESTER_CHAIN_HUB_ACTUAL 10e-6.USDhub"
     fi
 fi
 
@@ -84,12 +84,12 @@ if [ -n "$SOLVER_CHAIN_CONNECTED_EXPECTED" ] && [ "$SOLVER_CHAIN_CONNECTED_EXPEC
         
         if [ "$SOLVER_CHAIN_CONNECTED_ACTUAL" != "$SOLVER_CHAIN_CONNECTED_EXPECTED" ]; then
             log_and_echo "❌ ERROR: Solver balance mismatch on Chain 3 (Connected EVM)!"
-            log_and_echo "   Actual:   $SOLVER_CHAIN_CONNECTED_ACTUAL 10e-6.USDxyz"
-            log_and_echo "   Expected: $SOLVER_CHAIN_CONNECTED_EXPECTED 10e-6.USDxyz"
+            log_and_echo "   Actual:   $SOLVER_CHAIN_CONNECTED_ACTUAL 10e-6.USDcon"
+            log_and_echo "   Expected: $SOLVER_CHAIN_CONNECTED_EXPECTED 10e-6.USDcon"
             display_service_logs "Solver balance mismatch on Chain 3 (Connected EVM)"
             exit 1
         fi
-        log_and_echo "✅ Solver balance validated on Chain 3 (Connected EVM): $SOLVER_CHAIN_CONNECTED_ACTUAL 10e-6.USDxyz"
+        log_and_echo "✅ Solver balance validated on Chain 3 (Connected EVM): $SOLVER_CHAIN_CONNECTED_ACTUAL 10e-6.USDcon"
     fi
 fi
 
@@ -102,12 +102,12 @@ if [ -n "$REQUESTER_CHAIN_CONNECTED_EXPECTED" ] && [ "$REQUESTER_CHAIN_CONNECTED
         
         if [ "$REQUESTER_CHAIN_CONNECTED_ACTUAL" != "$REQUESTER_CHAIN_CONNECTED_EXPECTED" ]; then
             log_and_echo "❌ ERROR: Requester balance mismatch on Chain 3 (Connected EVM)!"
-            log_and_echo "   Actual:   $REQUESTER_CHAIN_CONNECTED_ACTUAL 10e-6.USDxyz"
-            log_and_echo "   Expected: $REQUESTER_CHAIN_CONNECTED_EXPECTED 10e-6.USDxyz"
+            log_and_echo "   Actual:   $REQUESTER_CHAIN_CONNECTED_ACTUAL 10e-6.USDcon"
+            log_and_echo "   Expected: $REQUESTER_CHAIN_CONNECTED_EXPECTED 10e-6.USDcon"
             display_service_logs "Requester balance mismatch on Chain 3 (Connected EVM)"
             exit 1
         fi
-        log_and_echo "✅ Requester balance validated on Chain 3 (Connected EVM): $REQUESTER_CHAIN_CONNECTED_ACTUAL 10e-6.USDxyz"
+        log_and_echo "✅ Requester balance validated on Chain 3 (Connected EVM): $REQUESTER_CHAIN_CONNECTED_ACTUAL 10e-6.USDcon"
     fi
 fi
 

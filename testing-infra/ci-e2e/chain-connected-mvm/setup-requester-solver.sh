@@ -41,7 +41,7 @@ init_aptos_profile "requester-chain2" "2" "$LOG_FILE"
 log "Creating solver-chain2 account for Chain 2..."
 init_aptos_profile "solver-chain2" "2" "$LOG_FILE"
 
-# Create test-tokens account for Chain 2 (for USDxyz deployment)
+# Create test-tokens account for Chain 2 (for USDcon deployment)
 log "Creating test-tokens-chain2 account for Chain 2..."
 init_aptos_profile "test-tokens-chain2" "2" "$LOG_FILE"
 

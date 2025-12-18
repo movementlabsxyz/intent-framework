@@ -41,7 +41,7 @@ generate_solver_config_mvm() {
     local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
     local test_tokens_chain2=$(get_profile_address "test-tokens-chain2")
     
-    # Get USDxyz metadata addresses (for acceptance config)
+    # Get USDhub/USDcon metadata addresses (for acceptance config)
     local usdxyz_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
     local usdxyz_metadata_chain2=$(get_usdxyz_metadata "0x${test_tokens_chain2}" "2")
     
@@ -62,8 +62,8 @@ generate_solver_config_mvm() {
     log "   - Hub module address: $hub_module_address"
     log "   - Connected module address: $connected_module_address"
     log "   - Solver address: $solver_address"
-    log "   - USDxyz metadata chain 1: $usdxyz_metadata_chain1"
-    log "   - USDxyz metadata chain 2: $usdxyz_metadata_chain2"
+    log "   - USDhub metadata chain 1: $usdxyz_metadata_chain1"
+    log "   - USDcon metadata chain 2: $usdxyz_metadata_chain2"
     
     cat > "$config_file" << EOF
 # Auto-generated solver config for MVM E2E tests
@@ -89,7 +89,7 @@ module_address = "$connected_module_address"
 profile = "solver-chain2"
 
 [acceptance]
-# Accept USDxyz swaps at 1:1 rate for E2E testing
+# Accept USDhub/USDcon swaps at 1:1 rate for E2E testing
 # Inflow: offered on connected chain (2), desired on hub chain (1)
 "$connected_chain_id:$usdxyz_metadata_chain2:$hub_chain_id:$usdxyz_metadata_chain1" = 1.0
 # Outflow: offered on hub chain (1), desired on connected chain (2)

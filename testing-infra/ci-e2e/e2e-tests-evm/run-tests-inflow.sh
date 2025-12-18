@@ -73,7 +73,7 @@ log_and_echo "==================================================================
 log_and_echo ""
 log_and_echo "💰 Pre-Escrow Balance Validation"
 log_and_echo "=========================================="
-log_and_echo "   Nobody should have moved funds yet; all four actors start with 1 USDxyz"
+log_and_echo "   Nobody should have moved funds yet; all four actors start with 1 USDhub/USDcon token on each chain"
 ./testing-infra/ci-e2e/e2e-tests-evm/balance-check.sh 1000000 1000000 1000000 1000000
 
 ./testing-infra/ci-e2e/e2e-tests-evm/inflow-submit-escrow.sh

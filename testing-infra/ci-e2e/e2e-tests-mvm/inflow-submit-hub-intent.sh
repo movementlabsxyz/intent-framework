@@ -47,8 +47,6 @@ EXPIRY_TIME=$(date -d "+1 hour" +%s)
 # Requester and Solver get funded with 1 USDhub / 1 USDcon each (6 decimals = 1_000_000)
 OFFERED_AMOUNT="1000000"  # 1 USDcon (connected chain, 6 decimals = 1_000_000)
 DESIRED_AMOUNT="1000000"  # 1 USDhub (hub chain, 6 decimals = 1_000_000)
-OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID
-DESIRED_CHAIN_ID=1
 HUB_CHAIN_ID=1
 EVM_ADDRESS="0x0000000000000000000000000000000000000001"
 
@@ -106,10 +104,10 @@ log "   Step 1: Requester submits draft intent to verifier..."
 DRAFT_DATA=$(build_draft_data \
     "$OFFERED_METADATA_CHAIN2" \
     "$OFFERED_AMOUNT" \
-    "$OFFERED_CHAIN_ID" \
+    "$CONNECTED_CHAIN_ID" \
     "$DESIRED_METADATA_CHAIN1" \
     "$DESIRED_AMOUNT" \
-    "$DESIRED_CHAIN_ID" \
+    "$HUB_CHAIN_ID" \
     "$EXPIRY_TIME" \
     "$INTENT_ID" \
     "$REQUESTER_CHAIN1_ADDRESS" \

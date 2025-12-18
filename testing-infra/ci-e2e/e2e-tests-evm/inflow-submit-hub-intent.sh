@@ -57,8 +57,6 @@ EXPIRY_TIME=$(date -d "+1 hour" +%s)
 # For cross-chain intents: offered tokens are on connected chain, desired tokens are on hub chain (chain 1)
 OFFERED_AMOUNT="1000000"  # 1 USDcon = 1_000_000 (6 decimals, on EVM connected chain)
 DESIRED_AMOUNT="1000000"  # 1 USDhub = 1_000_000 (6 decimals, on hub chain)
-OFFERED_CHAIN_ID=$CONNECTED_CHAIN_ID  # Connected chain where escrow will be created (31337 for EVM)
-DESIRED_CHAIN_ID=1  # Hub chain where intent is created
 HUB_CHAIN_ID=1
 EVM_ADDRESS="0x0000000000000000000000000000000000000001"
 
@@ -108,10 +106,10 @@ log "   Step 1: Requester submits draft intent to verifier..."
 DRAFT_DATA=$(build_draft_data \
     "$OFFERED_METADATA_EVM" \
     "$OFFERED_AMOUNT" \
-    "$OFFERED_CHAIN_ID" \
+    "$CONNECTED_CHAIN_ID" \
     "$DESIRED_METADATA_CHAIN1" \
     "$DESIRED_AMOUNT" \
-    "$DESIRED_CHAIN_ID" \
+    "$HUB_CHAIN_ID" \
     "$EXPIRY_TIME" \
     "$INTENT_ID" \
     "$REQUESTER_CHAIN1_ADDRESS" \

@@ -73,8 +73,6 @@ VERIFIER_PUBLIC_KEY="0x${VERIFIER_PUBLIC_KEY_HEX}"
 EXPIRY_TIME=$(date -d "+1 hour" +%s)
 OFFERED_AMOUNT="1000000"  # 1 USDhub = 1_000_000 (6 decimals, on hub chain)
 DESIRED_AMOUNT="1000000"  # 1 USDcon = 1_000_000 (6 decimals, on EVM connected chain)
-OFFERED_CHAIN_ID=1
-DESIRED_CHAIN_ID=$CONNECTED_CHAIN_ID
 HUB_CHAIN_ID=1
 
 log ""
@@ -122,10 +120,10 @@ log "   Step 1: Requester submits draft intent to verifier..."
 DRAFT_DATA=$(build_draft_data \
     "$OFFERED_METADATA_CHAIN1" \
     "$OFFERED_AMOUNT" \
-    "$OFFERED_CHAIN_ID" \
+    "$HUB_CHAIN_ID" \
     "$DESIRED_METADATA_EVM" \
     "$DESIRED_AMOUNT" \
-    "$DESIRED_CHAIN_ID" \
+    "$CONNECTED_CHAIN_ID" \
     "$EXPIRY_TIME" \
     "$INTENT_ID" \
     "$REQUESTER_CHAIN1_ADDRESS" \

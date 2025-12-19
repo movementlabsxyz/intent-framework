@@ -511,6 +511,43 @@ initialize_solver_registry() {
     fi
 }
 
+# Initialize intent registry (must be called once before creating intents)
+# Usage: initialize_intent_registry <profile> <chain_address> [log_file]
+# Example: initialize_intent_registry "intent-account-chain1" "$CHAIN1_ADDRESS"
+# Exits on error (except if already initialized, which is handled gracefully)
+initialize_intent_registry() {
+    local profile="$1"
+    local chain_address="$2"
+    local log_file="${3:-$LOG_FILE}"
+
+    if [ -z "$profile" ] || [ -z "$chain_address" ]; then
+        log_and_echo "❌ ERROR: initialize_intent_registry() requires profile and chain_address"
+        exit 1
+    fi
+
+    log "     Initializing intent registry..."
+    local init_output
+    local init_status
+    if [ -n "$log_file" ]; then
+        init_output=$(aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::intent_registry::initialize" 2>&1 | tee -a "$log_file")
+        init_status=${PIPESTATUS[0]}
+    else
+        init_output=$(aptos move run --profile "$profile" --assume-yes \
+            --function-id "0x${chain_address}::intent_registry::initialize" 2>&1)
+        init_status=$?
+    fi
+
+    if [ $init_status -eq 0 ]; then
+        log "     ✅ Intent registry initialized successfully"
+    elif echo "$init_output" | grep -q "E_ALREADY_INITIALIZED\|E2\|already initialized"; then
+        log "     ℹ️  Intent registry already initialized (skipping)"
+    else
+        log_and_echo "     ❌ Failed to initialize intent registry"
+        exit 1
+    fi
+}
+
 # Get USDhub/USDcon metadata address
 # Usage: get_usdxyz_metadata <test_tokens_address> <chain_num>
 # Returns the USDhub/USDcon metadata object address

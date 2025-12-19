@@ -66,6 +66,11 @@ log ""
 log "🔧 Initializing solver registry..."
 initialize_solver_registry "intent-account-chain2" "$CHAIN2_ADDRESS" "$LOG_FILE"
 
+# Initialize intent registry (idempotent - will fail silently if already initialized)
+log ""
+log "🔧 Initializing intent registry..."
+initialize_intent_registry "intent-account-chain2" "$CHAIN2_ADDRESS" "$LOG_FILE"
+
 # Deploy USDcon test token
 log ""
 log "💵 Deploying USDcon test token to Chain 2..."

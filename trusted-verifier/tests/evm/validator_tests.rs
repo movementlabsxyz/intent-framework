@@ -3,11 +3,7 @@
 //! These tests verify that EVM escrow solver validation works correctly,
 //! including registry lookup, address matching, and error handling.
 
-use trusted_verifier::config::Config;
 use trusted_verifier::monitor::IntentEvent;
-use trusted_verifier::validator::CrossChainValidator;
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{

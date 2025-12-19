@@ -12,7 +12,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 mod test_helpers;
 use test_helpers::{
     create_base_intent_mvm, setup_mock_server_with_error,
-    setup_mock_server_with_mvm_address_response,
+    setup_mock_server_with_mvm_address_response, DUMMY_SOLVER_ADDR_MVM,
 };
 
 // ============================================================================
@@ -42,15 +42,15 @@ async fn test_successful_mvm_solver_validation() {
     let _ = tracing_subscriber::fmt::try_init();
 
     let solver_address = "0xsolver_mvm";
-    let registered_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_connected_chain_mvm_address = DUMMY_SOLVER_ADDR_MVM;
     let (_mock_server, config, _validator) =
-        setup_mock_server_with_mvm_address_response(solver_address, Some(registered_mvm_address))
+        setup_mock_server_with_mvm_address_response(solver_address, Some(solver_connected_chain_mvm_address))
             .await;
 
     let intent = create_test_intent(Some(solver_address.to_string()));
 
     // Test with matching address
-    let escrow_reserved_solver = registered_mvm_address;
+    let escrow_reserved_solver = solver_connected_chain_mvm_address;
     let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
         &intent,
         escrow_reserved_solver,
@@ -86,7 +86,7 @@ async fn test_rejection_when_solver_not_registered() {
 
     let intent = create_test_intent(Some(solver_address.to_string()));
 
-    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let escrow_reserved_solver = DUMMY_SOLVER_ADDR_MVM;
     let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
         &intent,
         escrow_reserved_solver,
@@ -116,15 +116,15 @@ async fn test_rejection_when_mvm_addresses_dont_match() {
     let _ = tracing_subscriber::fmt::try_init();
 
     let solver_address = "0xsolver_mvm";
-    let registered_mvm_address = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let solver_connected_chain_mvm_address = DUMMY_SOLVER_ADDR_MVM;
     let (_mock_server, config, _validator) =
-        setup_mock_server_with_mvm_address_response(solver_address, Some(registered_mvm_address))
+        setup_mock_server_with_mvm_address_response(solver_address, Some(solver_connected_chain_mvm_address))
             .await;
 
     let intent = create_test_intent(Some(solver_address.to_string()));
 
     // Escrow has a different address
-    let escrow_reserved_solver = "0x2222222222222222222222222222222222222222222222222222222222222222";
+    let escrow_reserved_solver = "0xwrong_solver_addr";
     let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
         &intent,
         escrow_reserved_solver,
@@ -205,7 +205,7 @@ async fn test_error_handling_for_registry_query_failures() {
 
     let intent = create_test_intent(Some("0xsolver_mvm".to_string()));
 
-    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let escrow_reserved_solver = DUMMY_SOLVER_ADDR_MVM;
     let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
         &intent,
         escrow_reserved_solver,
@@ -237,13 +237,13 @@ async fn test_rejection_when_intent_has_no_solver() {
 
     let (_mock_server, config, _validator) = setup_mock_server_with_mvm_address_response(
         "0xsolver_mvm",
-        Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+        Some(DUMMY_SOLVER_ADDR_MVM),
     )
     .await;
 
     let intent = create_test_intent(None); // No solver
 
-    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let escrow_reserved_solver = DUMMY_SOLVER_ADDR_MVM;
     let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
         &intent,
         escrow_reserved_solver,

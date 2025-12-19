@@ -2,6 +2,10 @@
 //!
 //! This module provides helper functions for setting up mock HTTP servers
 //! used in unit tests, particularly for testing solver registry interactions.
+//!
+//! The module is organized into two sections:
+//! - **Solver Registry Resource Creation**: Functions to create mock SolverRegistry JSON responses
+//! - **Mock Server Setup Helpers**: Functions to set up WireMock servers with various configurations
 
 use serde_json::json;
 use trusted_verifier::config::Config;
@@ -17,6 +21,19 @@ use helpers::{
 };
 
 // ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/// Default solver registry address used in tests
+const DEFAULT_REGISTRY_ADDRESS: &str = "0x1";
+
+/// Dummy timestamp for solver registration (arbitrary test value)
+pub const DUMMY_REGISTERED_AT: u64 = 1234567890;
+
+/// Dummy public key bytes used in test solver registry responses
+pub const DUMMY_PUBLIC_KEY: [u8; 4] = [1, 2, 3, 4];
+
+// ============================================================================
 // SOLVER REGISTRY RESOURCE CREATION
 // ============================================================================
 
@@ -26,26 +43,26 @@ use helpers::{
 pub fn create_solver_registry_resource_with_mvm_address(
     registry_address: &str,
     solver_address: &str,
-    connected_chain_mvm_address: Option<&str>,
+    solver_connected_chain_mvm_address: Option<&str>,
 ) -> serde_json::Value {
-    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
+    let solver_entry = if let Some(mvm_addr) = solver_connected_chain_mvm_address {
         json!({
             "key": solver_address,
             "value": {
-                "public_key": [1, 2, 3, 4],
+                "public_key": DUMMY_PUBLIC_KEY,
                 "connected_chain_evm_address": {"vec": []},
                 "connected_chain_mvm_address": {"vec": [mvm_addr]},
-                "registered_at": 1234567890
+                "registered_at": DUMMY_REGISTERED_AT
             }
         })
     } else {
         json!({
             "key": solver_address,
             "value": {
-                "public_key": [1, 2, 3, 4],
+                "public_key": DUMMY_PUBLIC_KEY,
                 "connected_chain_evm_address": {"vec": []},
                 "connected_chain_mvm_address": {"vec": []},
-                "registered_at": 1234567890
+                "registered_at": DUMMY_REGISTERED_AT
             }
         })
     };
@@ -66,9 +83,9 @@ pub fn create_solver_registry_resource_with_mvm_address(
 pub fn create_solver_registry_resource_with_evm_address(
     registry_address: &str,
     solver_address: &str,
-    evm_address: Option<&str>,
+    solver_connected_chain_evm_address: Option<&str>,
 ) -> serde_json::Value {
-    let solver_entry = if let Some(evm_addr) = evm_address {
+    let solver_entry = if let Some(evm_addr) = solver_connected_chain_evm_address {
         // Convert hex string (with or without 0x) to vector<u8>
         let addr_clean = evm_addr.strip_prefix("0x").unwrap_or(evm_addr);
         let bytes: Vec<u64> = (0..addr_clean.len())
@@ -80,10 +97,10 @@ pub fn create_solver_registry_resource_with_evm_address(
         json!({
             "key": solver_address,
             "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "public_key": DUMMY_PUBLIC_KEY,
                 "connected_chain_evm_address": {"vec": [bytes]}, // Some(vector<u8>)
                 "connected_chain_mvm_address": {"vec": []}, // None
-                "registered_at": 1234567890
+                "registered_at": DUMMY_REGISTERED_AT
             }
         })
     } else {
@@ -91,10 +108,10 @@ pub fn create_solver_registry_resource_with_evm_address(
         json!({
             "key": solver_address,
             "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
+                "public_key": DUMMY_PUBLIC_KEY,
                 "connected_chain_evm_address": {"vec": []}, // None
                 "connected_chain_mvm_address": {"vec": []}, // None
-                "registered_at": 1234567890
+                "registered_at": DUMMY_REGISTERED_AT
             }
         })
     };
@@ -118,16 +135,16 @@ pub fn create_solver_registry_resource_with_evm_address(
 #[allow(dead_code)]
 pub async fn setup_mock_server_with_solver_registry(
     solver_address: Option<&str>,
-    connected_chain_mvm_address: Option<&str>,
+    solver_connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, CrossChainValidator) {
     let mock_server = MockServer::start().await;
-    let registry_address = "0x1";
+    let registry_address = DEFAULT_REGISTRY_ADDRESS;
 
     if let Some(solver_addr) = solver_address {
         let resources_response = create_solver_registry_resource_with_mvm_address(
             registry_address,
             solver_addr,
-            connected_chain_mvm_address,
+            solver_connected_chain_mvm_address,
         );
 
         Mock::given(method("GET"))
@@ -150,16 +167,16 @@ pub async fn setup_mock_server_with_solver_registry(
 #[allow(dead_code)]
 pub async fn setup_mock_server_with_solver_registry_config(
     solver_address: Option<&str>,
-    connected_chain_mvm_address: Option<&str>,
+    solver_connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, Config) {
     let mock_server = MockServer::start().await;
-    let registry_address = "0x1";
+    let registry_address = DEFAULT_REGISTRY_ADDRESS;
 
     if let Some(solver_addr) = solver_address {
         let resources_response = create_solver_registry_resource_with_mvm_address(
             registry_address,
             solver_addr,
-            connected_chain_mvm_address,
+            solver_connected_chain_mvm_address,
         );
 
         Mock::given(method("GET"))
@@ -179,14 +196,14 @@ pub async fn setup_mock_server_with_solver_registry_config(
 pub async fn setup_mock_server_with_registry_mvm(
     registry_address: &str,
     solver_address: &str,
-    connected_chain_mvm_address: Option<&str>,
+    solver_connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, CrossChainValidator) {
     let mock_server = MockServer::start().await;
 
     let resources_response = create_solver_registry_resource_with_mvm_address(
         registry_address,
         solver_address,
-        connected_chain_mvm_address,
+        solver_connected_chain_mvm_address,
     );
 
     Mock::given(method("GET"))
@@ -210,14 +227,14 @@ pub async fn setup_mock_server_with_registry_mvm(
 pub async fn setup_mock_server_with_registry_evm(
     registry_address: &str,
     solver_address: &str,
-    evm_address: Option<&str>,
+    solver_connected_chain_evm_address: Option<&str>,
 ) -> (MockServer, CrossChainValidator) {
     let mock_server = MockServer::start().await;
 
     let resources_response = create_solver_registry_resource_with_evm_address(
         registry_address,
         solver_address,
-        evm_address,
+        solver_connected_chain_evm_address,
     );
 
     Mock::given(method("GET"))
@@ -242,15 +259,15 @@ pub async fn setup_mock_server_with_registry_evm(
 #[allow(dead_code)]
 pub async fn setup_mock_server_with_mvm_address_response(
     solver_address: &str,
-    connected_chain_mvm_address: Option<&str>,
+    solver_connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, Config, CrossChainValidator) {
     let mock_server = MockServer::start().await;
-    let registry_address = "0x1"; // Default registry address from test config
+    let registry_address = DEFAULT_REGISTRY_ADDRESS;
 
     let resources_response = create_solver_registry_resource_with_mvm_address(
         registry_address,
         solver_address,
-        connected_chain_mvm_address,
+        solver_connected_chain_mvm_address,
     );
 
     Mock::given(method("GET"))
@@ -272,15 +289,15 @@ pub async fn setup_mock_server_with_mvm_address_response(
 #[allow(dead_code)]
 pub async fn setup_mock_server_with_evm_address_response(
     solver_address: &str,
-    evm_address: Option<&str>,
+    solver_connected_chain_evm_address: Option<&str>,
 ) -> (MockServer, Config, CrossChainValidator) {
     let mock_server = MockServer::start().await;
-    let registry_address = "0x1"; // Default registry address from test config
+    let registry_address = DEFAULT_REGISTRY_ADDRESS;
 
     let resources_response = create_solver_registry_resource_with_evm_address(
         registry_address,
         solver_address,
-        evm_address,
+        solver_connected_chain_evm_address,
     );
 
     Mock::given(method("GET"))

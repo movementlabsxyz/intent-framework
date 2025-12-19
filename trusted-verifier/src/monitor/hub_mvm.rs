@@ -95,24 +95,38 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
 
     // Query active requester addresses from the intent registry
     let registry_address = &monitor.config.hub_chain.intent_module_address;
-    let active_accounts = client
+    let requester_addresses_to_poll = client
         .get_active_requesters(registry_address)
         .await
         .context("Failed to query intent registry for active requesters")?;
+
+    // Query all registered solver addresses to poll for fulfillment events
+    // Fulfillment events are emitted on the solver's account, not the requester's account
+    let solver_addresses = client
+        .get_all_solver_addresses(registry_address)
+        .await
+        .context("Failed to query solver registry for all solvers")?;
+
+    // Combine requester and solver addresses to poll (deduplicate)
+    let mut addresses_set: std::collections::HashSet<String> = requester_addresses_to_poll.iter().cloned().collect();
+    for solver_addr in solver_addresses {
+        addresses_set.insert(solver_addr);
+    }
+    let addresses_to_poll: Vec<String> = addresses_set.into_iter().collect();
 
     let mut intent_events = Vec::new();
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
 
-    // Query each active account for events
-    for account in &active_accounts {
-        let account_address = account.strip_prefix("0x").unwrap_or(account);
+    // Query each address (requesters + solvers) for events
+    for address in &addresses_to_poll {
+        let address_normalized = address.strip_prefix("0x").unwrap_or(address);
 
         let raw_events = client
-            .get_account_events(account_address, None, None, Some(100))
+            .get_account_events(address_normalized, None, None, Some(100))
             .await
-            .context(format!("Failed to fetch events for account {}", account))?;
+            .context(format!("Failed to fetch events for address {}", address))?;
 
         for event in raw_events {
             // Parse event type to check if it's a intent event
@@ -294,7 +308,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                     revocable: data.revocable,
                     reserved_solver,
                     connected_chain_id,
-                    requester_address_connected_chain: None, // Not available from event
+                    requester_address_connected_chain: data.requester_address_connected_chain.clone(),
                     timestamp,
                 });
             } else if event_type.contains("OracleLimitOrderEvent") {

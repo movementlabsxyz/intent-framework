@@ -72,7 +72,7 @@ pub async fn monitor_connected_chain(monitor: &EventMonitor) -> Result<()> {
     );
 
     loop {
-        match inflow_mvm::poll_mvm_escrow_events(&monitor.config).await {
+        match inflow_mvm::poll_mvm_escrow_events(monitor).await {
             Ok(events) => {
                 for event in events {
                     // Cache the escrow event (deduplicate by escrow_id + chain_id)
@@ -220,7 +220,7 @@ pub async fn poll_connected_events(monitor: &EventMonitor) -> Result<Vec<EscrowE
     let mut escrow_events = Vec::new();
 
     if let Some(_) = &monitor.config.connected_chain_mvm {
-        match inflow_mvm::poll_mvm_escrow_events(&monitor.config).await {
+        match inflow_mvm::poll_mvm_escrow_events(monitor).await {
             Ok(mut events) => {
                 escrow_events.append(&mut events);
             }

@@ -1321,6 +1321,47 @@ impl MvmClient {
 
         Ok(addresses)
     }
+
+    /// Queries the solver registry for all registered solver addresses.
+    ///
+    /// This calls the `solver_registry::list_all_solver_addresses()` view function
+    /// to get a list of all solver addresses that are currently registered.
+    ///
+    /// # Arguments
+    ///
+    /// * `registry_address` - Address of the solver registry module (e.g., "0x123...")
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<String>)` - List of all registered solver addresses
+    /// * `Err(anyhow::Error)` - Failed to query registry
+    pub async fn get_all_solver_addresses(&self, registry_address: &str) -> Result<Vec<String>> {
+        let result = self
+            .call_view_function(
+                registry_address,
+                "solver_registry",
+                "list_all_solver_addresses",
+                vec![],
+                vec![],
+            )
+            .await
+            .context("Failed to call list_all_solver_addresses view function")?;
+
+        // The result is an array with a single element containing the vector of addresses
+        // Format: [["0x123...", "0x456...", ...]]
+        let addresses = result
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        Ok(addresses)
+    }
 }
 
 // ============================================================================
@@ -1351,6 +1392,11 @@ pub struct LimitOrderEvent {
         skip_serializing_if = "Option::is_none"
     )]
     pub reserved_solver: Option<String>, // Solver address if the intent is reserved (None for unreserved intents)
+    #[serde(
+        deserialize_with = "deserialize_move_option_string",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub requester_address_connected_chain: Option<String>, // Requester address on connected chain (for inflow intents)
 }
 
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module

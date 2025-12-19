@@ -338,6 +338,17 @@ module mvmt_intent::solver_registry {
     }
     
     #[view]
+    /// Get all registered solver addresses
+    /// Returns a vector of all solver addresses that are currently registered
+    public fun list_all_solver_addresses(): vector<address> acquires SolverRegistry {
+        if (!exists<SolverRegistry>(@mvmt_intent)) {
+            return vector::empty()
+        };
+        let registry = borrow_global<SolverRegistry>(@mvmt_intent);
+        registry.solver_addresses
+    }
+
+    #[view]
     /// Get solver registration timestamp
     public fun get_registered_at(solver_addr: address): (bool, u64) acquires SolverRegistry {
         if (!exists<SolverRegistry>(@mvmt_intent)) {

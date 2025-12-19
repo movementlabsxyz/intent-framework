@@ -3,28 +3,29 @@
 //! This module contains Move VM-specific event polling logic
 //! for escrow events on connected Move VM chains.
 
-use crate::config::Config;
-use crate::monitor::generic::{ChainType, EscrowEvent};
+use crate::monitor::generic::{ChainType, EscrowEvent, EventMonitor};
 use crate::monitor::hub_mvm::parse_amount_with_u64_limit;
 use crate::mvm_client::{MvmClient, OracleLimitOrderEvent as MvmOracleLimitOrderEvent};
 use anyhow::{Context, Result};
+use std::collections::HashSet;
 
 /// Polls the connected Move VM chain for new escrow initialization events.
 ///
-/// This function queries the Move VM chain's event logs for OracleLimitOrderEvent
-/// events emitted by escrow intents. It converts them to EscrowEvent format
-/// for consistent processing.
+/// For inflow intents, escrows are created by requesters on the connected chain.
+/// The requester addresses come from the hub chain intents' `requester_address_connected_chain`
+/// field (stored on hub).
 ///
 /// # Arguments
 ///
-/// * `config` - Service configuration
+/// * `monitor` - Event monitor instance (to access cached hub intents)
 ///
 /// # Returns
 ///
 /// * `Ok(Vec<EscrowEvent>)` - List of new escrow events
 /// * `Err(anyhow::Error)` - Failed to poll events
-pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>> {
-    let connected_chain_mvm = config
+pub async fn poll_mvm_escrow_events(monitor: &EventMonitor) -> Result<Vec<EscrowEvent>> {
+    let connected_chain_mvm = monitor
+        .config
         .connected_chain_mvm
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("No connected Move VM chain configured"))?;
@@ -32,26 +33,42 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
     // Create Move VM client for connected chain
     let client = MvmClient::new(&connected_chain_mvm.rpc_url)?;
 
-    // Query active requester addresses from the intent registry
-    let registry_address = &connected_chain_mvm.intent_module_address;
-    let active_accounts = client
-        .get_active_requesters(registry_address)
-        .await
-        .context("Failed to query intent registry for active requesters on connected MVM chain")?;
+    // Get requester_address_connected_chain from cached hub chain intents
+    // These are the addresses that created escrows on the connected chain
+    let connected_chain_id = connected_chain_mvm.chain_id;
+    let requester_addresses_to_poll: Vec<String> = {
+        let event_cache = monitor.event_cache.read().await;
+        let mut addresses = HashSet::new();
+
+        for intent in event_cache.iter() {
+            // For inflow intents, escrows are created on connected_chain_id
+            // The intent's connected_chain_id tells us which chain the escrow is on
+            if intent.connected_chain_id == Some(connected_chain_id) {
+                if let Some(ref addr) = intent.requester_address_connected_chain {
+                    addresses.insert(addr.clone());
+                }
+            }
+        }
+
+        addresses.into_iter().collect()
+    };
 
     let mut escrow_events = Vec::new();
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
 
-    // Query each active account for events
-    for account in &active_accounts {
-        let account_address = account.strip_prefix("0x").unwrap_or(account);
+    // Query each requester's connected chain address for escrow events
+    for address in &requester_addresses_to_poll {
+        let address_normalized = address.strip_prefix("0x").unwrap_or(address);
 
         let raw_events = client
-            .get_account_events(account_address, None, None, Some(100))
+            .get_account_events(address_normalized, None, None, Some(100))
             .await
-            .context(format!("Failed to fetch events for account {}", account))?;
+            .context(format!(
+                "Failed to fetch events for address {}",
+                address
+            ))?;
 
         for event in raw_events {
             let event_type = event.r#type.clone();
@@ -59,11 +76,14 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
             // Escrows use oracle-guarded intents, so we look for OracleLimitOrderEvent
             if event_type.contains("OracleLimitOrderEvent") {
                 let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
-                    .with_context(|| format!(
-                        "Failed to parse OracleLimitOrderEvent as escrow. Event type: {}, Event data: {}",
-                        event_type,
-                        serde_json::to_string_pretty(&event.data).unwrap_or_else(|_| format!("{:?}", event.data))
-                    ))?;
+                    .with_context(|| {
+                        format!(
+                            "Failed to parse OracleLimitOrderEvent as escrow. Event type: {}, Event data: {}",
+                            event_type,
+                            serde_json::to_string_pretty(&event.data)
+                                .unwrap_or_else(|_| format!("{:?}", event.data))
+                        )
+                    })?;
 
                 // Use reserved_solver from event (now included in the event)
                 let reserved_solver = data.reserved_solver.clone();
@@ -71,13 +91,19 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
                 escrow_events.push(EscrowEvent {
                     escrow_id: data.intent_address.clone(),
                     intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain intent
-                    issuer: data.requester.clone(), // For inflow escrows, this is the original requester from the hub chain (not the solver who created the escrow)
+                    issuer: data.requester.clone(), // For inflow escrows, this is the requester
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
-                    offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Escrow offered_amount")?,
+                    offered_amount: parse_amount_with_u64_limit(
+                        &data.offered_amount,
+                        "Escrow offered_amount",
+                    )?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
-                    desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Escrow desired_amount")?,
+                    desired_amount: parse_amount_with_u64_limit(
+                        &data.desired_amount,
+                        "Escrow desired_amount",
+                    )?,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()

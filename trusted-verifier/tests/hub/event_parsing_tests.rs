@@ -96,10 +96,19 @@ async fn setup_mock_server_with_oracle_event(
     } else {
         format!("0x{}", account_address)
     };
-    let view_response = json!([[account_with_prefix]]);
+    let view_response_requesters = json!([[account_with_prefix]]);
     Mock::given(method("POST"))
         .and(path("/v1/view"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(view_response))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response_requesters))
+        .mount(&mock_server)
+        .await;
+
+    // Mock the solver registry list_all_solver_addresses view function
+    // Returns empty list for tests (no solvers registered in test scenario)
+    let view_response_solvers = json!([[]]);
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(view_response_solvers))
         .mount(&mock_server)
         .await;
 

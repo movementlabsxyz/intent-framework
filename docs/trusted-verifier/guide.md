@@ -33,10 +33,65 @@ Run the full E2E test flow:
 
 This script sets up chains, deploys contracts, submits intents, runs integration tests, starts the verifier, and releases escrow.
 
-## Event linkage
+## Event Discovery
+
+The verifier uses different mechanisms to discover events on each chain:
+
+```mermaid
+flowchart TD
+    subgraph Hub["Hub"]
+        H1[Query intent_registry.get_active_requesters]
+        H2[Query solver_registry.list_all_solver_addresses]
+        H3[Poll accounts for events]
+        H4[Cache intent events with requester_address_connected_chain]
+        H1 --> H3
+        H2 --> H3
+        H3 --> H4
+    end
+    
+    subgraph ConnectedMVM["Connected MVM"]
+        M1[Read cached hub intents<br/>Extract requester_address_connected_chain]
+        M2[Poll those addresses for escrow events]
+        M1 --> M2
+    end
+    
+    H4 -.->|Provides addresses| M1
+```
+
+```mermaid
+flowchart TD
+    subgraph ConnectedEVM["Connected EVM"]
+        E1[Query EscrowInitialized events]
+        E2[From escrow contract address]
+        E1 --> E2
+    end
+```
+
+The verifier uses different mechanisms to discover events on each chain:
+
+**Hub chain** — uses `intent_registry`:
+
+1. Queries `intent_registry.get_active_requesters()` to find accounts with active intents
+2. Also queries `solver_registry.list_all_solver_addresses()` for fulfillment events
+3. Polls those accounts for `LimitOrderEvent`, `OracleLimitOrderEvent`, and `LimitOrderFulfillmentEvent`
+4. Caches intent events (including `requester_address_connected_chain` field)
+
+**Connected Move VM chain** — uses hub intent data (NOT registry):
+
+1. Reads `requester_address_connected_chain` from cached hub intents
+2. Polls those addresses on the connected chain for `OracleLimitOrderEvent` (escrow)
+3. The connected chain's intent_registry is not used for escrow discovery
+
+**Connected EVM chain** — uses contract event logs:
+
+1. Queries `EscrowInitialized` events directly from the escrow contract
+2. No account polling needed (EVM events are indexed by contract address)
+
+## Event Linkage
 
 - **Hub chain**
-  - `LimitOrderEvent` — intent creation (issuer, amounts, metadata, expiry, revocable, solver, offered_chain_id, desired_chain_id)
+  - `LimitOrderEvent` — inflow intent creation (issuer, amounts, metadata, expiry, revocable, solver, offered_chain_id, desired_chain_id)
+  - `OracleLimitOrderEvent` — outflow intent creation (same fields + verifier public key)
   - `LimitOrderFulfillmentEvent` — fulfillment (intent_id, solver, provided amount/metadata)
 - **Connected Move VM chain**
   - `OracleLimitOrderEvent` (escrow) — escrow deposit with verifier public key and desired amounts

@@ -41,13 +41,19 @@ public fun get_intent_count(requester): u64
 
 ### 2. Rust: Update Monitor
 
-Replace `known_accounts` usage with registry query:
+**Hub chain discovery** - use intent_registry:
 
 - `trusted-verifier/src/mvm_client.rs`: Add `get_active_requesters()`
-- `trusted-verifier/src/monitor/hub_mvm.rs`: Query registry instead of config
-- `trusted-verifier/src/monitor/inflow_mvm.rs`: Same
-- `solver/src/chains/hub.rs`: Same
-- `solver/src/chains/connected_mvm.rs`: Same
+- `trusted-verifier/src/monitor/hub_mvm.rs`: Query registry for accounts to poll
+
+**Connected chain escrow discovery** - use hub intent data (NOT registry):
+
+- `trusted-verifier/src/monitor/inflow_mvm.rs`: Extract `requester_address_connected_chain` from cached hub intents, poll those addresses on connected chain
+
+**Solver** - similar approach:
+
+- `solver/src/chains/hub.rs`: Query registry for hub accounts
+- `solver/src/chains/connected_mvm.rs`: Use intent data for connected chain
 
 ### 3. Config: Remove `known_accounts`
 

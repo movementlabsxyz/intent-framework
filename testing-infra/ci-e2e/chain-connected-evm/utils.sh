@@ -80,10 +80,24 @@ get_hardhat_account_address() {
         setup_project_root
     fi
     
-    local address=$(run_hardhat_command "npx hardhat run scripts/get-account-address.js --network $network" "ACCOUNT_INDEX=$account_index" 2>&1 | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
+    local cmd_output
+    cmd_output=$(run_hardhat_command "npx hardhat run scripts/get-account-address.js --network $network" "ACCOUNT_INDEX=$account_index" 2>&1)
+    local cmd_exit_code=$?
+    
+    if [ $cmd_exit_code -ne 0 ]; then
+        log_and_echo "❌ ERROR: Hardhat command failed with exit code $cmd_exit_code for account index $account_index"
+        log_and_echo "   Command output:"
+        log_and_echo "$cmd_output"
+        exit 1
+    fi
+    
+    local address
+    address=$(echo "$cmd_output" | grep -E '^0x[a-fA-F0-9]{40}$' | head -1 | tr -d '\n')
     
     if [ -z "$address" ]; then
-        log_and_echo "❌ ERROR: Could not get Hardhat account address for index $account_index"
+        log_and_echo "❌ ERROR: Could not extract Hardhat account address for index $account_index"
+        log_and_echo "   Command output (no valid address found):"
+        log_and_echo "$cmd_output"
         exit 1
     fi
     

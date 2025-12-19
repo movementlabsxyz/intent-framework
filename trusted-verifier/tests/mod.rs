@@ -3,6 +3,7 @@
 //! This module re-exports test helpers for use in test files.
 
 mod helpers;
+mod helpers_mock_server;
 
 #[allow(unused_imports)]
 pub use helpers::{
@@ -11,6 +12,10 @@ pub use helpers::{
     create_base_fulfillment, create_base_fulfillment_transaction_params_evm,
     create_base_fulfillment_transaction_params_mvm, create_base_mvm_transaction,
     create_base_intent_evm, create_base_intent_mvm,
+};
+
+#[allow(unused_imports)]
+pub use helpers_mock_server::{
     create_solver_registry_resource_with_evm_address,
     create_solver_registry_resource_with_mvm_address, setup_mock_server_with_error,
     setup_mock_server_with_evm_address_response, setup_mock_server_with_mvm_address_response,

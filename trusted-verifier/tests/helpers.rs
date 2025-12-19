@@ -528,3 +528,25 @@ pub async fn setup_mock_server_with_registry_evm(
 
     (mock_server, validator)
 }
+
+/// Setup a mock server that returns an error response
+/// Returns the mock server, config, and CrossChainValidator
+#[allow(dead_code)]
+pub async fn setup_mock_server_with_error(
+    status_code: u16,
+) -> (MockServer, Config, CrossChainValidator) {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/view"))
+        .respond_with(ResponseTemplate::new(status_code))
+        .mount(&mock_server)
+        .await;
+
+    let config = build_test_config_with_mock_server(&mock_server.uri());
+    let validator = CrossChainValidator::new(&config)
+        .await
+        .expect("Failed to create validator");
+
+    (mock_server, config, validator)
+}

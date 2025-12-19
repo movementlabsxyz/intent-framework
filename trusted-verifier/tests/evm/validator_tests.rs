@@ -12,7 +12,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_mock_server, create_base_intent_evm,
-    create_solver_registry_resource_with_evm_address,
+    create_solver_registry_resource_with_evm_address, setup_mock_server_with_error,
 };
 
 // ============================================================================
@@ -37,26 +37,6 @@ async fn setup_mock_server_with_evm_address_response(
     Mock::given(method("GET"))
         .and(path(format!("/v1/accounts/{}/resources", registry_address)))
         .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
-        .mount(&mock_server)
-        .await;
-
-    let config = build_test_config_with_mock_server(&mock_server.uri());
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
-
-    (mock_server, config, validator)
-}
-
-/// Setup a mock server that returns an error response
-async fn setup_mock_server_with_error(
-    status_code: u16,
-) -> (MockServer, Config, CrossChainValidator) {
-    let mock_server = MockServer::start().await;
-
-    Mock::given(method("POST"))
-        .and(path("/v1/view"))
-        .respond_with(ResponseTemplate::new(status_code))
         .mount(&mock_server)
         .await;
 

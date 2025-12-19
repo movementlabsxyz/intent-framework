@@ -11,42 +11,13 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_mock_server, create_base_intent_mvm,
-    create_solver_registry_resource_with_mvm_address, setup_mock_server_with_error,
+    create_base_intent_mvm, setup_mock_server_with_error,
+    setup_mock_server_with_mvm_address_response,
 };
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/// Setup a mock server that responds to get_solver_connected_chain_mvm_address calls
-/// Returns the mock server and config
-async fn setup_mock_server_with_mvm_address_response(
-    solver_address: &str,
-    connected_chain_mvm_address: Option<&str>,
-) -> (MockServer, Config, CrossChainValidator) {
-    let mock_server = MockServer::start().await;
-    let registry_address = "0x1"; // Default registry address from test config
-
-    let resources_response = create_solver_registry_resource_with_mvm_address(
-        registry_address,
-        solver_address,
-        connected_chain_mvm_address,
-    );
-
-    Mock::given(method("GET"))
-        .and(path(format!("/v1/accounts/{}/resources", registry_address)))
-        .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
-        .mount(&mock_server)
-        .await;
-
-    let config = build_test_config_with_mock_server(&mock_server.uri());
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
-
-    (mock_server, config, validator)
-}
 
 /// Create a test intent with the given solver
 fn create_test_intent(solver: Option<String>) -> IntentEvent {

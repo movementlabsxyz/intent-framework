@@ -13,6 +13,7 @@ pub use helpers::{
     create_base_intent_evm, create_base_intent_mvm,
     create_solver_registry_resource_with_evm_address,
     create_solver_registry_resource_with_mvm_address, setup_mock_server_with_error,
+    setup_mock_server_with_evm_address_response, setup_mock_server_with_mvm_address_response,
     setup_mock_server_with_registry_evm, setup_mock_server_with_registry_mvm,
     setup_mock_server_with_solver_registry, setup_mock_server_with_solver_registry_config,
 };

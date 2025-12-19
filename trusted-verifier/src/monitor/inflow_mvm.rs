@@ -32,18 +32,20 @@ pub async fn poll_mvm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
     // Create Move VM client for connected chain
     let client = MvmClient::new(&connected_chain_mvm.rpc_url)?;
 
-    // Query events from known test accounts
-    let known_accounts = connected_chain_mvm.known_accounts.as_ref().ok_or_else(|| {
-        anyhow::anyhow!("No known accounts configured for connected Move VM chain")
-    })?;
+    // Query active requester addresses from the intent registry
+    let registry_address = &connected_chain_mvm.intent_module_address;
+    let active_accounts = client
+        .get_active_requesters(registry_address)
+        .await
+        .context("Failed to query intent registry for active requesters on connected MVM chain")?;
 
     let mut escrow_events = Vec::new();
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
 
-    // Query each known account for events
-    for account in known_accounts {
+    // Query each active account for events
+    for account in &active_accounts {
         let account_address = account.strip_prefix("0x").unwrap_or(account);
 
         let raw_events = client

@@ -1280,6 +1280,47 @@ impl MvmClient {
 
         Ok(result)
     }
+
+    /// Queries the intent registry for active requester addresses.
+    ///
+    /// This calls the `intent_registry::get_active_requesters()` view function
+    /// to get a list of all requester addresses that have active intents.
+    ///
+    /// # Arguments
+    ///
+    /// * `registry_address` - Address of the intent registry module (e.g., "0x123...")
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<String>)` - List of requester addresses with active intents
+    /// * `Err(anyhow::Error)` - Failed to query registry
+    pub async fn get_active_requesters(&self, registry_address: &str) -> Result<Vec<String>> {
+        let result = self
+            .call_view_function(
+                registry_address,
+                "intent_registry",
+                "get_active_requesters",
+                vec![],
+                vec![],
+            )
+            .await
+            .context("Failed to call get_active_requesters view function")?;
+
+        // The result is an array with a single element containing the vector of addresses
+        // Format: [["0x123...", "0x456...", ...]]
+        let addresses = result
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        Ok(addresses)
+    }
 }
 
 // ============================================================================

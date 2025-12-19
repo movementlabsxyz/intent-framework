@@ -13,7 +13,6 @@ rpc_url = "http://127.0.0.1:8080"                    # RPC endpoint URL for bloc
 chain_id = 1                                          # Unique chain identifier
 intent_module_address = "0x123"                      # Address of the intent framework module
 # escrow_module_address = "0x..."                    # Address of escrow module (optional for hub, omit if not needed)
-known_accounts = ["0xalice", "0xbob"]                # Known test accounts to poll for events (Alice and Bob addresses)
 
 # Connected Move VM Chain Configuration  
 # The connected Move VM chain is where escrow events occur and are monitored
@@ -24,7 +23,6 @@ rpc_url = "http://127.0.0.1:8082"                    # RPC endpoint URL for bloc
 chain_id = 2                                          # Unique chain identifier
 intent_module_address = "0x123"                      # Address of the intent framework module
 escrow_module_address = "0x123"                      # Address of escrow module (required for connected chain)
-known_accounts = ["0xalice", "0xbob"]                # Known test accounts to poll for events (Alice and Bob addresses)
 
 # Connected EVM Chain Configuration
 # The connected EVM chain is where EVM escrow events occur and are monitored

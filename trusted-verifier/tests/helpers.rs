@@ -41,7 +41,6 @@ pub fn build_test_config_with_mvm() -> Config {
             chain_id: 1,
             intent_module_address: "0x1".to_string(),
             escrow_module_address: None,
-            known_accounts: Some(vec!["0x1".to_string()]),
         },
         connected_chain_mvm: Some(ChainConfig {
             name: "connected".to_string(),
@@ -49,7 +48,6 @@ pub fn build_test_config_with_mvm() -> Config {
             chain_id: 2,
             intent_module_address: "0x2".to_string(),
             escrow_module_address: Some("0x2".to_string()),
-            known_accounts: Some(vec!["0x2".to_string()]),
         }),
         verifier: VerifierConfig {
             private_key_env: private_key_env_name,

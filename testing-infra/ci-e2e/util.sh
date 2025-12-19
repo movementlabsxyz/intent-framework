@@ -129,7 +129,6 @@ name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 1
 intent_module_address = "0x123"
-known_accounts = []
 
 [verifier]
 private_key_env = "E2E_VERIFIER_PRIVATE_KEY"

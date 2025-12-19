@@ -93,21 +93,20 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
     // Create Move VM client for hub chain
     let client = MvmClient::new(&monitor.config.hub_chain.rpc_url)?;
 
-    // Query events from known test accounts
-    let known_accounts = monitor
-        .config
-        .hub_chain
-        .known_accounts
-        .as_ref()
-        .ok_or_else(|| anyhow::anyhow!("No known accounts configured for hub chain"))?;
+    // Query active requester addresses from the intent registry
+    let registry_address = &monitor.config.hub_chain.intent_module_address;
+    let active_accounts = client
+        .get_active_requesters(registry_address)
+        .await
+        .context("Failed to query intent registry for active requesters")?;
 
     let mut intent_events = Vec::new();
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
 
-    // Query each known account for events
-    for account in known_accounts {
+    // Query each active account for events
+    for account in &active_accounts {
         let account_address = account.strip_prefix("0x").unwrap_or(account);
 
         let raw_events = client

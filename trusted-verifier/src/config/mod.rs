@@ -49,8 +49,6 @@ pub struct ChainConfig {
     pub intent_module_address: String,
     /// Address of the escrow module (optional for hub chain)
     pub escrow_module_address: Option<String>,
-    /// Known test accounts to poll for events
-    pub known_accounts: Option<Vec<String>>,
 }
 
 /// Configuration for an EVM-compatible chain (Ethereum, Hardhat, etc.)
@@ -246,7 +244,6 @@ impl Config {
                 chain_id: 1,
                 intent_module_address: "0x123".to_string(),
                 escrow_module_address: None,
-                known_accounts: None, // Should be set in config/verifier.toml
             },
             connected_chain_mvm: None, // Optional connected Move VM chain configuration
             verifier: VerifierConfig {

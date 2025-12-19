@@ -52,7 +52,6 @@ rpc_url = "http://127.0.0.1:8082"
 chain_id = 2
 intent_module_address = "0x$CHAIN2_ADDRESS"
 escrow_module_address = "0x$CHAIN2_ADDRESS"
-known_accounts = ["$REQUESTER_CHAIN2_ADDRESS"]
 EOF
 
 # Insert the MVM section before [verifier] section

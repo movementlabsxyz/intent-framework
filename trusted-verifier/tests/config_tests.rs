@@ -25,30 +25,6 @@ fn test_default_config_creation() {
     );
 }
 
-/// Test that known_accounts field exists and can be None
-/// Why: Verify the new field is properly supported in the config struct
-#[test]
-fn test_known_accounts_field() {
-    let config = Config::default();
-
-    assert_eq!(config.hub_chain.known_accounts, None);
-    assert!(config.connected_chain_mvm.is_none());
-}
-
-/// Test that known_accounts can be set to Some(vec)
-/// Why: Verify the new field accepts actual values when configured
-#[test]
-fn test_known_accounts_with_values() {
-    let mut config = Config::default();
-
-    config.hub_chain.known_accounts = Some(vec!["0xalice".to_string(), "0xbob".to_string()]);
-
-    assert_eq!(
-        config.hub_chain.known_accounts,
-        Some(vec!["0xalice".to_string(), "0xbob".to_string()])
-    );
-}
-
 /// Test that connected_chain_mvm can be set to Some(ChainConfig)
 /// Why: Verify connected_chain_mvm accepts actual values when configured
 #[test]
@@ -62,16 +38,11 @@ fn test_connected_chain_mvm_with_values() {
         chain_id: 2,
         intent_module_address: "0x123".to_string(),
         escrow_module_address: Some("0x123".to_string()),
-        known_accounts: Some(vec!["0xalice2".to_string(), "0xbob2".to_string()]),
     });
 
     assert_eq!(
         config.connected_chain_mvm.as_ref().unwrap().name,
         "Connected Move VM Chain"
-    );
-    assert_eq!(
-        config.connected_chain_mvm.as_ref().unwrap().known_accounts,
-        Some(vec!["0xalice2".to_string(), "0xbob2".to_string()])
     );
 }
 
@@ -124,7 +95,6 @@ fn test_get_chain_type_from_chain_id_mvm() {
         chain_id: 2,
         intent_module_address: "0x123".to_string(),
         escrow_module_address: Some("0x123".to_string()),
-        known_accounts: None,
     });
 
     let result = get_chain_type_from_chain_id(2, &config);
@@ -162,7 +132,6 @@ fn test_get_chain_type_from_chain_id_duplicate_chain_id_error() {
         chain_id: 100,
         intent_module_address: "0x123".to_string(),
         escrow_module_address: Some("0x123".to_string()),
-        known_accounts: None,
     });
 
     // Should return error for duplicate chain IDs
@@ -187,7 +156,6 @@ fn test_config_validate_hub_mvm_duplicate_chain_id() {
         chain_id: 100, // Same as hub
         intent_module_address: "0x123".to_string(),
         escrow_module_address: Some("0x123".to_string()),
-        known_accounts: None,
     });
 
     let result = config.validate();
@@ -225,7 +193,6 @@ fn test_config_validate_mvm_evm_duplicate_chain_id() {
         chain_id: 100,
         intent_module_address: "0x123".to_string(),
         escrow_module_address: Some("0x123".to_string()),
-        known_accounts: None,
     });
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "EVM Chain".to_string(),
@@ -252,7 +219,6 @@ fn test_config_validate_unique_chain_ids() {
         chain_id: 2, // Different from hub
         intent_module_address: "0x123".to_string(),
         escrow_module_address: Some("0x123".to_string()),
-        known_accounts: None,
     });
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "EVM Chain".to_string(),

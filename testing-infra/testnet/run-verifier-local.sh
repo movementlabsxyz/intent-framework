@@ -40,7 +40,6 @@ if [ ! -f "$VERIFIER_CONFIG" ]; then
     echo "   - intent_module_address (hub_chain section)"
     echo "   - escrow_contract_address (connected_chain_evm section)"
     echo "   - verifier_address (connected_chain_evm section)"
-    echo "   - known_accounts (hub_chain section)"
     exit 1
 fi
 
@@ -92,7 +91,6 @@ if grep -qE "(0x123|0x\.\.\.|0xalice|0xbob)" "$VERIFIER_CONFIG"; then
     echo "   - intent_module_address (hub_chain section)"
     echo "   - escrow_contract_address (connected_chain_evm section)"
     echo "   - verifier_address (connected_chain_evm section)"
-    echo "   - known_accounts (hub_chain section)"
     echo ""
     echo "   Contract addresses should be read from your deployment logs."
     exit 1

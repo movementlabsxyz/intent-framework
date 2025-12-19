@@ -3,7 +3,6 @@
 //! These tests verify that EVM escrow solver validation works correctly,
 //! including registry lookup, address matching, and error handling.
 
-use serde_json::json;
 use trusted_verifier::config::Config;
 use trusted_verifier::monitor::IntentEvent;
 use trusted_verifier::validator::CrossChainValidator;
@@ -11,66 +10,14 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config_with_mvm, create_base_intent_evm};
+use test_helpers::{
+    build_test_config_with_mock_server, create_base_intent_evm,
+    create_solver_registry_resource_with_evm_address,
+};
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/// Build a test config with a mock server URL
-fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
-    let mut config = build_test_config_with_mvm();
-    config.hub_chain.rpc_url = mock_server_url.to_string();
-    config
-}
-
-/// Helper to create a mock SolverRegistry resource response
-/// SimpleMap<address, SolverInfo> is serialized as {"data": [{"key": address, "value": SolverInfo}, ...]}
-fn create_solver_registry_resource_with_evm_address(
-    registry_address: &str,
-    solver_address: &str,
-    evm_address: Option<&str>,
-) -> serde_json::Value {
-    let solver_entry = if let Some(evm_addr) = evm_address {
-        // Convert hex string (with or without 0x) to vector<u8>
-        let addr_clean = evm_addr.strip_prefix("0x").unwrap_or(evm_addr);
-        let bytes: Vec<u64> = (0..addr_clean.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&addr_clean[i..i + 2], 16).unwrap() as u64)
-            .collect();
-
-        // SolverInfo with connected_chain_evm_address set
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
-                "connected_chain_evm_address": {"vec": [bytes]}, // Some(vector<u8>)
-                "connected_chain_mvm_address": {"vec": []}, // None
-                "registered_at": 1234567890
-            }
-        })
-    } else {
-        // SolverInfo without connected_chain_evm_address
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
-                "connected_chain_evm_address": {"vec": []}, // None
-                "connected_chain_mvm_address": {"vec": []}, // None
-                "registered_at": 1234567890
-            }
-        })
-    };
-
-    json!([{
-        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
-        "data": {
-            "solvers": {
-                "data": [solver_entry]
-            }
-        }
-    }])
-}
 
 /// Setup a mock server that responds to get_solver_evm_address calls
 /// Returns the mock server and config

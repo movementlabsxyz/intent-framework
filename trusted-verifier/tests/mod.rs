@@ -6,8 +6,13 @@ mod helpers;
 
 #[allow(unused_imports)]
 pub use helpers::{
-    build_test_config_with_evm, build_test_config_with_mvm, create_base_escrow_event,
-    create_base_escrow_event_evm, create_base_evm_transaction, create_base_fulfillment,
-    create_base_fulfillment_transaction_params_evm, create_base_fulfillment_transaction_params_mvm,
-    create_base_mvm_transaction, create_base_intent_evm, create_base_intent_mvm,
+    build_test_config_with_evm, build_test_config_with_mock_server, build_test_config_with_mvm,
+    create_base_escrow_event, create_base_escrow_event_evm, create_base_evm_transaction,
+    create_base_fulfillment, create_base_fulfillment_transaction_params_evm,
+    create_base_fulfillment_transaction_params_mvm, create_base_mvm_transaction,
+    create_base_intent_evm, create_base_intent_mvm,
+    create_solver_registry_resource_with_evm_address,
+    create_solver_registry_resource_with_mvm_address, setup_mock_server_with_registry_evm,
+    setup_mock_server_with_registry_mvm, setup_mock_server_with_solver_registry,
+    setup_mock_server_with_solver_registry_config,
 };

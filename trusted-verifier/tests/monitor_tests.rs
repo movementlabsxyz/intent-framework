@@ -4,16 +4,12 @@
 //! without requiring external services.
 
 use futures::future;
-use serde_json::json;
-use trusted_verifier::config::Config;
 use trusted_verifier::monitor::{EscrowEvent, EventMonitor, FulfillmentEvent, IntentEvent};
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "mod.rs"]
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_escrow_event, create_base_fulfillment,
-    create_base_intent_mvm,
+    create_base_intent_mvm, setup_mock_server_with_solver_registry_config,
 };
 
 // ============================================================================
@@ -23,77 +19,6 @@ use test_helpers::{
 /// Helper function for validation logic
 fn is_safe_for_escrow(event: &IntentEvent) -> bool {
     !event.revocable
-}
-
-/// Build a test config with a mock server URL
-fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
-    let mut config = build_test_config_with_mvm();
-    config.hub_chain.rpc_url = mock_server_url.to_string();
-    config
-}
-
-/// Helper to create a mock SolverRegistry resource response with MVM address
-fn create_solver_registry_resource_with_mvm_address(
-    registry_address: &str,
-    solver_address: &str,
-    connected_chain_mvm_address: Option<&str>,
-) -> serde_json::Value {
-    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4],
-                "connected_chain_evm_address": {"vec": []},
-                "connected_chain_mvm_address": {"vec": [mvm_addr]},
-                "registered_at": 1234567890
-            }
-        })
-    } else {
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4],
-                "connected_chain_evm_address": {"vec": []},
-                "connected_chain_mvm_address": {"vec": []},
-                "registered_at": 1234567890
-            }
-        })
-    };
-
-    json!([{
-        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
-        "data": {
-            "solvers": {
-                "data": [solver_entry]
-            }
-        }
-    }])
-}
-
-/// Setup a mock server with solver registry for monitor tests
-async fn setup_mock_server_with_solver_registry(
-    solver_address: Option<&str>,
-    connected_chain_mvm_address: Option<&str>,
-) -> (MockServer, Config) {
-    let mock_server = MockServer::start().await;
-    let registry_address = "0x1";
-
-    if let Some(solver_addr) = solver_address {
-        let resources_response = create_solver_registry_resource_with_mvm_address(
-            registry_address,
-            solver_addr,
-            connected_chain_mvm_address,
-        );
-
-        Mock::given(method("GET"))
-            .and(path(format!("/v1/accounts/{}/resources", registry_address)))
-            .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
-            .mount(&mock_server)
-            .await;
-    }
-
-    let config = build_test_config_with_mock_server(&mock_server.uri());
-    (mock_server, config)
 }
 
 // ============================================================================
@@ -181,7 +106,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
     // Setup mock server with solver registry
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+    let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
         Some(solver_address),
         Some(connected_chain_mvm_address),
     )
@@ -281,7 +206,7 @@ async fn test_multiple_concurrent_intents() {
     // Setup mock server with solver registry
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+    let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
         Some(solver_address),
         Some(connected_chain_mvm_address),
     )
@@ -425,7 +350,7 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     // Setup mock server with solver registry
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+    let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
         Some(solver_address),
         Some(connected_chain_mvm_address),
     )
@@ -489,7 +414,7 @@ async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     // Setup mock server with solver registry
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+    let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
         Some(solver_address),
         Some(connected_chain_mvm_address),
     )
@@ -650,7 +575,7 @@ async fn test_duplicate_fulfillment_event_handling() {
     // Setup mock server with solver registry
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+    let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
         Some(solver_address),
         Some(connected_chain_mvm_address),
     )
@@ -755,7 +680,7 @@ async fn test_base_helpers_work_with_signature_generation() {
     // Setup mock server with solver registry
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+    let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
         Some(solver_address),
         Some(connected_chain_mvm_address),
     )
@@ -812,7 +737,7 @@ async fn test_fulfillment_with_odd_length_intent_id() {
     // Setup mock server with solver registry
     let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let (_mock_server, config) = setup_mock_server_with_solver_registry(
+    let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
         Some(solver_address),
         Some(connected_chain_mvm_address),
     )

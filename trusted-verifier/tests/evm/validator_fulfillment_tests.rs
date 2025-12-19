@@ -3,20 +3,18 @@
 //! These tests verify that transaction parameters can be correctly extracted
 //! from EVM transactions for outflow fulfillment validation.
 
-use serde_json::json;
 use trusted_verifier::evm_client::EvmTransaction;
 use trusted_verifier::monitor::IntentEvent;
 use trusted_verifier::validator::CrossChainValidator;
 use trusted_verifier::validator::{
     extract_evm_fulfillment_params, validate_outflow_fulfillment, FulfillmentTransactionParams,
 };
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_evm, create_base_evm_transaction,
     create_base_fulfillment_transaction_params_evm, create_base_intent_evm,
+    setup_mock_server_with_registry_evm,
 };
 
 // ============================================================================
@@ -276,84 +274,6 @@ fn test_extract_evm_fulfillment_params_normalizes_intent_id_with_leading_zeros()
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Helper to create a mock SolverRegistry resource response with EVM address
-fn create_solver_registry_resource_with_evm_address(
-    registry_address: &str,
-    solver_address: &str,
-    evm_address: Option<&str>,
-) -> serde_json::Value {
-    let solver_entry = if let Some(evm_addr) = evm_address {
-        // Convert hex string (with or without 0x) to vector<u8>
-        let addr_clean = evm_addr.strip_prefix("0x").unwrap_or(evm_addr);
-        let bytes: Vec<u64> = (0..addr_clean.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&addr_clean[i..i + 2], 16).unwrap() as u64)
-            .collect();
-
-        // SolverInfo with connected_chain_evm_address set
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
-                "connected_chain_evm_address": {"vec": [bytes]}, // Some(vector<u8>)
-                "connected_chain_mvm_address": {"vec": []}, // None
-                "registered_at": 1234567890
-            }
-        })
-    } else {
-        // SolverInfo without connected_chain_evm_address
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
-                "connected_chain_evm_address": {"vec": []}, // None
-                "connected_chain_mvm_address": {"vec": []}, // None
-                "registered_at": 1234567890
-            }
-        })
-    };
-
-    json!([{
-        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
-        "data": {
-            "solvers": {
-                "data": [solver_entry]
-            }
-        }
-    }])
-}
-
-/// Setup a mock server that responds to get_resources calls with SolverRegistry
-async fn setup_mock_server_with_registry(
-    registry_address: &str,
-    solver_address: &str,
-    evm_address: Option<&str>,
-) -> (MockServer, CrossChainValidator) {
-    let mock_server = MockServer::start().await;
-
-    let resources_response = create_solver_registry_resource_with_evm_address(
-        registry_address,
-        solver_address,
-        evm_address,
-    );
-
-    Mock::given(method("GET"))
-        .and(path(format!("/v1/accounts/{}/resources", registry_address)))
-        .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
-        .mount(&mock_server)
-        .await;
-
-    let mut config = build_test_config_with_evm();
-    config.hub_chain.rpc_url = mock_server.uri();
-    // Clear MVM chain config so validator uses EVM path
-    config.connected_chain_mvm = None;
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
-
-    (mock_server, validator)
-}
-
 // ============================================================================
 // OUTFLOW FULFILLMENT VALIDATION TESTS
 // ============================================================================
@@ -373,7 +293,7 @@ async fn test_validate_outflow_fulfillment_success() {
     let registry_address = "0x1";
 
     let (_mock_server, validator) =
-        setup_mock_server_with_registry(registry_address, solver_address, Some(evm_address)).await;
+        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(evm_address)).await;
 
     let intent = IntentEvent {
         desired_amount: 25000000, // For outflow intents, validation uses desired_amount (amount desired on connected chain)
@@ -412,7 +332,7 @@ async fn test_validate_outflow_fulfillment_succeeds_with_normalized_intent_id() 
     let registry_address = "0x1";
 
     let (_mock_server, validator) =
-        setup_mock_server_with_registry(registry_address, solver_address, Some(evm_address)).await;
+        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(evm_address)).await;
 
     // Request-intent has intent_id without leading zeros
     let intent = IntentEvent {
@@ -599,7 +519,7 @@ async fn test_validate_outflow_fulfillment_fails_on_solver_mismatch() {
     let different_solver = "0xcccccccccccccccccccccccccccccccccccccccc";
     let registry_address = "0x1";
 
-    let (_mock_server, validator) = setup_mock_server_with_registry(
+    let (_mock_server, validator) = setup_mock_server_with_registry_evm(
         registry_address,
         solver_address,
         Some(registered_evm_address),

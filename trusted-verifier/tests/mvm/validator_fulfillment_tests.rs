@@ -16,7 +16,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_fulfillment_transaction_params_mvm,
-    create_base_mvm_transaction, create_base_intent_mvm,
+    create_base_mvm_transaction, create_base_intent_mvm, setup_mock_server_with_registry_mvm,
 };
 
 // ============================================================================
@@ -247,75 +247,6 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Helper to create a mock SolverRegistry resource response with MVM address
-fn create_solver_registry_resource_with_mvm_address(
-    registry_address: &str,
-    solver_address: &str,
-    connected_chain_mvm_address: Option<&str>,
-) -> serde_json::Value {
-    let solver_entry = if let Some(mvm_addr) = connected_chain_mvm_address {
-        // SolverInfo with connected_chain_mvm_address set
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
-                "connected_chain_evm_address": {"vec": []}, // None
-                "connected_chain_mvm_address": {"vec": [mvm_addr]}, // Some(address)
-                "registered_at": 1234567890
-            }
-        })
-    } else {
-        // SolverInfo without connected_chain_mvm_address
-        json!({
-            "key": solver_address,
-            "value": {
-                "public_key": [1, 2, 3, 4], // Dummy public key bytes
-                "connected_chain_evm_address": {"vec": []}, // None
-                "connected_chain_mvm_address": {"vec": []}, // None
-                "registered_at": 1234567890
-            }
-        })
-    };
-
-    json!([{
-        "type": format!("{}::solver_registry::SolverRegistry", registry_address),
-        "data": {
-            "solvers": {
-                "data": [solver_entry]
-            }
-        }
-    }])
-}
-
-/// Setup a mock server that responds to get_resources calls with SolverRegistry
-async fn setup_mock_server_with_registry(
-    registry_address: &str,
-    solver_address: &str,
-    connected_chain_mvm_address: Option<&str>,
-) -> (MockServer, CrossChainValidator) {
-    let mock_server = MockServer::start().await;
-
-    let resources_response = create_solver_registry_resource_with_mvm_address(
-        registry_address,
-        solver_address,
-        connected_chain_mvm_address,
-    );
-
-    Mock::given(method("GET"))
-        .and(path(format!("/v1/accounts/{}/resources", registry_address)))
-        .respond_with(ResponseTemplate::new(200).set_body_json(resources_response))
-        .mount(&mock_server)
-        .await;
-
-    let mut config = build_test_config_with_mvm();
-    config.hub_chain.rpc_url = mock_server.uri();
-    let validator = CrossChainValidator::new(&config)
-        .await
-        .expect("Failed to create validator");
-
-    (mock_server, validator)
-}
-
 // ============================================================================
 // OUTFLOW FULFILLMENT VALIDATION TESTS
 // ============================================================================
@@ -335,7 +266,7 @@ async fn test_validate_outflow_fulfillment_success() {
         "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let registry_address = "0x1";
 
-    let (_mock_server, validator) = setup_mock_server_with_registry(
+    let (_mock_server, validator) = setup_mock_server_with_registry_mvm(
         registry_address,
         solver_address,
         Some(connected_chain_mvm_address),

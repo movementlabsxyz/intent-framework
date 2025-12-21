@@ -58,7 +58,7 @@ fn test_api_response_parsing() {
         "11111111-1111-1111-1111-111111111111"
     );
     assert_eq!(
-        drafts[0].requester_address,
+        drafts[0].requester_addr,
         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     );
 }
@@ -88,7 +88,7 @@ fn test_api_error_response_parsing() {
 #[test]
 fn test_signature_submission_serialization() {
     let submission = SignatureSubmission {
-        solver_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };
@@ -96,7 +96,7 @@ fn test_signature_submission_serialization() {
     let json = serde_json::to_string(&submission).unwrap();
     let parsed: SignatureSubmission = serde_json::from_str(&json).unwrap();
 
-    assert_eq!(parsed.solver_address, submission.solver_address);
+    assert_eq!(parsed.solver_addr, submission.solver_addr);
     assert_eq!(parsed.signature, submission.signature);
     assert_eq!(parsed.public_key, submission.public_key);
 }
@@ -126,7 +126,7 @@ fn test_pending_draft_deserialization() {
         "11111111-1111-1111-1111-111111111111"
     );
     assert_eq!(
-        draft.requester_address,
+        draft.requester_addr,
         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     );
     assert_eq!(draft.timestamp, 1000000);
@@ -288,7 +288,7 @@ fn test_submit_signature_success() {
 
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
-        solver_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };
@@ -327,7 +327,7 @@ fn test_submit_signature_conflict() {
 
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
-        solver_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };
@@ -367,7 +367,7 @@ fn test_submit_signature_other_error() {
 
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
-        solver_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };

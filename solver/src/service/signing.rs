@@ -206,7 +206,7 @@ impl SigningService {
         let desired_amount = draft_data.desired_amount;
         let desired_chain_id = draft_data.desired_chain_id;
         let expiry_time = draft.expiry_time;
-        let requester_address = draft.requester_address.clone();
+        let requester_address = draft.requester_addr.clone();
 
         // Get private key, intent hash, and sign - all blocking operations
         let (signature_hex, public_key_hex) = tokio::task::spawn_blocking(move || -> Result<(String, String)> {
@@ -266,7 +266,7 @@ impl SigningService {
         let draft_id_for_log = draft.draft_id.clone();
         let draft_id_for_submit = draft.draft_id.clone();
         let submission = crate::verifier_client::SignatureSubmission {
-            solver_address: solver_address.clone(),
+            solver_addr: solver_address.clone(),
             signature: signature_hex,
             public_key: public_key_hex,
         };
@@ -286,7 +286,7 @@ impl SigningService {
                 if let Err(e) = self.tracker.add_signed_intent(
                     draft_id_for_log.clone(),
                     draft_data.clone(),
-                    draft.requester_address.clone(),
+                    draft.requester_addr.clone(),
                     draft.expiry_time,
                 ).await {
                     warn!("Failed to add signed intent to tracker: {}", e);

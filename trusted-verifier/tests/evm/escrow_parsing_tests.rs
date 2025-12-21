@@ -9,7 +9,7 @@ use trusted_verifier::monitor::{ChainType, EscrowEvent, EventMonitor, IntentEven
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_evm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ID,
+    build_test_config_with_evm, DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ID,
     DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_EVM,
     DUMMY_TOKEN_ADDR_EVM, DUMMY_TX_HASH,
 };
@@ -20,7 +20,7 @@ use test_helpers::{
 fn test_escrow_initialized_event_has_amount_and_expiry() {
     let event = EscrowInitializedEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
-        escrow_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // Escrow contract address (EVM format, distinct from requester)
+        escrow_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(),
         token_addr: DUMMY_TOKEN_ADDR_EVM.to_string(),
         reserved_solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
@@ -43,7 +43,7 @@ fn test_escrow_amount_is_not_hardcoded_zero() {
     // Create event with non-zero amount
     let event = EscrowInitializedEvent {
         intent_id: DUMMY_ESCROW_ID_MVM.to_string(), // Different intent_id for this test case
-        escrow_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // Escrow contract address (EVM format, distinct from requester)
+        escrow_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(),
         token_addr: DUMMY_TOKEN_ADDR_EVM.to_string(),
         reserved_solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),

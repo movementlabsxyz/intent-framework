@@ -70,7 +70,7 @@ fn create_test_solver_config() -> solver::config::SolverConfig {
 fn create_test_pending_draft(expiry_time: u64) -> solver::verifier_client::PendingDraft {
     solver::verifier_client::PendingDraft {
         draft_id: "test-draft-1".to_string(),
-        requester_address: "0x1111111111111111111111111111111111111111".to_string(),
+        requester_addr: "0x1111111111111111111111111111111111111111".to_string(),
         draft_data: create_base_draft_data(),
         timestamp: 1000000,
         expiry_time,

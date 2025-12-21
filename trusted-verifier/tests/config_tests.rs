@@ -8,7 +8,7 @@ use trusted_verifier::monitor::ChainType;
 use trusted_verifier::validator::{get_chain_type_from_chain_id, normalize_address};
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::DUMMY_ESCROW_CONTRACT_ADDR_EVM;
+use test_helpers::{DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_VERIFIER_ADDR_EVM};
 
 /// Test that default configuration creates valid structure
 /// Why: Verify default config is valid and doesn't panic
@@ -79,7 +79,7 @@ fn test_get_chain_type_from_chain_id_evm() {
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 31337,
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     });
 
     let result = get_chain_type_from_chain_id(31337, &config);
@@ -127,7 +127,7 @@ fn test_get_chain_type_from_chain_id_duplicate_chain_id_error() {
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 100,
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     });
     config.connected_chain_mvm = Some(ChainConfig {
         name: "MVM Chain".to_string(),
@@ -177,7 +177,7 @@ fn test_config_validate_hub_evm_duplicate_chain_id() {
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 100, // Same as hub
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     });
 
     let result = config.validate();
@@ -202,7 +202,7 @@ fn test_config_validate_mvm_evm_duplicate_chain_id() {
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 100, // Same as MVM
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     });
 
     let result = config.validate();
@@ -228,7 +228,7 @@ fn test_config_validate_unique_chain_ids() {
         rpc_url: "http://127.0.0.1:8545".to_string(),
         escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 31337, // Different from hub and MVM
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     });
 
     let result = config.validate();

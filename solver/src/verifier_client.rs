@@ -44,7 +44,8 @@ pub struct PendingDraft {
     /// Unique identifier for the draft
     pub draft_id: String,
     /// Address of the requester who submitted the draft
-    pub requester_address: String,
+    #[serde(rename = "requester_address")]
+    pub requester_addr: String,
     /// Draft data (JSON object - matches Draftintent structure from Move)
     pub draft_data: serde_json::Value,
     /// Timestamp when draft was created (Unix timestamp)
@@ -57,7 +58,7 @@ pub struct PendingDraft {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignatureSubmission {
     /// Address of the solver submitting the signature
-    pub solver_address: String,
+    pub solver_addr: String,
     /// Signature in hex format (Ed25519, 64 bytes = 128 hex characters)
     pub signature: String,
     /// Public key of the solver (hex format)
@@ -79,7 +80,7 @@ pub struct SignatureResponse {
     /// Signature in hex format
     pub signature: String,
     /// Address of the solver who signed (first signer)
-    pub solver_address: String,
+    pub solver_addr: String,
     /// Timestamp when signature was received
     pub timestamp: u64,
 }

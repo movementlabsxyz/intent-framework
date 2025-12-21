@@ -7,7 +7,7 @@ use trusted_verifier::config::Config;
 
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config_with_evm;
+use test_helpers::{build_test_config_with_evm, DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_VERIFIER_ADDR_EVM};
 
 /// Test that EvmChainConfig structure has all required fields
 /// Why: Verify EvmChainConfig struct fields are properly defined
@@ -18,21 +18,21 @@ fn test_evm_chain_config_structure() {
     let evm_config = EvmChainConfig {
         name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_addr: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 31337,
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     };
 
     assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
         evm_config.escrow_contract_addr,
-        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        DUMMY_ESCROW_CONTRACT_ADDR_EVM
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
         evm_config.verifier_addr,
-        "0xffffffffffffffffffffffffffffffffffffffff"
+        DUMMY_VERIFIER_ADDR_EVM
     );
 }
 
@@ -46,9 +46,9 @@ fn test_connected_chain_evm_with_values() {
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_addr: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 31337,
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     });
 
     assert!(config.connected_chain_evm.is_some());
@@ -57,12 +57,12 @@ fn test_connected_chain_evm_with_values() {
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
         evm_config.escrow_contract_addr,
-        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        DUMMY_ESCROW_CONTRACT_ADDR_EVM
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
         evm_config.verifier_addr,
-        "0xffffffffffffffffffffffffffffffffffffffff"
+        DUMMY_VERIFIER_ADDR_EVM
     );
 }
 
@@ -85,12 +85,12 @@ fn test_evm_config_serialization() {
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
         evm_config.escrow_contract_addr,
-        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        DUMMY_ESCROW_CONTRACT_ADDR_EVM
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
         evm_config.verifier_addr,
-        "0xffffffffffffffffffffffffffffffffffffffff"
+        DUMMY_VERIFIER_ADDR_EVM
     );
 }
 
@@ -123,12 +123,12 @@ fn test_evm_chain_config_with_all_fields() {
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
         evm_config.escrow_contract_addr,
-        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        DUMMY_ESCROW_CONTRACT_ADDR_EVM
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
         evm_config.verifier_addr,
-        "0xffffffffffffffffffffffffffffffffffffffff"
+        DUMMY_VERIFIER_ADDR_EVM
     );
 }
 

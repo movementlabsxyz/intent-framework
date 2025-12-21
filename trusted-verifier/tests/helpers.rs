@@ -52,9 +52,13 @@ pub const DUMMY_TOKEN_ADDR_EVM: &str = "0x99999999999999999999999999999999999999
 #[allow(dead_code)]
 pub const DUMMY_ESCROW_CONTRACT_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
+/// Dummy verifier address (EVM format, 20 bytes)
+#[allow(dead_code)]
+pub const DUMMY_VERIFIER_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
 /// Dummy transaction hash (64 hex characters)
 #[allow(dead_code)]
-pub const DUMMY_TX_HASH: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+pub const DUMMY_TX_HASH: &str = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 
 /// Dummy timestamp for solver registration (arbitrary test value)
 #[allow(dead_code)]
@@ -137,9 +141,9 @@ pub fn build_test_config_with_evm() -> Config {
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_addr: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(), // EVM contract address (40 hex chars)
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 31337,
-        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // EVM address (40 hex chars)
+        verifier_addr: DUMMY_VERIFIER_ADDR_EVM.to_string(),
     });
     config
 }

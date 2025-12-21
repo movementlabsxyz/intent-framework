@@ -332,7 +332,7 @@ async fn test_get_solver_evm_address_array_format() {
     let mock_server = MockServer::start().await;
     let solver_registry_addr = DUMMY_SOLVER_REGISTRY_ADDR;
     let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
-    let solver_connected_chain_evm_addr = "0xffffffffffffffffffffffffffffffffffffffff";
+    let solver_connected_chain_evm_addr = DUMMY_SOLVER_ADDR_EVM; // Solver's EVM address on connected chain
 
     let resources_response = create_solver_registry_resource_with_evm_address_array(
         solver_registry_addr,

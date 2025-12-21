@@ -13,25 +13,12 @@ use trusted_verifier::validator::CrossChainValidator;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-// Import helpers - since both modules are declared in mod.rs, we can use the module path
 #[path = "helpers.rs"]
 mod helpers;
 use helpers::{
     build_test_config_with_evm, build_test_config_with_mock_server, build_test_config_with_mvm,
+    DUMMY_PUBLIC_KEY, DUMMY_REGISTERED_AT, DUMMY_SOLVER_REGISTRY_ADDRESS,
 };
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-/// Default solver registry address used in tests
-const DEFAULT_REGISTRY_ADDRESS: &str = "0x1";
-
-/// Dummy timestamp for solver registration (arbitrary test value)
-pub const DUMMY_REGISTERED_AT: u64 = 1234567890;
-
-/// Dummy public key bytes used in test solver registry responses
-pub const DUMMY_PUBLIC_KEY: [u8; 4] = [1, 2, 3, 4];
 
 // ============================================================================
 // SOLVER REGISTRY RESOURCE CREATION
@@ -138,7 +125,7 @@ pub async fn setup_mock_server_with_solver_registry(
     solver_connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, CrossChainValidator) {
     let mock_server = MockServer::start().await;
-    let registry_address = DEFAULT_REGISTRY_ADDRESS;
+    let registry_address = DUMMY_SOLVER_REGISTRY_ADDRESS;
 
     if let Some(solver_addr) = solver_address {
         let resources_response = create_solver_registry_resource_with_mvm_address(
@@ -170,7 +157,7 @@ pub async fn setup_mock_server_with_solver_registry_config(
     solver_connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, Config) {
     let mock_server = MockServer::start().await;
-    let registry_address = DEFAULT_REGISTRY_ADDRESS;
+    let registry_address = DUMMY_SOLVER_REGISTRY_ADDRESS;
 
     if let Some(solver_addr) = solver_address {
         let resources_response = create_solver_registry_resource_with_mvm_address(
@@ -262,7 +249,7 @@ pub async fn setup_mock_server_with_mvm_address_response(
     solver_connected_chain_mvm_address: Option<&str>,
 ) -> (MockServer, Config, CrossChainValidator) {
     let mock_server = MockServer::start().await;
-    let registry_address = DEFAULT_REGISTRY_ADDRESS;
+    let registry_address = DUMMY_SOLVER_REGISTRY_ADDRESS;
 
     let resources_response = create_solver_registry_resource_with_mvm_address(
         registry_address,
@@ -292,7 +279,7 @@ pub async fn setup_mock_server_with_evm_address_response(
     solver_connected_chain_evm_address: Option<&str>,
 ) -> (MockServer, Config, CrossChainValidator) {
     let mock_server = MockServer::start().await;
-    let registry_address = DEFAULT_REGISTRY_ADDRESS;
+    let registry_address = DUMMY_SOLVER_REGISTRY_ADDRESS;
 
     let resources_response = create_solver_registry_resource_with_evm_address(
         registry_address,

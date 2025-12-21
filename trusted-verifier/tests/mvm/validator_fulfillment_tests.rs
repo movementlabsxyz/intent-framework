@@ -17,6 +17,7 @@ mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_fulfillment_transaction_params_mvm,
     create_base_mvm_transaction, create_base_intent_mvm, setup_mock_server_with_registry_mvm,
+    DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_MVM, DUMMY_SOLVER_ADDR_MVM,
 };
 
 // ============================================================================
@@ -36,10 +37,10 @@ fn test_extract_mvm_fulfillment_params_success() {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-                "0x17d7840",
-                "0x1111111111111111111111111111111111111111111111111111111111111111"
+                DUMMY_REQUESTER_ADDR_MVM, // recipient
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address (no constant for this)
+                "0x17d7840", // amount
+                DUMMY_INTENT_ID // intent_id
             ]
         })),
         ..create_base_mvm_transaction()
@@ -54,16 +55,16 @@ fn test_extract_mvm_fulfillment_params_success() {
     let params = result.unwrap();
     assert_eq!(
         params.recipient,
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        DUMMY_REQUESTER_ADDR_MVM
     );
     assert_eq!(params.amount, 25000000); // 0x17d7840 in decimal
     assert_eq!(
         params.intent_id,
-        "0x1111111111111111111111111111111111111111111111111111111111111111"
+        DUMMY_INTENT_ID
     );
     assert_eq!(
         params.solver,
-        "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        DUMMY_SOLVER_ADDR_MVM
     );
     assert_eq!(
         params.token_metadata,
@@ -82,10 +83,10 @@ fn test_extract_mvm_fulfillment_params_amount_as_number() {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                DUMMY_REQUESTER_ADDR_MVM, // recipient
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address
                 100000000u64, // Amount as JSON number (when passed as u64:100000000 to aptos CLI)
-                "0x1111111111111111111111111111111111111111111111111111111111111111"
+                DUMMY_INTENT_ID // intent_id
             ]
         })),
         ..create_base_mvm_transaction()
@@ -112,10 +113,10 @@ fn test_extract_mvm_fulfillment_params_amount_as_decimal_string() {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                DUMMY_REQUESTER_ADDR_MVM, // recipient
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address
                 "100000000", // Amount as decimal string (without 0x prefix)
-                "0x1111111111111111111111111111111111111111111111111111111111111111"
+                DUMMY_INTENT_ID // intent_id
             ]
         })),
         ..create_base_mvm_transaction()
@@ -199,13 +200,13 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
                 recipient_short,
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address
                 "100000000",
-                "0x1111111111111111111111111111111111111111111111111111111111111111"
+                DUMMY_INTENT_ID // intent_id
             ]
         })),
         sender: Some(
-            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+            DUMMY_SOLVER_ADDR_MVM.to_string(), // solver
         ),
         ..create_base_mvm_transaction()
     };
@@ -226,7 +227,7 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
 
     // Intent ID is already 64 hex chars, so should remain unchanged
     assert_eq!(
-        params.intent_id, "0x1111111111111111111111111111111111111111111111111111111111111111",
+        params.intent_id, DUMMY_INTENT_ID,
         "Intent ID should remain 64 hex characters (already correct length)"
     );
     assert_eq!(
@@ -261,9 +262,8 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
 /// outflow fulfillment.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_success() {
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address =
-        "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_address = DUMMY_SOLVER_ADDR_MVM;
+    let connected_chain_mvm_address = DUMMY_SOLVER_ADDR_MVM;
     let registry_address = "0x1";
 
     let (_mock_server, validator) = setup_mock_server_with_registry_mvm(
@@ -446,7 +446,7 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 /// Why: Verify that only registered solvers can fulfill intents.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_solver_not_registered() {
-    let unregistered_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let unregistered_solver = DUMMY_SOLVER_ADDR_MVM;
     let registry_address = "0x1";
 
     // Setup mock server with empty registry (solver not registered)

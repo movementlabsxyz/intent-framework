@@ -21,26 +21,38 @@ use trusted_verifier::validator::FulfillmentTransactionParams;
 // CONSTANTS
 // ============================================================================
 
-/// Default dummy intent ID used in tests (64 hex characters, valid hex format)
+/// Dummy intent ID (64 hex characters, valid hex format)
 pub const DUMMY_INTENT_ID: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
-/// Default dummy escrow ID used in tests (Move VM format, 64 hex characters)
+/// Dummy escrow ID (Move VM format, 64 hex characters)
 pub const DUMMY_ESCROW_ID_MVM: &str = "0x2222222222222222222222222222222222222222222222222222222222222222";
 
-/// Default dummy requester address used in tests (Move VM format, 32 bytes)
+/// Dummy requester address (Move VM format, 32 bytes)
 pub const DUMMY_REQUESTER_ADDR_MVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-/// Default dummy requester address used in tests (EVM format, 20 bytes)
+/// Dummy requester address (EVM format, 20 bytes)
 pub const DUMMY_REQUESTER_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-/// Default dummy solver address used in tests (Move VM format, 32 bytes)
+/// Dummy solver address (Move VM format, 32 bytes)
 pub const DUMMY_SOLVER_ADDR_MVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-/// Default dummy solver address used in tests (EVM format, 20 bytes)
+/// Dummy solver address (EVM format, 20 bytes)
 pub const DUMMY_SOLVER_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-/// Default dummy token address used in tests (EVM format, 20 bytes)
+/// Dummy token address (EVM format, 20 bytes)
 pub const DUMMY_TOKEN_ADDR_EVM: &str = "0xcccccccccccccccccccccccccccccccccccccccc";
+
+/// Dummy timestamp for solver registration (arbitrary test value)
+#[allow(dead_code)]
+pub const DUMMY_REGISTERED_AT: u64 = 1234567890;
+
+/// Dummy public key bytes used in solver registry responses
+#[allow(dead_code)]
+pub const DUMMY_PUBLIC_KEY: [u8; 4] = [1, 2, 3, 4];
+
+/// Dummy solver registry address
+#[allow(dead_code)]
+pub const DUMMY_SOLVER_REGISTRY_ADDRESS: &str = "0x1";
 
 // ============================================================================
 // CONFIGURATION BUILDERS

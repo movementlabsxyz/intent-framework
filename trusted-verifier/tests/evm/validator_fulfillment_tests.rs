@@ -14,7 +14,8 @@ mod test_helpers;
 use test_helpers::{
     build_test_config_with_evm, create_base_evm_transaction,
     create_base_fulfillment_transaction_params_evm, create_base_intent_evm,
-    setup_mock_server_with_registry_evm,
+    setup_mock_server_with_registry_evm, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM,
+    DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM, DUMMY_TOKEN_ADDR_EVM,
 };
 
 // ============================================================================
@@ -32,11 +33,16 @@ use test_helpers::{
 fn test_extract_evm_fulfillment_params_success() {
     // ERC20 transfer selector: 0xa9059cbb
     // Calldata: selector (4 bytes) + to (32 bytes) + amount (32 bytes) + intent_id (32 bytes)
-    // to: 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (padded to 32 bytes = 64 hex chars)
+    // to: recipient address (padded to 32 bytes = 64 hex chars)
     // amount: 0x17d7840 = 25000000 (padded to 32 bytes = 64 hex chars)
-    // intent_id: 0x1111111111111111111111111111111111111111111111111111111111111111 (64 hex chars)
+    // intent_id: intent ID (64 hex chars)
     // Total: 8 (selector) + 64 (to) + 64 (amount) + 64 (intent_id) = 200 hex chars
-    let calldata = "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000000000000000000000000000000017d78401111111111111111111111111111111111111111111111111111111111111111";
+    let recipient_hex = DUMMY_REQUESTER_ADDR_EVM.strip_prefix("0x").unwrap();
+    let intent_id_hex = DUMMY_INTENT_ID.strip_prefix("0x").unwrap();
+    let calldata = format!(
+        "a9059cbb000000000000000000000000{}00000000000000000000000000000000000000000000000000000000017d7840{}",
+        recipient_hex, intent_id_hex
+    );
 
     let tx = EvmTransaction {
         input: format!("0x{}", calldata),
@@ -52,23 +58,23 @@ fn test_extract_evm_fulfillment_params_success() {
     let params = result.unwrap();
     assert_eq!(
         params.recipient,
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        DUMMY_REQUESTER_ADDR_EVM
     );
     assert_eq!(params.amount, 25000000); // 0x17d7840 in decimal
     assert_eq!(
         params.intent_id,
-        "0x1111111111111111111111111111111111111111111111111111111111111111"
+        DUMMY_INTENT_ID
     );
-    assert_eq!(params.solver, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    assert_eq!(params.solver, DUMMY_SOLVER_ADDR_EVM);
     assert_eq!(
         params.token_metadata,
-        "0xcccccccccccccccccccccccccccccccccccccccc"
+        DUMMY_TOKEN_ADDR_EVM
     );
 
     // Verify the transaction's `to` field is used for token_metadata
     assert_eq!(
         tx.to,
-        Some("0xcccccccccccccccccccccccccccccccccccccccc".to_string())
+        Some(DUMMY_TOKEN_ADDR_EVM.to_string())
     );
 }
 
@@ -210,11 +216,13 @@ fn test_extract_evm_fulfillment_params_large_valid_amount() {
     // Use a large but valid u64 value: 1000000000000000000 (10^18, 1 ETH in wei)
     // This is well within u64::MAX but tests large number handling
     let large_amount = "0000000000000000000000000000000000000000000000000de0b6b3a7640000"; // 1000000000000000000, padded to 32 bytes (64 hex chars)
-
+    let recipient_hex = DUMMY_REQUESTER_ADDR_EVM.strip_prefix("0x").unwrap();
+    let intent_id_hex = DUMMY_INTENT_ID.strip_prefix("0x").unwrap();
     let calldata = format!(
-        "a9059cbb000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{}{}",
+        "a9059cbb000000000000000000000000{}{}{}",
+        recipient_hex,
         large_amount,
-        "1111111111111111111111111111111111111111111111111111111111111111" // intent_id
+        intent_id_hex
     );
 
     let tx = EvmTransaction {
@@ -288,12 +296,12 @@ fn test_extract_evm_fulfillment_params_normalizes_intent_id_with_leading_zeros()
 /// outflow fulfillment.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_success() {
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_address = DUMMY_SOLVER_ADDR_MVM; // Solver's address on hub chain (MVM format)
+    let solver_evm_address = DUMMY_SOLVER_ADDR_EVM; // Solver's address on connected chain (EVM format)
     let registry_address = "0x1";
 
     let (_mock_server, validator) =
-        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(evm_address)).await;
+        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(solver_evm_address)).await;
 
     let intent = IntentEvent {
         desired_amount: 25000000, // For outflow intents, validation uses desired_amount (amount desired on connected chain)
@@ -303,7 +311,7 @@ async fn test_validate_outflow_fulfillment_success() {
 
     let tx_params = FulfillmentTransactionParams {
         amount: 25000000,
-        solver: evm_address.to_string(),
+        solver: solver_evm_address.to_string(),
         ..create_base_fulfillment_transaction_params_evm()
     };
 
@@ -327,12 +335,12 @@ async fn test_validate_outflow_fulfillment_success() {
 /// without padding. Normalization ensures they match correctly.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_succeeds_with_normalized_intent_id() {
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_address = DUMMY_SOLVER_ADDR_MVM; // Solver's address on hub chain (MVM format)
+    let solver_evm_address = DUMMY_SOLVER_ADDR_EVM; // Solver's address on connected chain (EVM format)
     let registry_address = "0x1";
 
     let (_mock_server, validator) =
-        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(evm_address)).await;
+        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(solver_evm_address)).await;
 
     // Request-intent has intent_id without leading zeros
     let intent = IntentEvent {
@@ -346,7 +354,7 @@ async fn test_validate_outflow_fulfillment_succeeds_with_normalized_intent_id() 
     let tx_params = FulfillmentTransactionParams {
         intent_id: "0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         amount: 25000000,
-        solver: evm_address.to_string(),
+        solver: solver_evm_address.to_string(),
         ..create_base_fulfillment_transaction_params_evm()
     };
 
@@ -514,9 +522,9 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 /// Why: Verify that only the authorized solver can fulfill the intent.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_solver_mismatch() {
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let registered_evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let different_solver = "0xcccccccccccccccccccccccccccccccccccccccc";
+    let solver_address = DUMMY_SOLVER_ADDR_MVM; // Solver's address on hub chain (MVM format)
+    let registered_evm_address = DUMMY_SOLVER_ADDR_EVM; // Solver's address on connected chain (EVM format)
+    let different_solver = "0xffffffffffffffffffffffffffffffffffffffff"; // Different solver address for testing mismatch
     let registry_address = "0x1";
 
     let (_mock_server, validator) = setup_mock_server_with_registry_evm(

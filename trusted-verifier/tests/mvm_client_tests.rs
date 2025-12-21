@@ -11,7 +11,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    DUMMY_PUBLIC_KEY, DUMMY_REGISTERED_AT, DUMMY_REQUESTER_ADDR_MVM, DUMMY_SOLVER_ADDR_EVM,
+    DUMMY_PUBLIC_KEY, DUMMY_REGISTERED_AT, DUMMY_SOLVER_ADDR_EVM,
     DUMMY_SOLVER_ADDR_MVM,
 };
 

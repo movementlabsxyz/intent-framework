@@ -6,7 +6,7 @@ use trusted_verifier::crypto::CryptoService;
 
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config_with_mvm;
+use test_helpers::{build_test_config_with_mvm, DUMMY_INTENT_ID};
 
 /// Test that ECDSA signature creation succeeds for EVM escrow release
 /// Why: ECDSA signatures are required for EVM chain compatibility - must work correctly
@@ -15,7 +15,7 @@ fn test_create_evm_approval_signature_success() {
     let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
 
-    let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let intent_id = DUMMY_INTENT_ID;
 
     let signature = service.create_evm_approval_signature(intent_id).unwrap();
 
@@ -30,7 +30,7 @@ fn test_create_evm_approval_signature_format_65_bytes() {
     let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
 
-    let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let intent_id = DUMMY_INTENT_ID;
 
     let signature = service.create_evm_approval_signature(intent_id).unwrap();
 
@@ -53,7 +53,7 @@ fn test_create_evm_approval_signature_verification() {
     let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
 
-    let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let intent_id = DUMMY_INTENT_ID;
 
     // Create signature
     let signature = service.create_evm_approval_signature(intent_id).unwrap();
@@ -103,7 +103,7 @@ fn test_evm_signature_recovery_id_calculation() {
     let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
 
-    let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let intent_id = DUMMY_INTENT_ID;
 
     // Create multiple signatures and verify v is always 27 or 28
     for _ in 0..10 {
@@ -124,7 +124,7 @@ fn test_evm_signature_keccak256_hashing() {
     let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
 
-    let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let intent_id = DUMMY_INTENT_ID;
 
     // Create signature
     let signature1 = service.create_evm_approval_signature(intent_id).unwrap();
@@ -143,7 +143,7 @@ fn test_evm_signature_ethereum_message_prefix() {
     let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
 
-    let intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let intent_id = DUMMY_INTENT_ID;
 
     // Create signature
     let signature = service.create_evm_approval_signature(intent_id).unwrap();
@@ -177,7 +177,7 @@ fn test_evm_intent_id_padding() {
     );
 
     // Test with full 32-byte intent ID
-    let full_intent_id = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let full_intent_id = DUMMY_INTENT_ID;
     let signature2 = service
         .create_evm_approval_signature(full_intent_id)
         .unwrap();

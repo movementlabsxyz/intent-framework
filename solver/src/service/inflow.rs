@@ -108,12 +108,12 @@ impl InflowService {
             return Ok(Vec::new());
         }
 
-        // Collect requester_address_connected_chain from pending intents (for inflow escrow lookup)
+        // Collect requester_addr_connected_chain from pending intents (for inflow escrow lookup)
         // Inflow intents have escrows created on the connected chain by the connected chain requester,
         // not the hub chain requester.
         let connected_chain_requester_addresses: Vec<String> = pending_intents
             .iter()
-            .filter_map(|intent| intent.requester_address_connected_chain.clone())
+            .filter_map(|intent| intent.requester_addr_connected_chain.clone())
             .collect();
 
         // Query connected chain for escrow events

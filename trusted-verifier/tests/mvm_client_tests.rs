@@ -12,7 +12,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 mod test_helpers;
 use test_helpers::{
     DUMMY_PUBLIC_KEY, DUMMY_REGISTERED_AT, DUMMY_SOLVER_ADDR_EVM,
-    DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_REGISTRY_ADDR,
+    DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON, DUMMY_SOLVER_REGISTRY_ADDR,
 };
 
 // ============================================================================
@@ -96,7 +96,7 @@ async fn test_get_solver_connected_chain_mvm_addr_success() {
     let solver_registry_addr = DUMMY_SOLVER_REGISTRY_ADDR;
     let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
     let solver_connected_chain_mvm_addr =
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+        DUMMY_SOLVER_ADDR_MVM_CON;
 
     let (_mock_server, client) = setup_mock_server_with_registry(
         solver_registry_addr,
@@ -155,7 +155,7 @@ async fn test_get_solver_connected_chain_mvm_addr_solver_not_found() {
     let (_mock_server, client) = setup_mock_server_with_registry(
         solver_registry_addr,
         registered_solver, // Only this solver is registered
-        Some("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
+        Some(DUMMY_SOLVER_ADDR_MVM_CON),
     )
     .await;
 
@@ -211,7 +211,7 @@ async fn test_get_solver_connected_chain_mvm_addr_address_normalization() {
     let solver_addr_with_prefix = DUMMY_SOLVER_ADDR_MVM_HUB;
     let solver_addr_without_prefix = &DUMMY_SOLVER_ADDR_MVM_HUB[2..]; // Remove 0x prefix
     let solver_connected_chain_mvm_addr =
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+        DUMMY_SOLVER_ADDR_MVM_CON;
 
     let (_mock_server, client) = setup_mock_server_with_registry(
         solver_registry_addr,
@@ -455,7 +455,7 @@ async fn test_get_solver_mvm_address_leading_zero_mismatch() {
     let solver_registry_addr_stripped = "0x123456789012345678901234567890123456789012345678901234567890123";
     let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
     let solver_connected_chain_mvm_addr =
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+        DUMMY_SOLVER_ADDR_MVM_CON;
 
     // Mock response has the type with stripped leading zero (like Move does)
     let resources_response = create_solver_registry_resource_with_stripped_zeros(

@@ -109,7 +109,7 @@ module mvmt_intent::fa_intent {
         expiry_time: u64,
         revocable: bool,
         reserved_solver: Option<address>, // Solver address if the intent is reserved (None for unreserved intents)
-        requester_address_connected_chain: Option<address> // Requester address on connected chain (for inflow intents)
+        requester_addr_connected_chain: Option<address> // Requester address on connected chain (for inflow intents)
     }
 
     #[event]
@@ -162,7 +162,7 @@ module mvmt_intent::fa_intent {
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
-        requester_address_connected_chain: Option<address> // Optional requester address on connected chain (for inflow intents)
+        requester_addr_connected_chain: Option<address> // Optional requester address on connected chain (for inflow intents)
     ): Object<Intent<FungibleStoreManager, FungibleAssetLimitOrder>> acquires ChainInfo {
         // Capture metadata before depositing
         let offered_metadata = fungible_asset::asset_metadata(&offered_fungible_asset);
@@ -255,7 +255,7 @@ module mvmt_intent::fa_intent {
                 requester,
                 revocable,
                 reserved_solver,
-                requester_address_connected_chain
+                requester_addr_connected_chain
             }
         );
 
@@ -331,7 +331,7 @@ module mvmt_intent::fa_intent {
             reservation,
             true, // revocable by default for regular intents
             option::none(), // No cross-chain intent_id for regular intents
-            option::none() // No requester_address_connected_chain for same-chain intents
+            option::none() // No requester_addr_connected_chain for same-chain intents
         );
     }
 

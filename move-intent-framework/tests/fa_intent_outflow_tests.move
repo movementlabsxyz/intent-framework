@@ -121,7 +121,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         let (offered_metadata, desired_metadata, solver_address, solver_signature_bytes, verifier_public_key_bytes, verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
             setup_outflow_test_infrastructure(aptos_framework, mvmt_intent, requester_signer, solver_signer);
         
-        let requester_address_connected_chain = @0x9999; // Address on connected chain
+        let requester_addr_connected_chain = @0x9999; // Address on connected chain
         
         // Create outflow intent (returns intent object)
         // Pass desired_metadata as address (for cross-chain support)
@@ -136,7 +136,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             2, // desired_chain_id (connected chain)
             expiry_time,
             intent_id,
-            requester_address_connected_chain,
+            requester_addr_connected_chain,
             verifier_public_key_bytes,
             solver_address,
             solver_signature_bytes,
@@ -173,7 +173,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         let (offered_metadata, desired_metadata, solver_address, solver_signature_bytes, verifier_public_key_bytes, _verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
             setup_outflow_test_infrastructure(aptos_framework, mvmt_intent, requester_signer, solver_signer);
         
-        let requester_address_connected_chain = @0x9999; // Address on connected chain
+        let requester_addr_connected_chain = @0x9999; // Address on connected chain
         
         // Verify requester_signer's initial balance
         assert!(primary_fungible_store::balance(signer::address_of(requester_signer), offered_metadata) == 100);
@@ -191,7 +191,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             2, // desired_chain_id (connected chain)
             expiry_time,
             intent_id,
-            requester_address_connected_chain,
+            requester_addr_connected_chain,
             verifier_public_key_bytes,
             solver_address,
             solver_signature_bytes,
@@ -211,7 +211,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         requester_signer = @0xcafe,
         solver_signer = @0xdead
     )]
-    /// What is tested: OracleGuardedLimitOrder stores requester_address_connected_chain correctly
+    /// What is tested: OracleGuardedLimitOrder stores requester_addr_connected_chain correctly
     /// Why: Solver needs this address to know where to send tokens on the connected chain
     fun test_outflow_intent_requester_address_storage(
         aptos_framework: &signer,
@@ -229,7 +229,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         let intent_id = @0xabcd;
         let solver_address = signer::address_of(solver_signer);
-        let requester_address_connected_chain = @0x1234; // Address on connected chain
+        let requester_addr_connected_chain = @0x1234; // Address on connected chain
         let expiry_time = timestamp::now_seconds() + 3600;
         
         // Initialize solver registry and intent registry
@@ -263,7 +263,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             requirement,
             false,
             intent_id,
-            option::some(requester_address_connected_chain), // Store requester address
+            option::some(requester_addr_connected_chain), // Store requester address
             option::some(reservation),
         );
         
@@ -391,7 +391,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         solver_signer = @0xdead
     )]
     #[expected_failure(abort_code = 0x10003, location = mvmt_intent::fa_intent_outflow)] // error::invalid_argument(EINVALID_REQUESTER_ADDRESS)
-    /// What is tested: create_outflow_intent aborts when requester_address_connected_chain is the zero address
+    /// What is tested: create_outflow_intent aborts when requester_addr_connected_chain is the zero address
     /// Why: Outflow intents must target a valid connected-chain recipient address
     fun test_create_outflow_intent_rejects_zero_requester_address(
         aptos_framework: &signer,
@@ -403,7 +403,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         let (offered_metadata, desired_metadata, solver_address, solver_signature_bytes, verifier_public_key_bytes, _verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
             setup_outflow_test_infrastructure(aptos_framework, mvmt_intent, requester_signer, solver_signer);
         
-        let requester_address_connected_chain = @0x0; // Zero address - should be rejected
+        let requester_addr_connected_chain = @0x0; // Zero address - should be rejected
         
         // Attempt to create outflow intent with zero address - should abort
         // Pass desired_metadata as address (for cross-chain support)
@@ -418,7 +418,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             2, // desired_chain_id (connected chain)
             expiry_time,
             intent_id,
-            requester_address_connected_chain, // Zero address - should cause abort
+            requester_addr_connected_chain, // Zero address - should cause abort
             verifier_public_key_bytes,
             solver_address,
             solver_signature_bytes,

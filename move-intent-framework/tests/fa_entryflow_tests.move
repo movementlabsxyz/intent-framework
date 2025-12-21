@@ -52,7 +52,7 @@ module mvmt_intent::fa_entryflow_tests {
             option::none(),
             true, // revocable
             option::none(), // No cross-chain intent_id for regular intents
-            option::none() // No requester_address_connected_chain for same-chain intents
+            option::none() // No requester_addr_connected_chain for same-chain intents
         );
 
         move_to(offerer, PendingIntent { intent });

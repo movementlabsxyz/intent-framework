@@ -17,7 +17,7 @@ mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_fulfillment_transaction_params_mvm,
     create_base_mvm_transaction, create_base_intent_mvm, setup_mock_server_with_registry_mvm,
-    DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_MVM_CON, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
+    DUMMY_INTENT_ID, DUMMY_METADATA_ADDR_MVM, DUMMY_REQUESTER_ADDR_MVM_CON, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
     DUMMY_SOLVER_REGISTRY_ADDR,
 };
 
@@ -39,7 +39,7 @@ fn test_extract_mvm_fulfillment_params_success() {
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
                 DUMMY_REQUESTER_ADDR_MVM_CON, // recipient
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address (no constant for this)
+                DUMMY_METADATA_ADDR_MVM, // metadata object address
                 "0x17d7840", // amount
                 DUMMY_INTENT_ID // intent_id
             ]
@@ -69,7 +69,7 @@ fn test_extract_mvm_fulfillment_params_success() {
     );
     assert_eq!(
         params.token_metadata,
-        "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        DUMMY_METADATA_ADDR_MVM
     );
 }
 
@@ -85,7 +85,7 @@ fn test_extract_mvm_fulfillment_params_amount_as_number() {
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
                 DUMMY_REQUESTER_ADDR_MVM_CON, // recipient
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address
+                DUMMY_METADATA_ADDR_MVM, // metadata object address
                 100000000u64, // Amount as JSON number (when passed as u64:100000000 to aptos CLI)
                 DUMMY_INTENT_ID // intent_id
             ]
@@ -115,7 +115,7 @@ fn test_extract_mvm_fulfillment_params_amount_as_decimal_string() {
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
                 DUMMY_REQUESTER_ADDR_MVM_CON, // recipient
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address
+                DUMMY_METADATA_ADDR_MVM, // metadata object address
                 "100000000", // Amount as decimal string (without 0x prefix)
                 DUMMY_INTENT_ID // intent_id
             ]
@@ -194,14 +194,14 @@ fn test_extract_mvm_fulfillment_params_missing_payload() {
 fn test_extract_mvm_fulfillment_params_address_normalization() {
     // Address without leading zeros: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (62 chars)
     // Should be normalized to: 00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (64 chars)
-    let recipient_short = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    let recipient_short: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
     let tx = MvmTransaction {
         payload: Some(serde_json::json!({
             "function": "0x123::utils::transfer_with_intent_id",
             "arguments": [
                 recipient_short,
-                "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // metadata object address
+                DUMMY_METADATA_ADDR_MVM, // metadata object address
                 "100000000",
                 DUMMY_INTENT_ID // intent_id
             ]

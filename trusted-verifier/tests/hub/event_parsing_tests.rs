@@ -10,7 +10,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_mvm, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_HUB,
+    build_test_config_with_mvm, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON, DUMMY_SOLVER_ADDR_MVM_HUB,
 };
 
 // ============================================================================
@@ -35,7 +35,7 @@ fn create_mock_oracle_limit_order_event(
     json!({
         "type": "0x1::fa_intent_with_oracle::OracleLimitOrderEvent",
         "data": {
-            "intent_address": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "intent_address": DUMMY_SOLVER_ADDR_MVM_CON,
             "intent_id": intent_id,
             "offered_metadata": {"inner": "0xoffered_meta"},
             "offered_amount": "1000",

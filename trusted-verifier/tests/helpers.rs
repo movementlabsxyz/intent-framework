@@ -60,6 +60,10 @@ pub const DUMMY_VERIFIER_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 #[allow(dead_code)]
 pub const DUMMY_TX_HASH: &str = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
 
+/// Dummy metadata object address (Move VM format, 32 bytes)
+#[allow(dead_code)]
+pub const DUMMY_METADATA_ADDR_MVM: &str = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+
 /// Dummy timestamp for solver registration (arbitrary test value)
 #[allow(dead_code)]
 pub const DUMMY_REGISTERED_AT: u64 = 1234567890;

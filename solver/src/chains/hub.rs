@@ -96,7 +96,7 @@ pub struct IntentCreatedEvent {
     /// Requester address on the connected chain (for outflow intents)
     /// Wrapped in Move Option: {"vec": ["0x..."]} or {"vec": []}
     #[serde(default)]
-    pub requester_address_connected_chain: Option<MoveOption<String>>,
+    pub requester_addr_connected_chain: Option<MoveOption<String>>,
 }
 
 /// Event emitted when an intent is fulfilled

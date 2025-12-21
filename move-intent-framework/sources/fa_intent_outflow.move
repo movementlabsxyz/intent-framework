@@ -135,7 +135,7 @@ module mvmt_intent::fa_intent_outflow {
     /// - `desired_chain_id`: Chain ID where tokens are desired (connected chain)
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `intent_id`: Intent ID for cross-chain linking
-    /// - `requester_address_connected_chain`: Address on connected chain where solver should send tokens
+    /// - `requester_addr_connected_chain`: Address on connected chain where solver should send tokens
     /// - `verifier_public_key`: Public key of the verifier that will approve the connected chain transaction (32 bytes)
     /// - `solver`: Address of the solver authorized to fulfill this intent (must be registered)
     /// - `solver_signature`: Ed25519 signature from the solver authorizing this intent
@@ -146,7 +146,7 @@ module mvmt_intent::fa_intent_outflow {
     /// # Aborts
     /// - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
     /// - `EINVALID_SIGNATURE`: Signature verification failed
-    /// - `EINVALID_REQUESTER_ADDRESS`: requester_address_connected_chain is zero address (0x0)
+    /// - `EINVALID_REQUESTER_ADDRESS`: requester_addr_connected_chain is zero address (0x0)
     public fun create_outflow_intent(
         requester_signer: &signer,
         offered_metadata: Object<Metadata>,
@@ -157,15 +157,15 @@ module mvmt_intent::fa_intent_outflow {
         desired_chain_id: u64,
         expiry_time: u64,
         intent_id: address,
-        requester_address_connected_chain: address,
+        requester_addr_connected_chain: address,
         verifier_public_key: vector<u8>, // 32 bytes
         solver: address,
         solver_signature: vector<u8>
     ): Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> {
-        // Validate requester_address_connected_chain is not zero address
+        // Validate requester_addr_connected_chain is not zero address
         // Outflow intents require a valid address on the connected chain where the solver should send tokens
         assert!(
-            requester_address_connected_chain != @0x0,
+            requester_addr_connected_chain != @0x0,
             error::invalid_argument(EINVALID_REQUESTER_ADDRESS)
         );
 
@@ -235,7 +235,7 @@ module mvmt_intent::fa_intent_outflow {
             false, // CRITICAL: All parts of a cross-chain intent MUST be non-revocable
             // Ensures consistent safety guarantees for verifiers across chains
             intent_id,
-            option::some(requester_address_connected_chain), // Store where solver should send tokens on connected chain
+            option::some(requester_addr_connected_chain), // Store where solver should send tokens on connected chain
             reservation_result // Reserved for specific solver
         );
 
@@ -263,7 +263,7 @@ module mvmt_intent::fa_intent_outflow {
         desired_chain_id: u64,
         expiry_time: u64,
         intent_id: address,
-        requester_address_connected_chain: address,
+        requester_addr_connected_chain: address,
         verifier_public_key: vector<u8>, // 32 bytes
         solver: address,
         solver_signature: vector<u8>
@@ -279,7 +279,7 @@ module mvmt_intent::fa_intent_outflow {
                 desired_chain_id,
                 expiry_time,
                 intent_id,
-                requester_address_connected_chain,
+                requester_addr_connected_chain,
                 verifier_public_key,
                 solver,
                 solver_signature

@@ -89,7 +89,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             intent_id,
             solver_address,
             solver_signature_bytes,
-            signer::address_of(requestor), // requester_address_connected_chain (same as requestor in test)
+            signer::address_of(requestor), // requester_addr_connected_chain (same as requestor in test)
         );
         
         (intent_obj, offered_metadata, desired_metadata)
@@ -176,7 +176,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             intent_id,
             solver_address,
             solver_signature_bytes,
-            signer::address_of(requestor), // requester_address_connected_chain (same as requestor in test)
+            signer::address_of(requestor), // requester_addr_connected_chain (same as requestor in test)
         );
         
         // Step 6: Verify 0 tokens were locked (balance unchanged, still 0)
@@ -272,7 +272,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             reservation_result, // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            option::none() // No requester_address_connected_chain in test
+            option::none() // No requester_addr_connected_chain in test
         );
         let intent_address = object::object_address(&intent_obj);
         
@@ -441,7 +441,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             option::some(reservation), // Reserved for solver
             false, // Non-revocable
             option::some(dummy_intent_id),
-            option::none() // No requester_address_connected_chain in test
+            option::none() // No requester_addr_connected_chain in test
         );
         let intent_address = object::object_address(&intent_obj);
         

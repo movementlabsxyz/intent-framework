@@ -3,7 +3,7 @@
 //! Executes transfers on connected chains and fulfills outflow intents on the hub chain.
 //!
 //! Flow:
-//! 1. **Execute Transfer**: Transfer tokens on connected chain to requester_address_connected_chain
+//! 1. **Execute Transfer**: Transfer tokens on connected chain to requester_addr_connected_chain
 //! 2. **Get Verifier Approval**: Call verifier `/validate-outflow-fulfillment` with transaction hash
 //! 3. **Fulfill Intent**: Call hub chain `fulfill_outflow_intent` with verifier signature
 
@@ -90,20 +90,20 @@ impl OutflowService {
         let mut executed_transfers = Vec::new();
 
         for intent in pending_intents {
-            // Get requester_address_connected_chain from intent
-            // TODO: Query intent object on hub chain to get requester_address_connected_chain
+            // Get requester_addr_connected_chain from intent
+            // TODO: Query intent object on hub chain to get requester_addr_connected_chain
             // For now, we'll need to store this in TrackedIntent or query it
             // This is a placeholder - we need to implement intent object querying
-            let requester_address_connected_chain = match self.get_requester_address_connected_chain(&intent).await {
+            let requester_addr_connected_chain = match self.get_requester_address_connected_chain(&intent).await {
                 Ok(addr) => addr,
                 Err(e) => {
-                    warn!("Failed to get requester_address_connected_chain for intent {}: {}", intent.intent_id, e);
+                    warn!("Failed to get requester_addr_connected_chain for intent {}: {}", intent.intent_id, e);
                     continue;
                 }
             };
 
             // Execute transfer on connected chain
-            let tx_hash = match self.execute_connected_transfer(&intent, &requester_address_connected_chain).await {
+            let tx_hash = match self.execute_connected_transfer(&intent, &requester_addr_connected_chain).await {
                 Ok(hash) => hash,
                 Err(e) => {
                     error!("Failed to execute transfer for intent {}: {}", intent.intent_id, e);
@@ -123,7 +123,7 @@ impl OutflowService {
     /// # Arguments
     ///
     /// * `intent` - Tracked intent to execute transfer for
-    /// * `recipient` - Recipient address on connected chain (requester_address_connected_chain)
+    /// * `recipient` - Recipient address on connected chain (requester_addr_connected_chain)
     ///
     /// # Returns
     ///
@@ -162,8 +162,8 @@ impl OutflowService {
     /// * `Err(anyhow::Error)` - Failed to query intent object
     async fn get_requester_address_connected_chain(&self, intent: &TrackedIntent) -> Result<String> {
         // Get from tracked intent (set when on-chain event was detected)
-        intent.requester_address_connected_chain.clone()
-            .context("requester_address_connected_chain not set. This may happen if the intent is inflow (not outflow) or the event data didn't include this field.")
+        intent.requester_addr_connected_chain.clone()
+            .context("requester_addr_connected_chain not set. This may happen if the intent is inflow (not outflow) or the event data didn't include this field.")
     }
 
     /// Gets verifier approval for an outflow fulfillment transaction

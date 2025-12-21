@@ -49,7 +49,7 @@ pub struct TrackedIntent {
     /// Intent object address (set when created on-chain)
     pub intent_address: Option<String>,
     /// Requester address on the connected chain (for outflow intents)
-    pub requester_address_connected_chain: Option<String>,
+    pub requester_addr_connected_chain: Option<String>,
 }
 
 /// Intent tracker that monitors signed intents and their on-chain creation
@@ -125,7 +125,7 @@ impl IntentTracker {
             requester_address: requester_address.clone(),
             expiry_time,
             intent_address: None,
-            requester_address_connected_chain: None,
+            requester_addr_connected_chain: None,
         };
 
         // Track requester address for event querying
@@ -218,18 +218,18 @@ impl IntentTracker {
                 };
 
                 if matches {
-                    // Extract requester_address_connected_chain from MoveOption wrapper
-                    let connected_chain_addr = event.requester_address_connected_chain
+                    // Extract requester_addr_connected_chain from MoveOption wrapper
+                    let connected_chain_addr = event.requester_addr_connected_chain
                         .clone()
                         .and_then(|opt| opt.into_option());
                     
                     tracing::info!("Intent {} matched on-chain event {}. Transitioning to Created state.", 
                         _draft_id, event.intent_id);
-                    tracing::info!("requester_address_connected_chain: {:?}", connected_chain_addr);
+                    tracing::info!("requester_addr_connected_chain: {:?}", connected_chain_addr);
                     tracked.state = IntentState::Created;
                     tracked.intent_id = event.intent_id.clone(); // Update to actual on-chain intent_id
                     tracked.intent_address = Some(event.intent_address.clone());
-                    tracked.requester_address_connected_chain = connected_chain_addr;
+                    tracked.requester_addr_connected_chain = connected_chain_addr;
                     updated_count += 1;
                     break; // Found match, move to next event
                 }

@@ -6,7 +6,7 @@
 use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{create_base_escrow_event_evm, create_base_intent_evm, DUMMY_EXPIRY};
+use test_helpers::{create_base_escrow_event_evm, create_base_intent_evm, DUMMY_EXPIRY, DUMMY_INTENT_ID};
 
 /// Test that EVM escrow can be matched to hub intent by intent_id
 /// Why: Verify cross-chain matching logic correctly links EVM escrow to hub intent
@@ -95,7 +95,7 @@ fn test_intent_id_conversion_to_evm_format() {
     );
 
     // Test 2: Full 32-byte hex string (no padding needed)
-    let mvmt_intent_id_full = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    let mvmt_intent_id_full = DUMMY_INTENT_ID;
     let intent_id_hex_full = mvmt_intent_id_full
         .strip_prefix("0x")
         .unwrap_or(mvmt_intent_id_full);

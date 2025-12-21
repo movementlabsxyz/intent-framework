@@ -65,7 +65,7 @@ if [ ! -f "$SOLVER_CONFIG" ]; then
     echo ""
     echo "   Then populate with actual deployed contract addresses:"
     echo "   - module_address (hub_chain section)"
-    echo "   - escrow_contract_address (connected_chain section)"
+    echo "   - escrow_contract_addr (connected_chain section)"
     echo "   - address (solver section)"
     echo "   - verifier_url (service section - use localhost:3333 for local testing)"
     exit 1
@@ -78,7 +78,7 @@ if grep -qE "(0x123|0x\.\.\.|0x\.\.\.)" "$SOLVER_CONFIG"; then
     echo ""
     echo "   Update the config file with actual deployed addresses:"
     echo "   - module_address (hub_chain section)"
-    echo "   - escrow_contract_address (connected_chain section)"
+    echo "   - escrow_contract_addr (connected_chain section)"
     echo "   - address (solver section)"
     echo "   - verifier_url (service section - use localhost:3333 for local testing)"
     echo ""
@@ -96,7 +96,7 @@ SOLVER_ADDRESS=$(grep -A5 "\[solver\]" "$SOLVER_CONFIG" | grep "^address" | grep
 # Check if connected chain is EVM and extract escrow address
 CONNECTED_TYPE=$(grep -A2 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "^type" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
 if [ "$CONNECTED_TYPE" = "evm" ]; then
-    ESCROW_CONTRACT=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "^escrow_contract_address" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
+    ESCROW_CONTRACT=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "^escrow_contract_addr" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
     CONNECTED_RPC=$(grep -A5 "\[connected_chain\]" "$SOLVER_CONFIG" | grep "^rpc_url" | grep -v "^#" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/#.*$//' | xargs)
 fi
 

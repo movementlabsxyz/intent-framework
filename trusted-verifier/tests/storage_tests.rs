@@ -58,7 +58,7 @@ async fn test_add_and_get_draft() {
         .await;
 
     assert_eq!(draft.draft_id, "test-draft-1");
-    assert_eq!(draft.requester_address, "0x123");
+    assert_eq!(draft.requester_addr, "0x123");
     assert_eq!(draft.status, DraftintentStatus::Pending);
     assert!(draft.signature.is_none(), "Draft should not have signature initially");
 
@@ -66,7 +66,7 @@ async fn test_add_and_get_draft() {
     assert!(retrieved.is_some(), "Draft should be retrievable");
     let retrieved = retrieved.unwrap();
     assert_eq!(retrieved.draft_id, "test-draft-1");
-    assert_eq!(retrieved.requester_address, "0x123");
+    assert_eq!(retrieved.requester_addr, "0x123");
     assert_eq!(retrieved.status, DraftintentStatus::Pending);
 }
 
@@ -235,7 +235,7 @@ async fn test_fcfs_first_signature_succeeds() {
     let draft = store.get_draft("draft-1").await.unwrap();
     assert_eq!(draft.status, DraftintentStatus::Signed);
     assert!(draft.signature.is_some());
-    assert_eq!(draft.signature.unwrap().solver_address, "0xsolver1");
+    assert_eq!(draft.signature.unwrap().solver_addr, "0xsolver1");
 }
 
 /// Test that second signature fails (FCFS)
@@ -284,7 +284,7 @@ async fn test_fcfs_second_signature_fails() {
     // Verify first signature is still stored
     let draft = store.get_draft("draft-1").await.unwrap();
     assert_eq!(draft.status, DraftintentStatus::Signed);
-    assert_eq!(draft.signature.unwrap().solver_address, "0xsolver1");
+    assert_eq!(draft.signature.unwrap().solver_addr, "0xsolver1");
 }
 
 /// Test that signature to non-existent draft fails

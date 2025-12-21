@@ -106,7 +106,7 @@ type = "evm"
 name = "EVM Connected Chain (E2E Test)"
 rpc_url = "$evm_rpc"
 chain_id = $evm_chain_id
-escrow_contract_address = "$escrow_contract"
+escrow_contract_addr = "$escrow_contract"
 private_key_env = "$evm_private_key_env"
 
 [acceptance]

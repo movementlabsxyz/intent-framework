@@ -96,7 +96,7 @@ pub struct IntentEvent {
     pub connected_chain_id: Option<u64>,
     /// Requester address on connected chain (for outflow intents - where solver should send tokens)
     /// None for inflow intents or if not available
-    pub requester_address_connected_chain: Option<String>,
+    pub requester_addr_connected_chain: Option<String>,
     /// Timestamp when the event was received
     pub timestamp: u64,
 }

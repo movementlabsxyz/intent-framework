@@ -18,7 +18,7 @@ async fn test_contracts_deployed_on_chain1() {
     // Extract the account address from the module address
     // Module address format: "0x{address}::module_name"
     // We need just the account address part
-    let module_addr = config.hub_chain.intent_module_address.replace("0x", "");
+    let module_addr = config.hub_chain.intent_module_addr.replace("0x", "");
     let account_address = if module_addr.contains("::") {
         &module_addr[..module_addr.find("::").unwrap()]
     } else {
@@ -65,7 +65,7 @@ async fn test_contracts_deployed_on_chain2() {
     let connected_chain_mvm = config.connected_chain_mvm
         .as_ref()
         .expect("Connected Move VM chain must be configured for this test");
-    let module_addr = connected_chain_mvm.intent_module_address.replace("0x", "");
+    let module_addr = connected_chain_mvm.intent_module_addr.replace("0x", "");
     let account_address = if module_addr.contains("::") {
         &module_addr[..module_addr.find("::").unwrap()]
     } else {

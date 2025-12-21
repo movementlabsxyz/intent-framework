@@ -504,7 +504,7 @@ check_evm_contract() {
 # Read from verifier_testnet.toml (gitignored config file)
 VERIFIER_CONFIG="$PROJECT_ROOT/trusted-verifier/config/verifier_testnet.toml"
 if [ -f "$VERIFIER_CONFIG" ]; then
-    MOVEMENT_INTENT_MODULE_ADDRESS=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_address" | sed 's/.*= *"\(.*\)".*/\1/' | tr -d '"' || echo "")
+    MOVEMENT_INTENT_MODULE_ADDRESS=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_addr" | sed 's/.*= *"\(.*\)".*/\1/' | tr -d '"' || echo "")
 fi
 
 if [ -z "$MOVEMENT_INTENT_MODULE_ADDRESS" ] || [ "$MOVEMENT_INTENT_MODULE_ADDRESS" = "" ]; then
@@ -518,7 +518,7 @@ fi
 # Base Escrow Contract
 # Read from verifier_testnet.toml (gitignored config file)
 if [ -f "$VERIFIER_CONFIG" ]; then
-    BASE_ESCROW_CONTRACT_ADDRESS=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_address" | sed 's/.*= *"\(.*\)".*/\1/' | tr -d '"' || echo "")
+    BASE_ESCROW_CONTRACT_ADDRESS=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_addr" | sed 's/.*= *"\(.*\)".*/\1/' | tr -d '"' || echo "")
 fi
 
 if [ -z "$BASE_ESCROW_CONTRACT_ADDRESS" ] || [ "$BASE_ESCROW_CONTRACT_ADDRESS" = "" ]; then

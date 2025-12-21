@@ -6,9 +6,9 @@ This guide covers how to run the verifier locally with the dual‑chain setup, t
 
 File: `trusted-verifier/config/verifier.toml` (relative to project root)
 
-- **hub_chain**: `rpc_url`, `chain_id`, `intent_module_address` (required)
-- **connected_chain_mvm**: `rpc_url`, `chain_id`, `intent_module_address`, `escrow_module_address` (optional, for Move VM escrow monitoring)
-- **connected_chain_evm**: `rpc_url`, `chain_id`, `escrow_contract_address`, `verifier_address` (optional, for EVM escrow monitoring)
+- **hub_chain**: `rpc_url`, `chain_id`, `intent_module_addr` (required)
+- **connected_chain_mvm**: `rpc_url`, `chain_id`, `intent_module_addr`, `escrow_module_addr` (optional, for Move VM escrow monitoring)
+- **connected_chain_evm**: `rpc_url`, `chain_id`, `escrow_contract_addr`, `verifier_addr` (optional, for EVM escrow monitoring)
 - **verifier**: `private_key` (base64, 32‑byte), `public_key` (base64, 32‑byte), polling/timeout
 - **api**: `host`, `port`
 
@@ -43,14 +43,14 @@ flowchart TD
         H1[Query intent_registry.get_active_requesters]
         H2[Query solver_registry.list_all_solver_addresses]
         H3[Poll accounts for events]
-        H4[Cache intent events with requester_address_connected_chain]
+        H4[Cache intent events with requester_addr_connected_chain]
         H1 --> H3
         H2 --> H3
         H3 --> H4
     end
     
     subgraph ConnectedMVM["Connected MVM"]
-        M1[Read cached hub intents<br/>Extract requester_address_connected_chain]
+        M1[Read cached hub intents<br/>Extract requester_addr_connected_chain]
         M2[Poll those addresses for escrow events]
         M1 --> M2
     end
@@ -74,11 +74,11 @@ The verifier uses different mechanisms to discover events on each chain:
 1. Queries `intent_registry.get_active_requesters()` to find accounts with active intents
 2. Also queries `solver_registry.list_all_solver_addresses()` for fulfillment events
 3. Polls those accounts for `LimitOrderEvent`, `OracleLimitOrderEvent`, and `LimitOrderFulfillmentEvent`
-4. Caches intent events (including `requester_address_connected_chain` field)
+4. Caches intent events (including `requester_addr_connected_chain` field)
 
 **Connected Move VM chain** — uses hub intent data (NOT registry):
 
-1. Reads `requester_address_connected_chain` from cached hub intents
+1. Reads `requester_addr_connected_chain` from cached hub intents
 2. Polls those addresses on the connected chain for `OracleLimitOrderEvent` (escrow)
 3. The connected chain's intent_registry is not used for escrow discovery
 

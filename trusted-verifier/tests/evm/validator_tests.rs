@@ -48,7 +48,7 @@ async fn test_successful_evm_solver_validation() {
         &intent,
         DUMMY_SOLVER_ADDR_EVM, // matching solver address as registered
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -82,7 +82,7 @@ async fn test_rejection_when_solver_not_registered() {
         &intent,
         DUMMY_SOLVER_ADDR_EVM,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -117,7 +117,7 @@ async fn test_rejection_when_evm_addresses_dont_match() {
         &intent,
         "0xwrong_solver", // different solver address as registered
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -162,7 +162,7 @@ async fn test_evm_address_normalization() {
             &intent,
             escrow_addr,
             &config.hub_chain.rpc_url,
-            &config.hub_chain.intent_module_address,
+            &config.hub_chain.intent_module_addr,
         )
         .await;
 
@@ -191,7 +191,7 @@ async fn test_error_handling_for_registry_query_failures() {
         &intent,
         DUMMY_SOLVER_ADDR_EVM,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -228,7 +228,7 @@ async fn test_rejection_when_intent_has_no_solver() {
         &intent,
         DUMMY_SOLVER_ADDR_EVM,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 

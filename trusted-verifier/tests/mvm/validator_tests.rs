@@ -55,7 +55,7 @@ async fn test_successful_mvm_solver_validation() {
         &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -91,7 +91,7 @@ async fn test_rejection_when_solver_not_registered() {
         &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -129,7 +129,7 @@ async fn test_rejection_when_mvm_addresses_dont_match() {
         &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -180,7 +180,7 @@ async fn test_mvm_address_normalization() {
             &intent,
             escrow_addr,
             &config.hub_chain.rpc_url,
-            &config.hub_chain.intent_module_address,
+            &config.hub_chain.intent_module_addr,
         )
         .await;
 
@@ -210,7 +210,7 @@ async fn test_error_handling_for_registry_query_failures() {
         &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 
@@ -248,7 +248,7 @@ async fn test_rejection_when_intent_has_no_solver() {
         &intent,
         escrow_reserved_solver,
         &config.hub_chain.rpc_url,
-        &config.hub_chain.intent_module_address,
+        &config.hub_chain.intent_module_addr,
     )
     .await;
 

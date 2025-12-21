@@ -11,8 +11,8 @@
 name = "Hub Chain"                                    # Human-readable name for the chain
 rpc_url = "http://127.0.0.1:8080"                    # RPC endpoint URL for blockchain communication
 chain_id = 1                                          # Unique chain identifier
-intent_module_address = "0x123"                      # Address of the intent framework module
-# escrow_module_address = "0x..."                    # Address of escrow module (optional for hub, omit if not needed)
+intent_module_addr = "0x123"                      # Address of the intent framework module
+# escrow_module_addr = "0x..."                    # Address of escrow module (optional for hub, omit if not needed)
 
 # Connected Move VM Chain Configuration  
 # The connected Move VM chain is where escrow events occur and are monitored
@@ -21,8 +21,8 @@ intent_module_address = "0x123"                      # Address of the intent fra
 name = "Connected Move VM Chain"                      # Human-readable name for the chain
 rpc_url = "http://127.0.0.1:8082"                    # RPC endpoint URL for blockchain communication
 chain_id = 2                                          # Unique chain identifier
-intent_module_address = "0x123"                      # Address of the intent framework module
-escrow_module_address = "0x123"                      # Address of escrow module (required for connected chain)
+intent_module_addr = "0x123"                      # Address of the intent framework module
+escrow_module_addr = "0x123"                      # Address of escrow module (required for connected chain)
 
 # Connected EVM Chain Configuration
 # The connected EVM chain is where EVM escrow events occur and are monitored
@@ -30,9 +30,9 @@ escrow_module_address = "0x123"                      # Address of escrow module 
 # [connected_chain_evm]
 # name = "Connected EVM Chain"
 # rpc_url = "http://127.0.0.1:8545"
-# escrow_contract_address = "0x123"
+# escrow_contract_addr = "0x123"
 # chain_id = 31337
-# verifier_address = "0x123"
+# verifier_addr = "0x123"
 
 # Verifier Configuration
 # Cryptographic keys and timing parameters for the verifier

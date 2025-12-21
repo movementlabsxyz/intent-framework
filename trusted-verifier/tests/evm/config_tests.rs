@@ -18,20 +18,20 @@ fn test_evm_chain_config_structure() {
     let evm_config = EvmChainConfig {
         name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
         chain_id: 31337,
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
     };
 
     assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
-        evm_config.escrow_contract_address,
+        evm_config.escrow_contract_addr,
         "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
-        evm_config.verifier_address,
+        evm_config.verifier_addr,
         "0xffffffffffffffffffffffffffffffffffffffff"
     );
 }
@@ -46,9 +46,9 @@ fn test_connected_chain_evm_with_values() {
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
         chain_id: 31337,
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
     });
 
     assert!(config.connected_chain_evm.is_some());
@@ -56,12 +56,12 @@ fn test_connected_chain_evm_with_values() {
     assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
-        evm_config.escrow_contract_address,
+        evm_config.escrow_contract_addr,
         "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
-        evm_config.verifier_address,
+        evm_config.verifier_addr,
         "0xffffffffffffffffffffffffffffffffffffffff"
     );
 }
@@ -84,12 +84,12 @@ fn test_evm_config_serialization() {
     assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
-        evm_config.escrow_contract_address,
+        evm_config.escrow_contract_addr,
         "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
-        evm_config.verifier_address,
+        evm_config.verifier_addr,
         "0xffffffffffffffffffffffffffffffffffffffff"
     );
 }
@@ -109,12 +109,12 @@ fn test_evm_chain_config_with_all_fields() {
     assert!(!evm_config.name.is_empty(), "Name should be set");
     assert!(!evm_config.rpc_url.is_empty(), "RPC URL should be set");
     assert!(
-        !evm_config.escrow_contract_address.is_empty(),
+        !evm_config.escrow_contract_addr.is_empty(),
         "Escrow contract address should be set"
     );
     assert!(evm_config.chain_id > 0, "Chain ID should be set");
     assert!(
-        !evm_config.verifier_address.is_empty(),
+        !evm_config.verifier_addr.is_empty(),
         "Verifier address should be set"
     );
 
@@ -122,12 +122,12 @@ fn test_evm_chain_config_with_all_fields() {
     assert_eq!(evm_config.name, "Connected EVM Chain");
     assert_eq!(evm_config.rpc_url, "http://127.0.0.1:8545");
     assert_eq!(
-        evm_config.escrow_contract_address,
+        evm_config.escrow_contract_addr,
         "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     );
     assert_eq!(evm_config.chain_id, 31337);
     assert_eq!(
-        evm_config.verifier_address,
+        evm_config.verifier_addr,
         "0xffffffffffffffffffffffffffffffffffffffff"
     );
 }
@@ -145,9 +145,9 @@ fn test_evm_config_loading() {
     let evm_config = config.connected_chain_evm.as_ref().unwrap();
     assert!(!evm_config.name.is_empty());
     assert!(!evm_config.rpc_url.is_empty());
-    assert!(!evm_config.escrow_contract_address.is_empty());
+    assert!(!evm_config.escrow_contract_addr.is_empty());
     assert!(evm_config.chain_id > 0);
-    assert!(!evm_config.verifier_address.is_empty());
+    assert!(!evm_config.verifier_addr.is_empty());
 
     // Verify config can be cloned (tests structure validity)
     let cloned_config = config.clone();

@@ -120,7 +120,7 @@ pub async fn validate_intent_fulfillment(
         // Determine chain type from the chain_type field set by the monitor
         let is_evm_escrow = escrow_event.chain_type == ChainType::Evm;
         let hub_rpc_url = &validator.config.hub_chain.rpc_url;
-        let solver_registry_addr = &validator.config.hub_chain.intent_module_address; // Registry is at module address
+        let solver_registry_addr = &validator.config.hub_chain.intent_module_addr; // Registry is at module address
 
         if is_evm_escrow {
             // EVM escrow: Compare EVM addresses

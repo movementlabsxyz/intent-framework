@@ -6,6 +6,9 @@
 use trusted_verifier::config::{ChainConfig, Config, EvmChainConfig};
 use trusted_verifier::monitor::ChainType;
 use trusted_verifier::validator::{get_chain_type_from_chain_id, normalize_address};
+#[path = "mod.rs"]
+mod test_helpers;
+use test_helpers::DUMMY_ESCROW_CONTRACT_ADDR_EVM;
 
 /// Test that default configuration creates valid structure
 /// Why: Verify default config is valid and doesn't panic
@@ -36,8 +39,8 @@ fn test_connected_chain_mvm_with_values() {
         name: "Connected Move VM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 2,
-        intent_module_address: "0x123".to_string(),
-        escrow_module_address: Some("0x123".to_string()),
+        intent_module_addr: "0x123".to_string(),
+        escrow_module_addr: Some("0x123".to_string()),
     });
 
     assert_eq!(
@@ -74,9 +77,9 @@ fn test_get_chain_type_from_chain_id_evm() {
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 31337,
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
     });
 
     let result = get_chain_type_from_chain_id(31337, &config);
@@ -93,8 +96,8 @@ fn test_get_chain_type_from_chain_id_mvm() {
         name: "MVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 2,
-        intent_module_address: "0x123".to_string(),
-        escrow_module_address: Some("0x123".to_string()),
+        intent_module_addr: "0x123".to_string(),
+        escrow_module_addr: Some("0x123".to_string()),
     });
 
     let result = get_chain_type_from_chain_id(2, &config);
@@ -122,16 +125,16 @@ fn test_get_chain_type_from_chain_id_duplicate_chain_id_error() {
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 100,
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
     });
     config.connected_chain_mvm = Some(ChainConfig {
         name: "MVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 100,
-        intent_module_address: "0x123".to_string(),
-        escrow_module_address: Some("0x123".to_string()),
+        intent_module_addr: "0x123".to_string(),
+        escrow_module_addr: Some("0x123".to_string()),
     });
 
     // Should return error for duplicate chain IDs
@@ -154,8 +157,8 @@ fn test_config_validate_hub_mvm_duplicate_chain_id() {
         name: "MVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 100, // Same as hub
-        intent_module_address: "0x123".to_string(),
-        escrow_module_address: Some("0x123".to_string()),
+        intent_module_addr: "0x123".to_string(),
+        escrow_module_addr: Some("0x123".to_string()),
     });
 
     let result = config.validate();
@@ -172,9 +175,9 @@ fn test_config_validate_hub_evm_duplicate_chain_id() {
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 100, // Same as hub
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
     });
 
     let result = config.validate();
@@ -191,15 +194,15 @@ fn test_config_validate_mvm_evm_duplicate_chain_id() {
         name: "MVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 100,
-        intent_module_address: "0x123".to_string(),
-        escrow_module_address: Some("0x123".to_string()),
+        intent_module_addr: "0x123".to_string(),
+        escrow_module_addr: Some("0x123".to_string()),
     });
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 100, // Same as MVM
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
     });
 
     let result = config.validate();
@@ -217,15 +220,15 @@ fn test_config_validate_unique_chain_ids() {
         name: "MVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 2, // Different from hub
-        intent_module_address: "0x123".to_string(),
-        escrow_module_address: Some("0x123".to_string()),
+        intent_module_addr: "0x123".to_string(),
+        escrow_module_addr: Some("0x123".to_string()),
     });
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        escrow_contract_addr: DUMMY_ESCROW_CONTRACT_ADDR_EVM.to_string(),
         chain_id: 31337, // Different from hub and MVM
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(),
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // test verifier address
     });
 
     let result = config.validate();

@@ -94,7 +94,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
     let client = MvmClient::new(&monitor.config.hub_chain.rpc_url)?;
 
     // Query active requester addresses from the intent registry
-    let solver_registry_addr = &monitor.config.hub_chain.intent_module_address;
+    let solver_registry_addr = &monitor.config.hub_chain.intent_module_addr;
     let requester_addresses_to_poll = client
         .get_active_requesters(solver_registry_addr)
         .await
@@ -252,8 +252,8 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                     revocable: data.revocable,
                     reserved_solver_addr: Some(reserved_solver),
                     connected_chain_id,
-                    requester_address_connected_chain: data
-                        .requester_address_connected_chain
+                    requester_addr_connected_chain: data
+                        .requester_addr_connected_chain
                         .clone(),
                     timestamp,
                 });
@@ -308,7 +308,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                     revocable: data.revocable,
                     reserved_solver_addr: reserved_solver,
                     connected_chain_id,
-                    requester_address_connected_chain: data.requester_address_connected_chain.clone(),
+                    requester_addr_connected_chain: data.requester_addr_connected_chain.clone(),
                     timestamp,
                 });
             } else if event_type.contains("OracleLimitOrderEvent") {
@@ -376,8 +376,8 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                     revocable: data.revocable,
                     reserved_solver_addr: Some(reserved_solver),
                     connected_chain_id,
-                    requester_address_connected_chain: data
-                        .requester_address_connected_chain
+                    requester_addr_connected_chain: data
+                        .requester_addr_connected_chain
                         .clone(),
                     timestamp,
                 });

@@ -12,7 +12,7 @@ use std::collections::HashSet;
 /// Polls the connected Move VM chain for new escrow initialization events.
 ///
 /// For inflow intents, escrows are created by requesters on the connected chain.
-/// The requester addresses come from the hub chain intents' `requester_address_connected_chain`
+/// The requester addresses come from the hub chain intents' `requester_addr_connected_chain`
 /// field (stored on hub).
 ///
 /// # Arguments
@@ -33,7 +33,7 @@ pub async fn poll_mvm_escrow_events(monitor: &EventMonitor) -> Result<Vec<Escrow
     // Create Move VM client for connected chain
     let client = MvmClient::new(&connected_chain_mvm.rpc_url)?;
 
-    // Get requester_address_connected_chain from cached hub chain intents
+    // Get requester_addr_connected_chain from cached hub chain intents
     // These are the addresses that created escrows on the connected chain
     let connected_chain_id = connected_chain_mvm.chain_id;
     let requester_addresses_to_poll: Vec<String> = {
@@ -44,7 +44,7 @@ pub async fn poll_mvm_escrow_events(monitor: &EventMonitor) -> Result<Vec<Escrow
             // For inflow intents, escrows are created on connected_chain_id
             // The intent's connected_chain_id tells us which chain the escrow is on
             if intent.connected_chain_id == Some(connected_chain_id) {
-                if let Some(ref addr) = intent.requester_address_connected_chain {
+                if let Some(ref addr) = intent.requester_addr_connected_chain {
                     addresses.insert(addr.clone());
                 }
             }

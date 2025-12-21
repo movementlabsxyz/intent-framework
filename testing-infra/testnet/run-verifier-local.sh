@@ -37,9 +37,9 @@ if [ ! -f "$VERIFIER_CONFIG" ]; then
     echo "   cp trusted-verifier/config/verifier.template.toml trusted-verifier/config/verifier_testnet.toml"
     echo ""
     echo "   Then populate with actual deployed contract addresses:"
-    echo "   - intent_module_address (hub_chain section)"
-    echo "   - escrow_contract_address (connected_chain_evm section)"
-    echo "   - verifier_address (connected_chain_evm section)"
+    echo "   - intent_module_addr (hub_chain section)"
+    echo "   - escrow_contract_addr (connected_chain_evm section)"
+    echo "   - verifier_addr (connected_chain_evm section)"
     exit 1
 fi
 
@@ -88,9 +88,9 @@ if grep -qE "(0x123|0x\.\.\.|0xalice|0xbob)" "$VERIFIER_CONFIG"; then
     echo "❌ ERROR: verifier_testnet.toml still has placeholder addresses"
     echo ""
     echo "   Update the config file with actual deployed addresses:"
-    echo "   - intent_module_address (hub_chain section)"
-    echo "   - escrow_contract_address (connected_chain_evm section)"
-    echo "   - verifier_address (connected_chain_evm section)"
+    echo "   - intent_module_addr (hub_chain section)"
+    echo "   - escrow_contract_addr (connected_chain_evm section)"
+    echo "   - verifier_addr (connected_chain_evm section)"
     echo ""
     echo "   Contract addresses should be read from your deployment logs."
     exit 1
@@ -100,8 +100,8 @@ fi
 HUB_RPC=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 EVM_RPC=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "rpc_url" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 API_PORT=$(grep -A5 "\[api\]" "$VERIFIER_CONFIG" | grep "port" | head -1 | sed 's/.*= *\([0-9]*\).*/\1/')
-INTENT_MODULE=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
-ESCROW_CONTRACT=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+INTENT_MODULE=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_addr" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+ESCROW_CONTRACT=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_addr" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 
 # Check for API key placeholders in RPC URLs
 if [[ "$HUB_RPC" == *"ALCHEMY_API_KEY"* ]] || [[ "$EVM_RPC" == *"ALCHEMY_API_KEY"* ]]; then

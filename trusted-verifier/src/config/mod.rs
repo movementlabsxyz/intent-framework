@@ -46,9 +46,9 @@ pub struct ChainConfig {
     /// Unique chain identifier
     pub chain_id: u64,
     /// Address of the intent framework module
-    pub intent_module_address: String,
+    pub intent_module_addr: String,
     /// Address of the escrow module (optional for hub chain)
-    pub escrow_module_address: Option<String>,
+    pub escrow_module_addr: Option<String>,
 }
 
 /// Configuration for an EVM-compatible chain (Ethereum, Hardhat, etc.)
@@ -61,11 +61,11 @@ pub struct EvmChainConfig {
     /// RPC endpoint URL for EVM chain communication
     pub rpc_url: String,
     /// Address of the IntentEscrow contract (single contract, one escrow per intentId)
-    pub escrow_contract_address: String,
+    pub escrow_contract_addr: String,
     /// Chain ID (e.g., 31337 for Hardhat, 1 for Ethereum mainnet)
     pub chain_id: u64,
     /// Verifier address (ECDSA public key as Ethereum address)
-    pub verifier_address: String,
+    pub verifier_addr: String,
 }
 
 /// Verifier-specific configuration including cryptographic keys and timing parameters.
@@ -242,8 +242,8 @@ impl Config {
                 name: "Hub Chain".to_string(),
                 rpc_url: "http://127.0.0.1:8080".to_string(),
                 chain_id: 1,
-                intent_module_address: "0x123".to_string(),
-                escrow_module_address: None,
+                intent_module_addr: "0x123".to_string(),
+                escrow_module_addr: None,
             },
             connected_chain_mvm: None, // Optional connected Move VM chain configuration
             verifier: VerifierConfig {

@@ -113,7 +113,7 @@ async fn test_zero_amount_escrow_fails_validation() {
             expiry_time: DUMMY_EXPIRY,
             revocable: false,
             reserved_solver_addr: None,
-            requester_address_connected_chain: None,
+            requester_addr_connected_chain: None,
             timestamp: 1,
         });
     }
@@ -175,7 +175,7 @@ async fn test_correct_amount_escrow_passes_validation() {
             expiry_time: DUMMY_EXPIRY,
             revocable: false,
             reserved_solver_addr: None,
-            requester_address_connected_chain: None,
+            requester_addr_connected_chain: None,
             timestamp: 1,
         });
     }

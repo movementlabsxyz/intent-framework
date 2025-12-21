@@ -31,7 +31,7 @@ pub async fn poll_evm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
     // Create EVM client for connected chain
     let client = EvmClient::new(
         &connected_chain_evm.rpc_url,
-        &connected_chain_evm.escrow_contract_address,
+        &connected_chain_evm.escrow_contract_addr,
     )
     .context(format!(
         "Failed to create EVM client for RPC URL: {}",
@@ -55,7 +55,7 @@ pub async fn poll_evm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
     // Query EVM chain for EscrowInitialized events
     let evm_events = client.get_escrow_initialized_events(from_block, None).await
         .with_context(|| format!("Failed to fetch EVM escrow events from chain {} (RPC: {}, contract: {}, from_block: {:?})", 
-            connected_chain_evm.chain_id, connected_chain_evm.rpc_url, connected_chain_evm.escrow_contract_address, from_block))?;
+            connected_chain_evm.chain_id, connected_chain_evm.rpc_url, connected_chain_evm.escrow_contract_addr, from_block))?;
 
     let mut escrow_events = Vec::new();
     let timestamp = std::time::SystemTime::now()

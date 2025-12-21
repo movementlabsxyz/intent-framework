@@ -22,20 +22,20 @@ The negotiation routing system enables:
 
 ### Requester Prerequisites
 
-- Must have a Move VM address (for `requester_address`)
+- Must have a Move VM address (for `requester_addr`)
 - Must prepare draft data matching the `Draftintent` structure from Move
 
 ## Requester Workflow
 
 ### 1. Submit Draft Intent
 
-Submit a draft intent to the verifier. The draft is open to any solver (no `solver_address` required).
+Submit a draft intent to the verifier. The draft is open to any solver (no `solver_addr` required).
 
 ```bash
 curl -X POST http://127.0.0.1:3333/draftintent \
   -H "Content-Type: application/json" \
   -d '{
-    "requester_address": "0x123...",
+    "requester_addr": "0x123...",
     "draft_data": {
       "offered_metadata": "0x1::test::Token",
       "offered_amount": 1000,
@@ -58,7 +58,7 @@ while true; do
   RESPONSE=$(curl -s http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature)
   if echo "$RESPONSE" | jq -e '.success == true' > /dev/null; then
     SIGNATURE=$(echo "$RESPONSE" | jq -r '.data.signature')
-    SOLVER_ADDRESS=$(echo "$RESPONSE" | jq -r '.data.solver_address')
+    SOLVER_ADDRESS=$(echo "$RESPONSE" | jq -r '.data.solver_addr')
     echo "Signature received from $SOLVER_ADDRESS: $SIGNATURE"
     break
   fi
@@ -74,13 +74,13 @@ done
 
 ### 3. Use Signature On-Chain
 
-Once you receive the signature, use it along with `solver_address` to create a reserved intent on-chain.
+Once you receive the signature, use it along with `solver_addr` to create a reserved intent on-chain.
 
 ```bash
 # Convert hex signature to bytes if needed
 movement move run \
   --function-id "0x<module>::intent::create_reserved_intent" \
-  --args "address:<solver_address>" "hex:<signature>" ...
+  --args "address:<solver_addr>" "hex:<signature>" ...
 ```
 
 ## Solver Workflow
@@ -116,13 +116,13 @@ done
 Sign the draft and submit your signature. **FCFS Logic**: First signature wins, later signatures are rejected with 409 Conflict.
 
 ```bash
-# Sign draft (add solver_address to create IntentToSign)
+# Sign draft (add solver_addr to create IntentToSign)
 SIGNATURE=$(sign_draft "$DRAFT_DATA" "$SOLVER_ADDRESS" "$PRIVATE_KEY")
 
 curl -X POST http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature \
   -H "Content-Type: application/json" \
   -d "{
-    \"solver_address\": \"$SOLVER_ADDRESS\",
+    \"solver_addr\": \"$SOLVER_ADDRESS\",
     \"signature\": \"$SIGNATURE\",
     \"public_key\": \"$PUBLIC_KEY\"
   }"
@@ -236,7 +236,7 @@ while true; do
     # 3. Submit signature
     RESPONSE=$(curl -s -X POST http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature \
       -H "Content-Type: application/json" \
-      -d "{\"solver_address\": \"$SOLVER_ADDRESS\", \"signature\": \"$SIGNATURE\", \"public_key\": \"$PUBLIC_KEY\"}")
+      -d "{\"solver_addr\": \"$SOLVER_ADDRESS\", \"signature\": \"$SIGNATURE\", \"public_key\": \"$PUBLIC_KEY\"}")
     
     if echo "$RESPONSE" | jq -e '.success == true' > /dev/null; then
       echo "Successfully signed draft $DRAFT_ID"

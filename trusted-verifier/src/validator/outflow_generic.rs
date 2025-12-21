@@ -17,7 +17,7 @@ use crate::monitor::IntentEvent;
 /// an outflow intent by checking:
 /// - Transaction was confirmed and successful
 /// - intent_id matches the intent
-/// - Recipient address matches requester_address_connected_chain
+/// - Recipient address matches requester_addr_connected_chain
 /// - Amount matches desired_amount
 /// - Solver address matches reserved solver
 ///
@@ -76,8 +76,8 @@ pub async fn validate_outflow_fulfillment(
         });
     }
 
-    // Validate recipient matches requester_address_connected_chain (for outflow intents)
-    if let Some(ref requester_addr) = intent.requester_address_connected_chain {
+    // Validate recipient matches requester_addr_connected_chain (for outflow intents)
+    if let Some(ref requester_addr) = intent.requester_addr_connected_chain {
         // Determine chain type from intent's connected_chain_id for address validation
         let chain_id = match intent.connected_chain_id {
             Some(id) => id,
@@ -104,7 +104,7 @@ pub async fn validate_outflow_fulfillment(
             }
         };
 
-        // Normalize requester_address_connected_chain by padding to expected length
+        // Normalize requester_addr_connected_chain by padding to expected length
         // Move VM addresses can be serialized without leading zeros, so we pad them
         let normalized_requester_addr = crate::validator::generic::normalize_address(requester_addr, chain_type);
 
@@ -124,7 +124,7 @@ pub async fn validate_outflow_fulfillment(
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Request-intent requester_address_connected_chain format validation failed: {}",
+                    "Request-intent requester_addr_connected_chain format validation failed: {}",
                     e
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
@@ -147,24 +147,24 @@ pub async fn validate_outflow_fulfillment(
             return Ok(ValidationResult {
                 valid: false,
                 message: format!(
-                    "Transaction recipient '{}' does not match intent requester_address_connected_chain '{}'",
+                    "Transaction recipient '{}' does not match intent requester_addr_connected_chain '{}'",
                     tx_params.recipient_addr, requester_addr
                 ),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
     } else {
-        // For outflow intents, requester_address_connected_chain should be present
+        // For outflow intents, requester_addr_connected_chain should be present
         // An outflow intent without a requester address on the connected chain is rejected
         // by the Move contract itself (see create_outflow_intent which aborts with
-        // EINVALID_REQUESTER_ADDRESS if requester_address_connected_chain is zero address).
-        // If we receive such an intent with missing requester_address_connected_chain, it indicates
+        // EINVALID_REQUESTER_ADDRESS if requester_addr_connected_chain is zero address).
+        // If we receive such an intent with missing requester_addr_connected_chain, it indicates
         // the field wasn't populated when the event was processed (should query intent object to get it).
         // For outflow intents (connected_chain_id is Some), this is required for validation
         if intent.connected_chain_id.is_some() {
             return Ok(ValidationResult {
                 valid: false,
-                message: "Request-intent has connected_chain_id but missing requester_address_connected_chain (required for outflow validation)".to_string(),
+                message: "Request-intent has connected_chain_id but missing requester_addr_connected_chain (required for outflow validation)".to_string(),
                 timestamp: chrono::Utc::now().timestamp() as u64,
             });
         }
@@ -205,7 +205,7 @@ pub async fn validate_outflow_fulfillment(
         use anyhow::Context;
 
         let hub_rpc_url = &validator.config().hub_chain.rpc_url;
-        let hub_registry_addr = &validator.config().hub_chain.intent_module_address;
+        let hub_registry_addr = &validator.config().hub_chain.intent_module_addr;
         let hub_client = MvmClient::new(hub_rpc_url)?;
 
         // Determine chain type from intent's connected_chain_id

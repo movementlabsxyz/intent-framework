@@ -129,7 +129,7 @@ pub struct EventGuid {
     pub creation_number: String,
     #[serde(rename = "account_address")]
     #[allow(dead_code)]
-    pub account_address: String,
+    pub account_addr: String,
 }
 
 /// Event from Move VM blockchain
@@ -1397,7 +1397,7 @@ pub struct LimitOrderEvent {
         deserialize_with = "deserialize_move_option_string",
         skip_serializing_if = "Option::is_none"
     )]
-    pub requester_address_connected_chain: Option<String>, // Requester address on connected chain (for inflow intents)
+    pub requester_addr_connected_chain: Option<String>, // Requester address on connected chain (for inflow intents)
 }
 
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module
@@ -1432,7 +1432,7 @@ pub struct OracleLimitOrderEvent {
         deserialize_with = "deserialize_move_option_string",
         skip_serializing_if = "Option::is_none"
     )]
-    pub requester_address_connected_chain: Option<String>, // Requester address on connected chain (for outflow intents)
+    pub requester_addr_connected_chain: Option<String>, // Requester address on connected chain (for outflow intents)
 }
 
 /// Represents a LimitOrderFulfillmentEvent emitted when an intent is fulfilled

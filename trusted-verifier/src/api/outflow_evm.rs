@@ -37,7 +37,7 @@ pub async fn query_evm_fulfillment_transaction(
         .as_ref()
         .ok_or_else(|| "EVM chain not configured".to_string())?;
 
-    let evm_client = EvmClient::new(&evm_config.rpc_url, &evm_config.escrow_contract_address)
+    let evm_client = EvmClient::new(&evm_config.rpc_url, &evm_config.escrow_contract_addr)
         .map_err(|e| format!("Failed to create EVM client: {}", e))?;
 
     let tx = evm_client

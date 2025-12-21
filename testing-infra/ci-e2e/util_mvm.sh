@@ -832,7 +832,7 @@ verify_solver_registered() {
         chain_address="${MOVEMENT_INTENT_MODULE_ADDRESS:-}"
         # Try to get from verifier config
         if [ -z "$chain_address" ] && [ -n "$VERIFIER_CONFIG_PATH" ] && [ -f "$VERIFIER_CONFIG_PATH" ]; then
-            chain_address=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG_PATH" | grep "intent_module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/0x//')
+            chain_address=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG_PATH" | grep "intent_module_addr" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/0x//')
         fi
         # Try to get from intent-account-chain1 profile
         if [ -z "$chain_address" ]; then

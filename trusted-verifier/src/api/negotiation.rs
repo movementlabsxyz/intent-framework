@@ -25,7 +25,7 @@ use crate::storage::{DraftintentStatus, DraftintentStore};
 #[derive(Debug, Deserialize)]
 pub struct DraftintentRequest {
     /// Address of the requester submitting the draft
-    pub requester_address: String,
+    pub requester_addr: String,
     /// Draft data (JSON object matching Draftintent structure from Move)
     pub draft_data: serde_json::Value,
     /// Expiry time (Unix timestamp)
@@ -49,7 +49,7 @@ pub struct DraftintentStatusResponse {
     /// Current status of the draft
     pub status: String,
     /// Address of the requester
-    pub requester_address: String,
+    pub requester_addr: String,
     /// Timestamp when draft was created
     pub timestamp: u64,
     /// Expiry time
@@ -60,7 +60,7 @@ pub struct DraftintentStatusResponse {
 #[derive(Debug, Deserialize)]
 pub struct SignatureSubmissionRequest {
     /// Address of the solver submitting the signature
-    pub solver_address: String,
+    pub solver_addr: String,
     /// Signature in hex format (Ed25519, 64 bytes)
     pub signature: String,
     /// Public key of the solver (hex format)
@@ -82,7 +82,7 @@ pub struct SignatureResponse {
     /// Signature in hex format
     pub signature: String,
     /// Address of the solver who signed (first signer)
-    pub solver_address: String,
+    pub solver_addr: String,
     /// Timestamp when signature was received
     pub timestamp: u64,
 }
@@ -111,7 +111,7 @@ pub async fn create_draftintent_handler(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     info!(
         "Received draft intent submission from requester: {}",
-        request.requester_address
+        request.requester_addr
     );
 
     // Generate unique draft ID (UUID)
@@ -123,7 +123,7 @@ pub async fn create_draftintent_handler(
         store_write
             .add_draft(
                 draft_id.clone(),
-                request.requester_address,
+                request.requester_addr,
                 request.draft_data,
                 request.expiry_time,
             )
@@ -185,7 +185,7 @@ pub async fn get_draftintent_handler(
         data: Some(DraftintentStatusResponse {
             draft_id: draft.draft_id,
             status: status_str.to_string(),
-            requester_address: draft.requester_address,
+            requester_addr: draft.requester_addr,
             timestamp: draft.timestamp,
             expiry_time: draft.expiry_time,
         }),
@@ -218,7 +218,7 @@ pub async fn get_pending_drafts_handler(
         .map(|draft| {
             serde_json::json!({
                 "draft_id": draft.draft_id,
-                "requester_address": draft.requester_address,
+                "requester_address": draft.requester_addr,
                 "draft_data": draft.draft_data,
                 "timestamp": draft.timestamp,
                 "expiry_time": draft.expiry_time,
@@ -257,27 +257,27 @@ pub async fn submit_signature_handler(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     info!(
         "Received signature submission for draft {} from solver {}",
-        draft_id, request.solver_address
+        draft_id, request.solver_addr
     );
 
     // Validate solver address format: must have 0x prefix
-    if !request.solver_address.starts_with("0x") {
+    if !request.solver_addr.starts_with("0x") {
         return Ok(warp::reply::with_status(
             warp::reply::json(&ApiResponse::<SignatureSubmissionResponse> {
                 success: false,
                 data: None,
                 error: Some(format!(
                     "Invalid solver address '{}': must start with 0x prefix",
-                    request.solver_address
+                    request.solver_addr
                 )),
             }),
             StatusCode::BAD_REQUEST,
         ));
     }
-    let solver_addr = request.solver_address.clone();
+    let solver_addr = request.solver_addr.clone();
 
     // Validate solver is registered on-chain
-    let solver_registry_addr = &config.hub_chain.intent_module_address;
+    let solver_registry_addr = &config.hub_chain.intent_module_addr;
     let hub_rpc_url = &config.hub_chain.rpc_url;
 
     let mvm_client = match MvmClient::new(hub_rpc_url) {
@@ -440,7 +440,7 @@ pub async fn get_signature_handler(
                     success: true,
                     data: Some(SignatureResponse {
                         signature: sig.signature,
-                        solver_address: sig.solver_address,
+                        solver_addr: sig.solver_addr,
                         timestamp: sig.signature_timestamp,
                     }),
                     error: None,

@@ -104,15 +104,15 @@ pub fn build_test_config_with_mvm() -> Config {
             name: "hub".to_string(),
             rpc_url: "http://127.0.0.1:18080".to_string(),
             chain_id: 1,
-            intent_module_address: "0x1".to_string(),
-            escrow_module_address: None,
+            intent_module_addr: "0x1".to_string(),
+            escrow_module_addr: None,
         },
         connected_chain_mvm: Some(ChainConfig {
             name: "connected".to_string(),
             rpc_url: "http://127.0.0.1:18082".to_string(),
             chain_id: 2,
-            intent_module_address: "0x2".to_string(),
-            escrow_module_address: Some("0x2".to_string()),
+            intent_module_addr: "0x2".to_string(),
+            escrow_module_addr: Some("0x2".to_string()),
         }),
         verifier: VerifierConfig {
             private_key_env: private_key_env_name,
@@ -137,9 +137,9 @@ pub fn build_test_config_with_evm() -> Config {
     config.connected_chain_evm = Some(EvmChainConfig {
         name: "Connected EVM Chain".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
-        escrow_contract_address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(), // EVM contract address (40 hex chars)
+        escrow_contract_addr: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(), // EVM contract address (40 hex chars)
         chain_id: 31337,
-        verifier_address: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // EVM address (40 hex chars)
+        verifier_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // EVM address (40 hex chars)
     });
     config
 }
@@ -179,7 +179,7 @@ pub fn create_base_intent_mvm() -> IntentEvent {
         revocable: false,
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()), // Move VM address format (32 bytes)
         connected_chain_id: Some(2),
-        requester_address_connected_chain: Some(DUMMY_REQUESTER_ADDR_MVM_CON.to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
+        requester_addr_connected_chain: Some(DUMMY_REQUESTER_ADDR_MVM_CON.to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
         timestamp: 0,
     }
 }
@@ -202,7 +202,7 @@ pub fn create_base_intent_evm() -> IntentEvent {
         offered_metadata: format!(r#"{{"token":"{}"}}"#, DUMMY_TOKEN_ADDR_EVM), // EVM token address format for cross-chain
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         connected_chain_id: Some(31337), // EVM chain ID (matches build_test_config_with_evm)
-        requester_address_connected_chain: Some(DUMMY_REQUESTER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
+        requester_addr_connected_chain: Some(DUMMY_REQUESTER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         ..create_base_intent_mvm()
     }
 }

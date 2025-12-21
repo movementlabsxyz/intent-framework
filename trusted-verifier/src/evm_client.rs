@@ -125,7 +125,7 @@ pub struct EvmClient {
     /// Base URL of the EVM node (e.g., "http://127.0.0.1:8545")
     base_url: String,
     /// Escrow contract address
-    escrow_contract_address: String,
+    escrow_contract_addr: String,
 }
 
 impl EvmClient {
@@ -134,13 +134,13 @@ impl EvmClient {
     /// # Arguments
     ///
     /// * `node_url` - Base URL of the EVM node (e.g., "http://127.0.0.1:8545")
-    /// * `escrow_contract_address` - Address of the IntentEscrow contract
+    /// * `escrow_contract_addr` - Address of the IntentEscrow contract
     ///
     /// # Returns
     ///
     /// * `Ok(EvmClient)` - Successfully created client
     /// * `Err(anyhow::Error)` - Failed to create client
-    pub fn new(node_url: &str, escrow_contract_address: &str) -> Result<Self> {
+    pub fn new(node_url: &str, escrow_contract_addr: &str) -> Result<Self> {
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
             .no_proxy() // Avoid macOS system-configuration issues in tests
@@ -150,7 +150,7 @@ impl EvmClient {
         Ok(Self {
             client,
             base_url: node_url.to_string(),
-            escrow_contract_address: escrow_contract_address.to_string(),
+            escrow_contract_addr: escrow_contract_addr.to_string(),
         })
     }
 
@@ -193,7 +193,7 @@ impl EvmClient {
             .unwrap_or_else(|| "latest".to_string());
 
         let filter = serde_json::json!({
-            "address": self.escrow_contract_address,
+            "address": self.escrow_contract_addr,
             "topics": [event_signature],
             "fromBlock": from_block_str,
             "toBlock": to_block_str,

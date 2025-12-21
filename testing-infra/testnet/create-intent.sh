@@ -169,7 +169,7 @@ if [ ! -f "$VERIFIER_CONFIG" ]; then
 fi
 
 # Extract config values
-INTENT_MODULE_ADDRESS=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+INTENT_MODULE_ADDRESS=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG" | grep "intent_module_addr" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
 VERIFIER_URL="http://localhost:3333"  # Default to local verifier
 
 # Check if verifier is reachable
@@ -355,7 +355,7 @@ DRAFT_DATA=$(jq -n \
 DRAFT_RESPONSE=$(curl -s -X POST "$VERIFIER_URL/draftintent" \
     -H "Content-Type: application/json" \
     -d "{
-        \"requester_address\": \"$MOVEMENT_REQUESTER_ADDRESS\",
+        \"requester_addr\": \"$MOVEMENT_REQUESTER_ADDRESS\",
         \"draft_data\": $DRAFT_DATA,
         \"expiry_time\": $EXPIRY_TIME
     }")
@@ -405,7 +405,7 @@ if [ -z "$SIGNATURE_DATA" ]; then
 fi
 
 RETRIEVED_SIGNATURE=$(echo "$SIGNATURE_DATA" | jq -r '.data.signature')
-RETRIEVED_SOLVER=$(echo "$SIGNATURE_DATA" | jq -r '.data.solver_address')
+RETRIEVED_SOLVER=$(echo "$SIGNATURE_DATA" | jq -r '.data.solver_addr')
 
 echo "   ✅ Signature received from solver: $RETRIEVED_SOLVER"
 echo ""
@@ -487,10 +487,10 @@ if [ $? -eq 0 ]; then
         fi
         
         # Get escrow contract address from verifier config
-        ESCROW_CONTRACT_ADDRESS=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_address" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
+        ESCROW_CONTRACT_ADDRESS=$(grep -A5 "\[connected_chain_evm\]" "$VERIFIER_CONFIG" | grep "escrow_contract_addr" | head -1 | sed 's/.*= *"\(.*\)".*/\1/')
         
         if [ -z "$ESCROW_CONTRACT_ADDRESS" ]; then
-            echo "⚠️  WARNING: escrow_contract_address not found in verifier_testnet.toml"
+            echo "⚠️  WARNING: escrow_contract_addr not found in verifier_testnet.toml"
             echo "   Cannot automatically create escrow. Manual steps required:"
             echo ""
             echo "💡 Next steps (manual):"

@@ -28,7 +28,7 @@ pub enum DraftintentStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DraftSignature {
     /// Address of the solver who signed (first signer wins)
-    pub solver_address: String,
+    pub solver_addr: String,
     /// Signature in hex format
     pub signature: String,
     /// Public key of the solver (hex format)
@@ -46,7 +46,7 @@ pub struct Draftintent {
     /// Unique identifier for the draft (UUID or hash)
     pub draft_id: String,
     /// Address of the requester who submitted the draft
-    pub requester_address: String,
+    pub requester_addr: String,
     /// Draft data (JSON object - matches Draftintent structure from Move)
     pub draft_data: serde_json::Value,
     /// Current status of the draft
@@ -85,7 +85,7 @@ impl DraftintentStore {
     /// # Arguments
     ///
     /// * `draft_id` - Unique identifier for the draft
-    /// * `requester_address` - Address of the requester
+    /// * `requester_addr` - Address of the requester
     /// * `draft_data` - Draft data (JSON)
     /// * `expiry_time` - Expiry timestamp
     ///
@@ -95,14 +95,14 @@ impl DraftintentStore {
     pub async fn add_draft(
         &self,
         draft_id: String,
-        requester_address: String,
+        requester_addr: String,
         draft_data: serde_json::Value,
         expiry_time: u64,
     ) -> Draftintent {
         let timestamp = Self::current_timestamp();
         let draft = Draftintent {
             draft_id: draft_id.clone(),
-            requester_address,
+            requester_addr,
             draft_data,
             status: DraftintentStatus::Pending,
             timestamp,
@@ -158,7 +158,7 @@ impl DraftintentStore {
     /// # Arguments
     ///
     /// * `draft_id` - The draft ID
-    /// * `solver_address` - Address of the solver signing
+    /// * `solver_addr` - Address of the solver signing
     /// * `signature` - Signature in hex format
     /// * `public_key` - Public key in hex format
     ///
@@ -169,7 +169,7 @@ impl DraftintentStore {
     pub async fn add_signature(
         &self,
         draft_id: &str,
-        solver_address: String,
+        solver_addr: String,
         signature: String,
         public_key: String,
     ) -> Result<(), String> {
@@ -190,7 +190,7 @@ impl DraftintentStore {
 
         // Store first signature
         draft.signature = Some(DraftSignature {
-            solver_address,
+            solver_addr,
             signature,
             public_key,
             signature_timestamp: current_time,

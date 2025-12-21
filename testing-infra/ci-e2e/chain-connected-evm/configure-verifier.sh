@@ -45,9 +45,9 @@ cat > "$TEMP_FILE" << EOF
 [connected_chain_evm]
 name = "Connected EVM Chain"
 rpc_url = "http://127.0.0.1:8545"
-escrow_contract_address = "$CONTRACT_ADDRESS"
+escrow_contract_addr = "$CONTRACT_ADDRESS"
 chain_id = 31337
-verifier_address = "$VERIFIER_ADDRESS"
+verifier_addr = "$VERIFIER_ADDRESS"
 EOF
 
 # Insert the EVM section before [verifier] section

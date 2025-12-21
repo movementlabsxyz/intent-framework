@@ -50,8 +50,8 @@ cat > "$TEMP_FILE" << EOF
 name = "Connected Move VM Chain"
 rpc_url = "http://127.0.0.1:8082"
 chain_id = 2
-intent_module_address = "0x$CHAIN2_ADDRESS"
-escrow_module_address = "0x$CHAIN2_ADDRESS"
+intent_module_addr = "0x$CHAIN2_ADDRESS"
+escrow_module_addr = "0x$CHAIN2_ADDRESS"
 EOF
 
 # Insert the MVM section before [verifier] section

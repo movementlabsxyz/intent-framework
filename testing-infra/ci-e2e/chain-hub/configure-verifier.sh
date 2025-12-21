@@ -49,7 +49,7 @@ cat > "$VERIFIER_E2E_CI_TESTING_CONFIG" << EOF
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080"
 chain_id = 1
-intent_module_address = "0x$CHAIN1_ADDRESS"
+intent_module_addr = "0x$CHAIN1_ADDRESS"
 
 [verifier]
 private_key_env = "E2E_VERIFIER_PRIVATE_KEY"

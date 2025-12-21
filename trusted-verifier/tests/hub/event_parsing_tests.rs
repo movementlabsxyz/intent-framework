@@ -20,9 +20,9 @@ use test_helpers::{
 /// Create a mock OracleLimitOrderEvent JSON response
 fn create_mock_oracle_limit_order_event(
     intent_id: &str,
-    requester_address_connected_chain: Option<&str>,
+    requester_addr_connected_chain: Option<&str>,
 ) -> serde_json::Value {
-    let requester_addr_opt = requester_address_connected_chain
+    let requester_addr_opt = requester_addr_connected_chain
         .map(|addr| {
             json!({
                 "vec": [addr]
@@ -51,7 +51,7 @@ fn create_mock_oracle_limit_order_event(
             "reserved_solver": {
                 "vec": [DUMMY_SOLVER_ADDR_MVM_HUB]
             },
-            "requester_address_connected_chain": requester_addr_opt
+            "requester_addr_connected_chain": requester_addr_opt
         }
     })
 }
@@ -59,13 +59,13 @@ fn create_mock_oracle_limit_order_event(
 /// Setup a mock server that returns OracleLimitOrderEvent in transaction events
 async fn setup_mock_server_with_oracle_event(
     account_addr: &str,
-    requester_address_connected_chain: Option<&str>,
+    requester_addr_connected_chain: Option<&str>,
 ) -> (MockServer, EventMonitor) {
     let mock_server = MockServer::start().await;
 
     let event = create_mock_oracle_limit_order_event(
         DUMMY_INTENT_ID,
-        requester_address_connected_chain,
+        requester_addr_connected_chain,
     );
 
     let transactions_response = json!([{
@@ -128,24 +128,24 @@ async fn setup_mock_server_with_oracle_event(
 // TESTS
 // ============================================================================
 
-/// Test that poll_hub_events correctly parses OracleLimitOrderEvent and populates requester_address_connected_chain
+/// Test that poll_hub_events correctly parses OracleLimitOrderEvent and populates requester_addr_connected_chain
 ///
-/// What is tested: When an OracleLimitOrderEvent is emitted with requester_address_connected_chain,
+/// What is tested: When an OracleLimitOrderEvent is emitted with requester_addr_connected_chain,
 /// poll_hub_events should parse it and include it in the IntentEvent.
 ///
 /// Why: Verify that outflow intents have all required fields populated from the event,
-/// preventing validation failures due to missing requester_address_connected_chain.
+/// preventing validation failures due to missing requester_addr_connected_chain.
 #[tokio::test]
-async fn test_poll_hub_events_populates_requester_address_connected_chain() {
+async fn test_poll_hub_events_populates_requester_addr_connected_chain() {
     let _ = tracing_subscriber::fmt::try_init();
     // Use address without 0x prefix since the code strips it
     let account_addr = "1";
-    let requester_address_connected_chain =
+    let requester_addr_connected_chain =
         DUMMY_REQUESTER_ADDR_MVM_HUB;
 
     let (_mock_server, monitor) = setup_mock_server_with_oracle_event(
         account_addr,
-        Some(requester_address_connected_chain),
+        Some(requester_addr_connected_chain),
     )
     .await;
 
@@ -158,11 +158,11 @@ async fn test_poll_hub_events_populates_requester_address_connected_chain() {
     assert_eq!(events.len(), 1, "Should parse one event");
     let event = &events[0];
 
-    // Verify requester_address_connected_chain is populated
+    // Verify requester_addr_connected_chain is populated
     assert_eq!(
-        event.requester_address_connected_chain,
-        Some(requester_address_connected_chain.to_string()),
-        "requester_address_connected_chain should be populated from event"
+        event.requester_addr_connected_chain,
+        Some(requester_addr_connected_chain.to_string()),
+        "requester_addr_connected_chain should be populated from event"
     );
 
     // Verify connected_chain_id is set correctly (desired_chain_id for outflow)
@@ -185,40 +185,40 @@ async fn test_poll_hub_events_populates_requester_address_connected_chain() {
     assert_eq!(event.desired_amount, 500);
 }
 
-/// Test that poll_hub_events fails validation when requester_address_connected_chain is missing for outflow intents
+/// Test that poll_hub_events fails validation when requester_addr_connected_chain is missing for outflow intents
 ///
-/// What is tested: When an OracleLimitOrderEvent is emitted without requester_address_connected_chain
+/// What is tested: When an OracleLimitOrderEvent is emitted without requester_addr_connected_chain
 /// but with different chain IDs (indicating outflow), the event should still be parsed but
-/// validation should fail later when requester_address_connected_chain is None.
+/// validation should fail later when requester_addr_connected_chain is None.
 ///
-/// Why: Verify that missing requester_address_connected_chain is detected during validation,
+/// Why: Verify that missing requester_addr_connected_chain is detected during validation,
 /// not silently ignored.
 #[tokio::test]
-async fn test_poll_hub_events_handles_missing_requester_address_connected_chain() {
+async fn test_poll_hub_events_handles_missing_requester_addr_connected_chain() {
     let _ = tracing_subscriber::fmt::try_init();
     // Use address without 0x prefix since the code strips it
     let account_addr = "2";
 
-    // Event without requester_address_connected_chain (None)
+    // Event without requester_addr_connected_chain (None)
     let (_mock_server, monitor) = setup_mock_server_with_oracle_event(
         account_addr,
-        None, // Missing requester_address_connected_chain
+        None, // Missing requester_addr_connected_chain
     )
     .await;
 
     // Call poll_hub_events (re-exported from monitor module for testing)
     let events = trusted_verifier::monitor::poll_hub_events(&monitor)
         .await
-        .expect("poll_hub_events should succeed even if requester_address_connected_chain is None");
+        .expect("poll_hub_events should succeed even if requester_addr_connected_chain is None");
 
     // Verify event was parsed
     assert_eq!(events.len(), 1, "Should parse one event");
     let event = &events[0];
 
-    // Verify requester_address_connected_chain is None
+    // Verify requester_addr_connected_chain is None
     assert_eq!(
-        event.requester_address_connected_chain, None,
-        "requester_address_connected_chain should be None when not in event"
+        event.requester_addr_connected_chain, None,
+        "requester_addr_connected_chain should be None when not in event"
     );
 
     // Verify connected_chain_id is still set (event parsing should work)
@@ -229,7 +229,7 @@ async fn test_poll_hub_events_handles_missing_requester_address_connected_chain(
     );
 
     // This event would fail validation later when validate_outflow_fulfillment is called
-    // because requester_address_connected_chain is None but connected_chain_id is Some
+    // because requester_addr_connected_chain is None but connected_chain_id is Some
 }
 
 // ============================================================================

@@ -7,7 +7,7 @@ use trusted_verifier::monitor::IntentEvent;
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    create_base_intent_evm, setup_mock_server_with_error,
+    create_base_intent_evm, DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM_HUB, setup_mock_server_with_error,
     setup_mock_server_with_evm_address_response,
 };
 
@@ -37,19 +37,16 @@ fn create_test_intent(solver_addr: Option<String>) -> IntentEvent {
 async fn test_successful_evm_solver_validation() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    let solver_address = "0xsolver_mvm";
-    let registered_evm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let (_mock_server, config, _validator) =
-        setup_mock_server_with_evm_address_response(solver_address, Some(registered_evm_address))
+        setup_mock_server_with_evm_address_response(DUMMY_SOLVER_ADDR_MVM_HUB, Some(DUMMY_SOLVER_ADDR_EVM))
             .await;
 
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()));
 
     // Test with matching address
-    let escrow_reserved_solver = registered_evm_address;
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &intent,
-        escrow_reserved_solver,
+        DUMMY_SOLVER_ADDR_EVM, // matching solver address as registered
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
     )
@@ -73,19 +70,17 @@ async fn test_successful_evm_solver_validation() {
 async fn test_rejection_when_solver_not_registered() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    let solver_address = "0xunregistered_solver";
     let (_mock_server, config, _validator) = setup_mock_server_with_evm_address_response(
-        solver_address,
+        "0xunregistered_solver", // solver not registered
         None, // No EVM address (solver not registered)
     )
     .await;
 
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some("0xunregistered_solver".to_string())); // solver not registered
 
-    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &intent,
-        escrow_reserved_solver,
+        DUMMY_SOLVER_ADDR_EVM,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
     )
@@ -110,19 +105,17 @@ async fn test_rejection_when_solver_not_registered() {
 async fn test_rejection_when_evm_addresses_dont_match() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    let solver_address = "0xsolver_mvm";
-    let registered_evm_address = "0x1111111111111111111111111111111111111111";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_registered_evm_addr = DUMMY_SOLVER_ADDR_EVM;
     let (_mock_server, config, _validator) =
-        setup_mock_server_with_evm_address_response(solver_address, Some(registered_evm_address))
+        setup_mock_server_with_evm_address_response(solver_addr, Some(solver_registered_evm_addr))
             .await;
 
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(solver_addr.to_string()));
 
-    // Escrow has a different address
-    let escrow_reserved_solver = "0x2222222222222222222222222222222222222222";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &intent,
-        escrow_reserved_solver,
+        "0xwrong_solver", // different solver address as registered
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
     )
@@ -158,12 +151,12 @@ async fn test_evm_address_normalization() {
     ];
 
     for (escrow_addr, registered_addr, should_match) in test_cases {
-        let solver_address = "0xsolver_mvm";
+        let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
         let (_mock_server, config, _validator) =
-            setup_mock_server_with_evm_address_response(solver_address, Some(registered_addr))
+            setup_mock_server_with_evm_address_response(solver_addr, Some(registered_addr))
                 .await;
 
-        let intent = create_test_intent(Some(solver_address.to_string()));
+        let intent = create_test_intent(Some(solver_addr.to_string()));
 
         let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
             &intent,
@@ -192,12 +185,11 @@ async fn test_error_handling_for_registry_query_failures() {
     // Setup mock server that returns a 500 error (simulating network/server error)
     let (_mock_server, config, _validator) = setup_mock_server_with_error(500).await;
 
-    let intent = create_test_intent(Some("0xsolver_mvm".to_string()));
+    let intent = create_test_intent(Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()));
 
-    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &intent,
-        escrow_reserved_solver,
+        DUMMY_SOLVER_ADDR_EVM,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
     )
@@ -225,17 +217,16 @@ async fn test_rejection_when_intent_has_no_solver() {
     let _ = tracing_subscriber::fmt::try_init();
 
     let (_mock_server, config, _validator) = setup_mock_server_with_evm_address_response(
-        "0xsolver_mvm",
-        Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+        DUMMY_SOLVER_ADDR_MVM_HUB,
+        Some(DUMMY_SOLVER_ADDR_EVM),
     )
     .await;
 
     let intent = create_test_intent(None); // No solver
 
-    let escrow_reserved_solver = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let result = trusted_verifier::validator::inflow_evm::validate_evm_escrow_solver(
         &intent,
-        escrow_reserved_solver,
+        DUMMY_SOLVER_ADDR_EVM,
         &config.hub_chain.rpc_url,
         &config.hub_chain.intent_module_address,
     )

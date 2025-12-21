@@ -10,6 +10,7 @@ use warp::test::request;
 
 #[path = "mod.rs"]
 mod test_helpers;
+use test_helpers::DUMMY_EXPIRY;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -30,7 +31,7 @@ fn valid_draft_request() -> serde_json::Value {
     json!({
         "requester_address": "0x123",
         "draft_data": { "offered_metadata": "0x1::test::Token", "offered_amount": 100 },
-        "expiry_time": 9999999999u64
+        "expiry_time": DUMMY_EXPIRY
     })
 }
 

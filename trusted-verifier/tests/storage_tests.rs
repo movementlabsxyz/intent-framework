@@ -10,6 +10,7 @@ use serde_json;
 
 #[path = "mod.rs"]
 mod test_helpers;
+use test_helpers::DUMMY_EXPIRY;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -27,7 +28,7 @@ fn create_test_draft_data() -> serde_json::Value {
 
 /// Get a future expiry time (far in the future)
 fn future_expiry_time() -> u64 {
-    9999999999
+    DUMMY_EXPIRY
 }
 
 /// Get a past expiry time

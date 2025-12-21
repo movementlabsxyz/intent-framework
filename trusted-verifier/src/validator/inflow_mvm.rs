@@ -14,7 +14,7 @@ use anyhow::{Context, Result};
 /// # Arguments
 ///
 /// * `intent` - The intent event from the hub chain (must have a solver)
-/// * `escrow_reserved_solver` - The reserved solver MVM address from the escrow (on connected chain)
+/// * `escrow_reserved_solver_addr` - The reserved solver MVM address from the escrow (on connected chain)
 /// * `hub_chain_rpc_url` - RPC URL of the hub chain (to query solver registry)
 /// * `solver_registry_addr` - Address where the solver registry is deployed
 ///
@@ -24,7 +24,7 @@ use anyhow::{Context, Result};
 /// * `Err(anyhow::Error)` - Validation failed due to error
 pub async fn validate_mvm_escrow_solver(
     intent: &IntentEvent,
-    escrow_reserved_solver: &str,
+    escrow_reserved_solver_addr: &str,
     hub_chain_rpc_url: &str,
     solver_registry_addr: &str,
 ) -> Result<ValidationResult> {
@@ -62,9 +62,9 @@ pub async fn validate_mvm_escrow_solver(
     };
 
     // Normalize addresses for comparison (remove 0x prefix, pad to 64 hex chars, lowercase)
-    let escrow_solver_raw = escrow_reserved_solver
+    let escrow_solver_raw = escrow_reserved_solver_addr
         .strip_prefix("0x")
-        .unwrap_or(escrow_reserved_solver);
+        .unwrap_or(escrow_reserved_solver_addr);
     let escrow_solver = format!("{:0>64}", escrow_solver_raw).to_lowercase();
     let registered_solver_raw = registered_mvm_addr
         .strip_prefix("0x")
@@ -76,7 +76,7 @@ pub async fn validate_mvm_escrow_solver(
             valid: false,
             message: format!(
                 "MVM escrow reserved solver '{}' does not match registered solver connected chain MVM address '{}'",
-                escrow_reserved_solver, registered_mvm_addr
+                escrow_reserved_solver_addr, registered_mvm_addr
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });

@@ -14,7 +14,7 @@ use anyhow::{Context, Result};
 /// # Arguments
 ///
 /// * `intent` - The intent event from the hub chain (must have a solver)
-/// * `escrow_reserved_solver` - The reserved solver EVM address from the escrow
+/// * `escrow_reserved_solver_addr` - The reserved solver EVM address from the escrow
 /// * `hub_chain_rpc_url` - RPC URL of the hub chain (to query solver registry)
 /// * `solver_registry_addr` - Address where the solver registry is deployed
 ///
@@ -24,7 +24,7 @@ use anyhow::{Context, Result};
 /// * `Err(anyhow::Error)` - Validation failed due to error
 pub async fn validate_evm_escrow_solver(
     intent: &IntentEvent,
-    escrow_reserved_solver: &str,
+    escrow_reserved_solver_addr: &str,
     hub_chain_rpc_url: &str,
     solver_registry_addr: &str,
 ) -> Result<ValidationResult> {
@@ -62,9 +62,9 @@ pub async fn validate_evm_escrow_solver(
     };
 
     // Normalize addresses for comparison (lowercase, ensure 0x prefix)
-    let escrow_solver_normalized = escrow_reserved_solver
+    let escrow_solver_normalized = escrow_reserved_solver_addr
         .strip_prefix("0x")
-        .unwrap_or(escrow_reserved_solver)
+        .unwrap_or(escrow_reserved_solver_addr)
         .to_lowercase();
     let registered_solver_normalized = registered_evm_addr
         .strip_prefix("0x")
@@ -76,7 +76,7 @@ pub async fn validate_evm_escrow_solver(
             valid: false,
             message: format!(
                 "EVM escrow reserved solver '{}' does not match registered solver EVM address '{}'",
-                escrow_reserved_solver, registered_evm_addr
+                escrow_reserved_solver_addr, registered_evm_addr
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });

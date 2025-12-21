@@ -48,6 +48,12 @@ pub const DUMMY_SOLVER_ADDR_EVM: &str = "0x8888888888888888888888888888888888888
 /// Dummy token address (EVM format, 20 bytes)
 pub const DUMMY_TOKEN_ADDR_EVM: &str = "0x9999999999999999999999999999999999999999";
 
+/// Dummy escrow contract address (EVM format, 20 bytes)
+pub const DUMMY_ESCROW_CONTRACT_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+/// Dummy transaction hash (64 hex characters)
+pub const DUMMY_TX_HASH: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
 /// Dummy timestamp for solver registration (arbitrary test value)
 #[allow(dead_code)]
 pub const DUMMY_REGISTERED_AT: u64 = 1234567890;

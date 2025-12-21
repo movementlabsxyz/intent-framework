@@ -11,7 +11,7 @@ mod test_helpers;
 use test_helpers::{
     build_test_config_with_evm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ID,
     DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_EVM,
-    DUMMY_TOKEN_ADDR_EVM,
+    DUMMY_TOKEN_ADDR_EVM, DUMMY_TX_HASH,
 };
 
 /// Test that EscrowInitializedEvent struct contains amount and expiry fields
@@ -27,7 +27,7 @@ fn test_escrow_initialized_event_has_amount_and_expiry() {
         amount: 100000,
         expiry: DUMMY_EXPIRY,
         block_number: "0x1".to_string(),
-        transaction_hash: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        transaction_hash: DUMMY_TX_HASH.to_string(),
     };
 
     // Verify fields are accessible and have correct values
@@ -50,7 +50,7 @@ fn test_escrow_amount_is_not_hardcoded_zero() {
         amount: 1, // Minimum non-zero amount
         expiry: DUMMY_EXPIRY,
         block_number: "0x100".to_string(),
-        transaction_hash: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
+        transaction_hash: DUMMY_TX_HASH.to_string(),
     };
 
     assert!(

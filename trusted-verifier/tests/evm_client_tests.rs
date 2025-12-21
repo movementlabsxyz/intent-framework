@@ -8,6 +8,10 @@ use trusted_verifier::evm_client::EvmClient;
 use wiremock::matchers::{body_json, method};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+#[path = "mod.rs"]
+mod test_helpers;
+use test_helpers::{DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_SOLVER_ADDR_EVM, DUMMY_TX_HASH};
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -26,7 +30,7 @@ async fn setup_mock_transaction(
             "hash": transaction_hash,
             "blockNumber": "0x1",
             "transactionIndex": "0x0",
-            "from": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "from": DUMMY_SOLVER_ADDR_EVM,
             "to": "0xcccccccccccccccccccccccccccccccccccccccc",
             "input": calldata,
             "value": "0x0",
@@ -47,7 +51,7 @@ async fn setup_mock_transaction(
         .mount(&mock_server)
         .await;
 
-    let client = EvmClient::new(&mock_server.uri(), "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+    let client = EvmClient::new(&mock_server.uri(), DUMMY_ESCROW_CONTRACT_ADDR_EVM)
         .expect("Failed to create EvmClient");
 
     (mock_server, client)
@@ -82,7 +86,7 @@ async fn setup_mock_receipt(
         .mount(&mock_server)
         .await;
 
-    let client = EvmClient::new(&mock_server.uri(), "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+    let client = EvmClient::new(&mock_server.uri(), DUMMY_ESCROW_CONTRACT_ADDR_EVM)
         .expect("Failed to create EvmClient");
 
     (mock_server, client)
@@ -96,7 +100,7 @@ async fn setup_mock_receipt(
 /// Why: Verify that the method correctly parses the receipt status and returns success.
 #[tokio::test]
 async fn test_get_transaction_receipt_status_success() {
-    let tx_hash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+    let tx_hash = DUMMY_TX_HASH;
     let (_mock_server, client) = setup_mock_receipt(tx_hash, "0x1").await;
 
     let status = client
@@ -111,7 +115,7 @@ async fn test_get_transaction_receipt_status_success() {
 /// Why: Verify that the method correctly identifies failed transactions.
 #[tokio::test]
 async fn test_get_transaction_receipt_status_failure() {
-    let tx_hash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+    let tx_hash = DUMMY_TX_HASH;
     let (_mock_server, client) = setup_mock_receipt(tx_hash, "0x0").await;
 
     let status = client
@@ -127,7 +131,7 @@ async fn test_get_transaction_receipt_status_failure() {
 #[tokio::test]
 async fn test_get_transaction_receipt_status_not_found() {
     let mock_server = MockServer::start().await;
-    let tx_hash = "0x2222222222222222222222222222222222222222222222222222222222222222";
+    let tx_hash = DUMMY_TX_HASH;
 
     let receipt_response = json!({
         "jsonrpc": "2.0",
@@ -146,7 +150,7 @@ async fn test_get_transaction_receipt_status_not_found() {
         .mount(&mock_server)
         .await;
 
-    let client = EvmClient::new(&mock_server.uri(), "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+    let client = EvmClient::new(&mock_server.uri(), DUMMY_ESCROW_CONTRACT_ADDR_EVM)
         .expect("Failed to create EvmClient");
 
     let status = client

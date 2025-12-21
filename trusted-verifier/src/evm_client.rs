@@ -65,13 +65,13 @@ pub struct EscrowInitializedEvent {
     /// Intent ID (indexed, first topic)
     pub intent_id: String,
     /// Escrow contract address (indexed, second topic)
-    pub escrow: String,
+    pub escrow_addr: String,
     /// Requester address (indexed, third topic) - the escrow creator
-    pub requester: String,
-    /// Token address (from data)
-    pub token: String,
+    pub requester_addr: String,
+    /// Token contract address (from data)
+    pub token_addr: String,
     /// Reserved solver address (from data)
-    pub reserved_solver: String,
+    pub reserved_solver_addr: String,
     /// Amount deposited in escrow (from data)
     pub amount: u64,
     /// Expiry timestamp (from data)
@@ -247,8 +247,8 @@ impl EvmClient {
             }
 
             let intent_id = log.topics[1].clone();
-            let escrow = format!("0x{}", &log.topics[2][26..]); // Extract address from padded topic
-            let requester = format!("0x{}", &log.topics[3][26..]); // Extract address from padded topic
+            let escrow_addr = format!("0x{}", &log.topics[2][26..]); // Extract address from padded topic
+            let requester_addr = format!("0x{}", &log.topics[3][26..]); // Extract address from padded topic
 
             // Parse data: token (32 bytes), reservedSolver (32 bytes), amount (32 bytes), expiry (32 bytes)
             let data = log.data.strip_prefix("0x").unwrap_or(&log.data);
@@ -256,17 +256,17 @@ impl EvmClient {
                 continue; // Invalid data length (4 fields * 64 hex chars)
             }
 
-            let token = format!("0x{}", &data[24..64]); // Extract address from data (skip padding)
-            let reserved_solver = format!("0x{}", &data[88..128]); // Extract second address
+            let token_addr = format!("0x{}", &data[24..64]); // Extract address from data (skip padding)
+            let reserved_solver_addr = format!("0x{}", &data[88..128]); // Extract second address
             let amount = u64::from_str_radix(&data[128..192], 16).unwrap_or(0); // Extract amount
             let expiry = u64::from_str_radix(&data[192..256], 16).unwrap_or(0); // Extract expiry
 
             events.push(EscrowInitializedEvent {
                 intent_id,
-                escrow,
-                requester,
-                token,
-                reserved_solver,
+                escrow_addr,
+                requester_addr,
+                token_addr,
+                reserved_solver_addr,
                 amount,
                 expiry,
                 block_number: log.block_number,

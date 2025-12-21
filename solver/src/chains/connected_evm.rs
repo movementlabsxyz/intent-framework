@@ -18,13 +18,13 @@ pub struct EscrowInitializedEvent {
     /// Intent ID (indexed, first topic)
     pub intent_id: String,
     /// Escrow contract address (indexed, second topic)
-    pub escrow: String,
+    pub escrow_addr: String,
     /// Requester address (indexed, third topic)
-    pub requester: String,
-    /// Token address (from data)
-    pub token: String,
+    pub requester_addr: String,
+    /// Token contract address (from data)
+    pub token_addr: String,
     /// Reserved solver address (from data)
-    pub reserved_solver: String,
+    pub reserved_solver_addr: String,
     /// Block number
     pub block_number: String,
     /// Transaction hash
@@ -208,8 +208,8 @@ impl ConnectedEvmClient {
             }
 
             let intent_id = format!("0x{}", log.topics[1].strip_prefix("0x").unwrap_or(&log.topics[1]));
-            let escrow = format!("0x{}", &log.topics[2][26..]); // Extract last 20 bytes (40 hex chars)
-            let requester = format!("0x{}", &log.topics[3][26..]);
+            let escrow_addr = format!("0x{}", &log.topics[2][26..]); // Extract last 20 bytes (40 hex chars)
+            let requester_addr = format!("0x{}", &log.topics[3][26..]);
 
             // Parse data: token (32 bytes), reservedSolver (32 bytes), amount (32 bytes), expiry (32 bytes)
             let data = log.data.strip_prefix("0x").unwrap_or(&log.data);
@@ -217,15 +217,15 @@ impl ConnectedEvmClient {
                 continue; // Invalid data length (4 fields * 64 hex chars)
             }
 
-            let token = format!("0x{}", &data[24..64]); // Extract address from first 32-byte word (skip padding)
-            let reserved_solver = format!("0x{}", &data[88..128]); // Extract address from second 32-byte word
+            let token_addr = format!("0x{}", &data[24..64]); // Extract address from first 32-byte word (skip padding)
+            let reserved_solver_addr = format!("0x{}", &data[88..128]); // Extract address from second 32-byte word
 
             events.push(EscrowInitializedEvent {
                 intent_id,
-                escrow,
-                requester,
-                token,
-                reserved_solver,
+                escrow_addr,
+                requester_addr,
+                token_addr,
+                reserved_solver_addr,
                 block_number: log.block_number,
                 transaction_hash: log.transaction_hash,
             });

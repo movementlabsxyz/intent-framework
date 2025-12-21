@@ -11,10 +11,10 @@ pub use helpers::{
     create_base_escrow_event, create_base_escrow_event_evm, create_base_evm_transaction,
     create_base_fulfillment, create_base_fulfillment_transaction_params_evm,
     create_base_fulfillment_transaction_params_mvm, create_base_mvm_transaction,
-    create_base_intent_evm, create_base_intent_mvm, DUMMY_ESCROW_ID_MVM, DUMMY_INTENT_ID,
-    DUMMY_PUBLIC_KEY, DUMMY_REGISTERED_AT, DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM,
-    DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM, DUMMY_SOLVER_REGISTRY_ADDRESS,
-    DUMMY_TOKEN_ADDR_EVM,
+    create_base_intent_evm, create_base_intent_mvm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY,
+    DUMMY_INTENT_ID, DUMMY_PUBLIC_KEY, DUMMY_REGISTERED_AT, DUMMY_REQUESTER_ADDR_EVM,
+    DUMMY_REQUESTER_ADDR_MVM, DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM,
+    DUMMY_SOLVER_REGISTRY_ADDRESS, DUMMY_TOKEN_ADDR_EVM,
 };
 
 #[allow(unused_imports)]

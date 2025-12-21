@@ -157,7 +157,7 @@ impl InflowService {
                     .into_iter()
                     .map(|e| EscrowMatch {
                         intent_id: e.intent_id,
-                        escrow_id: e.escrow,
+                        escrow_id: e.escrow_addr,
                     })
                     .collect()
             }

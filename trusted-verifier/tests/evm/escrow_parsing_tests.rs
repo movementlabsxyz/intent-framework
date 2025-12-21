@@ -8,27 +8,31 @@ use trusted_verifier::monitor::{ChainType, EscrowEvent, EventMonitor, IntentEven
 
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config_with_evm;
+use test_helpers::{
+    build_test_config_with_evm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ID,
+    DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM, DUMMY_SOLVER_ADDR_EVM,
+    DUMMY_TOKEN_ADDR_EVM,
+};
 
 /// Test that EscrowInitializedEvent struct contains amount and expiry fields
 /// Why: The event struct must include amount and expiry for proper escrow validation
 #[test]
 fn test_escrow_initialized_event_has_amount_and_expiry() {
     let event = EscrowInitializedEvent {
-        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
-        escrow: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
-        requester: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
-        token: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
-        reserved_solver: "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        escrow_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // Escrow contract address (EVM format, distinct from requester)
+        requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(),
+        token_addr: DUMMY_TOKEN_ADDR_EVM.to_string(),
+        reserved_solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         amount: 100000,
-        expiry: 9999999999,
+        expiry: DUMMY_EXPIRY,
         block_number: "0x1".to_string(),
         transaction_hash: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
     };
 
     // Verify fields are accessible and have correct values
     assert_eq!(event.amount, 100000, "Amount should be 100000");
-    assert_eq!(event.expiry, 9999999999, "Expiry should be 9999999999");
+    assert_eq!(event.expiry, DUMMY_EXPIRY, "Expiry should be DUMMY_EXPIRY");
     assert_ne!(event.amount, 0, "Amount should NOT be 0");
 }
 
@@ -38,13 +42,13 @@ fn test_escrow_initialized_event_has_amount_and_expiry() {
 fn test_escrow_amount_is_not_hardcoded_zero() {
     // Create event with non-zero amount
     let event = EscrowInitializedEvent {
-        intent_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(),
-        escrow: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
-        requester: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
-        token: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
-        reserved_solver: "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
+        intent_id: DUMMY_ESCROW_ID_MVM.to_string(), // Different intent_id for this test case
+        escrow_addr: "0xffffffffffffffffffffffffffffffffffffffff".to_string(), // Escrow contract address (EVM format, distinct from requester)
+        requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(),
+        token_addr: DUMMY_TOKEN_ADDR_EVM.to_string(),
+        reserved_solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         amount: 1, // Minimum non-zero amount
-        expiry: 9999999999,
+        expiry: DUMMY_EXPIRY,
         block_number: "0x100".to_string(),
         transaction_hash: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string(),
     };
@@ -78,7 +82,7 @@ fn test_amount_hex_parsing() {
 #[test]
 fn test_expiry_hex_parsing() {
     // Far future timestamp used in tests
-    let timestamp: u64 = 9999999999;
+    let timestamp: u64 = DUMMY_EXPIRY;
     let expiry_hex = format!("{:064x}", timestamp);
     let parsed_expiry = u64::from_str_radix(&expiry_hex, 16).unwrap();
     assert_eq!(parsed_expiry, timestamp);
@@ -100,13 +104,13 @@ async fn test_zero_amount_escrow_fails_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xtest_intent".to_string(),
-            requester: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            requester: DUMMY_REQUESTER_ADDR_MVM.to_string(),
             connected_chain_id: Some(84532), // Base Sepolia
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
             desired_amount: 1000, // Requires 1000 tokens
-            expiry_time: 9999999999,
+            expiry_time: DUMMY_EXPIRY,
             revocable: false,
             reserved_solver: None,
             requester_address_connected_chain: None,
@@ -123,7 +127,7 @@ async fn test_zero_amount_escrow_fails_validation() {
         offered_amount: 0,
         desired_metadata: "{}".to_string(),
         desired_amount: 0,
-        expiry_time: 9999999999,
+        expiry_time: DUMMY_EXPIRY,
         revocable: false,
         reserved_solver: None,
         chain_id: 84532,
@@ -162,13 +166,13 @@ async fn test_correct_amount_escrow_passes_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xvalid_intent".to_string(),
-            requester: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            requester: DUMMY_REQUESTER_ADDR_MVM.to_string(),
             connected_chain_id: Some(84532),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
             desired_amount: 1000,
-            expiry_time: 9999999999,
+            expiry_time: DUMMY_EXPIRY,
             revocable: false,
             reserved_solver: None,
             requester_address_connected_chain: None,
@@ -185,7 +189,7 @@ async fn test_correct_amount_escrow_passes_validation() {
         offered_amount: 1000,
         desired_metadata: "{}".to_string(),
         desired_amount: 0,
-        expiry_time: 9999999999,
+        expiry_time: DUMMY_EXPIRY,
         revocable: false,
         reserved_solver: None,
         chain_id: 84532,

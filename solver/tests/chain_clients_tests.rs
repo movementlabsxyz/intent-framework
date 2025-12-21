@@ -465,9 +465,9 @@ async fn test_get_escrow_events_evm_success() {
     assert_eq!(events.len(), 1);
     // Intent ID is extracted from topic (32 bytes), so it includes padding zeros
     assert_eq!(events[0].intent_id, "0x0000000000000000000000002222222222222222222222222222222222222222");
-    assert_eq!(events[0].requester, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-    assert_eq!(events[0].token, "0xffffffffffffffffffffffffffffffffffffffff");
-    assert_eq!(events[0].reserved_solver, "0xdddddddddddddddddddddddddddddddddddddddd");
+    assert_eq!(events[0].requester_addr, "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+    assert_eq!(events[0].token_addr, "0xffffffffffffffffffffffffffffffffffffffff");
+    assert_eq!(events[0].reserved_solver_addr, "0xdddddddddddddddddddddddddddddddddddddddd");
 }
 
 /// What is tested: get_escrow_events() handles empty log list

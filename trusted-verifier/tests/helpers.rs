@@ -46,6 +46,10 @@ pub const DUMMY_TOKEN_ADDR_EVM: &str = "0xcccccccccccccccccccccccccccccccccccccc
 #[allow(dead_code)]
 pub const DUMMY_REGISTERED_AT: u64 = 1234567890;
 
+/// Dummy expiry timestamp (far future timestamp for tests)
+#[allow(dead_code)]
+pub const DUMMY_EXPIRY: u64 = 9999999999;
+
 /// Dummy public key bytes used in solver registry responses
 #[allow(dead_code)]
 pub const DUMMY_PUBLIC_KEY: [u8; 4] = [1, 2, 3, 4];

@@ -502,7 +502,7 @@ pub async fn validate_and_approve_fulfillment(
             drop(escrow_cache);
             error!(
                 "No matching escrow found for fulfillment: {} (intent_id: {})",
-                fulfillment.intent_address, fulfillment.intent_id
+                fulfillment.intent_addr, fulfillment.intent_id
             );
             return Err(anyhow::anyhow!("No matching escrow found for fulfillment"));
         }

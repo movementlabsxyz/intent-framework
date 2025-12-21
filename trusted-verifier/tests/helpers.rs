@@ -49,9 +49,11 @@ pub const DUMMY_SOLVER_ADDR_EVM: &str = "0x8888888888888888888888888888888888888
 pub const DUMMY_TOKEN_ADDR_EVM: &str = "0x9999999999999999999999999999999999999999";
 
 /// Dummy escrow contract address (EVM format, 20 bytes)
+#[allow(dead_code)]
 pub const DUMMY_ESCROW_CONTRACT_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 /// Dummy transaction hash (64 hex characters)
+#[allow(dead_code)]
 pub const DUMMY_TX_HASH: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 /// Dummy timestamp for solver registration (arbitrary test value)
@@ -220,9 +222,8 @@ pub fn create_base_intent_evm() -> IntentEvent {
 pub fn create_base_fulfillment() -> FulfillmentEvent {
     FulfillmentEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
-        intent_address: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            .to_string(), // Intent object address (64 hex chars for Move VM)
-        solver: DUMMY_SOLVER_ADDR_MVM_CON.to_string(),
+        intent_addr: "0xintent_addr".to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_MVM_CON.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 0,
         timestamp: 0, // Should be set explicitly in tests
@@ -234,8 +235,8 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
 /// ```
 /// let escrow = create_base_escrow_event();
 /// let custom_escrow = EscrowEvent {
-///     escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222".to_string(),
-///     intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
+///     escrow_id: "0xescrow_id".to_string(),
+///     intent_id: "0xintent_id".to_string(),
 ///     offered_amount: 1000,
 ///     ..escrow
 /// };
@@ -245,7 +246,7 @@ pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
         escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
         intent_id: DUMMY_INTENT_ID.to_string(),
-        issuer: DUMMY_REQUESTER_ADDR_MVM_CON.to_string(), // EscrowEvent.issuer is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
+        issuer_addr: DUMMY_REQUESTER_ADDR_MVM_CON.to_string(), // EscrowEvent.issuer_addr is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
@@ -267,7 +268,7 @@ pub fn create_base_escrow_event_evm() -> EscrowEvent {
     EscrowEvent {
         escrow_id: DUMMY_INTENT_ID.to_string(), // For EVM, escrow_id = intent_id
         intent_id: DUMMY_INTENT_ID.to_string(),
-        issuer: DUMMY_REQUESTER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
+        issuer_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
         offered_metadata: format!("{{\"token\":\"{}\"}}", DUMMY_TOKEN_ADDR_EVM), // Token address in JSON
         offered_amount: 1000,
         desired_metadata: "{}".to_string(), // EVM escrows don't store desired_metadata on-chain

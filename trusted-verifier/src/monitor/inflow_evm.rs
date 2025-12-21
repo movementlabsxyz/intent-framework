@@ -77,7 +77,7 @@ pub async fn poll_evm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
         escrow_events.push(EscrowEvent {
             escrow_id,
             intent_id,
-            issuer: event.requester_addr.clone(), // requester is the escrow creator
+            issuer_addr: event.requester_addr.clone(), // requester is the escrow creator
             offered_metadata: format!("{{\"inner\":\"{}\"}}", event.token_addr), // Store token address in metadata
             offered_amount: event.amount, // Amount from event
             desired_metadata: "{}".to_string(), // Not used for inflow escrows

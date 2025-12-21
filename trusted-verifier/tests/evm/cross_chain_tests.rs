@@ -6,7 +6,7 @@
 use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{create_base_escrow_event_evm, create_base_intent_evm};
+use test_helpers::{create_base_escrow_event_evm, create_base_intent_evm, DUMMY_EXPIRY};
 
 /// Test that EVM escrow can be matched to hub intent by intent_id
 /// Why: Verify cross-chain matching logic correctly links EVM escrow to hub intent
@@ -20,7 +20,7 @@ fn test_evm_escrow_cross_chain_matching() {
     let evm_escrow = EscrowEvent {
         intent_id: hub_intent.intent_id.clone(),
         escrow_id: hub_intent.intent_id.clone(), // For EVM, escrow_id = intent_id
-        issuer: hub_intent.requester.clone(),
+        issuer_addr: hub_intent.requester.clone(),
         offered_amount: hub_intent.offered_amount,
         ..create_base_escrow_event_evm()
     };
@@ -136,7 +136,7 @@ fn test_intent_id_conversion_to_evm_format() {
 fn test_evm_escrow_matching_with_hub_intent() {
     // Step 1: Create hub intent
     let hub_intent = IntentEvent {
-        expiry_time: 2000000,
+        expiry_time: DUMMY_EXPIRY,
         ..create_base_intent_evm()
     };
 
@@ -146,9 +146,9 @@ fn test_evm_escrow_matching_with_hub_intent() {
     let evm_escrow = EscrowEvent {
         intent_id: hub_intent.intent_id.clone(),
         escrow_id: hub_intent.intent_id.clone(), // EVM: escrow_id = intent_id
-        issuer: hub_intent.requester.clone(),
+        issuer_addr: hub_intent.requester.clone(),
         offered_amount: hub_intent.offered_amount,
-        expiry_time: 2000000, // Matches hub intent expiry
+        expiry_time: DUMMY_EXPIRY, // Matches hub intent expiry
         ..create_base_escrow_event_evm()
     };
 
@@ -178,7 +178,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
         "Expiry times should match"
     );
     assert_eq!(
-        matched.requester, evm_escrow.issuer,
+        matched.requester, evm_escrow.issuer_addr,
         "Request-intent requester should match escrow issuer"
     );
 

@@ -113,7 +113,7 @@ pub struct EscrowEvent {
     /// Unique identifier for the intent on hub chain (for matching)
     pub intent_id: String,
     /// Address of the issuer who created the escrow (who locked the funds)
-    pub issuer: String,
+    pub issuer_addr: String,
     /// Metadata of the asset being offered (what's locked in escrow)
     pub offered_metadata: String,
     /// Amount of the asset being offered (u64, matching Move contract constraint)
@@ -152,9 +152,9 @@ pub struct FulfillmentEvent {
     /// Unique identifier for the intent that was fulfilled
     pub intent_id: String,
     /// Address of the intent that was fulfilled
-    pub intent_address: String,
+    pub intent_addr: String,
     /// Address of the solver who fulfilled the intent
-    pub solver: String,
+    pub solver_addr: String,
     /// Metadata of the asset provided by the solver
     pub provided_metadata: String,
     /// Amount of the asset provided by the solver (u64, matching Move contract constraint)

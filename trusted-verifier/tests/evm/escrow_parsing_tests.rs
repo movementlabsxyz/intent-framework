@@ -122,7 +122,7 @@ async fn test_zero_amount_escrow_fails_validation() {
     let zero_amount_escrow = EscrowEvent {
         escrow_id: "0xtest_intent".to_string(),
         intent_id: "0xtest_intent".to_string(),
-        issuer: "0xrequester".to_string(),
+        issuer_addr: "0xrequester".to_string(),
         offered_metadata: "{}".to_string(),
         offered_amount: 0,
         desired_metadata: "{}".to_string(),
@@ -184,7 +184,7 @@ async fn test_correct_amount_escrow_passes_validation() {
     let valid_escrow = EscrowEvent {
         escrow_id: "0xvalid_intent".to_string(),
         intent_id: "0xvalid_intent".to_string(),
-        issuer: "0xrequester".to_string(),
+        issuer_addr: "0xrequester".to_string(),
         offered_metadata: "{}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{}".to_string(),

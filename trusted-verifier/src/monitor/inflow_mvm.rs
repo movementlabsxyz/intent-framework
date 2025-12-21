@@ -89,9 +89,9 @@ pub async fn poll_mvm_escrow_events(monitor: &EventMonitor) -> Result<Vec<Escrow
                 let reserved_solver = data.reserved_solver.clone();
 
                 escrow_events.push(EscrowEvent {
-                    escrow_id: data.intent_address.clone(),
+                    escrow_id: data.intent_addr.clone(),
                     intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain intent
-                    issuer: data.requester.clone(), // For inflow escrows, this is the requester
+                    issuer_addr: data.requester.clone(), // For inflow escrows, this is the requester
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(

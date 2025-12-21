@@ -146,8 +146,8 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                     let normalized_intent_id = crate::monitor::generic::normalize_intent_id_to_64_chars(&data.intent_id);
                     let fulfillment_event = FulfillmentEvent {
                         intent_id: normalized_intent_id,
-                        intent_address: data.intent_address.clone(),
-                        solver: data.solver.clone(),
+                        intent_addr: data.intent_addr.clone(),
+                        solver_addr: data.solver_addr.clone(),
                         provided_metadata: serde_json::to_string(&data.provided_metadata)
                             .unwrap_or_default(),
                         provided_amount: parse_amount_with_u64_limit(&data.provided_amount, "Fulfillment provided_amount")?,
@@ -171,7 +171,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                             fulfillment_cache.push(fulfillment_event.clone());
                             info!(
                                 "Received fulfillment event for intent {} by solver {}",
-                                data.intent_id, data.solver
+                                data.intent_id, data.solver_addr
                             );
                             true
                         } else {

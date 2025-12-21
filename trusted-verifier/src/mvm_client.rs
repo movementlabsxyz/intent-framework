@@ -575,7 +575,7 @@ impl MvmClient {
     ///
     /// # Arguments
     ///
-    /// * `intent_address` - Address of the intent object
+    /// * `intent_addr` - Address of the intent object
     /// * `module_addr` - Address of the intent module
     ///
     /// # Returns
@@ -585,11 +585,11 @@ impl MvmClient {
     #[allow(dead_code)] // Reserved for future use
     pub async fn get_intent_solver(
         &self,
-        intent_address: &str,
+        intent_addr: &str,
         _module_addr: &str,
     ) -> Result<Option<String>> {
         // Query the intent object's resources
-        let resources = self.get_resources(intent_address).await?;
+        let resources = self.get_resources(intent_addr).await?;
 
         // Look for the Intent resource which contains the reservation
         // The resource type should be something like: "0x{module_addr}::fa_intent::Intent<...>"
@@ -1371,7 +1371,8 @@ impl MvmClient {
 /// Represents a LimitOrderEvent emitted by the Move fa_intent module
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitOrderEvent {
-    pub intent_address: String,
+    #[serde(rename = "intent_address")]
+    pub intent_addr: String,
     pub intent_id: String,                   // For cross-chain linking
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     #[serde(
@@ -1402,7 +1403,8 @@ pub struct LimitOrderEvent {
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OracleLimitOrderEvent {
-    pub intent_address: String, // The escrow intent address (on connected chain)
+    #[serde(rename = "intent_address")]
+    pub intent_addr: String, // The escrow intent address (on connected chain)
     pub intent_id: String,      // The original intent ID (from hub chain)
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub offered_amount: String,
@@ -1436,9 +1438,11 @@ pub struct OracleLimitOrderEvent {
 /// Represents a LimitOrderFulfillmentEvent emitted when an intent is fulfilled
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitOrderFulfillmentEvent {
-    pub intent_address: String,
+    #[serde(rename = "intent_address")]
+    pub intent_addr: String,
     pub intent_id: String,
-    pub solver: String,
+    #[serde(rename = "solver")]
+    pub solver_addr: String,
     pub provided_metadata: serde_json::Value,
     pub provided_amount: String,
     pub timestamp: String,

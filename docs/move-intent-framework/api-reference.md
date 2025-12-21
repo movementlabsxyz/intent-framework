@@ -430,8 +430,8 @@ The solver registry is a permissionless registry that stores solver information 
 public entry fun register_solver(
     solver: &signer,
     public_key: vector<u8>,
-    connected_chain_evm_address: Option<vector<u8>>,
-    connected_chain_mvm_address: Option<address>,
+    connected_chain_evm_addr: Option<vector<u8>>,
+    connected_chain_mvm_addr: Option<address>,
 )
 ```
 
@@ -439,8 +439,8 @@ public entry fun register_solver(
 
 - `solver`: The solver signing the transaction (becomes the solver's hub chain address)
 - `public_key`: Ed25519 public key (32 bytes) for signature validation
-- `connected_chain_evm_address`: Optional EVM address on connected chain (20 bytes, None if not applicable)
-- `connected_chain_mvm_address`: Optional Move VM address on connected chain (None if not applicable)
+- `connected_chain_evm_addr`: Optional EVM address on connected chain (20 bytes, None if not applicable)
+- `connected_chain_mvm_addr`: Optional Move VM address on connected chain (None if not applicable)
 
 **Note**: Solvers must be registered before creating reserved intents. The registry stores:
 
@@ -462,8 +462,8 @@ For outflow intents, the verifier validates that the transaction solver on the c
 
 When calling `register_solver` via `movement move run`, Option types cannot be passed as "null". Use placeholder values instead:
 
-- For `connected_chain_evm_address`: Use `0x0000000000000000000000000000000000000000` (20 bytes of zeros) if not applicable
-- For `connected_chain_mvm_address`: Use `0x0` (zero address) if not applicable
+- For `connected_chain_evm_addr`: Use `0x0000000000000000000000000000000000000000` (20 bytes of zeros) if not applicable
+- For `connected_chain_mvm_addr`: Use `0x0` (zero address) if not applicable
 
 Example:
 

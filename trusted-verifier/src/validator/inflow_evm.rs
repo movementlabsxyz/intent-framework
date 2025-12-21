@@ -16,7 +16,7 @@ use anyhow::{Context, Result};
 /// * `intent` - The intent event from the hub chain (must have a solver)
 /// * `escrow_reserved_solver` - The reserved solver EVM address from the escrow
 /// * `hub_chain_rpc_url` - RPC URL of the hub chain (to query solver registry)
-/// * `registry_address` - Address where the solver registry is deployed
+/// * `solver_registry_addr` - Address where the solver registry is deployed
 ///
 /// # Returns
 ///
@@ -26,7 +26,7 @@ pub async fn validate_evm_escrow_solver(
     intent: &IntentEvent,
     escrow_reserved_solver: &str,
     hub_chain_rpc_url: &str,
-    registry_address: &str,
+    solver_registry_addr: &str,
 ) -> Result<ValidationResult> {
     // Check if intent has a solver
     let intent_solver = match &intent.reserved_solver {
@@ -43,7 +43,7 @@ pub async fn validate_evm_escrow_solver(
     // Query solver registry for EVM address
     let mvm_client = crate::mvm_client::MvmClient::new(hub_chain_rpc_url)?;
     let registered_evm_address = mvm_client
-        .get_solver_evm_address(intent_solver, registry_address)
+        .get_solver_evm_address(intent_solver, solver_registry_addr)
         .await
         .context("Failed to query solver EVM address from registry")?;
 

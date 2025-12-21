@@ -56,7 +56,7 @@ pub const DUMMY_PUBLIC_KEY: [u8; 4] = [1, 2, 3, 4];
 
 /// Dummy solver registry address
 #[allow(dead_code)]
-pub const DUMMY_SOLVER_REGISTRY_ADDRESS: &str = "0x1";
+pub const DUMMY_SOLVER_REGISTRY_ADDR: &str = "0x1";
 
 // ============================================================================
 // CONFIGURATION BUILDERS

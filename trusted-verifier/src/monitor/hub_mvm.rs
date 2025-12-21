@@ -94,16 +94,16 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
     let client = MvmClient::new(&monitor.config.hub_chain.rpc_url)?;
 
     // Query active requester addresses from the intent registry
-    let registry_address = &monitor.config.hub_chain.intent_module_address;
+    let solver_registry_addr = &monitor.config.hub_chain.intent_module_address;
     let requester_addresses_to_poll = client
-        .get_active_requesters(registry_address)
+        .get_active_requesters(solver_registry_addr)
         .await
         .context("Failed to query intent registry for active requesters")?;
 
     // Query all registered solver addresses to poll for fulfillment events
     // Fulfillment events are emitted on the solver's account, not the requester's account
     let solver_addresses = client
-        .get_all_solver_addresses(registry_address)
+        .get_all_solver_addresses(solver_registry_addr)
         .await
         .context("Failed to query solver registry for all solvers")?;
 

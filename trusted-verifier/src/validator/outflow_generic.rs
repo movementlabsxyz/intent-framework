@@ -205,7 +205,7 @@ pub async fn validate_outflow_fulfillment(
         use anyhow::Context;
 
         let hub_rpc_url = &validator.config().hub_chain.rpc_url;
-        let hub_registry_address = &validator.config().hub_chain.intent_module_address;
+        let hub_registry_addr = &validator.config().hub_chain.intent_module_address;
         let hub_client = MvmClient::new(hub_rpc_url)?;
 
         // Determine chain type from intent's connected_chain_id
@@ -240,7 +240,7 @@ pub async fn validate_outflow_fulfillment(
 
         if chain_type == crate::monitor::ChainType::Mvm {
             // For Move VM chains: Look up connected chain Move VM address from hub registry and compare to transaction solver
-            let registered_mvm_address = hub_client.get_solver_connected_chain_mvm_address(reserved_solver, hub_registry_address)
+            let registered_mvm_address = hub_client.get_solver_connected_chain_mvm_address(reserved_solver, hub_registry_addr)
                 .await
                 .context("Failed to query reserved solver connected chain Move VM address from hub chain registry")?;
 
@@ -280,7 +280,7 @@ pub async fn validate_outflow_fulfillment(
         } else if chain_type == crate::monitor::ChainType::Evm {
             // For EVM chains: Look up EVM address from hub registry and compare to transaction solver
             let registered_evm_address = hub_client
-                .get_solver_evm_address(reserved_solver, hub_registry_address)
+                .get_solver_evm_address(reserved_solver, hub_registry_addr)
                 .await
                 .context("Failed to query reserved solver EVM address from hub chain registry")?;
 
@@ -291,11 +291,11 @@ pub async fn validate_outflow_fulfillment(
                     tracing::warn!(
                         "Failed to get EVM address for solver '{}' from registry at '{}'. This could mean:\n\
                         1. Solver is not registered\n\
-                        2. Solver is registered but has no connected_chain_evm_address set\n\
+                        2. Solver is registered but has no connected_chain_evm_addr set\n\
                         3. Resource query failed or returned unexpected format\n\
                         Check verifier logs for detailed parsing information.",
                         reserved_solver,
-                        hub_registry_address
+                        hub_registry_addr
                     );
                     return Ok(ValidationResult {
                         valid: false,

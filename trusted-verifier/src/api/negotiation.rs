@@ -274,10 +274,10 @@ pub async fn submit_signature_handler(
             StatusCode::BAD_REQUEST,
         ));
     }
-    let solver_address = request.solver_address.clone();
+    let solver_addr = request.solver_address.clone();
 
     // Validate solver is registered on-chain
-    let registry_address = &config.hub_chain.intent_module_address;
+    let solver_registry_addr = &config.hub_chain.intent_module_address;
     let hub_rpc_url = &config.hub_chain.rpc_url;
 
     let mvm_client = match MvmClient::new(hub_rpc_url) {
@@ -297,7 +297,7 @@ pub async fn submit_signature_handler(
 
     // Check if solver is registered
     let solver_registered = match mvm_client
-        .get_solver_public_key(&solver_address, registry_address)
+        .get_solver_public_key(&solver_addr, solver_registry_addr)
         .await
     {
         Ok(Some(_)) => true,
@@ -322,7 +322,7 @@ pub async fn submit_signature_handler(
                 data: None,
                 error: Some(format!(
                     "Solver {} is not registered on-chain",
-                    solver_address
+                    solver_addr
                 )),
             }),
             StatusCode::BAD_REQUEST,
@@ -346,7 +346,7 @@ pub async fn submit_signature_handler(
     let result = store_write
         .add_signature(
             &draft_id,
-            solver_address.clone(),
+            solver_addr.clone(),
             request.signature.clone(),
             request.public_key.clone(),
         )

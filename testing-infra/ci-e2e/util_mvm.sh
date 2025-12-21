@@ -723,7 +723,7 @@ display_balances_connected_mvm() {
 }
 
 # Register solver in the solver registry
-# Usage: register_solver <profile> <chain_address> <public_key_hex> <evm_address_hex> [connected_chain_mvm_address] [log_file]
+# Usage: register_solver <profile> <chain_address> <public_key_hex> <evm_address_hex> [connected_chain_mvm_addr] [log_file]
 # Example: register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY_HEX" "0x0000000000000000000000000000000000000001"
 # Example with MVM address: register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY_HEX" "0x0000000000000000000000000000000000000001" "$SOLVER_CHAIN2_ADDRESS"
 # Exits on error
@@ -732,7 +732,7 @@ register_solver() {
     local chain_address="$2"
     local public_key_hex="$3"
     local evm_address_hex="$4"
-    local connected_chain_mvm_address="${5:-}"  # Optional: Move VM address on connected chain
+    local connected_chain_mvm_addr="${5:-}"  # Optional: Move VM address on connected chain
     local log_file="${6:-$LOG_FILE}"
 
     if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$public_key_hex" ] || [ -z "$evm_address_hex" ]; then
@@ -743,8 +743,8 @@ register_solver() {
     # Remove 0x prefix if present
     public_key_hex="${public_key_hex#0x}"
     evm_address_hex="${evm_address_hex#0x}"
-    if [ -n "$connected_chain_mvm_address" ]; then
-        connected_chain_mvm_address="${connected_chain_mvm_address#0x}"
+    if [ -n "$connected_chain_mvm_addr" ]; then
+        connected_chain_mvm_addr="${connected_chain_mvm_addr#0x}"
     fi
 
     log "     Registering solver in registry..."
@@ -755,7 +755,7 @@ register_solver() {
     log "       chain_address: $chain_address"
     log "       public_key_hex (length): ${#public_key_hex} chars"
     log "       evm_address_hex: $evm_address_hex (length: ${#evm_address_hex} chars)"
-    log "       connected_chain_mvm_address: ${connected_chain_mvm_address:-<empty>}"
+    log "       connected_chain_mvm_addr: ${connected_chain_mvm_addr:-<empty>}"
     
     # Build arguments: public_key, evm_address, mvm_address
     # Use sentinel values: empty vector (hex:) for EVM address if not provided, 0x0 for MVM address if not provided
@@ -768,8 +768,8 @@ register_solver() {
     fi
     
     local mvm_arg
-    if [ -n "$connected_chain_mvm_address" ]; then
-        mvm_arg="address:0x${connected_chain_mvm_address}"
+    if [ -n "$connected_chain_mvm_addr" ]; then
+        mvm_arg="address:0x${connected_chain_mvm_addr}"
     else
         # Use sentinel: zero address
         mvm_arg="address:0x0"
@@ -1022,8 +1022,8 @@ list_all_solvers() {
     echo "$events" | jq -s '[.[] | select(.data.public_key != null and (.data.public_key | length) > 0)]' 2>/dev/null | jq -c '.[]' 2>/dev/null | while IFS= read -r event; do
         local solver_addr=$(echo "$event" | jq -r '.data.solver // empty' 2>/dev/null)
         local public_key=$(echo "$event" | jq -r '.data.public_key // []' 2>/dev/null)
-        local evm_addr=$(echo "$event" | jq -r '.data.connected_chain_evm_address.vec[0] // "None"' 2>/dev/null)
-        local mvm_addr=$(echo "$event" | jq -r '.data.connected_chain_mvm_address.vec[0] // "None"' 2>/dev/null)
+        local evm_addr=$(echo "$event" | jq -r '.data.connected_chain_evm_addr.vec[0] // "None"' 2>/dev/null)
+        local mvm_addr=$(echo "$event" | jq -r '.data.connected_chain_mvm_addr.vec[0] // "None"' 2>/dev/null)
         local registered_at=$(echo "$event" | jq -r '.data.timestamp // 0' 2>/dev/null)
         
         if [ -n "$solver_addr" ] && [ "$solver_addr" != "null" ]; then

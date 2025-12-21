@@ -9,7 +9,7 @@ use trusted_verifier::validator::CrossChainValidator;
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_escrow_event, create_base_intent_mvm,
-    setup_mock_server_with_solver_registry,
+    setup_mock_server_with_solver_registry, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
 };
 
 // ============================================================================
@@ -21,23 +21,23 @@ use test_helpers::{
 #[tokio::test]
 async fn test_escrow_solver_address_matching_success() {
     // Setup mock server with solver registry
-    let solver_address = "0xsolver_mvm";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = "0xsolver_mvm";
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, validator) = setup_mock_server_with_solver_registry(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
 
     // Create a hub intent with a solver
     let hub_intent = IntentEvent {
-        reserved_solver: Some(solver_address.to_string()),
+        reserved_solver_addr: Some(solver_addr.to_string()),
         ..create_base_intent_mvm()
     };
 
     // Create an escrow with matching connected chain MVM solver address
     let escrow_match = EscrowEvent {
-        reserved_solver: Some(connected_chain_mvm_address.to_string()),
+        reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -66,24 +66,24 @@ async fn test_escrow_solver_address_matching_success() {
 #[tokio::test]
 async fn test_escrow_solver_address_mismatch_rejection() {
     // Setup mock server with solver registry
-    let solver_address = "0xsolver_mvm";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let different_solver_address = "0xdifferent_solver_address_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = "0xsolver_mvm";
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
+    let different_solver_addr = "0xdifferent_solver_address_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let (_mock_server, validator) = setup_mock_server_with_solver_registry(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
 
     // Create a hub intent with a solver
     let hub_intent = IntentEvent {
-        reserved_solver: Some(solver_address.to_string()),
+        reserved_solver_addr: Some(solver_addr.to_string()),
         ..create_base_intent_mvm()
     };
 
     // Create an escrow with different solver address (doesn't match registered connected chain MVM address)
     let escrow_mismatch = EscrowEvent {
-        reserved_solver: Some(different_solver_address.to_string()),
+        reserved_solver_addr: Some(different_solver_addr.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -117,12 +117,12 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
 
     // Test case 1: Hub intent has solver, escrow doesn't
     let hub_intent_with_solver = IntentEvent {
-        reserved_solver: Some("0xsolver_mvm".to_string()),
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
         ..create_base_intent_mvm()
     };
 
     let escrow_without_solver = EscrowEvent {
-        reserved_solver: None,
+        reserved_solver_addr: None,
         ..create_base_escrow_event()
     };
 
@@ -146,12 +146,12 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
 
     // Test case 2: Escrow has solver, hub intent doesn't
     let hub_intent_without_solver = IntentEvent {
-        reserved_solver: None,
+        reserved_solver_addr: None,
         ..create_base_intent_mvm()
     };
 
     let escrow_with_solver = EscrowEvent {
-        reserved_solver: Some("0xsolver_mvm".to_string()),
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
         ..create_base_escrow_event()
     };
 

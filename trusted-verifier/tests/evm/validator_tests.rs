@@ -16,12 +16,12 @@ use test_helpers::{
 // ============================================================================
 
 /// Create a test intent with the given solver
-fn create_test_intent(solver: Option<String>) -> IntentEvent {
+fn create_test_intent(solver_addr: Option<String>) -> IntentEvent {
     IntentEvent {
         offered_metadata: "{}".to_string(),
         desired_metadata: "{}".to_string(),
         expiry_time: 1000000,
-        reserved_solver: solver,
+        reserved_solver_addr: solver_addr,
         connected_chain_id: Some(31337),
         ..create_base_intent_evm()
     }

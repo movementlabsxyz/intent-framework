@@ -185,11 +185,11 @@ pub struct FulfillmentTransactionParams {
     /// Intent ID extracted from transaction
     pub intent_id: String,
     /// Recipient address (where tokens were sent)
-    pub recipient: String,
+    pub recipient_addr: String,
     /// Amount transferred (u64, matching Move contract constraint)
     pub amount: u64,
     /// Solver address (transaction sender)
-    pub solver: String,
+    pub solver_addr: String,
     /// Token metadata/address
     ///
     /// Note: Currently extracted but not used in validation. Kept for completeness

@@ -10,6 +10,7 @@ mod test_helpers;
 use test_helpers::{
     build_test_config_with_mvm, create_base_escrow_event, create_base_fulfillment,
     create_base_intent_mvm, setup_mock_server_with_solver_registry_config,
+    DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
 };
 
 // ============================================================================
@@ -104,11 +105,11 @@ fn test_revocable_intent_rejection() {
 async fn test_generates_approval_when_fulfillment_and_escrow_present() {
     let _ = tracing_subscriber::fmt::try_init();
     // Setup mock server with solver registry
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
     let monitor = EventMonitor::new(&config)
@@ -121,8 +122,8 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: intent_id.to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(solver_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_addr.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -132,8 +133,8 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             intent_id: intent_id.to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(connected_chain_mvm_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
             ..create_base_escrow_event()
         });
     }
@@ -150,9 +151,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
 
     // Assert: approval exists for escrow
     let approval = monitor
-        .get_approval_for_escrow(
-            "0x2222222222222222222222222222222222222222222222222222222222222222",
-        )
+        .get_approval_for_escrow(DUMMY_ESCROW_ID_MVM)
         .await;
     assert!(approval.is_some(), "Approval should exist for escrow");
     let approval = approval.unwrap();
@@ -204,11 +203,11 @@ async fn test_returns_error_when_no_matching_escrow() {
 async fn test_multiple_concurrent_intents() {
     let _ = tracing_subscriber::fmt::try_init();
     // Setup mock server with solver registry
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
     let monitor = EventMonitor::new(&config)
@@ -219,20 +218,20 @@ async fn test_multiple_concurrent_intents() {
     let intents = vec![
         IntentEvent {
             intent_id: "0x01".to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(solver_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_addr.to_string()),
             ..create_base_intent_mvm()
         },
         IntentEvent {
             intent_id: "0x02".to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(solver_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_addr.to_string()),
             ..create_base_intent_mvm()
         },
         IntentEvent {
             intent_id: "0x03".to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(solver_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_addr.to_string()),
             ..create_base_intent_mvm()
         },
     ];
@@ -248,22 +247,22 @@ async fn test_multiple_concurrent_intents() {
         EscrowEvent {
             escrow_id: "0xescrow1".to_string(),
             intent_id: "0x01".to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(connected_chain_mvm_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow2".to_string(),
             intent_id: "0x02".to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(connected_chain_mvm_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
             ..create_base_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow3".to_string(),
             intent_id: "0x03".to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(connected_chain_mvm_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
             ..create_base_escrow_event()
         },
     ];
@@ -348,11 +347,11 @@ async fn test_multiple_concurrent_intents() {
 async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
     // Setup mock server with solver registry
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
     let monitor = EventMonitor::new(&config)
@@ -369,7 +368,7 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     let expired_intent = IntentEvent {
         intent_id: "0xexpired_intent".to_string(),
         expiry_time: past_expiry,
-        reserved_solver: Some(solver_address.to_string()),
+        reserved_solver_addr: Some(solver_addr.to_string()),
         ..create_base_intent_mvm()
     };
 
@@ -386,7 +385,7 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     //       Escrow solver must match registered connected chain MVM address ✓
     let escrow_event = EscrowEvent {
         intent_id: expired_intent.intent_id.clone(),
-        reserved_solver: Some(connected_chain_mvm_address.to_string()),
+        reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -412,11 +411,11 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
 async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     let _ = tracing_subscriber::fmt::try_init();
     // Setup mock server with solver registry
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
     let monitor = EventMonitor::new(&config)
@@ -433,7 +432,7 @@ async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     let non_expired_intent = IntentEvent {
         intent_id: "0xvalid_intent".to_string(),
         expiry_time: future_expiry,
-        reserved_solver: Some(solver_address.to_string()),
+        reserved_solver_addr: Some(solver_addr.to_string()),
         ..create_base_intent_mvm()
     };
 
@@ -450,7 +449,7 @@ async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     // - Escrow solver must match registered connected chain MVM address ✓
     let valid_escrow = EscrowEvent {
         intent_id: non_expired_intent.intent_id.clone(),
-        reserved_solver: Some(connected_chain_mvm_address.to_string()),
+        reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
         ..create_base_escrow_event()
     };
 
@@ -573,11 +572,11 @@ async fn test_duplicate_intent_event_rejection() {
 async fn test_duplicate_fulfillment_event_handling() {
     let _ = tracing_subscriber::fmt::try_init();
     // Setup mock server with solver registry
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
     let monitor = EventMonitor::new(&config)
@@ -588,8 +587,8 @@ async fn test_duplicate_fulfillment_event_handling() {
     {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
-            expiry_time: 9999999999,
-            reserved_solver: Some(solver_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_addr.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -598,8 +597,8 @@ async fn test_duplicate_fulfillment_event_handling() {
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
-            expiry_time: 9999999999,
-            reserved_solver: Some(connected_chain_mvm_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
             ..create_base_escrow_event()
         });
     }
@@ -626,9 +625,7 @@ async fn test_duplicate_fulfillment_event_handling() {
 
     // Verify approval was generated
     let approval = monitor
-        .get_approval_for_escrow(
-            "0x2222222222222222222222222222222222222222222222222222222222222222",
-        )
+        .get_approval_for_escrow(DUMMY_ESCROW_ID_MVM)
         .await;
     assert!(
         approval.is_some(),
@@ -660,9 +657,7 @@ async fn test_duplicate_fulfillment_event_handling() {
 
     // Verify approval was not regenerated (same approval exists)
     let approval = monitor
-        .get_approval_for_escrow(
-            "0x2222222222222222222222222222222222222222222222222222222222222222",
-        )
+        .get_approval_for_escrow(DUMMY_ESCROW_ID_MVM)
         .await;
     assert!(approval.is_some(), "Approval should still exist");
     let second_approval = approval.unwrap();
@@ -678,11 +673,11 @@ async fn test_duplicate_fulfillment_event_handling() {
 async fn test_base_helpers_work_with_signature_generation() {
     let _ = tracing_subscriber::fmt::try_init();
     // Setup mock server with solver registry
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
     let monitor = EventMonitor::new(&config)
@@ -693,8 +688,8 @@ async fn test_base_helpers_work_with_signature_generation() {
     {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
-            expiry_time: 9999999999,
-            reserved_solver: Some(solver_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_addr.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -703,8 +698,8 @@ async fn test_base_helpers_work_with_signature_generation() {
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
-            expiry_time: 9999999999,
-            reserved_solver: Some(connected_chain_mvm_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
             ..create_base_escrow_event()
         });
     }
@@ -718,9 +713,7 @@ async fn test_base_helpers_work_with_signature_generation() {
 
     // Verify approval was generated
     let approval = monitor
-        .get_approval_for_escrow(
-            "0x2222222222222222222222222222222222222222222222222222222222222222",
-        )
+        .get_approval_for_escrow(DUMMY_ESCROW_ID_MVM)
         .await;
     assert!(
         approval.is_some(),
@@ -735,11 +728,11 @@ async fn test_base_helpers_work_with_signature_generation() {
 async fn test_fulfillment_with_odd_length_intent_id() {
     let _ = tracing_subscriber::fmt::try_init();
     // Setup mock server with solver registry
-    let solver_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    let connected_chain_mvm_address = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let solver_addr = DUMMY_SOLVER_ADDR_MVM_HUB;
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config) = setup_mock_server_with_solver_registry_config(
-        Some(solver_address),
-        Some(connected_chain_mvm_address),
+        Some(solver_addr),
+        Some(solver_connected_chain_mvm_addr),
     )
     .await;
     let monitor = EventMonitor::new(&config)
@@ -756,8 +749,8 @@ async fn test_fulfillment_with_odd_length_intent_id() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: escrow_intent_id.to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(solver_address.to_string()),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_addr.to_string()),
             ..create_base_intent_mvm()
         });
     }
@@ -766,10 +759,9 @@ async fn test_fulfillment_with_odd_length_intent_id() {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             intent_id: escrow_intent_id.to_string(),
-            escrow_id: "0x2222222222222222222222222222222222222222222222222222222222222222"
-                .to_string(),
-            expiry_time: 9999999999,
-            reserved_solver: Some(connected_chain_mvm_address.to_string()),
+            escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
+            expiry_time: DUMMY_EXPIRY,
+            reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
             ..create_base_escrow_event()
         });
     }
@@ -792,9 +784,7 @@ async fn test_fulfillment_with_odd_length_intent_id() {
 
     // Verify approval was generated
     let approval = monitor
-        .get_approval_for_escrow(
-            "0x2222222222222222222222222222222222222222222222222222222222222222",
-        )
+        .get_approval_for_escrow(DUMMY_ESCROW_ID_MVM)
         .await;
     assert!(
         approval.is_some(),
@@ -843,9 +833,7 @@ async fn test_approval_fails_when_intent_id_mismatch() {
 
     // Verify no approval was generated
     let approval = monitor
-        .get_approval_for_escrow(
-            "0x2222222222222222222222222222222222222222222222222222222222222222",
-        )
+        .get_approval_for_escrow(DUMMY_ESCROW_ID_MVM)
         .await;
     assert!(
         approval.is_none(),
@@ -887,9 +875,7 @@ async fn test_approval_fails_when_no_escrow_exists() {
 
     // Verify no approval was generated
     let approval = monitor
-        .get_approval_for_escrow(
-            "0x2222222222222222222222222222222222222222222222222222222222222222",
-        )
+        .get_approval_for_escrow(DUMMY_ESCROW_ID_MVM)
         .await;
     assert!(
         approval.is_none(),

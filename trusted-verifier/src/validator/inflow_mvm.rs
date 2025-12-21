@@ -29,7 +29,7 @@ pub async fn validate_mvm_escrow_solver(
     solver_registry_addr: &str,
 ) -> Result<ValidationResult> {
     // Check if intent has a solver
-    let intent_solver = match &intent.reserved_solver {
+    let intent_solver = match &intent.reserved_solver_addr {
         Some(solver) => solver,
         None => {
             return Ok(ValidationResult {
@@ -42,12 +42,12 @@ pub async fn validate_mvm_escrow_solver(
 
     // Query solver registry for connected chain MVM address
     let mvm_client = crate::mvm_client::MvmClient::new(hub_chain_rpc_url)?;
-    let registered_mvm_address = mvm_client
+    let registered_mvm_addr = mvm_client
         .get_solver_connected_chain_mvm_address(intent_solver, solver_registry_addr)
         .await
         .context("Failed to query solver connected chain MVM address from registry")?;
 
-    let registered_mvm_address = match registered_mvm_address {
+    let registered_mvm_addr = match registered_mvm_addr {
         Some(addr) => addr,
         None => {
             return Ok(ValidationResult {
@@ -66,9 +66,9 @@ pub async fn validate_mvm_escrow_solver(
         .strip_prefix("0x")
         .unwrap_or(escrow_reserved_solver);
     let escrow_solver = format!("{:0>64}", escrow_solver_raw).to_lowercase();
-    let registered_solver_raw = registered_mvm_address
+    let registered_solver_raw = registered_mvm_addr
         .strip_prefix("0x")
-        .unwrap_or(&registered_mvm_address);
+        .unwrap_or(&registered_mvm_addr);
     let registered_solver = format!("{:0>64}", registered_solver_raw).to_lowercase();
 
     if escrow_solver != registered_solver {
@@ -76,7 +76,7 @@ pub async fn validate_mvm_escrow_solver(
             valid: false,
             message: format!(
                 "MVM escrow reserved solver '{}' does not match registered solver connected chain MVM address '{}'",
-                escrow_reserved_solver, registered_mvm_address
+                escrow_reserved_solver, registered_mvm_addr
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });

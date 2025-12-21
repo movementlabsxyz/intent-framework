@@ -10,7 +10,7 @@ use trusted_verifier::monitor::{ChainType, EscrowEvent, EventMonitor, IntentEven
 mod test_helpers;
 use test_helpers::{
     build_test_config_with_evm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ID,
-    DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM, DUMMY_SOLVER_ADDR_EVM,
+    DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_EVM,
     DUMMY_TOKEN_ADDR_EVM,
 };
 
@@ -104,7 +104,7 @@ async fn test_zero_amount_escrow_fails_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xtest_intent".to_string(),
-            requester: DUMMY_REQUESTER_ADDR_MVM.to_string(),
+            requester: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             connected_chain_id: Some(84532), // Base Sepolia
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
@@ -112,7 +112,7 @@ async fn test_zero_amount_escrow_fails_validation() {
             desired_amount: 1000, // Requires 1000 tokens
             expiry_time: DUMMY_EXPIRY,
             revocable: false,
-            reserved_solver: None,
+            reserved_solver_addr: None,
             requester_address_connected_chain: None,
             timestamp: 1,
         });
@@ -129,7 +129,7 @@ async fn test_zero_amount_escrow_fails_validation() {
         desired_amount: 0,
         expiry_time: DUMMY_EXPIRY,
         revocable: false,
-        reserved_solver: None,
+        reserved_solver_addr: None,
         chain_id: 84532,
         chain_type: ChainType::Evm,
         timestamp: 1,
@@ -166,7 +166,7 @@ async fn test_correct_amount_escrow_passes_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xvalid_intent".to_string(),
-            requester: DUMMY_REQUESTER_ADDR_MVM.to_string(),
+            requester: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             connected_chain_id: Some(84532),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
@@ -174,7 +174,7 @@ async fn test_correct_amount_escrow_passes_validation() {
             desired_amount: 1000,
             expiry_time: DUMMY_EXPIRY,
             revocable: false,
-            reserved_solver: None,
+            reserved_solver_addr: None,
             requester_address_connected_chain: None,
             timestamp: 1,
         });
@@ -191,7 +191,7 @@ async fn test_correct_amount_escrow_passes_validation() {
         desired_amount: 0,
         expiry_time: DUMMY_EXPIRY,
         revocable: false,
-        reserved_solver: None,
+        reserved_solver_addr: None,
         chain_id: 84532,
         chain_type: ChainType::Evm,
         timestamp: 1,

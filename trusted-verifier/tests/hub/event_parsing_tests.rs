@@ -9,7 +9,9 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config_with_mvm;
+use test_helpers::{
+    build_test_config_with_mvm, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_HUB,
+};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -42,12 +44,12 @@ fn create_mock_oracle_limit_order_event(
             "desired_metadata_address": {"vec": []}, // None for same-chain (test uses same chain IDs)
             "desired_amount": "500",
             "desired_chain_id": "2",
-            "requester": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "requester": DUMMY_REQUESTER_ADDR_MVM_HUB,
             "expiry_time": "1000000",
             "min_reported_value": "0",
             "revocable": false,
             "reserved_solver": {
-                "vec": ["0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]
+                "vec": [DUMMY_SOLVER_ADDR_MVM_HUB]
             },
             "requester_address_connected_chain": requester_addr_opt
         }
@@ -56,13 +58,13 @@ fn create_mock_oracle_limit_order_event(
 
 /// Setup a mock server that returns OracleLimitOrderEvent in transaction events
 async fn setup_mock_server_with_oracle_event(
-    account_address: &str,
+    account_addr: &str,
     requester_address_connected_chain: Option<&str>,
 ) -> (MockServer, EventMonitor) {
     let mock_server = MockServer::start().await;
 
     let event = create_mock_oracle_limit_order_event(
-        "0x1111111111111111111111111111111111111111111111111111111111111111",
+        DUMMY_INTENT_ID,
         requester_address_connected_chain,
     );
 
@@ -75,7 +77,7 @@ async fn setup_mock_server_with_oracle_event(
             "sequence_number": "0",
             "guid": {
                 "creation_number": "0",
-                "account_address": account_address
+                "account_address": account_addr
             }
         }]
     }]);
@@ -83,7 +85,7 @@ async fn setup_mock_server_with_oracle_event(
     Mock::given(method("GET"))
         .and(path(format!(
             "/v1/accounts/{}/transactions",
-            account_address
+            account_addr
         )))
         .respond_with(ResponseTemplate::new(200).set_body_json(transactions_response))
         .mount(&mock_server)
@@ -91,10 +93,10 @@ async fn setup_mock_server_with_oracle_event(
 
     // Mock the intent registry get_active_requesters view function
     // Returns the test account address so poll_hub_events knows which accounts to query
-    let account_with_prefix = if account_address.starts_with("0x") {
-        account_address.to_string()
+    let account_with_prefix = if account_addr.starts_with("0x") {
+        account_addr.to_string()
     } else {
-        format!("0x{}", account_address)
+        format!("0x{}", account_addr)
     };
     let view_response_requesters = json!([[account_with_prefix]]);
     Mock::given(method("POST"))
@@ -137,12 +139,12 @@ async fn setup_mock_server_with_oracle_event(
 async fn test_poll_hub_events_populates_requester_address_connected_chain() {
     let _ = tracing_subscriber::fmt::try_init();
     // Use address without 0x prefix since the code strips it
-    let account_address = "1";
+    let account_addr = "1";
     let requester_address_connected_chain =
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        DUMMY_REQUESTER_ADDR_MVM_HUB;
 
     let (_mock_server, monitor) = setup_mock_server_with_oracle_event(
-        account_address,
+        account_addr,
         Some(requester_address_connected_chain),
     )
     .await;
@@ -173,11 +175,11 @@ async fn test_poll_hub_events_populates_requester_address_connected_chain() {
     // Verify other fields are populated
     assert_eq!(
         event.intent_id,
-        "0x1111111111111111111111111111111111111111111111111111111111111111"
+        DUMMY_INTENT_ID
     );
     assert_eq!(
-        event.reserved_solver,
-        Some("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string())
+        event.reserved_solver_addr,
+        Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string())
     );
     assert_eq!(event.offered_amount, 1000);
     assert_eq!(event.desired_amount, 500);
@@ -195,11 +197,11 @@ async fn test_poll_hub_events_populates_requester_address_connected_chain() {
 async fn test_poll_hub_events_handles_missing_requester_address_connected_chain() {
     let _ = tracing_subscriber::fmt::try_init();
     // Use address without 0x prefix since the code strips it
-    let account_address = "2";
+    let account_addr = "2";
 
     // Event without requester_address_connected_chain (None)
     let (_mock_server, monitor) = setup_mock_server_with_oracle_event(
-        account_address,
+        account_addr,
         None, // Missing requester_address_connected_chain
     )
     .await;

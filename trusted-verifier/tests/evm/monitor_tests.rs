@@ -7,7 +7,9 @@ use base64::Engine;
 use trusted_verifier::monitor::{EventMonitor, FulfillmentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::build_test_config_with_evm;
+use test_helpers::{
+    build_test_config_with_evm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ID,
+};
 
 /// Test that EVM escrow detection logic correctly identifies EVM escrows
 /// Why: Verify that escrows are correctly identified as EVM when not in Move VM cache and EVM is configured
@@ -109,16 +111,16 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(trusted_verifier::monitor::EscrowEvent {
-            escrow_id: "0xmvm_escrow".to_string(),
-            intent_id: "0xmvmt_intent".to_string(),
+            escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
+            intent_id: DUMMY_INTENT_ID.to_string(),
             issuer: "0xissuer".to_string(),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
             desired_amount: 1,
-            expiry_time: 9999999999,
+            expiry_time: DUMMY_EXPIRY,
             revocable: false,
-            reserved_solver: None,
+            reserved_solver_addr: None,
             chain_id: 2,
             chain_type: trusted_verifier::ChainType::Mvm,
             timestamp: 1,
@@ -139,7 +141,7 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
         .validate_and_approve_fulfillment(&mvm_fulfillment)
         .await;
     if mvm_result.is_ok() {
-        let mvm_approval = monitor.get_approval_for_escrow("0xmvm_escrow").await;
+        let mvm_approval = monitor.get_approval_for_escrow(DUMMY_ESCROW_ID_MVM).await;
         if let Some(approval) = mvm_approval {
             // Ed25519 signatures are 64 bytes (not 65)
             let sig_bytes = base64::engine::general_purpose::STANDARD

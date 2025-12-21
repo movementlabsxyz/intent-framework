@@ -84,7 +84,7 @@ pub async fn poll_evm_escrow_events(config: &Config) -> Result<Vec<EscrowEvent>>
             desired_amount: 0, // Not used for inflow escrows
             expiry_time: event.expiry, // Expiry from event
             revocable: false, // EVM escrows are always non-revocable
-            reserved_solver: Some(event.reserved_solver_addr.clone()),
+            reserved_solver_addr: Some(event.reserved_solver_addr.clone()),
             chain_id: connected_chain_evm.chain_id,
             chain_type: ChainType::Evm, // This escrow came from EVM monitoring
             timestamp,

@@ -118,9 +118,9 @@ pub fn extract_mvm_fulfillment_params(tx: &MvmTransaction) -> Result<Fulfillment
 
     Ok(FulfillmentTransactionParams {
         intent_id,
-        recipient,
+        recipient_addr: recipient,
         amount,
-        solver,
+        solver_addr: solver,
         token_metadata: metadata,
     })
 }

@@ -27,20 +27,26 @@ pub const DUMMY_INTENT_ID: &str = "0x1111111111111111111111111111111111111111111
 /// Dummy escrow ID (Move VM format, 64 hex characters)
 pub const DUMMY_ESCROW_ID_MVM: &str = "0x2222222222222222222222222222222222222222222222222222222222222222";
 
-/// Dummy requester address (Move VM format, 32 bytes)
-pub const DUMMY_REQUESTER_ADDR_MVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+/// Dummy requester address on hub chain (Move VM format, 32 bytes)
+pub const DUMMY_REQUESTER_ADDR_MVM_HUB: &str = "0x3333333333333333333333333333333333333333333333333333333333333333";
+
+/// Dummy requester address on connected chain (Move VM format, 32 bytes)
+pub const DUMMY_REQUESTER_ADDR_MVM_CON: &str = "0x4444444444444444444444444444444444444444444444444444444444444444";
 
 /// Dummy requester address (EVM format, 20 bytes)
-pub const DUMMY_REQUESTER_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+pub const DUMMY_REQUESTER_ADDR_EVM: &str = "0x5555555555555555555555555555555555555555";
 
-/// Dummy solver address (Move VM format, 32 bytes)
-pub const DUMMY_SOLVER_ADDR_MVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+/// Dummy solver address on hub chain (Move VM format, 32 bytes)
+pub const DUMMY_SOLVER_ADDR_MVM_HUB: &str = "0x6666666666666666666666666666666666666666666666666666666666666666";
+
+/// Dummy solver address on connected chain (Move VM format, 32 bytes)
+pub const DUMMY_SOLVER_ADDR_MVM_CON: &str = "0x7777777777777777777777777777777777777777777777777777777777777777";
 
 /// Dummy solver address (EVM format, 20 bytes)
-pub const DUMMY_SOLVER_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+pub const DUMMY_SOLVER_ADDR_EVM: &str = "0x8888888888888888888888888888888888888888";
 
 /// Dummy token address (EVM format, 20 bytes)
-pub const DUMMY_TOKEN_ADDR_EVM: &str = "0xcccccccccccccccccccccccccccccccccccccccc";
+pub const DUMMY_TOKEN_ADDR_EVM: &str = "0x9999999999999999999999999999999999999999";
 
 /// Dummy timestamp for solver registration (arbitrary test value)
 #[allow(dead_code)]
@@ -156,16 +162,16 @@ pub fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
 pub fn create_base_intent_mvm() -> IntentEvent {
     IntentEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
-        requester: DUMMY_REQUESTER_ADDR_MVM.to_string(), // Hub chain requester (Move VM format, 32 bytes)
+        requester: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(), // Hub chain requester (Move VM format, 32 bytes)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0,
         expiry_time: 0, // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some(DUMMY_SOLVER_ADDR_MVM.to_string()), // Move VM address format (32 bytes)
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()), // Move VM address format (32 bytes)
         connected_chain_id: Some(2),
-        requester_address_connected_chain: Some(DUMMY_REQUESTER_ADDR_MVM.to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
+        requester_address_connected_chain: Some(DUMMY_REQUESTER_ADDR_MVM_CON.to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
         timestamp: 0,
     }
 }
@@ -186,7 +192,7 @@ pub fn create_base_intent_mvm() -> IntentEvent {
 pub fn create_base_intent_evm() -> IntentEvent {
     IntentEvent {
         offered_metadata: format!(r#"{{"token":"{}"}}"#, DUMMY_TOKEN_ADDR_EVM), // EVM token address format for cross-chain
-        reserved_solver: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         connected_chain_id: Some(31337), // EVM chain ID (matches build_test_config_with_evm)
         requester_address_connected_chain: Some(DUMMY_REQUESTER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         ..create_base_intent_mvm()
@@ -210,7 +216,7 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
         intent_address: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
             .to_string(), // Intent object address (64 hex chars for Move VM)
-        solver: DUMMY_SOLVER_ADDR_MVM.to_string(),
+        solver: DUMMY_SOLVER_ADDR_MVM_CON.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 0,
         timestamp: 0, // Should be set explicitly in tests
@@ -233,14 +239,14 @@ pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
         escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
         intent_id: DUMMY_INTENT_ID.to_string(),
-        issuer: DUMMY_REQUESTER_ADDR_MVM.to_string(), // EscrowEvent.issuer is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
+        issuer: DUMMY_REQUESTER_ADDR_MVM_CON.to_string(), // EscrowEvent.issuer is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0, // Escrow desired_amount must be 0 (validation requirement)
         expiry_time: 0,    // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some(DUMMY_SOLVER_ADDR_MVM.to_string()),
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
         chain_id: 2,
         chain_type: ChainType::Mvm,
         timestamp: 0, // Should be set explicitly in tests
@@ -262,7 +268,7 @@ pub fn create_base_escrow_event_evm() -> EscrowEvent {
         desired_amount: 0, // Not used for EVM inflow escrows
         expiry_time: 0,    // Should be set explicitly in tests
         revocable: false,
-        reserved_solver: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         chain_id: 31337, // Matches build_test_config_with_evm
         chain_type: ChainType::Evm,
         timestamp: 0, // Should be set explicitly in tests
@@ -283,9 +289,9 @@ pub fn create_base_escrow_event_evm() -> EscrowEvent {
 pub fn create_base_fulfillment_transaction_params_mvm() -> FulfillmentTransactionParams {
     FulfillmentTransactionParams {
         intent_id: DUMMY_INTENT_ID.to_string(),
-        recipient: DUMMY_REQUESTER_ADDR_MVM.to_string(), // Requester who receives tokens on connected chain (Move VM format - 32 bytes)
+        recipient_addr: DUMMY_REQUESTER_ADDR_MVM_CON.to_string(), // Requester who receives tokens on connected chain (Move VM format - 32 bytes)
         amount: 0, // Should be set explicitly in tests
-        solver: DUMMY_SOLVER_ADDR_MVM.to_string(), // Move VM address format (32 bytes)
+        solver_addr: DUMMY_SOLVER_ADDR_MVM_CON.to_string(), // Move VM address format (32 bytes)
         token_metadata: DUMMY_TOKEN_ADDR_EVM.to_string(), // Token contract address (EVM) or metadata object (Move VM)
     }
 }
@@ -304,8 +310,8 @@ pub fn create_base_fulfillment_transaction_params_mvm() -> FulfillmentTransactio
 #[allow(dead_code)]
 pub fn create_base_fulfillment_transaction_params_evm() -> FulfillmentTransactionParams {
     FulfillmentTransactionParams {
-        recipient: DUMMY_REQUESTER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
-        solver: DUMMY_SOLVER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
+        recipient_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
         ..create_base_fulfillment_transaction_params_mvm()
     }
 }
@@ -328,7 +334,7 @@ pub fn create_base_mvm_transaction() -> MvmTransaction {
         success: true,
         events: vec![],
         payload: None, // Should be set explicitly in tests
-        sender: Some(DUMMY_SOLVER_ADDR_MVM.to_string()),
+        sender: Some(DUMMY_SOLVER_ADDR_MVM_CON.to_string()),
     }
 }
 

@@ -75,9 +75,9 @@ pub fn extract_evm_fulfillment_params(tx: &EvmTransaction) -> Result<Fulfillment
 
     Ok(FulfillmentTransactionParams {
         intent_id,
-        recipient,
+        recipient_addr: recipient,
         amount,
-        solver,
+        solver_addr: solver,
         token_metadata: tx
             .to
             .as_ref()

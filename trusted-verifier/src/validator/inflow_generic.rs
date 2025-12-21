@@ -114,13 +114,13 @@ pub async fn validate_intent_fulfillment(
     // For Move VM escrows: Check if escrow's reserved_solver (connected chain MVM address) matches registered solver's connected chain MVM address
     // For EVM escrows: Check if escrow's reserved_solver (EVM address) matches registered solver's EVM address
     if let (Some(escrow_solver), Some(_intent_solver)) = (
-        &escrow_event.reserved_solver,
-        &intent_event.reserved_solver,
+        &escrow_event.reserved_solver_addr,
+        &intent_event.reserved_solver_addr,
     ) {
         // Determine chain type from the chain_type field set by the monitor
         let is_evm_escrow = escrow_event.chain_type == ChainType::Evm;
         let hub_rpc_url = &validator.config.hub_chain.rpc_url;
-        let registry_address = &validator.config.hub_chain.intent_module_address; // Registry is at module address
+        let solver_registry_addr = &validator.config.hub_chain.intent_module_address; // Registry is at module address
 
         if is_evm_escrow {
             // EVM escrow: Compare EVM addresses
@@ -130,7 +130,7 @@ pub async fn validate_intent_fulfillment(
                 intent_event,
                 escrow_solver,
                 hub_rpc_url,
-                registry_address,
+                solver_registry_addr,
             )
             .await?;
 
@@ -145,7 +145,7 @@ pub async fn validate_intent_fulfillment(
                 intent_event,
                 escrow_solver,
                 hub_rpc_url,
-                registry_address,
+                solver_registry_addr,
             )
             .await?;
 
@@ -153,15 +153,15 @@ pub async fn validate_intent_fulfillment(
                 return Ok(validation_result);
             }
         }
-    } else if escrow_event.reserved_solver.is_some()
-        || intent_event.reserved_solver.is_some()
+    } else if escrow_event.reserved_solver_addr.is_some()
+        || intent_event.reserved_solver_addr.is_some()
     {
         // One is reserved but the other is not - mismatch
         return Ok(ValidationResult {
             valid: false,
             message: format!(
                 "Escrow and intent reservation mismatch: escrow reserved_solver={:?}, intent solver={:?}",
-                escrow_event.reserved_solver, intent_event.reserved_solver
+                escrow_event.reserved_solver_addr, intent_event.reserved_solver_addr
             ),
             timestamp: chrono::Utc::now().timestamp() as u64,
         });

@@ -250,7 +250,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                         .parse::<u64>()
                         .context("Failed to parse expiry_time")?,
                     revocable: data.revocable,
-                    reserved_solver: Some(reserved_solver),
+                    reserved_solver_addr: Some(reserved_solver),
                     connected_chain_id,
                     requester_address_connected_chain: data
                         .requester_address_connected_chain
@@ -306,7 +306,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                         .parse::<u64>()
                         .context("Failed to parse expiry_time")?,
                     revocable: data.revocable,
-                    reserved_solver,
+                    reserved_solver_addr: reserved_solver,
                     connected_chain_id,
                     requester_address_connected_chain: data.requester_address_connected_chain.clone(),
                     timestamp,
@@ -374,7 +374,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                         .parse::<u64>()
                         .context("Failed to parse expiry_time")?,
                     revocable: data.revocable,
-                    reserved_solver: Some(reserved_solver),
+                    reserved_solver_addr: Some(reserved_solver),
                     connected_chain_id,
                     requester_address_connected_chain: data
                         .requester_address_connected_chain

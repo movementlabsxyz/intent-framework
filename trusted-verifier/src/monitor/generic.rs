@@ -91,7 +91,7 @@ pub struct IntentEvent {
     /// Whether the intent can be revoked by the creator
     pub revocable: bool,
     /// Solver address if the intent is reserved (None for unreserved intents)
-    pub reserved_solver: Option<String>,
+    pub reserved_solver_addr: Option<String>,
     /// Connected chain ID where escrow will be created (None for regular intents)
     pub connected_chain_id: Option<u64>,
     /// Requester address on connected chain (for outflow intents - where solver should send tokens)
@@ -129,7 +129,7 @@ pub struct EscrowEvent {
     /// Reserved solver address if the escrow is reserved (None for unreserved escrows)
     /// For Move VM escrows: Move VM address
     /// For EVM escrows: EVM address (0x-prefixed hex string)
-    pub reserved_solver: Option<String>,
+    pub reserved_solver_addr: Option<String>,
     /// Chain ID where this escrow is located
     /// Note: This is set by the verifier based on which monitor discovered the event (from config),
     /// not from the event data itself, so it can be trusted for validation.

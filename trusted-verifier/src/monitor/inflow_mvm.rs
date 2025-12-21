@@ -109,7 +109,7 @@ pub async fn poll_mvm_escrow_events(monitor: &EventMonitor) -> Result<Vec<Escrow
                         .parse::<u64>()
                         .context("Failed to parse expiry time")?,
                     revocable: data.revocable,
-                    reserved_solver,
+                    reserved_solver_addr: reserved_solver,
                     chain_id: connected_chain_mvm.chain_id, // Chain ID from config
                     chain_type: ChainType::Mvm, // This escrow came from Move VM monitoring
                     timestamp,

@@ -15,7 +15,8 @@ use test_helpers::{
     build_test_config_with_evm, create_base_evm_transaction,
     create_base_fulfillment_transaction_params_evm, create_base_intent_evm,
     setup_mock_server_with_registry_evm, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM,
-    DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM, DUMMY_TOKEN_ADDR_EVM,
+    DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_REGISTRY_ADDR,
+    DUMMY_TOKEN_ADDR_EVM,
 };
 
 // ============================================================================
@@ -57,7 +58,7 @@ fn test_extract_evm_fulfillment_params_success() {
     );
     let params = result.unwrap();
     assert_eq!(
-        params.recipient,
+        params.recipient_addr,
         DUMMY_REQUESTER_ADDR_EVM
     );
     assert_eq!(params.amount, 25000000); // 0x17d7840 in decimal
@@ -65,7 +66,7 @@ fn test_extract_evm_fulfillment_params_success() {
         params.intent_id,
         DUMMY_INTENT_ID
     );
-    assert_eq!(params.solver, DUMMY_SOLVER_ADDR_EVM);
+    assert_eq!(params.solver_addr, DUMMY_SOLVER_ADDR_EVM);
     assert_eq!(
         params.token_metadata,
         DUMMY_TOKEN_ADDR_EVM
@@ -296,22 +297,20 @@ fn test_extract_evm_fulfillment_params_normalizes_intent_id_with_leading_zeros()
 /// outflow fulfillment.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_success() {
-    let solver_address = DUMMY_SOLVER_ADDR_MVM; // Solver's address on hub chain (MVM format)
-    let solver_evm_address = DUMMY_SOLVER_ADDR_EVM; // Solver's address on connected chain (EVM format)
-    let registry_address = "0x1";
+    let solver_registry_addr = DUMMY_SOLVER_REGISTRY_ADDR;
 
     let (_mock_server, validator) =
-        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(solver_evm_address)).await;
+        setup_mock_server_with_registry_evm(solver_registry_addr, DUMMY_SOLVER_ADDR_MVM_HUB, Some(DUMMY_SOLVER_ADDR_EVM)).await;
 
     let intent = IntentEvent {
         desired_amount: 25000000, // For outflow intents, validation uses desired_amount (amount desired on connected chain)
-        reserved_solver: Some(solver_address.to_string()),
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
         ..create_base_intent_evm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: 25000000,
-        solver: solver_evm_address.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         ..create_base_fulfillment_transaction_params_evm()
     };
 
@@ -335,18 +334,16 @@ async fn test_validate_outflow_fulfillment_success() {
 /// without padding. Normalization ensures they match correctly.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_succeeds_with_normalized_intent_id() {
-    let solver_address = DUMMY_SOLVER_ADDR_MVM; // Solver's address on hub chain (MVM format)
-    let solver_evm_address = DUMMY_SOLVER_ADDR_EVM; // Solver's address on connected chain (EVM format)
-    let registry_address = "0x1";
+    let solver_registry_addr = DUMMY_SOLVER_REGISTRY_ADDR;
 
     let (_mock_server, validator) =
-        setup_mock_server_with_registry_evm(registry_address, solver_address, Some(solver_evm_address)).await;
+        setup_mock_server_with_registry_evm(solver_registry_addr, DUMMY_SOLVER_ADDR_MVM_HUB, Some(DUMMY_SOLVER_ADDR_EVM)).await;
 
     // Request-intent has intent_id without leading zeros
     let intent = IntentEvent {
         intent_id: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         desired_amount: 25000000,
-        reserved_solver: Some(solver_address.to_string()),
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
         ..create_base_intent_evm()
     };
 
@@ -354,7 +351,7 @@ async fn test_validate_outflow_fulfillment_succeeds_with_normalized_intent_id() 
     let tx_params = FulfillmentTransactionParams {
         intent_id: "0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         amount: 25000000,
-        solver: solver_evm_address.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         ..create_base_fulfillment_transaction_params_evm()
     };
 
@@ -455,7 +452,7 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
     };
 
     let tx_params = FulfillmentTransactionParams {
-        recipient: "0xdddddddddddddddddddddddddddddddddddddddd".to_string(), // Different recipient (EVM address format)
+        recipient_addr: "0xdddddddddddddddddddddddddddddddddddddddd".to_string(), // Different recipient (EVM address format)
         amount: intent.desired_amount,
         ..create_base_fulfillment_transaction_params_evm()
     };
@@ -522,27 +519,25 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 /// Why: Verify that only the authorized solver can fulfill the intent.
 #[tokio::test]
 async fn test_validate_outflow_fulfillment_fails_on_solver_mismatch() {
-    let solver_address = DUMMY_SOLVER_ADDR_MVM; // Solver's address on hub chain (MVM format)
-    let registered_evm_address = DUMMY_SOLVER_ADDR_EVM; // Solver's address on connected chain (EVM format)
     let different_solver = "0xffffffffffffffffffffffffffffffffffffffff"; // Different solver address for testing mismatch
-    let registry_address = "0x1";
+    let solver_registry_addr = DUMMY_SOLVER_REGISTRY_ADDR;
 
     let (_mock_server, validator) = setup_mock_server_with_registry_evm(
-        registry_address,
-        solver_address,
-        Some(registered_evm_address),
+        solver_registry_addr,
+        DUMMY_SOLVER_ADDR_MVM_HUB,
+        Some(DUMMY_SOLVER_ADDR_EVM),
     )
     .await;
 
     let intent = IntentEvent {
         desired_amount: 1000, // Set desired_amount to avoid validation failure on amount check
-        reserved_solver: Some(solver_address.to_string()),
+        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
         ..create_base_intent_evm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: intent.desired_amount,
-        solver: different_solver.to_string(), // Different solver (EVM address format)
+        solver_addr: different_solver.to_string(), // Different solver (EVM address format)
         ..create_base_fulfillment_transaction_params_evm()
     };
 

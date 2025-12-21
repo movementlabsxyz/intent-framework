@@ -1324,7 +1324,7 @@ impl MvmClient {
 
     /// Queries the solver registry for all registered solver addresses.
     ///
-    /// This calls the `solver_registry::list_all_solver_addres()` view function
+    /// This calls the `solver_registry::list_all_solver_addresses()` view function
     /// to get a list of all solver addresses that are currently registered.
     ///
     /// # Arguments
@@ -1340,12 +1340,12 @@ impl MvmClient {
             .call_view_function(
                 solver_registry_addr,
                 "solver_registry",
-                "list_all_solver_addres",
+                "list_all_solver_addresses",
                 vec![],
                 vec![],
             )
             .await
-            .context("Failed to call list_all_solver_addres view function")?;
+            .context("Failed to call list_all_solver_addresses view function")?;
 
         // The result is an array with a single element containing the vector of addresses
         // Format: [["0x123...", "0x456...", ...]]

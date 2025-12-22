@@ -49,33 +49,34 @@ Response (abbreviated)
   "data": {
     "intent_events": [
       {
-        "chain": "hub",
         "intent_id": "0x...",
-        "issuer": "0x...",
         "offered_metadata": {"inner":"0xa"},
         "offered_amount": 0,
         "desired_metadata": {"inner":"0xa"},
         "desired_amount": 1000000,
-        "expiry_time": 2000000,
         "revocable": false,
+        "requester_addr": "0x...",
+        "requester_addr_connected_chain": null,
+        "reserved_solver_addr": "0x...",
+        "connected_chain_id": null,
+        "expiry_time": 2000000,
         "timestamp": 1000000
       }
     ],
     "escrow_events": [
       {
-        "chain": "connected",
         "escrow_id": "0x...",
         "intent_id": "0x...",
-        "issuer": "0x...",
         "offered_metadata": {"inner":"0xa"},
         "offered_amount": 1000,
         "desired_metadata": {"inner":"0xa"},
         "desired_amount": 0,
-        "expiry_time": 2000000,
         "revocable": false,
-        "reserved_solver": "0x...",
+        "requester_addr": "0x...",
+        "reserved_solver_addr": "0x...",
         "chain_id": 2,
         "chain_type": "Mvm",
+        "expiry_time": 2000000,
         "timestamp": 1000000
       }
     ],

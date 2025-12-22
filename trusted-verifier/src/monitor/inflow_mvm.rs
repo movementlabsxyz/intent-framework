@@ -91,7 +91,6 @@ pub async fn poll_mvm_escrow_events(monitor: &EventMonitor) -> Result<Vec<Escrow
                 escrow_events.push(EscrowEvent {
                     escrow_id: data.intent_addr.clone(),
                     intent_id: data.intent_id.clone(), // Use intent_id to match with hub chain intent
-                    issuer_addr: data.requester_addr.clone(), // For inflow escrows, this is the requester
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(
@@ -104,14 +103,15 @@ pub async fn poll_mvm_escrow_events(monitor: &EventMonitor) -> Result<Vec<Escrow
                         &data.desired_amount,
                         "Escrow desired_amount",
                     )?,
+                    revocable: data.revocable,
+                    requester_addr: data.requester_addr.clone(), // For inflow escrows, this is the requester
+                    reserved_solver_addr: reserved_solver,
+                    chain_id: connected_chain_mvm.chain_id, // Chain ID from config
+                    chain_type: ChainType::Mvm, // This escrow came from Move VM monitoring
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
                         .context("Failed to parse expiry time")?,
-                    revocable: data.revocable,
-                    reserved_solver_addr: reserved_solver,
-                    chain_id: connected_chain_mvm.chain_id, // Chain ID from config
-                    chain_type: ChainType::Mvm, // This escrow came from Move VM monitoring
                     timestamp,
                 });
             }

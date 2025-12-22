@@ -113,7 +113,7 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
         escrow_cache.push(trusted_verifier::monitor::EscrowEvent {
             escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
             intent_id: DUMMY_INTENT_ID.to_string(),
-            issuer_addr: "0xissuer".to_string(),
+            requester_addr: "0xissuer".to_string(),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),

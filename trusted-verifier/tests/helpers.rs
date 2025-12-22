@@ -186,16 +186,16 @@ pub fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
 pub fn create_base_intent_mvm() -> IntentEvent {
     IntentEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
-        requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(), // Hub chain requester (Move VM format, 32 bytes)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0,
-        expiry_time: 0, // Should be set explicitly in tests
         revocable: false,
+        requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(), // Hub chain requester (Move VM format, 32 bytes)
+        requester_addr_connected_chain: Some(DUMMY_REQUESTER_ADDR_MVM_CON.to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()), // Move VM address format (32 bytes)
         connected_chain_id: Some(2),
-        requester_addr_connected_chain: Some(DUMMY_REQUESTER_ADDR_MVM_CON.to_string()), // Required for outflow intents (connected_chain_id is Some). Move VM address format (32 bytes)
+        expiry_time: 0, // Should be set explicitly in tests
         timestamp: 0,
     }
 }
@@ -262,16 +262,16 @@ pub fn create_base_escrow_event() -> EscrowEvent {
     EscrowEvent {
         escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
         intent_id: DUMMY_INTENT_ID.to_string(),
-        issuer_addr: DUMMY_REQUESTER_ADDR_MVM_CON.to_string(), // EscrowEvent.issuer_addr is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),
         desired_amount: 0, // Escrow desired_amount must be 0 (validation requirement)
-        expiry_time: 0,    // Should be set explicitly in tests
         revocable: false,
+        requester_addr: DUMMY_REQUESTER_ADDR_MVM_CON.to_string(), // EscrowEvent.requester_addr is the requester who created the escrow and locked funds (for inflow escrows on connected chain)
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
         chain_id: 2,
         chain_type: ChainType::Mvm,
+        expiry_time: 0,    // Should be set explicitly in tests
         timestamp: 0, // Should be set explicitly in tests
     }
 }
@@ -284,16 +284,16 @@ pub fn create_base_escrow_event_evm() -> EscrowEvent {
     EscrowEvent {
         escrow_id: DUMMY_INTENT_ID.to_string(), // For EVM, escrow_id = intent_id
         intent_id: DUMMY_INTENT_ID.to_string(),
-        issuer_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
         offered_metadata: format!("{{\"token\":\"{}\"}}", DUMMY_TOKEN_ADDR_EVM), // Token address in JSON
         offered_amount: 1000,
         desired_metadata: "{}".to_string(), // EVM escrows don't store desired_metadata on-chain
         desired_amount: 0, // Not used for EVM inflow escrows
-        expiry_time: 0,    // Should be set explicitly in tests
         revocable: false,
+        requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         chain_id: 31337, // Matches build_test_config_with_evm
         chain_type: ChainType::Evm,
+        expiry_time: 0,    // Should be set explicitly in tests
         timestamp: 0, // Should be set explicitly in tests
     }
 }

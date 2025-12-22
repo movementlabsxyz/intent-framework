@@ -104,16 +104,16 @@ async fn test_zero_amount_escrow_fails_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xtest_intent".to_string(),
-            requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
-            connected_chain_id: Some(84532), // Base Sepolia
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
             desired_amount: 1000, // Requires 1000 tokens
-            expiry_time: DUMMY_EXPIRY,
             revocable: false,
-            reserved_solver_addr: None,
+            requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             requester_addr_connected_chain: None,
+            reserved_solver_addr: None,
+            connected_chain_id: Some(84532), // Base Sepolia
+            expiry_time: DUMMY_EXPIRY,
             timestamp: 1,
         });
     }
@@ -122,7 +122,7 @@ async fn test_zero_amount_escrow_fails_validation() {
     let zero_amount_escrow = EscrowEvent {
         escrow_id: "0xtest_intent".to_string(),
         intent_id: "0xtest_intent".to_string(),
-        issuer_addr: "0xrequester".to_string(),
+        requester_addr: "0xrequester".to_string(),
         offered_metadata: "{}".to_string(),
         offered_amount: 0,
         desired_metadata: "{}".to_string(),
@@ -166,16 +166,16 @@ async fn test_correct_amount_escrow_passes_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xvalid_intent".to_string(),
-            requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
-            connected_chain_id: Some(84532),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
             desired_amount: 1000,
-            expiry_time: DUMMY_EXPIRY,
             revocable: false,
-            reserved_solver_addr: None,
+            requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             requester_addr_connected_chain: None,
+            reserved_solver_addr: None,
+            connected_chain_id: Some(84532),
+            expiry_time: DUMMY_EXPIRY,
             timestamp: 1,
         });
     }
@@ -184,7 +184,7 @@ async fn test_correct_amount_escrow_passes_validation() {
     let valid_escrow = EscrowEvent {
         escrow_id: "0xvalid_intent".to_string(),
         intent_id: "0xvalid_intent".to_string(),
-        issuer_addr: "0xrequester".to_string(),
+        requester_addr: "0xrequester".to_string(),
         offered_metadata: "{}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{}".to_string(),

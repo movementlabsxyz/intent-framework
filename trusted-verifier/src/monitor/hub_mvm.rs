@@ -246,22 +246,22 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
-                    requester_addr: data.requester_addr.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: desired_metadata_str,
                     desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
+                    revocable: data.revocable,
+                    requester_addr: data.requester_addr.clone(),
+                    requester_addr_connected_chain: data
+                        .requester_addr_connected_chain
+                        .clone(),
+                    reserved_solver_addr: Some(reserved_solver),
+                    connected_chain_id,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
                         .context("Failed to parse expiry_time")?,
-                    revocable: data.revocable,
-                    reserved_solver_addr: Some(reserved_solver),
-                    connected_chain_id,
-                    requester_addr_connected_chain: data
-                        .requester_addr_connected_chain
-                        .clone(),
                     timestamp,
                 });
             } else if event_type.contains("LimitOrderEvent") && !event_type.contains("Fulfillment")
@@ -302,20 +302,20 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
-                    requester_addr: data.requester_addr.clone(),
                     offered_metadata: offered_metadata_str,
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
                         .unwrap_or_default(),
                     desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
+                    revocable: data.revocable,
+                    requester_addr: data.requester_addr.clone(),
+                    requester_addr_connected_chain: data.requester_addr_connected_chain.clone(),
+                    reserved_solver_addr: reserved_solver,
+                    connected_chain_id,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
                         .context("Failed to parse expiry_time")?,
-                    revocable: data.revocable,
-                    reserved_solver_addr: reserved_solver,
-                    connected_chain_id,
-                    requester_addr_connected_chain: data.requester_addr_connected_chain.clone(),
                     timestamp,
                 });
             } else if event_type.contains("OracleLimitOrderEvent") {
@@ -377,22 +377,22 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
-                    requester_addr: data.requester_addr.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: desired_metadata_str,
                     desired_amount: parse_amount_with_u64_limit(&data.desired_amount, "Request-intent desired_amount")?,
+                    revocable: data.revocable,
+                    requester_addr: data.requester_addr.clone(),
+                    requester_addr_connected_chain: data
+                        .requester_addr_connected_chain
+                        .clone(),
+                    reserved_solver_addr: Some(reserved_solver),
+                    connected_chain_id,
                     expiry_time: data
                         .expiry_time
                         .parse::<u64>()
                         .context("Failed to parse expiry_time")?,
-                    revocable: data.revocable,
-                    reserved_solver_addr: Some(reserved_solver),
-                    connected_chain_id,
-                    requester_addr_connected_chain: data
-                        .requester_addr_connected_chain
-                        .clone(),
                     timestamp,
                 });
             }

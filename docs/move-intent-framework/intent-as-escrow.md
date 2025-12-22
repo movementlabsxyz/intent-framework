@@ -14,7 +14,7 @@ The `intent_as_escrow.move` module provides a clean interface for escrow functio
 
 ```move
 // 1. Create escrow (must specify solver address)
-let reservation = intent_reservation::new_reservation(solver_address);
+let reservation = intent_reservation::new_reservation(solver_addr);
 let escrow_intent = intent_as_escrow::create_escrow(
     requester_signer,
     offered_asset,
@@ -101,7 +101,7 @@ The escrow system is deployed on a single Move VM chain. The verifier (oracle) m
 
 ```move
 // Requester locks TokenA and waits for verifier approval
-let reservation = intent_reservation::new_reservation(solver_address);
+let reservation = intent_reservation::new_reservation(solver_addr);
 let escrow = intent_as_escrow::create_escrow(
     requester_signer,
     token_a_asset,

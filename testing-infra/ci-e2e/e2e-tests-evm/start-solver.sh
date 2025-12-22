@@ -40,8 +40,8 @@ generate_solver_config_evm() {
     
     # Get addresses from aptos CLI profiles
     local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
-    local solver_chain1_address=$(get_profile_address "solver-chain1")
-    local chain1_address=$(get_profile_address "intent-account-chain1")
+    local solver_chain1_addr=$(get_profile_address "solver-chain1")
+    local chain1_addr=$(get_profile_address "intent-account-chain1")
     
     # Get USDhub metadata on hub chain (32-byte Move address)
     local usdhub_metadata_chain1=$(get_usdxyz_metadata "0x${test_tokens_chain1}" "1")
@@ -50,18 +50,18 @@ generate_solver_config_evm() {
     if [ -f "$PROJECT_ROOT/.tmp/chain-info.env" ]; then
         source "$PROJECT_ROOT/.tmp/chain-info.env"
     fi
-    local evm_token_address="${USDCON_EVM_ADDRESS:-}"
-    if [ -z "$evm_token_address" ]; then
+    local evm_token_addr="${USDCON_EVM_ADDRESS:-}"
+    if [ -z "$evm_token_addr" ]; then
         log_and_echo "❌ ERROR: USDCON_EVM_ADDRESS not found in chain-info.env"
         exit 1
     fi
-    local escrow_address="${ESCROW_CONTRACT_ADDRESS:-}"
-    if [ -z "$escrow_address" ]; then
+    local escrow_addr="${ESCROW_CONTRACT_ADDRESS:-}"
+    if [ -z "$escrow_addr" ]; then
         log_and_echo "❌ ERROR: ESCROW_CONTRACT_ADDRESS not found in chain-info.env"
         exit 1
     fi
     # Lowercase and pad to 32 bytes for Move compatibility
-    local evm_token_no_prefix="${evm_token_address#0x}"
+    local evm_token_no_prefix="${evm_token_addr#0x}"
     local evm_token_lower=$(echo "$evm_token_no_prefix" | tr '[:upper:]' '[:lower:]')
     local usdcon_metadata_evm="0x000000000000000000000000${evm_token_lower}"
     
@@ -71,18 +71,18 @@ generate_solver_config_evm() {
     local evm_rpc="${EVM_RPC_URL:-http://127.0.0.1:8545}"
     local hub_chain_id="${CHAIN1_ID:-1}"
     local evm_chain_id="${EVM_CHAIN_ID:-31337}"
-    local module_address="0x${chain1_address}"
-    local escrow_contract="${escrow_address}"
-    local solver_address="0x${solver_chain1_address}"
+    local module_addr="0x${chain1_addr}"
+    local escrow_contract="${escrow_addr}"
+    local solver_addr="0x${solver_chain1_addr}"
     local evm_private_key_env="${EVM_PRIVATE_KEY_ENV:-SOLVER_EVM_PRIVATE_KEY}"
     
     log "   Generating solver config:"
     log "   - Verifier URL: $verifier_url"
     log "   - Hub RPC: $hub_rpc (chain ID: $hub_chain_id)"
     log "   - EVM RPC: $evm_rpc (chain ID: $evm_chain_id)"
-    log "   - Hub module address: $module_address"
+    log "   - Hub module address: $module_addr"
     log "   - EVM escrow contract: $escrow_contract"
-    log "   - Solver address: $solver_address"
+    log "   - Solver address: $solver_addr"
     log "   - USDhub metadata (hub): $usdhub_metadata_chain1"
     log "   - USDcon metadata (EVM, padded): $usdcon_metadata_evm"
     
@@ -98,7 +98,7 @@ polling_interval_ms = 1000  # Poll frequently for tests
 name = "Hub Chain (E2E Test)"
 rpc_url = "$hub_rpc"
 chain_id = $hub_chain_id
-module_address = "$module_address"
+module_addr = "$module_addr"
 profile = "solver-chain1"
 
 [connected_chain]
@@ -118,7 +118,7 @@ private_key_env = "$evm_private_key_env"
 
 [solver]
 profile = "solver-chain1"
-address = "$solver_address"
+address = "$solver_addr"
 EOF
 
     log "   ✅ Config written to: $config_file"

@@ -43,11 +43,11 @@ pub struct TrackedIntent {
     /// Draft data (for matching with on-chain events)
     pub draft_data: DraftintentData,
     /// Requester address
-    pub requester_address: String,
+    pub requester_addr: String,
     /// Expiry timestamp
     pub expiry_time: u64,
     /// Intent object address (set when created on-chain)
-    pub intent_address: Option<String>,
+    pub intent_addr: Option<String>,
     /// Requester address on the connected chain (for outflow intents)
     pub requester_addr_connected_chain: Option<String>,
 }
@@ -100,7 +100,7 @@ impl IntentTracker {
     ///
     /// * `draft_id` - Draft ID from verifier
     /// * `draft_data` - Parsed draft data
-    /// * `requester_address` - Requester address
+    /// * `requester_addr` - Requester address
     /// * `expiry_time` - Expiry timestamp
     ///
     /// # Returns
@@ -111,7 +111,7 @@ impl IntentTracker {
         &self,
         draft_id: String,
         draft_data: DraftintentData,
-        requester_address: String,
+        requester_addr: String,
         expiry_time: u64,
     ) -> Result<()> {
         // Use the actual intent_id from draft data (not the draft UUID)
@@ -122,16 +122,16 @@ impl IntentTracker {
             intent_id,
             state: IntentState::Signed,
             draft_data,
-            requester_address: requester_address.clone(),
+            requester_addr: requester_addr.clone(),
             expiry_time,
-            intent_address: None,
+            intent_addr: None,
             requester_addr_connected_chain: None,
         };
 
         // Track requester address for event querying
         {
             let mut addresses = self.requester_addresses.write().await;
-            addresses.insert(requester_address);
+            addresses.insert(requester_addr);
         }
 
         let mut intents = self.intents.write().await;
@@ -214,7 +214,7 @@ impl IntentTracker {
                         && event.desired_amount == tracked.draft_data.desired_amount.to_string()
                         && event.offered_chain_id == tracked.draft_data.offered_chain_id.to_string()
                         && event.desired_chain_id == tracked.draft_data.desired_chain_id.to_string()
-                        && event.requester == tracked.requester_address
+                        && event.requester == tracked.requester_addr
                 };
 
                 if matches {
@@ -228,7 +228,7 @@ impl IntentTracker {
                     tracing::info!("requester_addr_connected_chain: {:?}", connected_chain_addr);
                     tracked.state = IntentState::Created;
                     tracked.intent_id = event.intent_id.clone(); // Update to actual on-chain intent_id
-                    tracked.intent_address = Some(event.intent_address.clone());
+                    tracked.intent_addr = Some(event.intent_addr.clone());
                     tracked.requester_addr_connected_chain = connected_chain_addr;
                     updated_count += 1;
                     break; // Found match, move to next event
@@ -314,16 +314,16 @@ impl IntentTracker {
             intent.state = IntentState::Fulfilled;
             
             // Add on-chain intent ID to completed set so we don't re-process it
-            if let Some(ref intent_addr) = intent.intent_address {
+            if let Some(ref intent_addr) = intent.intent_addr {
                 let mut completed = self.completed_intent_ids.write().await;
                 completed.insert(intent_addr.clone());
                 tracing::debug!("Marked intent {} as completed (on-chain ID: {})", draft_id, intent_addr);
             }
             
             // Clean up requester address if no other active intents
-            let requester = intent.requester_address.clone();
+            let requester = intent.requester_addr.clone();
             let has_active = intents.values().any(|i| {
-                i.requester_address == requester && i.state != IntentState::Fulfilled
+                i.requester_addr == requester && i.state != IntentState::Fulfilled
             });
             if !has_active {
                 let mut addresses = self.requester_addresses.write().await;

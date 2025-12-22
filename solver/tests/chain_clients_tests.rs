@@ -15,7 +15,7 @@ fn create_test_hub_config() -> ChainConfig {
         name: "test-hub".to_string(),
         rpc_url: "http://127.0.0.1:8080".to_string(),
         chain_id: 1,
-        module_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        module_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         profile: "test-profile".to_string(),
     }
 }
@@ -25,7 +25,7 @@ fn create_test_mvm_config() -> ChainConfig {
         name: "test-mvm".to_string(),
         rpc_url: "http://127.0.0.1:8082".to_string(),
         chain_id: 2,
-        module_address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        module_addr: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
         profile: "test-profile".to_string(),
     }
 }
@@ -35,7 +35,7 @@ fn create_test_evm_config() -> EvmChainConfig {
         name: "test-evm".to_string(),
         rpc_url: "http://127.0.0.1:8545".to_string(),
         chain_id: 84532,
-        escrow_contract_address: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
+        escrow_contract_addr: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
         private_key_env: "TEST_PRIVATE_KEY".to_string(),
         network_name: "localhost".to_string(),
     }
@@ -50,7 +50,7 @@ fn create_test_evm_config() -> EvmChainConfig {
 #[test]
 fn test_intent_created_event_deserialization() {
     let json = json!({
-        "intent_address": "0x1111111111111111111111111111111111111111",
+        "intent_addr": "0x1111111111111111111111111111111111111111",
         "intent_id": "0x2222222222222222222222222222222222222222",
         "offered_metadata": {"inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
         "offered_amount": "1000",
@@ -63,7 +63,7 @@ fn test_intent_created_event_deserialization() {
     });
 
     let event: solver::chains::hub::IntentCreatedEvent = serde_json::from_value(json).unwrap();
-    assert_eq!(event.intent_address, "0x1111111111111111111111111111111111111111");
+    assert_eq!(event.intent_addr, "0x1111111111111111111111111111111111111111");
     assert_eq!(event.intent_id, "0x2222222222222222222222222222222222222222");
     assert_eq!(event.offered_amount, "1000");
     assert_eq!(event.desired_amount, "2000");
@@ -72,11 +72,11 @@ fn test_intent_created_event_deserialization() {
 
 /// What is tested: EscrowEvent deserialization (MVM)
 /// Why: Ensure we can parse escrow events from connected MVM chain
-/// Note: Field names match Move's OracleLimitOrderEvent (intent_address, requester, reserved_solver as Move Option)
+/// Note: Field names match Move's OracleLimitOrderEvent (intent_addr, requester, reserved_solver as Move Option)
 #[test]
 fn test_escrow_event_deserialization() {
     let json = json!({
-        "intent_address": "0x1111111111111111111111111111111111111111",
+        "intent_addr": "0x1111111111111111111111111111111111111111",
         "intent_id": "0x2222222222222222222222222222222222222222",
         "requester": "0xcccccccccccccccccccccccccccccccccccccccc",
         "offered_metadata": {"inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
@@ -126,7 +126,7 @@ async fn test_get_intent_events_success() {
                     {
                         "type": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa::fa_intent::LimitOrderEvent",
                         "data": {
-                            "intent_address": "0x1111111111111111111111111111111111111111",
+                            "intent_addr": "0x1111111111111111111111111111111111111111",
                             "intent_id": "0x2222222222222222222222222222222222222222",
                             "offered_metadata": {"inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
                             "offered_amount": "1000",
@@ -381,7 +381,7 @@ async fn test_get_escrow_events_success() {
                     {
                         "type": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb::fa_intent_with_oracle::OracleLimitOrderEvent",
                         "data": {
-                            "intent_address": "0x1111111111111111111111111111111111111111",
+                            "intent_addr": "0x1111111111111111111111111111111111111111",
                             "intent_id": "0x2222222222222222222222222222222222222222",
                             "requester": "0xcccccccccccccccccccccccccccccccccccccccc",
                             "offered_metadata": {"inner": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
@@ -577,7 +577,7 @@ fn test_claim_escrow_signature_encoding() {
 /// Why: Ensure command arguments are correctly formatted for Hardhat script
 #[test]
 fn test_claim_escrow_command_building() {
-    let escrow_address = "0xcccccccccccccccccccccccccccccccccccccccc";
+    let escrow_addr = "0xcccccccccccccccccccccccccccccccccccccccc";
     let intent_id_evm = "0x1234567890abcdef";
     let signature_hex = "aa".repeat(130);
     let evm_framework_dir = "/path/to/evm-intent-framework";
@@ -586,14 +586,14 @@ fn test_claim_escrow_command_building() {
     let command = format!(
         "cd '{}' && ESCROW_ADDRESS='{}' INTENT_ID_EVM='{}' SIGNATURE_HEX='{}' npx hardhat run scripts/claim-escrow.js --network localhost",
         evm_framework_dir,
-        escrow_address,
+        escrow_addr,
         intent_id_evm,
         signature_hex
     );
     
     // Verify all components are present
     assert!(command.contains("ESCROW_ADDRESS"));
-    assert!(command.contains(escrow_address));
+    assert!(command.contains(escrow_addr));
     assert!(command.contains("INTENT_ID_EVM"));
     assert!(command.contains(intent_id_evm));
     assert!(command.contains("SIGNATURE_HEX"));

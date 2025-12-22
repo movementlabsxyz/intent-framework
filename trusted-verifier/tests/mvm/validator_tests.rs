@@ -41,16 +41,16 @@ fn create_test_intent(solver_addr: Option<String>) -> IntentEvent {
 async fn test_successful_mvm_solver_validation() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    let solver_address = "0xsolver_mvm";
-    let solver_connected_chain_mvm_address = DUMMY_SOLVER_ADDR_MVM_CON;
+    let solver_addr = "0xsolver_mvm";
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config, _validator) =
-        setup_mock_server_with_mvm_address_response(solver_address, Some(solver_connected_chain_mvm_address))
+        setup_mock_server_with_mvm_address_response(solver_addr, Some(solver_connected_chain_mvm_addr))
             .await;
 
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(solver_addr.to_string()));
 
     // Test with matching address
-    let escrow_reserved_solver = solver_connected_chain_mvm_address;
+    let escrow_reserved_solver = solver_connected_chain_mvm_addr;
     let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
         &intent,
         escrow_reserved_solver,
@@ -77,14 +77,14 @@ async fn test_successful_mvm_solver_validation() {
 async fn test_rejection_when_solver_not_registered() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    let solver_address = "0xunregistered_solver";
+    let solver_addr = "0xunregistered_solver";
     let (_mock_server, config, _validator) = setup_mock_server_with_mvm_address_response(
-        solver_address,
+        solver_addr,
         None, // No connected chain MVM address (solver not registered or no address)
     )
     .await;
 
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(solver_addr.to_string()));
 
     let escrow_reserved_solver = DUMMY_SOLVER_ADDR_MVM_CON;
     let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
@@ -115,13 +115,13 @@ async fn test_rejection_when_solver_not_registered() {
 async fn test_rejection_when_mvm_addresses_dont_match() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    let solver_address = "0xsolver_mvm";
-    let solver_connected_chain_mvm_address = DUMMY_SOLVER_ADDR_MVM_CON;
+    let solver_addr = "0xsolver_mvm";
+    let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
     let (_mock_server, config, _validator) =
-        setup_mock_server_with_mvm_address_response(solver_address, Some(solver_connected_chain_mvm_address))
+        setup_mock_server_with_mvm_address_response(solver_addr, Some(solver_connected_chain_mvm_addr))
             .await;
 
-    let intent = create_test_intent(Some(solver_address.to_string()));
+    let intent = create_test_intent(Some(solver_addr.to_string()));
 
     // Escrow has a different address
     let escrow_reserved_solver = "0xwrong_solver_addr";
@@ -152,7 +152,7 @@ async fn test_rejection_when_mvm_addresses_dont_match() {
 async fn test_mvm_address_normalization() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    // Test cases: (escrow_address, registered_address, should_match)
+    // Test cases: (escrow_addr, registered_addr, should_match)
     // MVM addresses are 32 bytes (64 hex characters), but may be shorter in input
     let test_cases = vec![
         // Same address with different case and prefix
@@ -169,12 +169,12 @@ async fn test_mvm_address_normalization() {
     ];
 
     for (escrow_addr, registered_addr, should_match) in test_cases {
-        let solver_address = "0xsolver_mvm";
+        let solver_addr = "0xsolver_mvm";
         let (_mock_server, config, _validator) =
-            setup_mock_server_with_mvm_address_response(solver_address, Some(registered_addr))
+            setup_mock_server_with_mvm_address_response(solver_addr, Some(registered_addr))
                 .await;
 
-        let intent = create_test_intent(Some(solver_address.to_string()));
+        let intent = create_test_intent(Some(solver_addr.to_string()));
 
         let result = trusted_verifier::validator::inflow_mvm::validate_mvm_escrow_solver(
             &intent,

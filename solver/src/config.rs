@@ -53,7 +53,7 @@ pub struct ChainConfig {
     /// Unique chain identifier
     pub chain_id: u64,
     /// Address of the intent framework module
-    pub module_address: String,
+    pub module_addr: String,
     /// Aptos/Movement CLI profile name for this chain
     pub profile: String,
 }
@@ -80,7 +80,7 @@ pub struct EvmChainConfig {
     /// Chain ID (e.g., 84532 for Base Sepolia)
     pub chain_id: u64,
     /// Address of the IntentEscrow contract
-    pub escrow_contract_address: String,
+    pub escrow_contract_addr: String,
     /// Environment variable name containing the EVM private key
     pub private_key_env: String,
     /// Hardhat network name (e.g., "localhost", "baseSepolia")

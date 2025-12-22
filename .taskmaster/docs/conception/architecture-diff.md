@@ -53,7 +53,7 @@ See [conception_outflow.md](conception_outflow.md) for the conceptual design.
 
 | Step | Function | Description |
 |------|----------|-------------|
-| Request-Intent Creation | `create_outflow_request_intent(offered_metadata, offered_amount, offered_chain_id, desired_metadata, desired_amount, desired_chain_id, expiry_time, intent_id, requester_address_connected_chain, verifier_public_key, solver, solver_signature)` | Creates reserved intent with escrow on Hub |
+| Request-Intent Creation | `create_outflow_request_intent(offered_metadata, offered_amount, offered_chain_id, desired_metadata, desired_amount, desired_chain_id, expiry_time, intent_id, requester_addr_connected_chain, verifier_public_key, solver, solver_signature)` | Creates reserved intent with escrow on Hub |
 | Validation | `POST /validate-outflow-fulfillment(transaction_hash, chain_type, intent_id)` | Verifier validates solver transfer |
 | Fulfillment | `fulfill_outflow_request_intent(intent, verifier_signature_bytes)` | Solver claims escrow on Hub with verifier signature |
 

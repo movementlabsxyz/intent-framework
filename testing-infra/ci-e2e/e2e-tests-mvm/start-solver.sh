@@ -35,9 +35,9 @@ generate_solver_config_mvm() {
     local config_file="$1"
     
     # Get addresses from aptos CLI profiles (same as other test scripts)
-    local chain1_address=$(get_profile_address "intent-account-chain1")
-    local chain2_address=$(get_profile_address "intent-account-chain2")
-    local solver_chain1_address=$(get_profile_address "solver-chain1")
+    local chain1_addr=$(get_profile_address "intent-account-chain1")
+    local chain2_addr=$(get_profile_address "intent-account-chain2")
+    local solver_chain1_addr=$(get_profile_address "solver-chain1")
     local test_tokens_chain1=$(get_profile_address "test-tokens-chain1")
     local test_tokens_chain2=$(get_profile_address "test-tokens-chain2")
     
@@ -51,17 +51,17 @@ generate_solver_config_mvm() {
     local connected_rpc="${CHAIN2_URL:-http://127.0.0.1:8082/v1}"
     local hub_chain_id="${CHAIN1_ID:-1}"
     local connected_chain_id="${CHAIN2_ID:-2}"
-    local hub_module_address="0x${chain1_address}"
-    local connected_module_address="0x${chain2_address}"
-    local solver_address="0x${solver_chain1_address}"
+    local hub_module_addr="0x${chain1_addr}"
+    local connected_module_addr="0x${chain2_addr}"
+    local solver_addr="0x${solver_chain1_addr}"
     
     log "   Generating solver config:"
     log "   - Verifier URL: $verifier_url"
     log "   - Hub RPC: $hub_rpc (chain ID: $hub_chain_id)"
     log "   - Connected RPC: $connected_rpc (chain ID: $connected_chain_id)"
-    log "   - Hub module address: $hub_module_address"
-    log "   - Connected module address: $connected_module_address"
-    log "   - Solver address: $solver_address"
+    log "   - Hub module address: $hub_module_addr"
+    log "   - Connected module address: $connected_module_addr"
+    log "   - Solver address: $solver_addr"
     log "   - USDhub metadata chain 1: $usdhub_metadata_chain1"
     log "   - USDcon metadata chain 2: $usdcon_metadata_chain2"
     
@@ -77,7 +77,7 @@ polling_interval_ms = 1000  # Poll frequently for tests
 name = "Hub Chain (E2E Test)"
 rpc_url = "$hub_rpc"
 chain_id = $hub_chain_id
-module_address = "$hub_module_address"
+module_addr = "$hub_module_addr"
 profile = "solver-chain1"
 
 [connected_chain]
@@ -85,7 +85,7 @@ type = "mvm"
 name = "Connected Chain (E2E Test)"
 rpc_url = "$connected_rpc"
 chain_id = $connected_chain_id
-module_address = "$connected_module_address"
+module_addr = "$connected_module_addr"
 profile = "solver-chain2"
 
 [acceptance]
@@ -97,7 +97,7 @@ profile = "solver-chain2"
 
 [solver]
 profile = "solver-chain1"
-address = "$solver_address"
+address = "$solver_addr"
 EOF
 
     log "   ✅ Config written to: $config_file"

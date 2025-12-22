@@ -223,15 +223,15 @@ get_evm_eth_balance() {
 # Function to get ERC20 token balance (works for any EVM chain)
 get_evm_token_balance() {
     local address="$1"
-    local token_address="$2"
+    local token_addr="$2"
     local rpc_url="$3"
     
     # Ensure addresses have 0x prefix
     if [[ ! "$address" =~ ^0x ]]; then
         address="0x${address}"
     fi
-    if [[ ! "$token_address" =~ ^0x ]]; then
-        token_address="0x${token_address}"
+    if [[ ! "$token_addr" =~ ^0x ]]; then
+        token_addr="0x${token_addr}"
     fi
     
     # ERC20 balanceOf(address) - function selector: 0x70a08231
@@ -242,7 +242,7 @@ get_evm_token_balance() {
     
     local balance_hex=$(curl -s --max-time 10 -X POST "$rpc_url" \
         -H "Content-Type: application/json" \
-        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$token_address\",\"data\":\"$data\"},\"latest\"],\"id\":1}" \
+        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$token_addr\",\"data\":\"$data\"},\"latest\"],\"id\":1}" \
         | jq -r '.result // "0x0"' 2>/dev/null)
     
     if [ -z "$balance_hex" ] || [ "$balance_hex" = "null" ] || [ "$balance_hex" = "0x0" ]; then
@@ -460,15 +460,15 @@ echo "---------------------"
 
 # Check Movement Intent Module
 check_movement_module() {
-    local module_address="$1"
+    local module_addr="$1"
     
     # Ensure address has 0x prefix
-    if [[ ! "$module_address" =~ ^0x ]]; then
-        module_address="0x${module_address}"
+    if [[ ! "$module_addr" =~ ^0x ]]; then
+        module_addr="0x${module_addr}"
     fi
     
     # Query account modules to check if intent module exists
-    local response=$(curl -s --max-time 10 "${MOVEMENT_RPC_URL}/accounts/${module_address}/modules" 2>/dev/null)
+    local response=$(curl -s --max-time 10 "${MOVEMENT_RPC_URL}/accounts/${module_addr}/modules" 2>/dev/null)
     
     if echo "$response" | jq -e '.[].abi.name' 2>/dev/null | grep -q "intent"; then
         echo "✅"
@@ -479,18 +479,18 @@ check_movement_module() {
 
 # Check Base Escrow Contract (EVM)
 check_evm_contract() {
-    local contract_address="$1"
+    local contract_addr="$1"
     local rpc_url="$2"
     
     # Ensure address has 0x prefix
-    if [[ ! "$contract_address" =~ ^0x ]]; then
-        contract_address="0x${contract_address}"
+    if [[ ! "$contract_addr" =~ ^0x ]]; then
+        contract_addr="0x${contract_addr}"
     fi
     
     # Query contract code
     local code=$(curl -s --max-time 10 -X POST "$rpc_url" \
         -H "Content-Type: application/json" \
-        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$contract_address\",\"latest\"],\"id\":1}" \
+        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getCode\",\"params\":[\"$contract_addr\",\"latest\"],\"id\":1}" \
         | jq -r '.result // "0x"' 2>/dev/null)
     
     if [ -n "$code" ] && [ "$code" != "0x" ] && [ "$code" != "null" ]; then

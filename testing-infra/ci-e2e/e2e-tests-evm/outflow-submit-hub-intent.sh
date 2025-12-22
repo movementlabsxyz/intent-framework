@@ -127,7 +127,7 @@ DRAFT_DATA=$(build_draft_data \
     "$EXPIRY_TIME" \
     "$INTENT_ID" \
     "$REQUESTER_CHAIN1_ADDRESS" \
-    "{\"chain_address\": \"$CHAIN1_ADDRESS\", \"flow_type\": \"outflow\", \"connected_chain_type\": \"evm\", \"requester_connected_chain_address\": \"$REQUESTER_EVM_ADDRESS\"}")
+    "{\"chain_addr\": \"$CHAIN1_ADDRESS\", \"flow_type\": \"outflow\", \"connected_chain_type\": \"evm\", \"requester_addr_connected_chain\": \"$REQUESTER_EVM_ADDRESS\"}")
 
 DRAFT_ID=$(submit_draft_intent "$REQUESTER_CHAIN1_ADDRESS" "$DRAFT_DATA" "$EXPIRY_TIME")
 log "     Draft ID: $DRAFT_ID"
@@ -219,7 +219,7 @@ if [ $? -eq 0 ]; then
     sleep 2
     log "     - Verifying intent stored on-chain..."
     HUB_INTENT_ADDRESS=$(curl -s "http://127.0.0.1:8080/v1/accounts/${REQUESTER_CHAIN1_ADDRESS}/transactions?limit=1" | \
-        jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_address' | head -n 1)
+        jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_addr' | head -n 1)
 
     if [ -n "$HUB_INTENT_ADDRESS" ] && [ "$HUB_INTENT_ADDRESS" != "null" ]; then
         log "     ✅ Hub outflow intent stored at: $HUB_INTENT_ADDRESS"

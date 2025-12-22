@@ -28,26 +28,26 @@ module mvmt_intent::test_utils {
     /// Creates a test EVM address (20 bytes) with sequential values starting from `start`
     /// Example: create_test_evm_address(0) creates [0, 1, 2, ..., 19]
     public fun create_test_evm_address(start: u8): vector<u8> {
-        let evm_address = vector::empty<u8>();
+        let evm_addr = vector::empty<u8>();
         let i = 0;
         while (i < 20) {
-            vector::push_back(&mut evm_address, start + i);
+            vector::push_back(&mut evm_addr, start + i);
             i = i + 1;
         };
-        evm_address
+        evm_addr
     }
 
     #[test_only]
     /// Creates a test EVM address (20 bytes) with reverse sequential values starting from `start`
     /// Example: create_test_evm_address_reverse(20) creates [20, 19, 18, ..., 1]
     public fun create_test_evm_address_reverse(start: u8): vector<u8> {
-        let evm_address = vector::empty<u8>();
+        let evm_addr = vector::empty<u8>();
         let i = 0;
         while (i < 20) {
-            vector::push_back(&mut evm_address, start - i);
+            vector::push_back(&mut evm_addr, start - i);
             i = i + 1;
         };
-        evm_address
+        evm_addr
     }
 
     #[test_only]

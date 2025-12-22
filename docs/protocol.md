@@ -119,12 +119,12 @@ sequenceDiagram
     Solver->>Verifier: POST /draftintent/:id/signature<br/>(submit signature, FCFS)
     Requester->>Verifier: GET /draftintent/:id/signature<br/>(poll for signature)
     Verifier->>Requester: Return signature
-    Requester->>Hub: create_outflow_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, requester_address_connected_chain,<br/>verifier_public_key, solver, solver_signature)
+    Requester->>Hub: create_outflow_intent(<br/>offered_metadata, offered_amount, offered_chain_id,<br/>desired_metadata, desired_amount, desired_chain_id,<br/>expiry_time, intent_id, requester_addr_connected_chain,<br/>verifier_public_key, solver, solver_signature)
     Hub->>Hub: Lock assets on hub
     Hub->>Verifier: OracleLimitOrderEvent(intent_id, offered_amount,<br/>offered_chain_id, desired_amount,<br/>desired_chain_id, expiry, revocable=false)
 
     Note over Requester,Solver: Phase 2: Solver Transfers on Connected Chain
-    Solver->>Connected: Transfer tokens to requester_address_connected_chain<br/>(standard token transfer, not escrow)
+    Solver->>Connected: Transfer tokens to requester_addr_connected_chain<br/>(standard token transfer, not escrow)
     Connected->>Connected: Tokens received by requester
 
     Note over Requester,Solver: Phase 3: Verifier Validation and Approval
@@ -148,8 +148,8 @@ sequenceDiagram
    - **Step 4**: Requester polls verifier via `GET /draftintent/:id/signature` to retrieve signature
    
    See [Negotiation Routing Guide](trusted-verifier/negotiation-routing.md) for details.
-2. **Hub**: Requester calls `create_outflow_intent()` with `offered_amount` (amount to lock on hub), `intent_id`, `offered_chain_id` (hub), `desired_chain_id` (connected), `requester_address_connected_chain` (where solver should send tokens), `verifier_public_key`, `solver` address, and `solver_signature`. The function locks tokens on the hub and creates an oracle-guarded intent requiring verifier signature (emits `OracleLimitOrderEvent` with `revocable=false`).
-3. **Connected Chain**: Solver transfers tokens directly to `requester_address_connected_chain` using standard token transfer (not an escrow). The transaction must include `intent_id` as metadata for verifier tracking. See [Connected Chain Outflow Fulfillment Transaction Format](#connected-chain-outflow-fulfillment-transaction-format) for exact specification.
+2. **Hub**: Requester calls `create_outflow_intent()` with `offered_amount` (amount to lock on hub), `intent_id`, `offered_chain_id` (hub), `desired_chain_id` (connected), `requester_addr_connected_chain` (where solver should send tokens), `verifier_public_key`, `solver` address, and `solver_signature`. The function locks tokens on the hub and creates an oracle-guarded intent requiring verifier signature (emits `OracleLimitOrderEvent` with `revocable=false`).
+3. **Connected Chain**: Solver transfers tokens directly to `requester_addr_connected_chain` using standard token transfer (not an escrow). The transaction must include `intent_id` as metadata for verifier tracking. See [Connected Chain Outflow Fulfillment Transaction Format](#connected-chain-outflow-fulfillment-transaction-format) for exact specification.
 4. **Solver**: Calls the verifier REST API endpoint `POST /validate-outflow-fulfillment` with the transaction hash, chain type, and intent ID.
 5. **Verifier**: Validates the transaction matches the hub intent requirements and generates approval signature by signing the `intent_id`.
 6. **Hub**: Solver calls `fulfill_outflow_intent()` with the verifier signature. The function verifies the signature, unlocks the tokens locked on hub, and transfers them to the solver as reward.
@@ -169,7 +169,7 @@ The protocol uses `intent_id` to link intents across chains:
 ### Intent ID Assignment
 
 1. **Hub Chain Regular Intent**:
-   - `intent_id` = `intent_address` (object address)
+   - `intent_id` = `intent_addr` (object address)
    - Stored in `LimitOrderEvent.intent_id`
 
 2. **Hub Chain Cross-Chain Request Intent**:

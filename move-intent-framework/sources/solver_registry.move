@@ -45,7 +45,7 @@ module mvmt_intent::solver_registry {
     /// Global solver registry
     struct SolverRegistry has key {
         solvers: SimpleMap<address, SolverInfo>,
-        solver_addresses: vector<address>, // Track all solver addresses for iteration
+        solver_addrs: vector<address>, // Track all solver addresses for iteration
     }
     
     // ==================== Events ====================
@@ -87,7 +87,7 @@ module mvmt_intent::solver_registry {
         
         move_to(account, SolverRegistry {
             solvers: simple_map::create(),
-            solver_addresses: vector::empty(),
+            solver_addrs: vector::empty(),
         });
     }
     
@@ -154,7 +154,7 @@ module mvmt_intent::solver_registry {
         };
         
         simple_map::add(&mut registry.solvers, solver_addr, solver_info);
-        vector::push_back(&mut registry.solver_addresses, solver_addr);
+        vector::push_back(&mut registry.solver_addrs, solver_addr);
         
         // Emit event
         let solver_data = simple_map::borrow(&registry.solvers, &solver_addr);
@@ -252,7 +252,7 @@ module mvmt_intent::solver_registry {
         simple_map::remove(&mut registry.solvers, &solver_addr);
         
         // Remove from addresses vector
-        let addresses = &mut registry.solver_addresses;
+        let addresses = &mut registry.solver_addrs;
         let len = vector::length(addresses);
         let i = 0;
         while (i < len) {
@@ -345,7 +345,7 @@ module mvmt_intent::solver_registry {
             return vector::empty()
         };
         let registry = borrow_global<SolverRegistry>(@mvmt_intent);
-        registry.solver_addresses
+        registry.solver_addrs
     }
 
     #[view]
@@ -416,7 +416,7 @@ module mvmt_intent::solver_registry {
             return
         };
         let registry = borrow_global<SolverRegistry>(@mvmt_intent);
-        let addresses = &registry.solver_addresses;
+        let addresses = &registry.solver_addrs;
         let solvers = &registry.solvers;
         
         // Iterate through all solver addresses and emit events

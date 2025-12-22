@@ -121,27 +121,27 @@ extract_escrow_contract_address() {
         setup_project_root
     fi
     
-    local contract_address=""
+    local contract_addr=""
     
     # First, try to extract from deployment output if provided
     if [ -n "$deploy_output" ]; then
-        contract_address=$(echo "$deploy_output" | grep -i "IntentEscrow deployed to" | awk '{print $NF}' | tr -d '\n')
+        contract_addr=$(echo "$deploy_output" | grep -i "IntentEscrow deployed to" | awk '{print $NF}' | tr -d '\n')
         
-        if [ -z "$contract_address" ]; then
+        if [ -z "$contract_addr" ]; then
             # Try alternative pattern (any 0x followed by 40 hex chars)
-            contract_address=$(echo "$deploy_output" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
+            contract_addr=$(echo "$deploy_output" | grep -oE "0x[a-fA-F0-9]{40}" | head -1)
         fi
     fi
     
     # If not found in output, try log files
-    if [ -z "$contract_address" ]; then
+    if [ -z "$contract_addr" ]; then
         local log_dir="$PROJECT_ROOT/.tmp/e2e-tests"
         if [ -d "$log_dir" ]; then
-            contract_address=$(grep -i "IntentEscrow deployed to" "$log_dir"/$log_file_pattern 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
+            contract_addr=$(grep -i "IntentEscrow deployed to" "$log_dir"/$log_file_pattern 2>/dev/null | tail -1 | awk '{print $NF}' | tr -d '\n')
         fi
     fi
     
-    if [ -z "$contract_address" ]; then
+    if [ -z "$contract_addr" ]; then
         log_and_echo "❌ ERROR: Could not extract escrow contract address"
         if [ -n "$deploy_output" ]; then
             log_and_echo "   Deployment output:"
@@ -150,7 +150,7 @@ extract_escrow_contract_address() {
         exit 1
     fi
     
-    echo "$contract_address"
+    echo "$contract_addr"
 }
 
 # Convert intent ID from Move VM format to EVM format

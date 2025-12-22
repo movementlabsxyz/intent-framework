@@ -91,10 +91,10 @@ echo ""
 # ============================================================================
 
 # Get ERC20 token balance on Base Sepolia
-# Usage: get_base_usdc_balance <address> <token_address> <rpc_url>
+# Usage: get_base_usdc_balance <address> <token_addr> <rpc_url>
 get_base_usdc_balance() {
     local address="$1"
-    local token_address="$2"
+    local token_addr="$2"
     local rpc_url="$3"
     
     # ERC20 balanceOf(address) selector = 0x70a08231
@@ -103,7 +103,7 @@ get_base_usdc_balance() {
     
     local result=$(curl -s -X POST "$rpc_url" \
         -H "Content-Type: application/json" \
-        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$token_address\",\"data\":\"$data\"},\"latest\"],\"id\":1}" \
+        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$token_addr\",\"data\":\"$data\"},\"latest\"],\"id\":1}" \
         2>/dev/null | jq -r '.result // "0x0"')
     
     # Convert hex to decimal
@@ -111,7 +111,7 @@ get_base_usdc_balance() {
 }
 
 # Get USDC.e balance on Movement (Fungible Asset)
-# Usage: get_movement_usdc_balance <address> <metadata_address> <rpc_url>
+# Usage: get_movement_usdc_balance <address> <metadata_addr> <rpc_url>
 get_movement_usdc_balance() {
     local address="$1"
     local metadata="$2"
@@ -347,7 +347,7 @@ DRAFT_DATA=$(jq -n \
         expiry_time: ($et | tonumber),
         intent_id: $ii,
         issuer: $is,
-        chain_address: $ca,
+        chain_addr: $ca,
         flow_type: $ft
     }')
 

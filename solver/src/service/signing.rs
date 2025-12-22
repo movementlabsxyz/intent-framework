@@ -189,10 +189,10 @@ impl SigningService {
     ) -> Result<bool> {
         // Get solver profile and address from config
         let profile = self.config.solver.profile.clone();
-        let solver_address = self.config.solver.address.clone();
+        let solver_addr = self.config.solver.address.clone();
 
         // Get module address and chain number from hub chain config
-        let module_address = self.config.hub_chain.module_address
+        let module_addr = self.config.hub_chain.module_addr
             .strip_prefix("0x")
             .context("Module address must start with 0x")?
             .to_string();
@@ -206,7 +206,8 @@ impl SigningService {
         let desired_amount = draft_data.desired_amount;
         let desired_chain_id = draft_data.desired_chain_id;
         let expiry_time = draft.expiry_time;
-        let requester_address = draft.requester_addr.clone();
+        let requester_addr = draft.requester_addr.clone();
+        let solver_addr_clone = solver_addr.clone();
 
         // Get private key, intent hash, and sign - all blocking operations
         let (signature_hex, public_key_hex) = tokio::task::spawn_blocking(move || -> Result<(String, String)> {
@@ -229,7 +230,7 @@ impl SigningService {
             // Get intent hash
             let hash = get_intent_hash(
                 &profile,
-                &module_address,
+                &module_addr,
                 &offered_token,
                 offered_amount,
                 offered_chain_id,
@@ -237,8 +238,8 @@ impl SigningService {
                 desired_amount,
                 desired_chain_id,
                 expiry_time,
-                &requester_address,
-                &solver_address,
+                &requester_addr,
+                &solver_addr_clone,
                 chain_num,
             )
             .context("Failed to get intent hash")?;
@@ -258,7 +259,7 @@ impl SigningService {
         .map_err(|e| anyhow::anyhow!("Signing failed: {:?}", e))?;
 
         // Get solver address again for submission
-        let solver_address = self.config.solver.address.clone();
+        let solver_addr = self.config.solver.address.clone();
 
         // Submit signature to verifier
         // Use spawn_blocking since verifier_client uses blocking HTTP
@@ -266,7 +267,7 @@ impl SigningService {
         let draft_id_for_log = draft.draft_id.clone();
         let draft_id_for_submit = draft.draft_id.clone();
         let submission = crate::verifier_client::SignatureSubmission {
-            solver_addr: solver_address.clone(),
+            solver_addr: solver_addr.clone(),
             signature: signature_hex,
             public_key: public_key_hex,
         };

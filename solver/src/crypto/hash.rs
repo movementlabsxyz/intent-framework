@@ -11,7 +11,7 @@ use std::str;
 /// extracts the hash from the resulting transaction event.
 pub fn get_intent_hash(
     profile: &str,
-    chain_address: &str,
+    chain_addr: &str,
     offered_metadata: &str,
     offered_amount: u64,
     offered_chain_id: u64,
@@ -25,7 +25,7 @@ pub fn get_intent_hash(
 ) -> Result<Vec<u8>> {
     // Validate solver address format early (before any CLI calls)
     // Solver address must have 0x prefix (required format), then strip for API call
-    let solver_address = solver
+    let solver_addr = solver
         .strip_prefix("0x")
         .ok_or_else(|| anyhow::anyhow!(
             "Solver address must start with 0x prefix, got: '{}'",
@@ -48,7 +48,7 @@ pub fn get_intent_hash(
     };
 
     // Build command arguments
-    let function_id = format!("0x{}::utils::get_intent_to_sign_hash", chain_address);
+    let function_id = format!("0x{}::utils::get_intent_to_sign_hash", chain_addr);
     let mut args = vec![
         "move".to_string(),
         "run".to_string(),
@@ -121,7 +121,7 @@ pub fn get_intent_hash(
     let url = format!(
         "{}/accounts/0x{}/transactions?limit=1",
         base_url,
-        solver_address
+        solver_addr
     );
     let client = reqwest::blocking::Client::builder()
         .no_proxy()

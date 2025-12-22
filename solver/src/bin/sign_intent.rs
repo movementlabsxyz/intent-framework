@@ -37,7 +37,7 @@ fn main() -> Result<()> {
 
     // Parse arguments
     let mut profile = None;
-    let mut chain_address = None;
+    let mut chain_addr = None;
     let mut offered_metadata = None;
     let mut offered_amount = None;
     let mut offered_chain_id = None;
@@ -57,7 +57,7 @@ fn main() -> Result<()> {
                 i += 2;
             }
             "--chain-address" => {
-                chain_address = Some(args[i + 1].clone());
+                chain_addr = Some(args[i + 1].clone());
                 i += 2;
             }
             "--offered-metadata" => {
@@ -108,7 +108,7 @@ fn main() -> Result<()> {
     }
 
     let profile = profile.context("--profile is required")?;
-    let chain_address = chain_address.context("--chain-address is required")?;
+    let chain_addr = chain_addr.context("--chain-address is required")?;
     let offered_metadata = offered_metadata.context("--offered-metadata is required")?;
     let offered_amount = offered_amount.context("--offered-amount is required")?;
     let offered_chain_id = offered_chain_id.context("--offered-chain-id is required")?;
@@ -123,7 +123,7 @@ fn main() -> Result<()> {
     // Step 1: Call Move function to get the hash
     let hash = crypto::get_intent_hash(
         &profile,
-        &chain_address,
+        &chain_addr,
         &offered_metadata,
         offered_amount,
         offered_chain_id,

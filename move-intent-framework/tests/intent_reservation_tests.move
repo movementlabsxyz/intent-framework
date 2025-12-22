@@ -36,7 +36,7 @@ module mvmt_intent::intent_reservation_tests {
         let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
         
         // Use offerer as solver address - verification uses the provided public key, not the address
-        let solver_address = signer::address_of(offerer);
+        let solver_addr = signer::address_of(offerer);
 
         let (offered_fa_type, _offered_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
@@ -47,7 +47,7 @@ module mvmt_intent::intent_reservation_tests {
         );
         
         // Step 2: Solver adds their address to the draft intent
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Hash the intent to sign and sign it
         let intent_data = intent_reservation::hash_intent(intent_to_sign);
@@ -80,7 +80,7 @@ module mvmt_intent::intent_reservation_tests {
         let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
         
         // Use offerer as solver address - verification uses the provided public key, not the address
-        let solver_address = signer::address_of(offerer);
+        let solver_addr = signer::address_of(offerer);
 
         let (offered_fa_type, _offered_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
@@ -91,7 +91,7 @@ module mvmt_intent::intent_reservation_tests {
         );
         
         // Step 2: Solver adds their address to the draft intent
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Sign with WRONG data instead of the actual intent data
         let wrong_data = b"wrong_data_for_testing";
@@ -124,7 +124,7 @@ module mvmt_intent::intent_reservation_tests {
         let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
         
         // Use offerer as solver address - verification uses the provided public key, not the address
-        let solver_address = signer::address_of(offerer);
+        let solver_addr = signer::address_of(offerer);
 
         let (offered_fa_type, _offered_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
@@ -135,7 +135,7 @@ module mvmt_intent::intent_reservation_tests {
         );
         
         // Step 2: Solver adds their address to the draft intent
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Use a completely wrong signature (64 bytes of random data)
         let wrong_signature_bytes = b"1234567890123456789012345678901234567890123456789012345678901234";
@@ -193,7 +193,7 @@ module mvmt_intent::intent_reservation_tests {
         let solver_unvalidated_public_key = ed25519::new_unvalidated_public_key_from_bytes(solver_public_key_bytes);
         
         // Use offerer as solver address
-        let solver_address = signer::address_of(offerer);
+        let solver_addr = signer::address_of(offerer);
 
         let (offered_fa_type, _offered_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, offerer, 100);
         let (desired_fa_type, _desired_mint_ref) = test_utils::register_and_mint_tokens(aptos_framework, desired_fa_holder, 0);
@@ -204,7 +204,7 @@ module mvmt_intent::intent_reservation_tests {
         );
         
         // Step 2: Solver adds their address to the draft intent
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Use an invalid signature (64 bytes of random data, not a valid signature)
         let invalid_signature_bytes = b"1234567890123456789012345678901234567890123456789012345678901234";
@@ -245,10 +245,10 @@ module mvmt_intent::intent_reservation_tests {
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&solver_public_key);
         
         // Create EVM address for solver (required for registration)
-        let evm_address = test_utils::create_test_evm_address(0);
+        let evm_addr = test_utils::create_test_evm_address(0);
         
         // Register solver in the registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_addr, @0x0);
         assert!(solver_registry::is_registered(signer::address_of(solver)), 0);
         
         // Step 3: Offerer creates draft intent (without solver)
@@ -260,8 +260,8 @@ module mvmt_intent::intent_reservation_tests {
         );
         
         // Step 4: Solver adds their address to the draft intent and signs it
-        let solver_address = signer::address_of(solver);
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let solver_addr = signer::address_of(solver);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 5: Solver signs the intent
         let intent_data = intent_reservation::hash_intent(intent_to_sign);
@@ -280,7 +280,7 @@ module mvmt_intent::intent_reservation_tests {
         
         // Verify the reservation contains the correct solver address
         let reservation = option::borrow(&result);
-        assert!(intent_reservation::solver(reservation) == solver_address, 2);
+        assert!(intent_reservation::solver(reservation) == solver_addr, 2);
     }
 
     #[test(
@@ -316,8 +316,8 @@ module mvmt_intent::intent_reservation_tests {
             offered_fa_type, OFFERED_AMOUNT, 1, desired_fa_type, DESIRED_AMOUNT, 1, EXPIRY_TIME, signer::address_of(offerer)
         );
         
-        let solver_address = signer::address_of(solver);
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let solver_addr = signer::address_of(solver);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Sign the intent
         let intent_data = intent_reservation::hash_intent(intent_to_sign);

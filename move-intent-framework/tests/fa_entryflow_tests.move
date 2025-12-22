@@ -43,7 +43,7 @@ module mvmt_intent::fa_entryflow_tests {
             offered_fa,
             1, // offered_chain_id
             option::none(), // No offered_amount_override - tokens locked on this chain
-            option::none(), // No offered_metadata_address_override - tokens locked on this chain
+            option::none(), // No offered_metadata_addr_override - tokens locked on this chain
             desired_fa,
             desired_amount,
             1, // desired_chain_id

@@ -65,7 +65,7 @@ public fun create_fa_to_fa_intent_entry(
     desired_metadata: Object<Metadata>,
     desired_amount: u64,
     expiry_time: u64,
-    solver_address: address,
+    solver_addr: address,
     solver_signature: vector<u8>,
 ): Object<Intent<FungibleAsset, FungibleAssetLimitOrder>>
 ```
@@ -77,7 +77,7 @@ public fun create_fa_to_fa_intent_entry(
 - `desired_metadata`: Metadata of the desired asset
 - `desired_amount`: Amount of the desired asset
 - `expiry_time`: Unix timestamp when the intent expires
-- `solver_address`: Address of the authorized solver (0x0 for unreserved)
+- `solver_addr`: Address of the authorized solver (0x0 for unreserved)
 - `solver_signature`: Solver's signature (empty vector for unreserved)
 
 **Returns:** A fungible asset trade intent object
@@ -138,7 +138,7 @@ public fun create_outflow_intent(
     desired_chain_id: u64,
     expiry_time: u64,
     intent_id: address,
-    requester_address_connected_chain: address,
+    requester_addr_connected_chain: address,
     verifier_public_key: vector<u8>,
     solver: address,
     solver_signature: vector<u8>,
@@ -158,7 +158,7 @@ public fun create_outflow_intent(
 - `desired_chain_id`: Chain ID where tokens are desired (connected chain)
 - `expiry_time`: Unix timestamp when intent expires
 - `intent_id`: Intent ID for cross-chain linking
-- `requester_address_connected_chain`: Address on connected chain where solver should send tokens
+- `requester_addr_connected_chain`: Address on connected chain where solver should send tokens
 - `verifier_public_key`: Public key of the verifier that will approve the connected chain transaction (32 bytes)
 - `solver`: Address of the solver authorized to fulfill this intent (must be registered in solver registry)
 - `solver_signature`: Ed25519 signature from the solver authorizing this intent
@@ -169,7 +169,7 @@ public fun create_outflow_intent(
 
 - `ESOLVER_NOT_REGISTERED`: Solver is not registered in the solver registry
 - `EINVALID_SIGNATURE`: Signature verification failed
-- `EINVALID_REQUESTER_ADDRESS`: `requester_address_connected_chain` is zero address (0x0)
+- `EINVALID_REQUESTER_ADDRESS`: `requester_addr_connected_chain` is zero address (0x0)
 
 **Entry Function:** For transaction calls, use `create_outflow_intent_entry` which has the same parameters but doesn't return a value (entry functions cannot return values in Move).
 
@@ -274,14 +274,14 @@ public fun create_draft_intent(
 ```move
 public fun add_solver_to_draft_intent(
     draft: Draftintent,
-    solver_address: address,
+    solver_addr: address,
 ): IntentToSign
 ```
 
 **Parameters:**
 
 - `draft`: The draft intent
-- `solver_address`: Address of the solver
+- `solver_addr`: Address of the solver
 
 **Returns:** Intent data ready for signing
 
@@ -491,7 +491,7 @@ Emitted when a fungible asset intent is created:
 
 ```move
 struct LimitOrderEvent has store, drop {
-    intent_address: address,
+    intent_addr: address,
     intent_id: address,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
@@ -511,7 +511,7 @@ Emitted when an oracle-guarded intent or escrow is created:
 
 ```move
 struct OracleLimitOrderEvent has store, drop {
-    intent_address: address,
+    intent_addr: address,
     intent_id: address,
     offered_metadata: Object<Metadata>,
     offered_amount: u64,
@@ -524,7 +524,7 @@ struct OracleLimitOrderEvent has store, drop {
     min_reported_value: u64,
     revocable: bool,
     reserved_solver: Option<address>,
-    requester_address_connected_chain: Option<address>,
+    requester_addr_connected_chain: Option<address>,
 }
 ```
 
@@ -599,7 +599,7 @@ struct OracleGuardedLimitOrder has store, drop {
     requester: address,
     requirement: OracleSignatureRequirement,
     intent_id: address,
-    requester_address_connected_chain: Option<address>,
+    requester_addr_connected_chain: Option<address>,
 }
 ```
 

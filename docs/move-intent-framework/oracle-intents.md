@@ -54,7 +54,7 @@ struct OracleGuardedLimitOrder has store, drop {
     requester: address,
     requirement: OracleSignatureRequirement,
     intent_id: address,
-    requester_address_connected_chain: Option<address>,
+    requester_addr_connected_chain: Option<address>,
 }
 ```
 

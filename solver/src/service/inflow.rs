@@ -207,13 +207,13 @@ impl InflowService {
     /// * `Ok(String)` - Transaction hash
     /// * `Err(anyhow::Error)` - Failed to fulfill intent
     pub fn fulfill_inflow_intent(&self, intent: &TrackedIntent, payment_amount: u64) -> Result<String> {
-        let intent_address = intent
-            .intent_address
+        let intent_addr = intent
+            .intent_addr
             .as_ref()
             .context("Intent address not set (intent not yet created on-chain)")?;
 
         let hub_client = crate::chains::HubChainClient::new(&self.config.hub_chain)?;
-        hub_client.fulfill_inflow_intent(intent_address, payment_amount)
+        hub_client.fulfill_inflow_intent(intent_addr, payment_amount)
     }
 
     /// Releases an escrow on the connected chain after getting verifier approval

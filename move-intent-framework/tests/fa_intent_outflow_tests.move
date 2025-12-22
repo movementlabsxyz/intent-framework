@@ -31,7 +31,7 @@ module mvmt_intent::fa_intent_outflow_tests {
     ): (
         Object<aptos_framework::fungible_asset::Metadata>, // offered_metadata
         Object<aptos_framework::fungible_asset::Metadata>, // desired_metadata
-        address, // solver_address
+        address, // solver_addr
         vector<u8>, // solver_signature_bytes
         vector<u8>, // verifier_public_key_bytes
         ed25519::SecretKey, // verifier_secret_key (needed to sign intent_id for fulfillment)
@@ -47,7 +47,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         let (desired_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver_signer, 0);
         
         let intent_id = @0x5678;
-        let solver_address = signer::address_of(solver_signer);
+        let solver_addr = signer::address_of(solver_signer);
         let expiry_time = timestamp::now_seconds() + 3600;
         let offered_amount = 50u64;
         let desired_amount = 25u64;
@@ -59,10 +59,10 @@ module mvmt_intent::fa_intent_outflow_tests {
         // Generate key pairs for solver and verifier
         let (solver_secret_key, validated_solver_pk) = ed25519::generate_keys();
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&validated_solver_pk);
-        let evm_address = test_utils::create_test_evm_address(0);
+        let evm_addr = test_utils::create_test_evm_address(0);
         
         // Register solver in registry
-        solver_registry::register_solver(solver_signer, solver_public_key_bytes, evm_address, @0x0);
+        solver_registry::register_solver(solver_signer, solver_public_key_bytes, evm_addr, @0x0);
         
         // Generate verifier key pair (need secret key for signing intent_id later)
         let (verifier_secret_key, validated_verifier_pk) = ed25519::generate_keys();
@@ -82,7 +82,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         );
         
         // Step 2: Add solver to draft and create intent to sign
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Solver signs the intent (off-chain)
         let intent_hash = intent_reservation::hash_intent(intent_to_sign);
@@ -92,7 +92,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         (
             offered_metadata,
             desired_metadata,
-            solver_address,
+            solver_addr,
             solver_signature_bytes,
             verifier_public_key_bytes,
             verifier_secret_key,
@@ -118,7 +118,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         address, // intent_id
     ) {
         // Set up test infrastructure using shared helper
-        let (offered_metadata, desired_metadata, solver_address, solver_signature_bytes, verifier_public_key_bytes, verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
+        let (offered_metadata, desired_metadata, solver_addr, solver_signature_bytes, verifier_public_key_bytes, verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
             setup_outflow_test_infrastructure(aptos_framework, mvmt_intent, requester_signer, solver_signer);
         
         let requester_addr_connected_chain = @0x9999; // Address on connected chain
@@ -138,7 +138,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             intent_id,
             requester_addr_connected_chain,
             verifier_public_key_bytes,
-            solver_address,
+            solver_addr,
             solver_signature_bytes,
         );
         
@@ -170,7 +170,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         solver_signer: &signer,
     ) {
         // Set up test infrastructure using shared helper
-        let (offered_metadata, desired_metadata, solver_address, solver_signature_bytes, verifier_public_key_bytes, _verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
+        let (offered_metadata, desired_metadata, solver_addr, solver_signature_bytes, verifier_public_key_bytes, _verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
             setup_outflow_test_infrastructure(aptos_framework, mvmt_intent, requester_signer, solver_signer);
         
         let requester_addr_connected_chain = @0x9999; // Address on connected chain
@@ -193,7 +193,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             intent_id,
             requester_addr_connected_chain,
             verifier_public_key_bytes,
-            solver_address,
+            solver_addr,
             solver_signature_bytes,
         );
         
@@ -201,8 +201,8 @@ module mvmt_intent::fa_intent_outflow_tests {
         assert!(primary_fungible_store::balance(signer::address_of(requester_signer), offered_metadata) == 50);
         
         // Verify intent was created successfully by checking the intent object
-        let intent_address = object::object_address(&intent_obj);
-        assert!(intent_address != @0x0); // Intent address should not be zero
+        let intent_addr = object::object_address(&intent_obj);
+        assert!(intent_addr != @0x0); // Intent address should not be zero
     }
 
     #[test(
@@ -228,7 +228,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         let (desired_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver_signer, 100);
         
         let intent_id = @0xabcd;
-        let solver_address = signer::address_of(solver_signer);
+        let solver_addr = signer::address_of(solver_signer);
         let requester_addr_connected_chain = @0x1234; // Address on connected chain
         let expiry_time = timestamp::now_seconds() + 3600;
         
@@ -239,8 +239,8 @@ module mvmt_intent::fa_intent_outflow_tests {
         // Generate key pairs
         let (_, validated_solver_pk) = ed25519::generate_keys();
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&validated_solver_pk);
-        let evm_address = test_utils::create_test_evm_address(0);
-        solver_registry::register_solver(solver_signer, solver_public_key_bytes, evm_address, @0x0);
+        let evm_addr = test_utils::create_test_evm_address(0);
+        solver_registry::register_solver(solver_signer, solver_public_key_bytes, evm_addr, @0x0);
         
         let (verifier_secret_key, validated_verifier_pk) = ed25519::generate_keys();
         let verifier_public_key = ed25519::public_key_to_unvalidated(&validated_verifier_pk);
@@ -248,7 +248,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         // Create intent directly using lower-level function to test struct field storage
         let fa = primary_fungible_store::withdraw(requester_signer, offered_metadata, 50);
-        let reservation = intent_reservation::new_reservation(solver_address);
+        let reservation = intent_reservation::new_reservation(solver_addr);
         let requirement = fa_intent_with_oracle::new_oracle_signature_requirement(0, verifier_public_key);
         
         let intent_obj = fa_intent_with_oracle::create_fa_to_fa_intent_with_oracle_requirement(
@@ -257,7 +257,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             desired_metadata,
             25,
             2, // desired_chain_id: connected chain where tokens are desired
-            option::some(object::object_address(&desired_metadata)), // Cross-chain: pass desired_metadata_address
+            option::some(object::object_address(&desired_metadata)), // Cross-chain: pass desired_metadata_addr
             expiry_time,
             signer::address_of(requester_signer),
             requirement,
@@ -314,9 +314,9 @@ module mvmt_intent::fa_intent_outflow_tests {
         );
         
         // Verify intent was created and registered
-        let intent_address = object::object_address(&intent_obj);
-        assert!(intent_address != @0x0);
-        assert!(intent_registry::is_intent_registered(intent_address));
+        let intent_addr = object::object_address(&intent_obj);
+        assert!(intent_addr != @0x0);
+        assert!(intent_registry::is_intent_registered(intent_addr));
         assert!(intent_registry::get_intent_count(signer::address_of(requester_signer)) == 1);
         
         // Verify tokens were locked (requester_signer's balance decreased)
@@ -324,7 +324,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         
         // Convert to generic Object type for entry function
         let intent_obj_generic: Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> = 
-            object::address_to_object(intent_address);
+            object::address_to_object(intent_addr);
         
         // Fulfill the outflow intent using fulfill_outflow_intent
         fa_intent_outflow::fulfill_outflow_intent(
@@ -340,7 +340,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         assert!(primary_fungible_store::balance(signer::address_of(requester_signer), offered_metadata) == 50);
         
         // Verify intent was unregistered from registry after fulfillment
-        assert!(!intent_registry::is_intent_registered(intent_address));
+        assert!(!intent_registry::is_intent_registered(intent_addr));
         assert!(intent_registry::get_intent_count(signer::address_of(requester_signer)) == 0);
     }
 
@@ -374,14 +374,14 @@ module mvmt_intent::fa_intent_outflow_tests {
         // Try to convert to FungibleAssetLimitOrder type (wrong type)
         // This should fail because the intent is OracleGuardedLimitOrder, not FungibleAssetLimitOrder
         // The type system prevents this conversion, which is what we're testing
-        let intent_address = object::object_address(&intent_obj);
+        let intent_addr = object::object_address(&intent_obj);
         
         // Try to convert to the wrong type - this will fail at address_to_object
         // because object::address_to_object<T> checks if an object of type T exists at the address.
         // The object exists, but not as FungibleAssetLimitOrder, so the runtime reports
         // ERESOURCE_DOES_NOT_EXIST (a resource of that type doesn't exist at that address).
         let _wrong_type_intent: Object<Intent<fa_intent::FungibleStoreManager, fa_intent::FungibleAssetLimitOrder>> = 
-            object::address_to_object(intent_address);
+            object::address_to_object(intent_addr);
     }
 
     #[test(
@@ -400,7 +400,7 @@ module mvmt_intent::fa_intent_outflow_tests {
         solver_signer: &signer,
     ) {
         // Set up test infrastructure using shared helper
-        let (offered_metadata, desired_metadata, solver_address, solver_signature_bytes, verifier_public_key_bytes, _verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
+        let (offered_metadata, desired_metadata, solver_addr, solver_signature_bytes, verifier_public_key_bytes, _verifier_secret_key, intent_id, expiry_time, offered_amount, desired_amount) = 
             setup_outflow_test_infrastructure(aptos_framework, mvmt_intent, requester_signer, solver_signer);
         
         let requester_addr_connected_chain = @0x0; // Zero address - should be rejected
@@ -420,7 +420,7 @@ module mvmt_intent::fa_intent_outflow_tests {
             intent_id,
             requester_addr_connected_chain, // Zero address - should cause abort
             verifier_public_key_bytes,
-            solver_address,
+            solver_addr,
             solver_signature_bytes,
         );
     }

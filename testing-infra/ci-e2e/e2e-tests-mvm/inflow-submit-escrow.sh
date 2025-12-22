@@ -142,7 +142,7 @@ if [ $ESCROW_EXIT_CODE -eq 0 ]; then
     # Get full transaction for debugging
     FULL_TX=$(curl -s "http://127.0.0.1:8082/v1/accounts/${REQUESTER_CHAIN2_ADDRESS}/transactions?limit=1")
     
-    ESCROW_ADDRESS=$(echo "$FULL_TX" | jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_address' | head -n 1)
+    ESCROW_ADDRESS=$(echo "$FULL_TX" | jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_addr' | head -n 1)
     ESCROW_INTENT_ID=$(echo "$FULL_TX" | jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.intent_id' | head -n 1)
     LOCKED_AMOUNT=$(echo "$FULL_TX" | jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.offered_amount' | head -n 1)
     DESIRED_AMOUNT=$(echo "$FULL_TX" | jq -r '.[0].events[] | select(.type | contains("OracleLimitOrderEvent")) | .data.desired_amount' | head -n 1)

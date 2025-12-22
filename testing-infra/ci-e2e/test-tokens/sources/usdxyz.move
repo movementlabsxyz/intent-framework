@@ -60,8 +60,8 @@ module test_tokens::usdxyz {
     /// Get the metadata object for USDxyz token.
     /// This is needed to interact with the token in other modules.
     public fun get_metadata(): Object<Metadata> {
-        let metadata_address = object::create_object_address(&@test_tokens, TOKEN_NAME);
-        object::address_to_object<Metadata>(metadata_address)
+        let metadata_addr = object::create_object_address(&@test_tokens, TOKEN_NAME);
+        object::address_to_object<Metadata>(metadata_addr)
     }
 
     /// Mint USDxyz tokens to a recipient.

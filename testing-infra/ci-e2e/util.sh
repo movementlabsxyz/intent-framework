@@ -202,7 +202,7 @@ setup_solver_config() {
 }
 
 # Save intent information to file
-# Usage: save_intent_info [intent_id] [hub_intent_address]
+# Usage: save_intent_info [intent_id] [hub_intent_addr]
 # If arguments are provided, uses them; otherwise uses INTENT_ID and HUB_INTENT_ADDRESS env vars
 # Saves to ${PROJECT_ROOT}/.tmp/intent-info.env
 save_intent_info() {
@@ -211,7 +211,7 @@ save_intent_info() {
     fi
 
     local intent_id="${1:-$INTENT_ID}"
-    local hub_intent_address="${2:-$HUB_INTENT_ADDRESS}"
+    local hub_intent_addr="${2:-$HUB_INTENT_ADDRESS}"
 
     if [ -z "$intent_id" ]; then
         log_and_echo "❌ ERROR: save_intent_info() requires INTENT_ID"
@@ -223,8 +223,8 @@ save_intent_info() {
     
     echo "INTENT_ID=$intent_id" > "$INTENT_INFO_FILE"
     
-    if [ -n "$hub_intent_address" ] && [ "$hub_intent_address" != "null" ]; then
-        echo "HUB_INTENT_ADDRESS=$hub_intent_address" >> "$INTENT_INFO_FILE"
+    if [ -n "$hub_intent_addr" ] && [ "$hub_intent_addr" != "null" ]; then
+        echo "HUB_INTENT_ADDRESS=$hub_intent_addr" >> "$INTENT_INFO_FILE"
     fi
     
     log "   📝 Intent info saved to: $INTENT_INFO_FILE"
@@ -727,19 +727,19 @@ get_verifier_url() {
 }
 
 # Submit draft intent to verifier
-# Usage: submit_draft_intent <requester_address> <draft_data_json> <expiry_time> [verifier_port]
+# Usage: submit_draft_intent <requester_addr> <draft_data_json> <expiry_time> [verifier_port]
 # Returns the draft_id on success, exits on error
 # draft_data_json should be a JSON object with intent details
 # Note: Cannot use log/log_and_echo for success path because this function's output
 # is captured via command substitution, and log functions write to stdout.
 submit_draft_intent() {
-    local requester_address="$1"
+    local requester_addr="$1"
     local draft_data_json="$2"
     local expiry_time="$3"
     local verifier_port="${4:-3333}"
     
-    if [ -z "$requester_address" ] || [ -z "$draft_data_json" ] || [ -z "$expiry_time" ]; then
-        log_and_echo "❌ ERROR: submit_draft_intent() requires requester_address, draft_data_json, and expiry_time"
+    if [ -z "$requester_addr" ] || [ -z "$draft_data_json" ] || [ -z "$expiry_time" ]; then
+        log_and_echo "❌ ERROR: submit_draft_intent() requires requester_addr, draft_data_json, and expiry_time"
         exit 1
     fi
     
@@ -747,14 +747,14 @@ submit_draft_intent() {
     
     # Log to stderr so it doesn't contaminate the return value
     echo "   Submitting draft intent to verifier..." >&2
-    echo "     Requester: $requester_address" >&2
+    echo "     Requester: $requester_addr" >&2
     [ -n "$LOG_FILE" ] && echo "   Submitting draft intent to verifier..." >> "$LOG_FILE"
-    [ -n "$LOG_FILE" ] && echo "     Requester: $requester_address" >> "$LOG_FILE"
+    [ -n "$LOG_FILE" ] && echo "     Requester: $requester_addr" >> "$LOG_FILE"
     
     # Build request body using jq to ensure valid JSON
     local request_body
     request_body=$(jq -n \
-        --arg ra "$requester_address" \
+        --arg ra "$requester_addr" \
         --argjson dd "$draft_data_json" \
         --argjson et "$expiry_time" \
         '{
@@ -870,41 +870,41 @@ get_draft_intent() {
 }
 
 # Submit signature to verifier (solver submits after signing)
-# Usage: submit_signature_to_verifier <draft_id> <solver_address> <signature_hex> <public_key_hex> [verifier_port]
+# Usage: submit_signature_to_verifier <draft_id> <solver_addr> <signature_hex> <public_key_hex> [verifier_port]
 # Returns success/failure, exits on error
 submit_signature_to_verifier() {
     local draft_id="$1"
-    local solver_address="$2"
+    local solver_addr="$2"
     local signature_hex="$3"
     local public_key_hex="$4"
     local verifier_port="${5:-3333}"
     
-    if [ -z "$draft_id" ] || [ -z "$solver_address" ] || [ -z "$signature_hex" ] || [ -z "$public_key_hex" ]; then
-        log_and_echo "❌ ERROR: submit_signature_to_verifier() requires draft_id, solver_address, signature_hex, public_key_hex"
+    if [ -z "$draft_id" ] || [ -z "$solver_addr" ] || [ -z "$signature_hex" ] || [ -z "$public_key_hex" ]; then
+        log_and_echo "❌ ERROR: submit_signature_to_verifier() requires draft_id, solver_addr, signature_hex, public_key_hex"
         exit 1
     fi
     
     # Normalize solver address: ensure 0x prefix (aptos config returns addresses without prefix)
-    local normalized_solver_address
-    if [ "${solver_address#0x}" != "$solver_address" ]; then
+    local normalized_solver_addr
+    if [ "${solver_addr#0x}" != "$solver_addr" ]; then
         # Already has 0x prefix
-        normalized_solver_address="$solver_address"
+        normalized_solver_addr="$solver_addr"
     else
         # Add 0x prefix
-        normalized_solver_address="0x$solver_address"
+        normalized_solver_addr="0x$solver_addr"
     fi
     
     local verifier_url=$(get_verifier_url "$verifier_port")
     
     log "   Submitting signature to verifier..."
     log "     Draft ID: $draft_id"
-    log "     Solver: $normalized_solver_address"
+    log "     Solver: $normalized_solver_addr"
     
     local response
     response=$(curl -s -X POST "${verifier_url}/draftintent/${draft_id}/signature" \
         -H "Content-Type: application/json" \
         -d "{
-            \"solver_addr\": \"$normalized_solver_address\",
+            \"solver_addr\": \"$normalized_solver_addr\",
             \"signature\": \"$signature_hex\",
             \"public_key\": \"$public_key_hex\"
         }" 2>&1)

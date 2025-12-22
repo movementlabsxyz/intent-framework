@@ -35,7 +35,7 @@ fn create_mock_oracle_limit_order_event(
     json!({
         "type": "0x1::fa_intent_with_oracle::OracleLimitOrderEvent",
         "data": {
-            "intent_address": DUMMY_SOLVER_ADDR_MVM_CON,
+            "intent_addr": DUMMY_SOLVER_ADDR_MVM_CON,
             "intent_id": intent_id,
             "offered_metadata": {"inner": "0xoffered_meta"},
             "offered_amount": "1000",

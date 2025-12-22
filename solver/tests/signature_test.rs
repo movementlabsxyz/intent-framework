@@ -113,7 +113,7 @@ fn test_get_intent_hash_rejects_address_without_prefix() {
 
     // Address WITHOUT 0x prefix - this should be rejected early
     // Use simple repeated pattern (64 hex chars = 32 bytes for Move address)
-    let solver_address_no_prefix = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    let solver_addr_no_prefix = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     let result = get_intent_hash(
         "test-profile",
@@ -126,7 +126,7 @@ fn test_get_intent_hash_rejects_address_without_prefix() {
         2,
         1234567890,
         "0xissuer",
-        solver_address_no_prefix, // Missing 0x prefix
+        solver_addr_no_prefix, // Missing 0x prefix
         1,
     );
 
@@ -138,7 +138,7 @@ fn test_get_intent_hash_rejects_address_without_prefix() {
         err
     );
     assert!(
-        err.to_string().contains(solver_address_no_prefix),
+        err.to_string().contains(solver_addr_no_prefix),
         "Error should include the invalid address: {}",
         err
     );
@@ -157,8 +157,8 @@ fn test_solver_address_normalization() {
 
     // Test case 2: Move address format (64 hex chars = 32 bytes)
     // Use simple repeated pattern
-    let real_address = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    let normalized2 = real_address
+    let real_addr = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    let normalized2 = real_addr
         .strip_prefix("0x")
         .expect("Address should have 0x prefix");
     assert_eq!(

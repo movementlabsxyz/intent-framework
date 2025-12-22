@@ -46,14 +46,14 @@ fn create_test_solver_config() -> solver::config::SolverConfig {
             name: "Hub Chain".to_string(),
             rpc_url: "http://127.0.0.1:8080/v1".to_string(),
             chain_id: 1,
-            module_address: "0x123".to_string(),
+            module_addr: "0x123".to_string(),
             profile: "test-profile".to_string(),
         },
         connected_chain: ConnectedChainConfig::Mvm(ChainConfig {
             name: "Connected Chain".to_string(),
             rpc_url: "http://127.0.0.1:8082/v1".to_string(),
             chain_id: 2,
-            module_address: "0x456".to_string(),
+            module_addr: "0x456".to_string(),
             profile: "test-profile".to_string(),
         }),
         acceptance: AcceptanceConfig {

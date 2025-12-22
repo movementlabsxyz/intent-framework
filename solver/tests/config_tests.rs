@@ -18,14 +18,14 @@ fn create_test_config() -> SolverConfig {
             name: "Hub Chain".to_string(),
             rpc_url: "http://127.0.0.1:8080/v1".to_string(),
             chain_id: 1,
-            module_address: "0x123".to_string(),
+            module_addr: "0x123".to_string(),
             profile: "solver-chain1".to_string(),
         },
         connected_chain: ConnectedChainConfig::Mvm(ChainConfig {
             name: "Connected Chain".to_string(),
             rpc_url: "http://127.0.0.1:8082/v1".to_string(),
             chain_id: 2,
-            module_address: "0x456".to_string(),
+            module_addr: "0x456".to_string(),
             profile: "solver-chain2".to_string(),
         }),
         acceptance: AcceptanceConfig {
@@ -67,7 +67,7 @@ fn test_config_validation_duplicate_chain_ids() {
         name: "Connected Chain".to_string(),
         rpc_url: "http://127.0.0.1:8082/v1".to_string(),
         chain_id: 1, // Same as hub chain
-        module_address: "0x456".to_string(),
+        module_addr: "0x456".to_string(),
         profile: "solver-chain2".to_string(),
     });
 
@@ -252,7 +252,7 @@ type = "mvm"
 name = "Connected Chain"
 rpc_url = "http://127.0.0.1:8082/v1"
 chain_id = 2
-module_address = "0x456"
+module_addr = "0x456"
 profile = "solver-chain2"
 "#;
 
@@ -276,7 +276,7 @@ type = "evm"
 name = "Connected EVM Chain"
 rpc_url = "https://sepolia.base.org"
 chain_id = 84532
-escrow_contract_address = "0x123"
+escrow_contract_addr = "0x123"
 private_key_env = "BASE_SOLVER_PRIVATE_KEY"
 "#;
 
@@ -286,7 +286,7 @@ private_key_env = "BASE_SOLVER_PRIVATE_KEY"
         ConnectedChainConfig::Evm(config) => {
             assert_eq!(config.chain_id, 84532);
             assert_eq!(config.name, "Connected EVM Chain");
-            assert_eq!(config.escrow_contract_address, "0x123");
+            assert_eq!(config.escrow_contract_addr, "0x123");
             assert_eq!(config.private_key_env, "BASE_SOLVER_PRIVATE_KEY");
         }
         ConnectedChainConfig::Mvm(_) => panic!("Expected EVM config"),
@@ -320,7 +320,7 @@ polling_interval_ms = 2000
 name = "Hub Chain"
 rpc_url = "http://127.0.0.1:8080/v1"
 chain_id = 1
-module_address = "0x123"
+module_addr = "0x123"
 profile = "solver-chain1"
 
 [connected_chain]
@@ -328,7 +328,7 @@ type = "mvm"
 name = "Connected Chain"
 rpc_url = "http://127.0.0.1:8082/v1"
 chain_id = 2
-module_address = "0x456"
+module_addr = "0x456"
 profile = "solver-chain2"
 
 [acceptance]

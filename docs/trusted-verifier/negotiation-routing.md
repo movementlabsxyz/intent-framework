@@ -200,7 +200,7 @@ Continue polling for new drafts. If your signature was rejected (409), try the n
 # 1. Submit draft
 DRAFT_RESPONSE=$(curl -s -X POST http://127.0.0.1:3333/draftintent \
   -H "Content-Type: application/json" \
-  -d '{"requester_address": "0x123...", "draft_data": {...}, "expiry_time": 2000000}')
+  -d '{"requester_addr": "0x123...", "draft_data": {...}, "expiry_time": 2000000}')
 DRAFT_ID=$(echo "$DRAFT_RESPONSE" | jq -r '.data.draft_id')
 
 # 2. Poll for signature
@@ -208,7 +208,7 @@ while true; do
   SIG_RESPONSE=$(curl -s http://127.0.0.1:3333/draftintent/$DRAFT_ID/signature)
   if echo "$SIG_RESPONSE" | jq -e '.success == true' > /dev/null; then
     SIGNATURE=$(echo "$SIG_RESPONSE" | jq -r '.data.signature')
-    SOLVER=$(echo "$SIG_RESPONSE" | jq -r '.data.solver_address')
+    SOLVER=$(echo "$SIG_RESPONSE" | jq -r '.data.solver_addr')
     echo "Got signature from $SOLVER"
     break
   fi

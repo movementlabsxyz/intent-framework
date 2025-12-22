@@ -28,8 +28,8 @@ impl<T> MoveOption<T> {
 /// This matches the OracleLimitOrderEvent structure from Move
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EscrowEvent {
-    /// Escrow object address (called intent_address in Move OracleLimitOrderEvent)
-    #[serde(rename = "intent_address")]
+    /// Escrow object address (called intent_addr in Move OracleLimitOrderEvent)
+    #[serde(rename = "intent_addr")]
     pub escrow_id: String,
     /// Intent ID for cross-chain linking
     pub intent_id: String,
@@ -60,7 +60,7 @@ pub struct ConnectedMvmClient {
     /// Base RPC URL
     base_url: String,
     /// Module address (for utils module)
-    module_address: String,
+    module_addr: String,
     /// CLI profile name
     profile: String,
 }
@@ -86,7 +86,7 @@ impl ConnectedMvmClient {
         Ok(Self {
             client,
             base_url: config.rpc_url.clone(),
-            module_address: config.module_address.clone(),
+            module_addr: config.module_addr.clone(),
             profile: config.profile.clone(),
         })
     }
@@ -241,7 +241,7 @@ impl ConnectedMvmClient {
                 &self.profile,
                 "--assume-yes",
                 "--function-id",
-                &format!("{}::utils::transfer_with_intent_id", self.module_address),
+                &format!("{}::utils::transfer_with_intent_id", self.module_addr),
                 "--args",
                 &format!("address:{}", recipient),
                 &format!("address:{}", metadata),
@@ -303,7 +303,7 @@ impl ConnectedMvmClient {
     ///
     /// # Arguments
     ///
-    /// * `escrow_intent_address` - Object address of the escrow intent
+    /// * `escrow_intent_addr` - Object address of the escrow intent
     /// * `payment_amount` - Amount of tokens to provide as payment (typically matches desired_amount)
     /// * `verifier_signature_bytes` - Verifier's Ed25519 signature as bytes (base64 decoded)
     ///
@@ -313,7 +313,7 @@ impl ConnectedMvmClient {
     /// * `Err(anyhow::Error)` - Failed to complete escrow
     pub fn complete_escrow_from_fa(
         &self,
-        escrow_intent_address: &str,
+        escrow_intent_addr: &str,
         payment_amount: u64,
         verifier_signature_bytes: &[u8],
     ) -> Result<String> {
@@ -329,9 +329,9 @@ impl ConnectedMvmClient {
                 &self.profile,
                 "--assume-yes",
                 "--function-id",
-                &format!("{}::intent_as_escrow_entry::complete_escrow_from_fa", self.module_address),
+                &format!("{}::intent_as_escrow_entry::complete_escrow_from_fa", self.module_addr),
                 "--args",
-                &format!("address:{}", escrow_intent_address),
+                &format!("address:{}", escrow_intent_addr),
                 &format!("u64:{}", payment_amount),
                 &format!("hex:{}", signature_hex),
             ])

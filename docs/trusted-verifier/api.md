@@ -252,7 +252,7 @@ Submit a draft intent for negotiation. Drafts are open to any solver (no `solver
 curl -X POST http://127.0.0.1:3333/draftintent \
   -H "Content-Type: application/json" \
   -d '{
-    "requester_address": "0x123...",
+    "requester_addr": "0x123...",
     "draft_data": {"offered_metadata": "0x1::test::Token", "offered_amount": 1000},
     "expiry_time": 2000000
   }'

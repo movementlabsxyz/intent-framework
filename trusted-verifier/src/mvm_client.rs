@@ -1371,7 +1371,6 @@ impl MvmClient {
 /// Represents a LimitOrderEvent emitted by the Move fa_intent module
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitOrderEvent {
-    #[serde(rename = "intent_address")]
     pub intent_addr: String,
     pub intent_id: String,                   // For cross-chain linking
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
@@ -1403,7 +1402,6 @@ pub struct LimitOrderEvent {
 /// Represents an OracleLimitOrderEvent emitted by the Move fa_intent_with_oracle module
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OracleLimitOrderEvent {
-    #[serde(rename = "intent_address")]
     pub intent_addr: String, // The escrow intent address (on connected chain)
     pub intent_id: String,      // The original intent ID (from hub chain)
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
@@ -1438,7 +1436,6 @@ pub struct OracleLimitOrderEvent {
 /// Represents a LimitOrderFulfillmentEvent emitted when an intent is fulfilled
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitOrderFulfillmentEvent {
-    #[serde(rename = "intent_address")]
     pub intent_addr: String,
     pub intent_id: String,
     #[serde(rename = "solver")]

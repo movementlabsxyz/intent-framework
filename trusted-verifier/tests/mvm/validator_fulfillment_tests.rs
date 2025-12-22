@@ -256,7 +256,7 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
 /// Test that validate_outflow_fulfillment succeeds when all parameters match
 ///
 /// What is tested: Validating an outflow fulfillment transaction where transaction was successful,
-/// intent_id matches, recipient matches requester_address_connected_chain, amount matches desired_amount,
+/// intent_id matches, recipient matches requester_addr_connected_chain, amount matches desired_amount,
 /// and solver matches reserved solver.
 ///
 /// Why: Verify that the validation function correctly validates all requirements for a successful
@@ -364,10 +364,10 @@ async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
     );
 }
 
-/// Test that validate_outflow_fulfillment fails when recipient doesn't match requester_address_connected_chain
+/// Test that validate_outflow_fulfillment fails when recipient doesn't match requester_addr_connected_chain
 ///
 /// What is tested: Validating an outflow fulfillment transaction where the transaction's recipient
-/// doesn't match the intent's requester_address_connected_chain should result in validation failure.
+/// doesn't match the intent's requester_addr_connected_chain should result in validation failure.
 ///
 /// Why: Verify that tokens are sent to the correct recipient address on the connected chain.
 #[tokio::test]

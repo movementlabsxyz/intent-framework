@@ -39,7 +39,7 @@ module mvmt_intent::utils {
     /// where the desired_metadata object may not exist on the local chain.
     ///
     /// # Arguments
-    /// - `solver`: Signer of the solver account (must match solver_address)
+    /// - `solver`: Signer of the solver account (must match solver_addr)
     /// - `offered_metadata`: Address of the offered token metadata
     /// - `offered_amount`: Amount of offered tokens
     /// - `offered_chain_id`: Chain ID where offered tokens are located
@@ -48,7 +48,7 @@ module mvmt_intent::utils {
     /// - `desired_chain_id`: Chain ID where desired tokens are located
     /// - `expiry_time`: Unix timestamp when intent expires
     /// - `requester`: Address of the intent requester
-    /// - `solver_address`: Address of the solver (must match signer)
+    /// - `solver_addr`: Address of the solver (must match signer)
     ///
     /// # Note
     /// Move cannot extract private keys from `&signer`, so actual signing must be done
@@ -67,10 +67,10 @@ module mvmt_intent::utils {
         desired_chain_id: u64,
         expiry_time: u64,
         requester: address,
-        solver_address: address
+        solver_addr: address
     ) {
-        // Verify solver signer matches solver_address
-        assert!(signer::address_of(solver) == solver_address, 1);
+        // Verify solver signer matches solver_addr
+        assert!(signer::address_of(solver) == solver_addr, 1);
 
         // Create IntentToSignRaw structure (uses addresses, no object validation)
         let intent_to_sign =
@@ -83,7 +83,7 @@ module mvmt_intent::utils {
                 desired_chain_id,
                 expiry_time,
                 requester,
-                solver_address
+                solver_addr
             );
 
         // Hash the intent (BCS encoding) - produces same bytes as Object<Metadata> version

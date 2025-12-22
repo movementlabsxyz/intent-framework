@@ -216,15 +216,15 @@ get_evm_eth_balance() {
 # Function to get ERC20 token balance (works for any EVM chain)
 get_evm_token_balance() {
     local address="$1"
-    local token_address="$2"
+    local token_addr="$2"
     local rpc_url="$3"
     
     # Ensure addresses have 0x prefix
     if [[ ! "$address" =~ ^0x ]]; then
         address="0x${address}"
     fi
-    if [[ ! "$token_address" =~ ^0x ]]; then
-        token_address="0x${token_address}"
+    if [[ ! "$token_addr" =~ ^0x ]]; then
+        token_addr="0x${token_addr}"
     fi
     
     # ERC20 balanceOf(address) - function selector: 0x70a08231
@@ -235,7 +235,7 @@ get_evm_token_balance() {
     
     local balance_hex=$(curl -s --max-time 10 -X POST "$rpc_url" \
         -H "Content-Type: application/json" \
-        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$token_address\",\"data\":\"$data\"},\"latest\"],\"id\":1}" \
+        -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$token_addr\",\"data\":\"$data\"},\"latest\"],\"id\":1}" \
         | jq -r '.result // "0x0"' 2>/dev/null)
     
     if [ -z "$balance_hex" ] || [ "$balance_hex" = "null" ] || [ "$balance_hex" = "0x0" ]; then

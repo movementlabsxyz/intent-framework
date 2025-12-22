@@ -237,19 +237,19 @@ impl OutflowService {
         intent: &TrackedIntent,
         verifier_signature_bytes: &[u8],
     ) -> Result<String> {
-        let intent_address = intent
-            .intent_address
+        let intent_addr = intent
+            .intent_addr
             .as_ref()
             .context("Intent address not set (intent not created on-chain)")?;
 
         // Execute fulfillment (blocking call)
         tokio::task::spawn_blocking({
-            let intent_address = intent_address.clone();
+            let intent_addr = intent_addr.clone();
             let signature = verifier_signature_bytes.to_vec();
             let hub_config = self.config.hub_chain.clone();
             move || {
                 let hub_client = HubChainClient::new(&hub_config)?;
-                hub_client.fulfill_outflow_intent(&intent_address, &signature)
+                hub_client.fulfill_outflow_intent(&intent_addr, &signature)
             }
         })
         .await

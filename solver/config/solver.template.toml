@@ -16,7 +16,7 @@ polling_interval_ms = 2000               # Polling interval for checking pending
 name = "Hub Chain"                        # Human-readable name for the chain
 rpc_url = "http://127.0.0.1:8080/v1"     # RPC endpoint URL for blockchain communication
 chain_id = 1                              # Unique chain identifier
-module_address = "0x123"                 # Address of the intent framework module
+module_addr = "0x123"                 # Address of the intent framework module
 profile = "solver-chain1"                 # Aptos/Movement CLI profile name for this chain
 
 # Connected Chain Configuration
@@ -29,7 +29,7 @@ type = "mvm"
 name = "Connected Move VM Chain"          # Human-readable name for the chain
 rpc_url = "http://127.0.0.1:8082/v1"     # RPC endpoint URL for blockchain communication
 chain_id = 2                              # Unique chain identifier
-module_address = "0x123"                 # Address of the intent framework module
+module_addr = "0x123"                 # Address of the intent framework module
 profile = "solver-chain2"                # Aptos/Movement CLI profile name for this chain
 
 # Option 2: EVM Chain (uncomment and use instead of MVM config above)
@@ -38,7 +38,7 @@ profile = "solver-chain2"                # Aptos/Movement CLI profile name for t
 # name = "Connected EVM Chain"            # Human-readable name for the chain
 # rpc_url = "https://sepolia.base.org"     # RPC endpoint URL for EVM chain
 # chain_id = 84532                         # Chain ID (e.g., 84532 for Base Sepolia)
-# escrow_contract_address = "0x..."         # Address of the IntentEscrow contract
+# escrow_contract_addr = "0x..."         # Address of the IntentEscrow contract
 # private_key_env = "BASE_SOLVER_PRIVATE_KEY"  # Environment variable containing EVM private key
 
 # Acceptance Criteria

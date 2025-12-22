@@ -286,13 +286,13 @@ verify_aptos_chain_services() {
 }
 
 # Extract APT metadata address from Aptos chain
-# Usage: extract_apt_metadata <profile> <chain_address> <account_address> <chain_num> [log_file]
+# Usage: extract_apt_metadata <profile> <chain_addr> <account_addr> <chain_num> [log_file]
 # Returns: metadata address via stdout, exits on error
 # chain_num: 1 for Chain 1 (hub, port 8080), 2 for Chain 2 (connected, port 8082)
 extract_apt_metadata() {
     local profile="$1"
-    local chain_address="$2"
-    local account_address="$3"
+    local chain_addr="$2"
+    local account_addr="$3"
     local chain_num="$4"
     local log_file="${5:-$LOG_FILE}"
     
@@ -301,12 +301,12 @@ extract_apt_metadata() {
         exit 1
     fi
     
-    if [ -z "$chain_address" ]; then
+    if [ -z "$chain_addr" ]; then
         log_and_echo "❌ ERROR: extract_apt_metadata() requires a chain address"
         exit 1
     fi
     
-    if [ -z "$account_address" ]; then
+    if [ -z "$account_addr" ]; then
         log_and_echo "❌ ERROR: extract_apt_metadata() requires an account address"
         exit 1
     fi
@@ -330,7 +330,7 @@ extract_apt_metadata() {
     fi
     
     # Run aptos move command to get APT metadata
-    local aptos_cmd="aptos move run --profile $profile --assume-yes --function-id \"0x${chain_address}::utils::get_apt_metadata_address\""
+    local aptos_cmd="aptos move run --profile $profile --assume-yes --function-id \"0x${chain_addr}::utils::get_apt_metadata_address\""
     
     if [ -n "$log_file" ]; then
         if ! eval "$aptos_cmd >> \"$log_file\" 2>&1"; then
@@ -349,7 +349,7 @@ extract_apt_metadata() {
     
     # Query REST API for the account's latest transaction and extract metadata
     local metadata
-    metadata=$(curl -s "http://127.0.0.1:${rest_port}/v1/accounts/${account_address}/transactions?limit=1" | \
+    metadata=$(curl -s "http://127.0.0.1:${rest_port}/v1/accounts/${account_addr}/transactions?limit=1" | \
         jq -r '.[0].events[] | select(.type | contains("APTMetadataAddressEvent")) | .data.metadata' | head -n 1)
     
     if [ -z "$metadata" ] || [ "$metadata" = "null" ]; then
@@ -362,12 +362,12 @@ extract_apt_metadata() {
 }
 
 # Generate solver signature for IntentToSign
-# Usage: generate_solver_signature <profile> <chain_address> <offered_metadata> <offered_amount> <offered_chain_id> <desired_metadata> <desired_amount> <desired_chain_id> <expiry_time> <issuer> <solver> <chain_num> [log_file]
+# Usage: generate_solver_signature <profile> <chain_addr> <offered_metadata> <offered_amount> <offered_chain_id> <desired_metadata> <desired_amount> <desired_chain_id> <expiry_time> <issuer> <solver> <chain_num> [log_file]
 # Example: generate_solver_signature "solver-chain1" "$CHAIN1_ADDRESS" "$OFFERED_METADATA" "100000000" "1" "$DESIRED_METADATA" "100000000" "2" "$EXPIRY_TIME" "$REQUESTER_CHAIN1_ADDRESS" "$SOLVER_CHAIN1_ADDRESS" "1"
 # Returns the signature as hex string (with 0x prefix)
 generate_solver_signature() {
     local profile="$1"
-    local chain_address="$2"
+    local chain_addr="$2"
     local offered_metadata="$3"
     local offered_amount="$4"
     local offered_chain_id="$5"
@@ -380,7 +380,7 @@ generate_solver_signature() {
     local chain_num="${12}"
     local log_file="${13:-$LOG_FILE}"
 
-    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$offered_metadata" ] || [ -z "$offered_amount" ] || [ -z "$offered_chain_id" ] || [ -z "$desired_metadata" ] || [ -z "$desired_amount" ] || [ -z "$desired_chain_id" ] || [ -z "$expiry_time" ] || [ -z "$issuer" ] || [ -z "$solver" ] || [ -z "$chain_num" ]; then
+    if [ -z "$profile" ] || [ -z "$chain_addr" ] || [ -z "$offered_metadata" ] || [ -z "$offered_amount" ] || [ -z "$offered_chain_id" ] || [ -z "$desired_metadata" ] || [ -z "$desired_amount" ] || [ -z "$desired_chain_id" ] || [ -z "$expiry_time" ] || [ -z "$issuer" ] || [ -z "$solver" ] || [ -z "$chain_num" ]; then
         log_and_echo "❌ ERROR: generate_solver_signature() requires all parameters"
         exit 1
     fi
@@ -403,7 +403,7 @@ generate_solver_signature() {
         fi
     }
     
-    # Strip 0x from chain_address (used in function ID format: 0x{chain_address}::...)
+    # Strip 0x from chain_addr (used in function ID format: 0x{chain_addr}::...)
     strip_0x() {
         local addr="$1"
         if [ "${addr#0x}" != "$addr" ]; then
@@ -417,7 +417,7 @@ generate_solver_signature() {
     
     local normalized_issuer=$(normalize_address "$issuer")
     local normalized_solver=$(normalize_address "$solver")
-    local normalized_chain_address=$(strip_0x "$chain_address")  # Strip 0x for function ID format
+    local normalized_chain_addr=$(strip_0x "$chain_addr")  # Strip 0x for function ID format
     local normalized_offered_metadata=$(normalize_address "$offered_metadata")
     local normalized_desired_metadata=$(normalize_address "$desired_metadata")
     
@@ -430,12 +430,12 @@ generate_solver_signature() {
     if [ -n "$log_file" ]; then
         # Run command, log everything, and capture to temp file
         # Pass HOME environment variable to ensure Aptos config can be found
-        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$normalized_chain_address\" --offered-metadata \"$normalized_offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$normalized_desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$normalized_issuer\" --solver \"$normalized_solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$normalized_chain_addr\" --offered-metadata \"$normalized_offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$normalized_desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$normalized_issuer\" --solver \"$normalized_solver\" --chain-num \"$chain_num\" 2>&1" | tee -a "$log_file" > "$temp_output_file")
         exit_code=${PIPESTATUS[0]}
     else
         # Run command and capture to temp file
         # Pass HOME environment variable to ensure Aptos config can be found
-        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$normalized_chain_address\" --offered-metadata \"$normalized_offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$normalized_desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$normalized_issuer\" --solver \"$normalized_solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
+        (cd "$PROJECT_ROOT" && env HOME="${HOME}" nix develop -c bash -c "cd solver && cargo run --bin sign_intent -- --profile \"$profile\" --chain-address \"$normalized_chain_addr\" --offered-metadata \"$normalized_offered_metadata\" --offered-amount \"$offered_amount\" --offered-chain-id \"$offered_chain_id\" --desired-metadata \"$normalized_desired_metadata\" --desired-amount \"$desired_amount\" --desired-chain-id \"$desired_chain_id\" --expiry-time \"$expiry_time\" --issuer \"$normalized_issuer\" --solver \"$normalized_solver\" --chain-num \"$chain_num\" 2>&1" > "$temp_output_file")
         exit_code=$?
     fi
     
@@ -475,16 +475,16 @@ generate_solver_signature() {
 }
 
 # Initialize solver registry (must be called once before registering solvers)
-# Usage: initialize_solver_registry <profile> <chain_address> [log_file]
+# Usage: initialize_solver_registry <profile> <chain_addr> [log_file]
 # Example: initialize_solver_registry "intent-account-chain1" "$CHAIN1_ADDRESS"
 # Exits on error (except if already initialized, which is handled gracefully)
 initialize_solver_registry() {
     local profile="$1"
-    local chain_address="$2"
+    local chain_addr="$2"
     local log_file="${3:-$LOG_FILE}"
 
-    if [ -z "$profile" ] || [ -z "$chain_address" ]; then
-        log_and_echo "❌ ERROR: initialize_solver_registry() requires profile and chain_address"
+    if [ -z "$profile" ] || [ -z "$chain_addr" ]; then
+        log_and_echo "❌ ERROR: initialize_solver_registry() requires profile and chain_addr"
         exit 1
     fi
 
@@ -493,11 +493,11 @@ initialize_solver_registry() {
     local init_status
     if [ -n "$log_file" ]; then
         init_output=$(aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::initialize" 2>&1 | tee -a "$log_file")
+            --function-id "0x${chain_addr}::solver_registry::initialize" 2>&1 | tee -a "$log_file")
         init_status=${PIPESTATUS[0]}
     else
         init_output=$(aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::initialize" 2>&1)
+            --function-id "0x${chain_addr}::solver_registry::initialize" 2>&1)
         init_status=$?
     fi
 
@@ -512,16 +512,16 @@ initialize_solver_registry() {
 }
 
 # Initialize intent registry (must be called once before creating intents)
-# Usage: initialize_intent_registry <profile> <chain_address> [log_file]
+# Usage: initialize_intent_registry <profile> <chain_addr> [log_file]
 # Example: initialize_intent_registry "intent-account-chain1" "$CHAIN1_ADDRESS"
 # Exits on error (except if already initialized, which is handled gracefully)
 initialize_intent_registry() {
     local profile="$1"
-    local chain_address="$2"
+    local chain_addr="$2"
     local log_file="${3:-$LOG_FILE}"
 
-    if [ -z "$profile" ] || [ -z "$chain_address" ]; then
-        log_and_echo "❌ ERROR: initialize_intent_registry() requires profile and chain_address"
+    if [ -z "$profile" ] || [ -z "$chain_addr" ]; then
+        log_and_echo "❌ ERROR: initialize_intent_registry() requires profile and chain_addr"
         exit 1
     fi
 
@@ -530,11 +530,11 @@ initialize_intent_registry() {
     local init_status
     if [ -n "$log_file" ]; then
         init_output=$(aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::intent_registry::initialize" 2>&1 | tee -a "$log_file")
+            --function-id "0x${chain_addr}::intent_registry::initialize" 2>&1 | tee -a "$log_file")
         init_status=${PIPESTATUS[0]}
     else
         init_output=$(aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::intent_registry::initialize" 2>&1)
+            --function-id "0x${chain_addr}::intent_registry::initialize" 2>&1)
         init_status=$?
     fi
 
@@ -549,7 +549,7 @@ initialize_intent_registry() {
 }
 
 # Get USDhub/USDcon metadata address
-# Usage: get_usdxyz_metadata <test_tokens_address> <chain_num>
+# Usage: get_usdxyz_metadata <test_tokens_addr> <chain_num>
 # Returns the USDhub/USDcon metadata object address
 get_usdxyz_metadata() {
     local test_tokens_addr="$1"
@@ -575,7 +575,7 @@ get_usdxyz_metadata() {
 }
 
 # Get USDhub/USDcon balance for an account
-# Usage: get_usdxyz_balance <profile> <chain_num> <test_tokens_address>
+# Usage: get_usdxyz_balance <profile> <chain_num> <test_tokens_addr>
 # Returns the USDhub/USDcon balance for the given profile
 get_usdxyz_balance() {
     local profile="$1"
@@ -649,9 +649,9 @@ assert_usdxyz_balance() {
 }
 
 # Display balances for Chain 1 (Hub)
-# Usage: display_balances_hub [test_tokens_address]
+# Usage: display_balances_hub [test_tokens_addr]
 # Fetches and displays Requester and Solver balances on the Hub chain
-# If test_tokens_address is provided, also displays USDhub balances (PANICS if lookup fails)
+# If test_tokens_addr is provided, also displays USDhub balances (PANICS if lookup fails)
 # Note: Hub chain is always a Move VM chain, so this uses aptos commands
 display_balances_hub() {
     local test_tokens_addr="$1"
@@ -684,9 +684,9 @@ display_balances_hub() {
 }
 
 # Display balances for Chain 2 (Connected Move VM)
-# Usage: display_balances_connected_mvm [test_tokens_address]
+# Usage: display_balances_connected_mvm [test_tokens_addr]
 # Fetches and displays Requester and Solver balances on the Connected Move VM chain
-# If test_tokens_address is provided, also displays USDcon balances (PANICS if lookup fails)
+# If test_tokens_addr is provided, also displays USDcon balances (PANICS if lookup fails)
 # Only displays if Chain 2 profiles exist (skips silently if they don't)
 display_balances_connected_mvm() {
     local test_tokens_addr="$1"
@@ -723,26 +723,26 @@ display_balances_connected_mvm() {
 }
 
 # Register solver in the solver registry
-# Usage: register_solver <profile> <chain_address> <public_key_hex> <evm_address_hex> [connected_chain_mvm_addr] [log_file]
+# Usage: register_solver <profile> <chain_addr> <public_key_hex> <evm_addr_hex> [connected_chain_mvm_addr] [log_file]
 # Example: register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY_HEX" "0x0000000000000000000000000000000000000001"
 # Example with MVM address: register_solver "solver-chain1" "$CHAIN1_ADDRESS" "$SOLVER_PUBLIC_KEY_HEX" "0x0000000000000000000000000000000000000001" "$SOLVER_CHAIN2_ADDRESS"
 # Exits on error
 register_solver() {
     local profile="$1"
-    local chain_address="$2"
+    local chain_addr="$2"
     local public_key_hex="$3"
-    local evm_address_hex="$4"
+    local evm_addr_hex="$4"
     local connected_chain_mvm_addr="${5:-}"  # Optional: Move VM address on connected chain
     local log_file="${6:-$LOG_FILE}"
 
-    if [ -z "$profile" ] || [ -z "$chain_address" ] || [ -z "$public_key_hex" ] || [ -z "$evm_address_hex" ]; then
-        log_and_echo "❌ ERROR: register_solver() requires profile, chain_address, public_key_hex, and evm_address_hex"
+    if [ -z "$profile" ] || [ -z "$chain_addr" ] || [ -z "$public_key_hex" ] || [ -z "$evm_addr_hex" ]; then
+        log_and_echo "❌ ERROR: register_solver() requires profile, chain_addr, public_key_hex, and evm_addr_hex"
         exit 1
     fi
 
     # Remove 0x prefix if present
     public_key_hex="${public_key_hex#0x}"
-    evm_address_hex="${evm_address_hex#0x}"
+    evm_addr_hex="${evm_addr_hex#0x}"
     if [ -n "$connected_chain_mvm_addr" ]; then
         connected_chain_mvm_addr="${connected_chain_mvm_addr#0x}"
     fi
@@ -752,16 +752,16 @@ register_solver() {
     # Debug: Log input parameters
     log "     DEBUG: Input parameters:"
     log "       profile: $profile"
-    log "       chain_address: $chain_address"
+    log "       chain_addr: $chain_addr"
     log "       public_key_hex (length): ${#public_key_hex} chars"
-    log "       evm_address_hex: $evm_address_hex (length: ${#evm_address_hex} chars)"
+    log "       evm_addr_hex: $evm_addr_hex (length: ${#evm_addr_hex} chars)"
     log "       connected_chain_mvm_addr: ${connected_chain_mvm_addr:-<empty>}"
     
-    # Build arguments: public_key, evm_address, mvm_address
+    # Build arguments: public_key, evm_addr, mvm_addr
     # Use sentinel values: empty vector (hex:) for EVM address if not provided, 0x0 for MVM address if not provided
     local evm_arg
-    if [ -n "$evm_address_hex" ]; then
-        evm_arg="hex:${evm_address_hex}"
+    if [ -n "$evm_addr_hex" ]; then
+        evm_arg="hex:${evm_addr_hex}"
     else
         # Use sentinel: empty vector (no hex value)
         evm_arg="hex:"
@@ -778,20 +778,20 @@ register_solver() {
     # Debug: Log built arguments
     log "     DEBUG: Built arguments:"
     log "       public_key: hex:${public_key_hex:0:20}... (${#public_key_hex} chars)"
-    log "       evm_address: $evm_arg"
-    log "       mvm_address: $mvm_arg"
+    log "       evm_addr: $evm_arg"
+    log "       mvm_addr: $mvm_arg"
     log "     DEBUG: Full command:"
     log "       aptos move run --profile $profile --assume-yes \\"
-    log "         --function-id 0x${chain_address}::solver_registry::register_solver \\"
+    log "         --function-id 0x${chain_addr}::solver_registry::register_solver \\"
     log "         --args \"hex:${public_key_hex}\" \"$evm_arg\" \"$mvm_arg\""
     
     if [ -n "$log_file" ]; then
         aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::register_solver" \
+            --function-id "0x${chain_addr}::solver_registry::register_solver" \
             --args "hex:${public_key_hex}" "$evm_arg" "$mvm_arg" >> "$log_file" 2>&1
     else
         aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::register_solver" \
+            --function-id "0x${chain_addr}::solver_registry::register_solver" \
             --args "hex:${public_key_hex}" "$evm_arg" "$mvm_arg"
     fi
 
@@ -810,13 +810,13 @@ register_solver() {
 }
 
 # Verify that a solver is registered in the solver registry
-# Usage: verify_solver_registered [profile] [chain_address] [solver_address] [log_file]
+# Usage: verify_solver_registered [profile] [chain_addr] [solver_addr] [log_file]
 # If parameters are not provided, auto-detects from environment/config
 # Exits on error if solver is not registered
 verify_solver_registered() {
     local profile="${1:-}"
-    local chain_address="${2:-}"
-    local solver_address="${3:-}"
+    local chain_addr="${2:-}"
+    local solver_addr="${3:-}"
     local log_file="${4:-$LOG_FILE}"
 
     log ""
@@ -827,37 +827,37 @@ verify_solver_registered() {
         profile="${SOLVER_PROFILE:-solver-chain1}"
     fi
     
-    # Auto-detect chain_address if not provided
-    if [ -z "$chain_address" ]; then
-        chain_address="${MOVEMENT_INTENT_MODULE_ADDRESS:-}"
+    # Auto-detect chain_addr if not provided
+    if [ -z "$chain_addr" ]; then
+        chain_addr="${MOVEMENT_INTENT_MODULE_ADDRESS:-}"
         # Try to get from verifier config
-        if [ -z "$chain_address" ] && [ -n "$VERIFIER_CONFIG_PATH" ] && [ -f "$VERIFIER_CONFIG_PATH" ]; then
-            chain_address=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG_PATH" | grep "intent_module_addr" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/0x//')
+        if [ -z "$chain_addr" ] && [ -n "$VERIFIER_CONFIG_PATH" ] && [ -f "$VERIFIER_CONFIG_PATH" ]; then
+            chain_addr=$(grep -A5 "\[hub_chain\]" "$VERIFIER_CONFIG_PATH" | grep "intent_module_addr" | head -1 | sed 's/.*= *"\(.*\)".*/\1/' | sed 's/0x//')
         fi
         # Try to get from intent-account-chain1 profile
-        if [ -z "$chain_address" ]; then
-            chain_address=$(get_profile_address "intent-account-chain1" 2>/dev/null || echo "")
+        if [ -z "$chain_addr" ]; then
+            chain_addr=$(get_profile_address "intent-account-chain1" 2>/dev/null || echo "")
         fi
     fi
     
-    # Auto-detect solver_address if not provided
-    if [ -z "$solver_address" ]; then
-        solver_address=$(get_profile_address "$profile" 2>/dev/null || echo "")
-        solver_address="${solver_address:-${SOLVER_CHAIN1_ADDRESS:-}}"
+    # Auto-detect solver_addr if not provided
+    if [ -z "$solver_addr" ]; then
+        solver_addr=$(get_profile_address "$profile" 2>/dev/null || echo "")
+        solver_addr="${solver_addr:-${SOLVER_CHAIN1_ADDRESS:-}}"
     fi
 
     # Check if we have the required parameters
-    if [ -z "$chain_address" ] || [ -z "$solver_address" ]; then
+    if [ -z "$chain_addr" ] || [ -z "$solver_addr" ]; then
         log "   ⚠️  Skipping solver registration check (could not auto-detect parameters)"
         log "   profile: ${profile:-<not set>}"
-        log "   chain_address: ${chain_address:-<not set>}"
-        log "   solver_address: ${solver_address:-<not set>}"
+        log "   chain_addr: ${chain_addr:-<not set>}"
+        log "   solver_addr: ${solver_addr:-<not set>}"
         return 0
     fi
 
     # Remove 0x prefix if present
-    solver_address="${solver_address#0x}"
-    chain_address="${chain_address#0x}"
+    solver_addr="${solver_addr#0x}"
+    chain_addr="${chain_addr#0x}"
 
     log "     Verifying solver is registered in registry..."
     
@@ -865,19 +865,19 @@ verify_solver_registered() {
     # The function emits an event - we'll check the event to see if solver is registered
     local temp_file=$(mktemp)
     local rpc_url=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].rest_url" 2>/dev/null || echo "http://127.0.0.1:8080")
-    local solver_addr_hex="0x${solver_address}"
+    local solver_addr_hex="0x${solver_addr}"
     
     if [ -n "$log_file" ]; then
         aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::check_solver_registered" \
-            --args "address:0x${solver_address}" \
+            --function-id "0x${chain_addr}::solver_registry::check_solver_registered" \
+            --args "address:0x${solver_addr}" \
             > "$temp_file" 2>&1
         local exit_code=$?
         cat "$temp_file" | tee -a "$log_file" > /dev/null
     else
         aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::check_solver_registered" \
-            --args "address:0x${solver_address}" \
+            --function-id "0x${chain_addr}::solver_registry::check_solver_registered" \
+            --args "address:0x${solver_addr}" \
             > "$temp_file" 2>&1
         local exit_code=$?
     fi
@@ -885,8 +885,8 @@ verify_solver_registered() {
     # Check if the command succeeded
     if [ $exit_code -ne 0 ]; then
         log_and_echo "❌ ERROR: Failed to query solver registry"
-        log_and_echo "   Solver address: 0x${solver_address}"
-        log_and_echo "   Registry address: 0x${chain_address}"
+        log_and_echo "   Solver address: 0x${solver_addr}"
+        log_and_echo "   Registry address: 0x${chain_addr}"
         log_and_echo "   Command result:"
         cat "$temp_file" | while IFS= read -r line; do
             log_and_echo "     $line"
@@ -910,41 +910,41 @@ verify_solver_registered() {
         log "     ✅ Solver is registered in registry"
     else
         log_and_echo "❌ ERROR: Solver is not registered in registry"
-        log_and_echo "   Solver address: 0x${solver_address}"
-        log_and_echo "   Registry address: 0x${chain_address}"
+        log_and_echo "   Solver address: 0x${solver_addr}"
+        log_and_echo "   Registry address: 0x${chain_addr}"
         log_and_echo ""
         log_and_echo "   Available registered solvers:"
-        list_all_solvers "$profile" "$chain_address" "$log_file"
+        list_all_solvers "$profile" "$chain_addr" "$log_file"
         exit 1
     fi
 }
 
 # List all registered solvers from the solver registry
-# Usage: list_all_solvers <profile> <chain_address> [log_file]
+# Usage: list_all_solvers <profile> <chain_addr> [log_file]
 # Outputs all registered solvers with their details
 list_all_solvers() {
     local profile="$1"
-    local chain_address="$2"
+    local chain_addr="$2"
     local log_file="${3:-$LOG_FILE}"
 
-    if [ -z "$profile" ] || [ -z "$chain_address" ]; then
-        log_and_echo "❌ ERROR: list_all_solvers() requires profile and chain_address"
+    if [ -z "$profile" ] || [ -z "$chain_addr" ]; then
+        log_and_echo "❌ ERROR: list_all_solvers() requires profile and chain_addr"
         exit 1
     fi
 
     log "     Querying all registered solvers from registry..."
 
     # Remove 0x prefix if present
-    chain_address="${chain_address#0x}"
+    chain_addr="${chain_addr#0x}"
 
     # Get RPC URL for the profile
     local rpc_url=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].rest_url" 2>/dev/null || echo "http://127.0.0.1:8080")
     
     # Call the Move entry function to list all solvers
     local temp_file=$(mktemp)
-    local caller_address=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].account" 2>/dev/null)
+    local caller_addr=$(aptos config show-profiles | jq -r ".[\"Result\"][\"$profile\"].account" 2>/dev/null)
     
-    if [ -z "$caller_address" ] || [ "$caller_address" = "null" ]; then
+    if [ -z "$caller_addr" ] || [ "$caller_addr" = "null" ]; then
         log_and_echo "❌ ERROR: Could not get caller address for profile: $profile"
         rm -f "$temp_file"
         return 1
@@ -953,13 +953,13 @@ list_all_solvers() {
     # Call the Move entry function
     if [ -n "$log_file" ]; then
         aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::list_all_solvers" \
+            --function-id "0x${chain_addr}::solver_registry::list_all_solvers" \
             > "$temp_file" 2>&1
         local exit_code=$?
         cat "$temp_file" | tee -a "$log_file" > /dev/null
     else
         aptos move run --profile "$profile" --assume-yes \
-            --function-id "0x${chain_address}::solver_registry::list_all_solvers" \
+            --function-id "0x${chain_addr}::solver_registry::list_all_solvers" \
             > "$temp_file" 2>&1
         local exit_code=$?
     fi
@@ -996,7 +996,7 @@ list_all_solvers() {
     
     # Fallback: query from account's latest transaction if tx_hash not found
     if [ -z "$events" ] || [ "$events" = "null" ]; then
-        local tx_result=$(curl -s "${rpc_url}/v1/accounts/${caller_address}/transactions?limit=1" 2>/dev/null)
+        local tx_result=$(curl -s "${rpc_url}/v1/accounts/${caller_addr}/transactions?limit=1" 2>/dev/null)
         events=$(echo "$tx_result" | jq -r '.[0].events[]? | select(.type | contains("SolverRegistered"))' 2>/dev/null)
     fi
     

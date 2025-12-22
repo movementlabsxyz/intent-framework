@@ -9,17 +9,17 @@
 # Note: This file depends on functions from util.sh (log, log_and_echo, setup_project_root, etc.)
 
 # Get USDcon balance for an EVM account
-# Usage: get_usdcon_balance_evm <account_address> <usd_token_address>
+# Usage: get_usdcon_balance_evm <account_addr> <usd_token_addr>
 # Returns the USDcon balance for the given account
 # PANICS if inputs are missing or balance lookup fails
 get_usdcon_balance_evm() {
     local account="$1"
-    local token_address="$2"
+    local token_addr="$2"
     
     # Validate inputs
-    if [ -z "$account" ] || [ -z "$token_address" ]; then
-        echo "❌ PANIC: get_usdcon_balance_evm requires account and token_address" >&2
-        echo "   account: '$account', token_address: '$token_address'" >&2
+    if [ -z "$account" ] || [ -z "$token_addr" ]; then
+        echo "❌ PANIC: get_usdcon_balance_evm requires account and token_addr" >&2
+        echo "   account: '$account', token_addr: '$token_addr'" >&2
         exit 1
     fi
     
@@ -27,12 +27,12 @@ get_usdcon_balance_evm() {
         setup_project_root
     fi
     
-    local balance_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$token_address' ACCOUNT='$account' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1)
+    local balance_output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && TOKEN_ADDRESS='$token_addr' ACCOUNT='$account' npx hardhat run scripts/get-token-balance.js --network localhost" 2>&1)
     local balance=$(echo "$balance_output" | grep -E '^[0-9]+$' | tail -1 | tr -d '\n')
     
     if [ -z "$balance" ]; then
         echo "❌ PANIC: get_usdcon_balance_evm failed to get balance" >&2
-        echo "   account: $account, token_address: $token_address" >&2
+        echo "   account: $account, token_addr: $token_addr" >&2
         echo "   output: $balance_output" >&2
         exit 1
     fi
@@ -41,9 +41,9 @@ get_usdcon_balance_evm() {
 }
 
 # Display balances for Chain 3 (Connected EVM)
-# Usage: display_balances_connected_evm [usdcon_token_address]
+# Usage: display_balances_connected_evm [usdcon_token_addr]
 # Fetches and displays Requester and Solver balances on the Connected EVM chain
-# If usdcon_token_address is provided, also displays USDcon balances
+# If usdcon_token_addr is provided, also displays USDcon balances
 # Only displays if EVM chain is running (skips silently if it's not)
 display_balances_connected_evm() {
     local usdcon_addr="$1"
@@ -120,14 +120,14 @@ display_balances_connected_evm() {
 }
 
 # Check if an escrow is claimed
-# Usage: is_escrow_claimed <escrow_address> <intent_id_evm>
+# Usage: is_escrow_claimed <escrow_addr> <intent_id_evm>
 # Returns: "true" if claimed, "false" if not claimed, exits with error if check fails
 is_escrow_claimed() {
-    local escrow_address="$1"
+    local escrow_addr="$1"
     local intent_id_evm="$2"
     
-    if [ -z "$escrow_address" ] || [ -z "$intent_id_evm" ]; then
-        echo "❌ PANIC: is_escrow_claimed requires escrow_address and intent_id_evm" >&2
+    if [ -z "$escrow_addr" ] || [ -z "$intent_id_evm" ]; then
+        echo "❌ PANIC: is_escrow_claimed requires escrow_addr and intent_id_evm" >&2
         exit 1
     fi
     
@@ -135,7 +135,7 @@ is_escrow_claimed() {
         setup_project_root
     fi
     
-    local output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$escrow_address' INTENT_ID_EVM='$intent_id_evm' npx hardhat run scripts/get-escrow-status.js --network localhost" 2>&1)
+    local output=$(nix develop "$PROJECT_ROOT" -c bash -c "cd '$PROJECT_ROOT/evm-intent-framework' && ESCROW_ADDRESS='$escrow_addr' INTENT_ID_EVM='$intent_id_evm' npx hardhat run scripts/get-escrow-status.js --network localhost" 2>&1)
     
     # Check for "isClaimed: true" or "isClaimed: false" in output
     if echo "$output" | grep -q "isClaimed: true"; then
@@ -144,7 +144,7 @@ is_escrow_claimed() {
         echo "false"
     else
         echo "❌ PANIC: is_escrow_claimed failed to get escrow status" >&2
-        echo "   escrow_address: $escrow_address, intent_id_evm: $intent_id_evm" >&2
+        echo "   escrow_addr: $escrow_addr, intent_id_evm: $intent_id_evm" >&2
         echo "   output: $output" >&2
         exit 1
     fi

@@ -23,7 +23,7 @@ fn create_test_config() -> SolverConfig {
             name: "test-hub".to_string(),
             rpc_url: "http://127.0.0.1:8080".to_string(),
             chain_id: 1,
-            module_address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            module_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
             profile: "test-profile".to_string(),
         },
         connected_chain: solver::config::ConnectedChainConfig::Mvm(
@@ -31,7 +31,7 @@ fn create_test_config() -> SolverConfig {
                 name: "test-mvm".to_string(),
                 rpc_url: "http://127.0.0.1:8082".to_string(),
                 chain_id: 2,
-                module_address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+                module_addr: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
                 profile: "test-profile".to_string(),
             },
         ),

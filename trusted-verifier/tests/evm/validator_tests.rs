@@ -140,7 +140,7 @@ async fn test_rejection_when_evm_addresses_dont_match() {
 async fn test_evm_address_normalization() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    // Test cases: (escrow_address, registered_address, should_match)
+    // Test cases: (escrow_addr, registered_addr, should_match)
     // Use valid 20-byte EVM addresses (40 hex characters)
     let test_cases = vec![
         ("0xABC1234567890123456789012345678901234567", "0xabc1234567890123456789012345678901234567", true),

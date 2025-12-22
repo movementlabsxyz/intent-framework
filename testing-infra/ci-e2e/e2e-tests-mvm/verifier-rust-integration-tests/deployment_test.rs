@@ -19,14 +19,14 @@ async fn test_contracts_deployed_on_chain1() {
     // Module address format: "0x{address}::module_name"
     // We need just the account address part
     let module_addr = config.hub_chain.intent_module_addr.replace("0x", "");
-    let account_address = if module_addr.contains("::") {
+    let account_addr = if module_addr.contains("::") {
         &module_addr[..module_addr.find("::").unwrap()]
     } else {
         &module_addr
     };
     
     // Query the modules for this account
-    let url = format!("http://127.0.0.1:8080/v1/accounts/{}/modules", account_address);
+    let url = format!("http://127.0.0.1:8080/v1/accounts/{}/modules", account_addr);
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
@@ -50,7 +50,7 @@ async fn test_contracts_deployed_on_chain1() {
             .unwrap_or(false)
     });
     
-    assert!(has_intent_module, "mvmt_intent module should be deployed on Hub Chain at address {}", account_address);
+    assert!(has_intent_module, "mvmt_intent module should be deployed on Hub Chain at address {}", account_addr);
 }
 
 /// Test that intent framework contracts are deployed on the chains
@@ -66,14 +66,14 @@ async fn test_contracts_deployed_on_chain2() {
         .as_ref()
         .expect("Connected Move VM chain must be configured for this test");
     let module_addr = connected_chain_mvm.intent_module_addr.replace("0x", "");
-    let account_address = if module_addr.contains("::") {
+    let account_addr = if module_addr.contains("::") {
         &module_addr[..module_addr.find("::").unwrap()]
     } else {
         &module_addr
     };
     
     // Query the modules for this account
-    let url = format!("http://127.0.0.1:8082/v1/accounts/{}/modules", account_address);
+    let url = format!("http://127.0.0.1:8082/v1/accounts/{}/modules", account_addr);
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
@@ -97,6 +97,6 @@ async fn test_contracts_deployed_on_chain2() {
             .unwrap_or(false)
     });
     
-    assert!(has_intent_module, "mvmt_intent module should be deployed on Connected Chain at address {}", account_address);
+    assert!(has_intent_module, "mvmt_intent module should be deployed on Connected Chain at address {}", account_addr);
 }
 

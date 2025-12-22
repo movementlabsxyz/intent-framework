@@ -68,7 +68,7 @@ async fn test_escrow_solver_address_mismatch_rejection() {
     // Setup mock server with solver registry
     let solver_addr = "0xsolver_mvm";
     let solver_connected_chain_mvm_addr = DUMMY_SOLVER_ADDR_MVM_CON;
-    let different_solver_addr = "0xdifferent_solver_address_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    let different_solver_addr = "0xdifferent_solver_addr_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let (_mock_server, validator) = setup_mock_server_with_solver_registry(
         Some(solver_addr),
         Some(solver_connected_chain_mvm_addr),

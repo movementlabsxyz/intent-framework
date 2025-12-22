@@ -74,7 +74,7 @@ pub struct MoveInner {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntentCreatedEvent {
     /// Intent object address
-    pub intent_address: String,
+    pub intent_addr: String,
     /// Intent ID for cross-chain linking
     pub intent_id: String,
     /// Offered token metadata (wrapped in {"inner": "0x..."})
@@ -105,7 +105,7 @@ pub struct IntentFulfilledEvent {
     /// Intent ID
     pub intent_id: String,
     /// Intent object address
-    pub intent_address: String,
+    pub intent_addr: String,
     /// Solver address
     pub solver: String,
     /// Provided token metadata
@@ -123,7 +123,7 @@ pub struct HubChainClient {
     /// Base RPC URL
     base_url: String,
     /// Module address
-    module_address: String,
+    module_addr: String,
     /// CLI profile name
     profile: String,
 }
@@ -155,7 +155,7 @@ impl HubChainClient {
         Ok(Self {
             client,
             base_url,
-            module_address: config.module_address.clone(),
+            module_addr: config.module_addr.clone(),
             profile: config.profile.clone(),
         })
     }
@@ -182,8 +182,8 @@ impl HubChainClient {
         let mut events = Vec::new();
 
         for account in known_accounts {
-            let account_address = account.strip_prefix("0x").unwrap_or(account);
-            let url = format!("{}/v1/accounts/{}/transactions", self.base_url, account_address);
+            let account_addr = account.strip_prefix("0x").unwrap_or(account);
+            let url = format!("{}/v1/accounts/{}/transactions", self.base_url, account_addr);
 
             tracing::debug!("Querying transactions from: {}", url);
 
@@ -264,7 +264,7 @@ impl HubChainClient {
     ///
     /// # Arguments
     ///
-    /// * `intent_address` - Object address of the intent to fulfill
+    /// * `intent_addr` - Object address of the intent to fulfill
     /// * `payment_amount` - Amount of tokens to provide
     ///
     /// # Returns
@@ -273,7 +273,7 @@ impl HubChainClient {
     /// * `Err(anyhow::Error)` - Failed to fulfill intent
     pub fn fulfill_inflow_intent(
         &self,
-        intent_address: &str,
+        intent_addr: &str,
         payment_amount: u64,
     ) -> Result<String> {
         // Use aptos CLI for compatibility with E2E tests which create aptos profiles
@@ -285,9 +285,9 @@ impl HubChainClient {
                 &self.profile,
                 "--assume-yes",
                 "--function-id",
-                &format!("{}::fa_intent_inflow::fulfill_inflow_intent", self.module_address),
+                &format!("{}::fa_intent_inflow::fulfill_inflow_intent", self.module_addr),
                 "--args",
-                &format!("address:{}", intent_address),
+                &format!("address:{}", intent_addr),
                 &format!("u64:{}", payment_amount),
             ])
             .output()
@@ -321,7 +321,7 @@ impl HubChainClient {
     ///
     /// # Arguments
     ///
-    /// * `intent_address` - Object address of the intent to fulfill
+    /// * `intent_addr` - Object address of the intent to fulfill
     /// * `verifier_signature_bytes` - Verifier's Ed25519 signature as bytes
     ///
     /// # Returns
@@ -330,7 +330,7 @@ impl HubChainClient {
     /// * `Err(anyhow::Error)` - Failed to fulfill intent
     pub fn fulfill_outflow_intent(
         &self,
-        intent_address: &str,
+        intent_addr: &str,
         verifier_signature_bytes: &[u8],
     ) -> Result<String> {
         // Convert signature bytes to hex string
@@ -345,9 +345,9 @@ impl HubChainClient {
             "run".to_string(),
             "--assume-yes".to_string(),
             "--function-id".to_string(),
-            format!("{}::fa_intent_outflow::fulfill_outflow_intent", self.module_address),
+            format!("{}::fa_intent_outflow::fulfill_outflow_intent", self.module_addr),
             "--args".to_string(),
-            format!("address:{}", intent_address),
+            format!("address:{}", intent_addr),
             format!("hex:{}", signature_hex),
         ];
 
@@ -396,26 +396,26 @@ impl HubChainClient {
     ///
     /// # Arguments
     ///
-    /// * `solver_address` - Solver address to check
+    /// * `solver_addr` - Solver address to check
     ///
     /// # Returns
     ///
     /// * `Ok(bool)` - True if solver is registered, false otherwise
     /// * `Err(anyhow::Error)` - Failed to query registration status
-    pub async fn is_solver_registered(&self, solver_address: &str) -> Result<bool> {
+    pub async fn is_solver_registered(&self, solver_addr: &str) -> Result<bool> {
         // Normalize address (ensure 0x prefix)
-        let solver_addr = if solver_address.starts_with("0x") {
-            solver_address.to_string()
+        let solver_addr_normalized = if solver_addr.starts_with("0x") {
+            solver_addr.to_string()
         } else {
-            format!("0x{}", solver_address)
+            format!("0x{}", solver_addr)
         };
 
         // Call the view function via RPC
         let view_url = format!("{}/v1/view", self.base_url);
         let request_body = serde_json::json!({
-            "function": format!("{}::solver_registry::is_registered", self.module_address),
+            "function": format!("{}::solver_registry::is_registered", self.module_addr),
             "type_arguments": [],
-            "arguments": [solver_addr]
+            "arguments": [solver_addr_normalized]
         });
 
         let response = self
@@ -456,8 +456,8 @@ impl HubChainClient {
     /// # Arguments
     ///
     /// * `public_key_bytes` - Ed25519 public key as bytes (32 bytes)
-    /// * `evm_address` - EVM address on connected chain (20 bytes), or empty vec if not applicable
-    /// * `mvm_address` - Move VM address on connected chain, or None if not applicable
+    /// * `evm_addr` - EVM address on connected chain (20 bytes), or empty vec if not applicable
+    /// * `mvm_addr` - Move VM address on connected chain, or None if not applicable
     /// * `private_key` - Optional private key bytes. If provided, uses --private-key flag with movement CLI.
     ///                   If None, uses --profile flag with aptos CLI (for E2E tests).
     ///
@@ -468,33 +468,33 @@ impl HubChainClient {
     pub fn register_solver(
         &self,
         public_key_bytes: &[u8],
-        evm_address: &[u8],
-        mvm_address: Option<&str>,
+        evm_addr: &[u8],
+        mvm_addr: Option<&str>,
         private_key: Option<&[u8; 32]>,
     ) -> Result<String> {
         // Convert public key to hex
         let public_key_hex = hex::encode(public_key_bytes);
         
         // Convert EVM address to hex (pad to 20 bytes if needed)
-        let evm_address_hex = if evm_address.is_empty() {
+        let evm_addr_hex = if evm_addr.is_empty() {
             "".to_string()
         } else {
-            hex::encode(evm_address)
+            hex::encode(evm_addr)
         };
         
         // Prepare MVM address (use 0x0 if None)
-        let mvm_addr = mvm_address.unwrap_or("0x0");
+        let mvm_addr_normalized = mvm_addr.unwrap_or("0x0");
         
         // Build command arguments - store formatted strings to avoid temporary value issues
         // Movement CLI expects 'hex:' for vector<u8> types, not 'vector<u8>:'
-        let function_id = format!("{}::solver_registry::register_solver", self.module_address);
+        let function_id = format!("{}::solver_registry::register_solver", self.module_addr);
         let public_key_arg = format!("hex:{}", public_key_hex);
-        let evm_address_arg = if evm_address_hex.is_empty() {
+        let evm_addr_arg = if evm_addr_hex.is_empty() {
             "hex:".to_string()
         } else {
-            format!("hex:{}", evm_address_hex)
+            format!("hex:{}", evm_addr_hex)
         };
-        let mvm_address_arg = format!("address:{}", mvm_addr);
+        let mvm_addr_arg = format!("address:{}", mvm_addr_normalized);
         
         // Format private key if provided
         let private_key_hex = private_key.map(|pk| format!("0x{}", hex::encode(pk)));
@@ -516,8 +516,8 @@ impl HubChainClient {
                     &function_id,
                     "--args",
                     &public_key_arg,
-                    &evm_address_arg,
-                    &mvm_address_arg,
+                    &evm_addr_arg,
+                    &mvm_addr_arg,
                 ],
             )
         } else {
@@ -534,8 +534,8 @@ impl HubChainClient {
                     &function_id,
                     "--args",
                     &public_key_arg,
-                    &evm_address_arg,
-                    &mvm_address_arg,
+                    &evm_addr_arg,
+                    &mvm_addr_arg,
                 ],
             )
         };

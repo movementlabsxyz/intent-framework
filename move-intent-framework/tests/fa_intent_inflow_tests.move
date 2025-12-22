@@ -39,7 +39,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let (desired_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 100);
         
         let intent_id = @0x5678;
-        let solver_address = signer::address_of(solver);
+        let solver_addr = signer::address_of(solver);
         let expiry_time = timestamp::now_seconds() + 3600;
         
         // Initialize solver registry
@@ -49,10 +49,10 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Generate key pair for solver
         let (solver_secret_key, validated_solver_pk) = ed25519::generate_keys();
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&validated_solver_pk);
-        let evm_address = test_utils::create_test_evm_address(0);
+        let evm_addr = test_utils::create_test_evm_address(0);
         
         // Register solver in registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_addr, @0x0);
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_inflow::create_cross_chain_draft_intent(
@@ -67,7 +67,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         );
         
         // Step 2: Add solver to draft and create intent to sign
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Solver signs the intent (off-chain)
         let intent_hash = intent_reservation::hash_intent(intent_to_sign);
@@ -87,7 +87,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             1, // desired_chain_id (hub chain)
             expiry_time,
             intent_id,
-            solver_address,
+            solver_addr,
             solver_signature_bytes,
             signer::address_of(requestor), // requester_addr_connected_chain (same as requestor in test)
         );
@@ -121,7 +121,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         let (desired_metadata, _) = mvmt_intent::test_utils::register_and_mint_tokens(aptos_framework, solver, 0);
         
         let intent_id = @0x5678;
-        let solver_address = signer::address_of(solver);
+        let solver_addr = signer::address_of(solver);
         let expiry_time = timestamp::now_seconds() + 3600;
         let offered_amount = 100u64;
         let desired_amount = 100u64;
@@ -133,10 +133,10 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Generate key pairs for solver
         let (solver_secret_key, validated_solver_pk) = ed25519::generate_keys();
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&validated_solver_pk);
-        let evm_address = test_utils::create_test_evm_address(0);
+        let evm_addr = test_utils::create_test_evm_address(0);
         
         // Register solver in registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_addr, @0x0);
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_inflow::create_cross_chain_draft_intent(
@@ -151,7 +151,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         );
         
         // Step 2: Add solver to draft and create intent to sign
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Solver signs the intent (off-chain)
         let intent_hash = intent_reservation::hash_intent(intent_to_sign);
@@ -174,7 +174,7 @@ module mvmt_intent::fa_intent_inflow_tests {
             1, // desired_chain_id (hub chain)
             expiry_time,
             intent_id,
-            solver_address,
+            solver_addr,
             solver_signature_bytes,
             signer::address_of(requestor), // requester_addr_connected_chain (same as requestor in test)
         );
@@ -183,8 +183,8 @@ module mvmt_intent::fa_intent_inflow_tests {
         assert!(primary_fungible_store::balance(signer::address_of(requestor), offered_metadata) == 0);
         
         // Step 7: Verify intent was created by checking the intent address
-        let intent_address = object::object_address(&intent_obj);
-        assert!(intent_address != @0x0);
+        let intent_addr = object::object_address(&intent_obj);
+        assert!(intent_addr != @0x0);
         
         // Step 8: Verify intent structure is correct by checking it's a valid Intent
         // The fact that we got a valid address and object confirms creation was successful
@@ -215,7 +215,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Requestor creates a cross-chain intent (has 0 tokens locked)
         // Use a dummy intent_id for testing (in real scenarios this links cross-chain intents)
         let dummy_intent_id = @0x1234;
-        let solver_address = signer::address_of(solver);
+        let solver_addr = signer::address_of(solver);
         let expiry_time = timestamp::now_seconds() + 3600;
         
         // Initialize solver registry
@@ -225,10 +225,10 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Generate key pair for solver (simulating off-chain key generation)
         let (solver_secret_key, validated_public_key) = ed25519::generate_keys();
         let solver_public_key_bytes = ed25519::validated_public_key_to_bytes(&validated_public_key);
-        let evm_address = test_utils::create_test_evm_address(0);
+        let evm_addr = test_utils::create_test_evm_address(0);
         
         // Register solver in registry
-        solver_registry::register_solver(solver, solver_public_key_bytes, evm_address, @0x0);
+        solver_registry::register_solver(solver, solver_public_key_bytes, evm_addr, @0x0);
         
         // Step 1: Create draft intent (off-chain)
         let draft_intent = fa_intent_inflow::create_cross_chain_draft_intent(
@@ -243,7 +243,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         );
         
         // Step 2: Add solver to draft and create intent to sign
-        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_address);
+        let intent_to_sign = intent_reservation::add_solver_to_draft_intent(draft_intent, solver_addr);
         
         // Step 3: Solver signs the intent (off-chain)
         let intent_hash = intent_reservation::hash_intent(intent_to_sign);
@@ -274,13 +274,13 @@ module mvmt_intent::fa_intent_inflow_tests {
             option::some(dummy_intent_id),
             option::none() // No requester_addr_connected_chain in test
         );
-        let intent_address = object::object_address(&intent_obj);
+        let intent_addr = object::object_address(&intent_obj);
         
         // Verify intent was created
-        assert!(intent_address != @0x0);
+        assert!(intent_addr != @0x0);
         
         // Convert address to object reference (generic Object type)
-        let intent_obj = object::address_to_object(intent_address);
+        let intent_obj = object::address_to_object(intent_addr);
         
         // Solver fulfills the intent using the entry function
         // Note: This calls start_fa_offering_session (unlocks 0 tokens), 
@@ -321,13 +321,13 @@ module mvmt_intent::fa_intent_inflow_tests {
         );
         
         // Verify intent was created and registered
-        let intent_address = object::object_address(&intent_obj);
-        assert!(intent_address != @0x0);
-        assert!(intent_registry::is_intent_registered(intent_address));
+        let intent_addr = object::object_address(&intent_obj);
+        assert!(intent_addr != @0x0);
+        assert!(intent_registry::is_intent_registered(intent_addr));
         assert!(intent_registry::get_intent_count(signer::address_of(requestor)) == 1);
         
         // Convert to generic Object type for entry function
-        let intent_obj_generic = object::address_to_object(intent_address);
+        let intent_obj_generic = object::address_to_object(intent_addr);
         
         // Fulfill the inflow intent using fulfill_inflow_intent
         fa_intent_inflow::fulfill_inflow_intent(
@@ -343,7 +343,7 @@ module mvmt_intent::fa_intent_inflow_tests {
         assert!(primary_fungible_store::balance(signer::address_of(solver), desired_metadata) == 0);
         
         // Verify intent was unregistered from registry after fulfillment
-        assert!(!intent_registry::is_intent_registered(intent_address));
+        assert!(!intent_registry::is_intent_registered(intent_addr));
         assert!(intent_registry::get_intent_count(signer::address_of(requestor)) == 0);
     }
 
@@ -380,14 +380,14 @@ module mvmt_intent::fa_intent_inflow_tests {
         // Try to convert to OracleGuardedLimitOrder type (wrong type)
         // This should fail because the intent is FungibleAssetLimitOrder, not OracleGuardedLimitOrder
         // The type system prevents this conversion, which is what we're testing
-        let intent_address = object::object_address(&intent_obj);
+        let intent_addr = object::object_address(&intent_obj);
         
         // Try to convert to the wrong type - this will fail at address_to_object
         // because object::address_to_object<T> checks if an object of type T exists at the address.
         // The object exists, but not as OracleGuardedLimitOrder, so the runtime reports
         // ERESOURCE_DOES_NOT_EXIST (a resource of that type doesn't exist at that address).
         let _wrong_type_intent: Object<Intent<fa_intent_with_oracle::FungibleStoreManager, fa_intent_with_oracle::OracleGuardedLimitOrder>> = 
-            object::address_to_object(intent_address);
+            object::address_to_object(intent_addr);
     }
 
     #[test(
@@ -417,14 +417,14 @@ module mvmt_intent::fa_intent_inflow_tests {
         
         // Requestor creates a cross-chain intent wanting 1000 tokens
         let dummy_intent_id = @0x123;
-        let solver_address = signer::address_of(solver);
+        let solver_addr = signer::address_of(solver);
         let expiry_time = timestamp::now_seconds() + 3600;
         
         // NOTE: In Move tests, we cannot extract the private key from a &signer to sign arbitrary data.
         // verify_and_create_reservation() gets the public key from account::get_authentication_key(solver),
         // but we can't get the matching private key from the signer to create a valid signature.
         // For this test, we use intent_reservation::new_reservation to bypass signature verification.
-        let reservation = intent_reservation::new_reservation(solver_address);
+        let reservation = intent_reservation::new_reservation(solver_addr);
         
         // Create the intent directly (bypassing signature verification for testing)
         let fa: FungibleAsset = primary_fungible_store::withdraw(requestor, offered_metadata, 0);
@@ -443,10 +443,10 @@ module mvmt_intent::fa_intent_inflow_tests {
             option::some(dummy_intent_id),
             option::none() // No requester_addr_connected_chain in test
         );
-        let intent_address = object::object_address(&intent_obj);
+        let intent_addr = object::object_address(&intent_obj);
         
         // Convert address to object reference
-        let intent_obj = object::address_to_object(intent_address);
+        let intent_obj = object::address_to_object(intent_addr);
         
         // Solver tries to fulfill with insufficient amount (50 < 1000)
         // This should fail with EAMOUNT_NOT_MEET

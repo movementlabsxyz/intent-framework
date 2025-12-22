@@ -6,8 +6,8 @@
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    DUMMY_EXPIRY, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON,
-    DUMMY_TOKEN_ADDR_MVM_HUB,
+    create_default_solver_config, DUMMY_EXPIRY, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM,
+    DUMMY_TOKEN_ADDR_MVM_CON, DUMMY_TOKEN_ADDR_MVM_HUB,
 };
 
 use serde_json::json;
@@ -37,11 +37,6 @@ fn create_default_draft_data() -> serde_json::Value {
 fn create_test_solver_config() -> solver::config::SolverConfig {
     use solver::config::{AcceptanceConfig, SolverConfig};
     use std::collections::HashMap;
-    use test_helpers::{
-        create_default_connected_mvm_chain_config, create_default_hub_chain_config,
-        create_default_service_config, create_default_solver_signing_config, DUMMY_TOKEN_ADDR_MVM_CON,
-        DUMMY_TOKEN_ADDR_MVM_HUB,
-    };
 
     let mut token_pairs = HashMap::new();
     token_pairs.insert(
@@ -50,15 +45,10 @@ fn create_test_solver_config() -> solver::config::SolverConfig {
     );
 
     SolverConfig {
-        service: create_default_service_config(),
-        hub_chain: create_default_hub_chain_config(),
-        connected_chain: solver::config::ConnectedChainConfig::Mvm(
-            create_default_connected_mvm_chain_config(),
-        ),
         acceptance: AcceptanceConfig {
             token_pairs,
         },
-        solver: create_default_solver_signing_config(),
+        ..create_default_solver_config()
     }
 }
 

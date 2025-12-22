@@ -4,38 +4,14 @@
 //! including service initialization and basic functionality.
 
 use solver::{
-    config::SolverConfig, service::tracker::IntentTracker,
+    service::tracker::IntentTracker,
     service::outflow::OutflowService,
 };
 use std::sync::Arc;
 
 #[path = "helpers.rs"]
 mod test_helpers;
-use test_helpers::{
-    create_default_solver_config, DUMMY_INTENT_ID, DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
-};
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-fn create_test_config() -> SolverConfig {
-    create_default_solver_config()
-}
-
-// Helper function for creating outflow draft data (available for future tests)
-#[allow(dead_code)]
-fn create_test_outflow_draft_data() -> solver::acceptance::DraftintentData {
-    solver::acceptance::DraftintentData {
-        intent_id: DUMMY_INTENT_ID.to_string(),
-        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
-        offered_amount: 1000,
-        offered_chain_id: 1, // Hub chain (outflow)
-        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
-        desired_amount: 2000,
-        desired_chain_id: 2, // Connected chain
-    }
-}
+use test_helpers::create_default_solver_config;
 
 // ============================================================================
 // OUTFLOW SERVICE TESTS
@@ -45,7 +21,7 @@ fn create_test_outflow_draft_data() -> solver::acceptance::DraftintentData {
 /// Why: Ensure service initialization works correctly
 #[test]
 fn test_outflow_service_new() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = Arc::new(IntentTracker::new(&config).unwrap());
     let _service = OutflowService::new(config, tracker).unwrap();
 }
@@ -62,7 +38,7 @@ fn test_poll_and_execute_transfers_empty() {
         .build()
         .unwrap();
 
-    let config = create_test_config();
+    let config = create_default_solver_config();
     
     // These create reqwest::Client which may internally use tokio runtime
     let tracker = Arc::new(IntentTracker::new(&config).unwrap());

@@ -2,13 +2,14 @@
 
 use serde_json::json;
 use solver::chains::{ConnectedEvmClient, ConnectedMvmClient, HubChainClient};
-use solver::config::{ChainConfig, EvmChainConfig};
+use solver::config::EvmChainConfig;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
+    create_default_connected_mvm_chain_config, create_default_hub_chain_config,
     DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ADDR_MVM,
     DUMMY_INTENT_ID, DUMMY_MODULE_ADDR_CON, DUMMY_MODULE_ADDR_HUB,
     DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM_CON, DUMMY_REQUESTER_ADDR_MVM_HUB,
@@ -19,26 +20,6 @@ use test_helpers::{
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-fn create_test_hub_config() -> ChainConfig {
-    ChainConfig {
-        name: "test-hub".to_string(),
-        rpc_url: "http://127.0.0.1:8080".to_string(),
-        chain_id: 1,
-        module_addr: DUMMY_MODULE_ADDR_HUB.to_string(),
-        profile: "test-profile".to_string(),
-    }
-}
-
-fn create_test_mvm_config() -> ChainConfig {
-    ChainConfig {
-        name: "test-mvm".to_string(),
-        rpc_url: "http://127.0.0.1:8082".to_string(),
-        chain_id: 2,
-        module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
-        profile: "test-profile".to_string(),
-    }
-}
 
 fn create_test_evm_config() -> EvmChainConfig {
     EvmChainConfig {
@@ -116,7 +97,7 @@ fn test_escrow_event_deserialization() {
 /// Why: Ensure client initialization works correctly
 #[test]
 fn test_hub_client_new() {
-    let config = create_test_hub_config();
+    let config = create_default_hub_chain_config();
     let _client = HubChainClient::new(&config).unwrap();
 }
 
@@ -157,7 +138,7 @@ async fn test_get_intent_events_success() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -184,7 +165,7 @@ async fn test_get_intent_events_empty() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -209,7 +190,7 @@ async fn test_is_solver_registered_true() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -236,7 +217,7 @@ async fn test_is_solver_registered_false() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -262,7 +243,7 @@ async fn test_is_solver_registered_address_normalization() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -296,7 +277,7 @@ async fn test_is_solver_registered_http_error() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -326,7 +307,7 @@ async fn test_is_solver_registered_invalid_json() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -352,7 +333,7 @@ async fn test_is_solver_registered_unexpected_format() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_hub_config();
+    let mut config = create_default_hub_chain_config();
     config.rpc_url = base_url;
     let client = HubChainClient::new(&config).unwrap();
 
@@ -375,7 +356,7 @@ async fn test_is_solver_registered_unexpected_format() {
 /// Why: Ensure client initialization works correctly
 #[test]
 fn test_mvm_client_new() {
-    let config = create_test_mvm_config();
+    let config = create_default_connected_mvm_chain_config();
     let _client = ConnectedMvmClient::new(&config).unwrap();
 }
 
@@ -415,7 +396,7 @@ async fn test_get_escrow_events_success() {
         .mount(&mock_server)
         .await;
 
-    let mut config = create_test_mvm_config();
+    let mut config = create_default_connected_mvm_chain_config();
     config.rpc_url = base_url;
     let client = ConnectedMvmClient::new(&config).unwrap();
 

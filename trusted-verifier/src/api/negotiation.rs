@@ -218,7 +218,7 @@ pub async fn get_pending_drafts_handler(
         .map(|draft| {
             serde_json::json!({
                 "draft_id": draft.draft_id,
-                "requester_address": draft.requester_addr,
+                "requester_addr": draft.requester_addr,
                 "draft_data": draft.draft_data,
                 "timestamp": draft.timestamp,
                 "expiry_time": draft.expiry_time,

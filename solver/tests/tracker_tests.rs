@@ -5,6 +5,14 @@ use solver::{
     IntentState,
 };
 
+#[path = "helpers.rs"]
+mod test_helpers;
+use test_helpers::{
+    DUMMY_DRAFT_ID, DUMMY_EXPIRY, DUMMY_INTENT_ID, DUMMY_MODULE_ADDR_CON, DUMMY_MODULE_ADDR_HUB,
+    DUMMY_REQUESTER_ADDR_EVM, DUMMY_SOLVER_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON,
+    DUMMY_TOKEN_ADDR_MVM_HUB,
+};
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -19,7 +27,7 @@ fn create_test_config() -> SolverConfig {
             name: "test-hub".to_string(),
             rpc_url: "http://127.0.0.1:8080".to_string(),
             chain_id: 1,
-            module_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            module_addr: DUMMY_MODULE_ADDR_HUB.to_string(),
             profile: "test-profile".to_string(),
         },
         connected_chain: solver::config::ConnectedChainConfig::Mvm(
@@ -27,7 +35,7 @@ fn create_test_config() -> SolverConfig {
                 name: "test-mvm".to_string(),
                 rpc_url: "http://127.0.0.1:8082".to_string(),
                 chain_id: 2,
-                module_addr: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+                module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
                 profile: "test-profile".to_string(),
             },
         ),
@@ -36,18 +44,18 @@ fn create_test_config() -> SolverConfig {
         },
         solver: solver::config::SolverSigningConfig {
             profile: "test-profile".to_string(),
-            address: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
+            address: DUMMY_SOLVER_ADDR_EVM.to_string(),
         },
     }
 }
 
 fn create_test_draft_data() -> DraftintentData {
     DraftintentData {
-        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
-        offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        offered_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
         offered_amount: 1000,
         offered_chain_id: 2, // Connected chain (inflow)
-        desired_token: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        desired_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
         desired_amount: 2000,
         desired_chain_id: 1, // Hub chain
     }
@@ -75,17 +83,17 @@ async fn test_add_signed_intent() {
     let draft_data = create_test_draft_data();
     tracker
         .add_signed_intent(
-            "11111111-1111-1111-1111-111111111111".to_string(),
+            DUMMY_DRAFT_ID.to_string(),
             draft_data.clone(),
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
 
     // Verify intent was stored
     let tracked = tracker
-        .get_intent("11111111-1111-1111-1111-111111111111")
+        .get_intent(DUMMY_DRAFT_ID)
         .await
         .unwrap();
     assert_eq!(tracked.state, IntentState::Signed);
@@ -111,8 +119,8 @@ async fn test_add_signed_intent_inflow_outflow() {
         .add_signed_intent(
             "inflow-draft".to_string(),
             inflow_data,
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -127,8 +135,8 @@ async fn test_add_signed_intent_inflow_outflow() {
         .add_signed_intent(
             "outflow-draft".to_string(),
             outflow_data,
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -156,8 +164,8 @@ async fn test_get_intents_ready_for_fulfillment_state_filter() {
         .add_signed_intent(
             "draft-1".to_string(),
             draft_data.clone(),
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -192,8 +200,8 @@ async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
         .add_signed_intent(
             "inflow-draft".to_string(),
             inflow_data,
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -208,8 +216,8 @@ async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
         .add_signed_intent(
             "outflow-draft".to_string(),
             outflow_data,
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -245,8 +253,8 @@ async fn test_mark_fulfilled() {
         .add_signed_intent(
             "draft-1".to_string(),
             draft_data,
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -319,8 +327,8 @@ async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
         .add_signed_intent(
             "draft-1".to_string(),
             draft_data.clone(),
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -329,8 +337,8 @@ async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
         .add_signed_intent(
             "draft-2".to_string(),
             draft_data,
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -367,8 +375,8 @@ async fn test_get_intents_ready_for_fulfillment_returns_only_created() {
         .add_signed_intent(
             "draft-1".to_string(),
             draft_data.clone(),
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();
@@ -378,8 +386,8 @@ async fn test_get_intents_ready_for_fulfillment_returns_only_created() {
         .add_signed_intent(
             "draft-2".to_string(),
             draft_data,
-            "0xdddddddddddddddddddddddddddddddddddddddd".to_string(),
-            9999999999, // Far future expiry
+            DUMMY_REQUESTER_ADDR_EVM.to_string(),
+            DUMMY_EXPIRY,
         )
         .await
         .unwrap();

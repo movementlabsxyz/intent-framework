@@ -9,6 +9,13 @@ use solver::{
 };
 use std::sync::Arc;
 
+#[path = "helpers.rs"]
+mod test_helpers;
+use test_helpers::{
+    DUMMY_INTENT_ID, DUMMY_MODULE_ADDR_HUB, DUMMY_MODULE_ADDR_CON, DUMMY_SOLVER_ADDR_EVM,
+    DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
+};
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -23,7 +30,7 @@ fn create_test_config() -> SolverConfig {
             name: "test-hub".to_string(),
             rpc_url: "http://127.0.0.1:8080".to_string(),
             chain_id: 1,
-            module_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            module_addr: DUMMY_MODULE_ADDR_HUB.to_string(),
             profile: "test-profile".to_string(),
         },
         connected_chain: solver::config::ConnectedChainConfig::Mvm(
@@ -31,7 +38,7 @@ fn create_test_config() -> SolverConfig {
                 name: "test-mvm".to_string(),
                 rpc_url: "http://127.0.0.1:8082".to_string(),
                 chain_id: 2,
-                module_addr: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+                module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
                 profile: "test-profile".to_string(),
             },
         ),
@@ -40,7 +47,7 @@ fn create_test_config() -> SolverConfig {
         },
         solver: solver::config::SolverSigningConfig {
             profile: "test-profile".to_string(),
-            address: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
+            address: DUMMY_SOLVER_ADDR_EVM.to_string(),
         },
     }
 }
@@ -49,11 +56,11 @@ fn create_test_config() -> SolverConfig {
 #[allow(dead_code)]
 fn create_test_outflow_draft_data() -> solver::acceptance::DraftintentData {
     solver::acceptance::DraftintentData {
-        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
-        offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
         offered_amount: 1000,
         offered_chain_id: 1, // Hub chain (outflow)
-        desired_token: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
         desired_amount: 2000,
         desired_chain_id: 2, // Connected chain
     }

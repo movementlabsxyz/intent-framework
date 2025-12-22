@@ -8,6 +8,13 @@ use solver::{
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+#[path = "helpers.rs"]
+mod test_helpers;
+use test_helpers::{
+    DUMMY_DRAFT_ID, DUMMY_ESCROW_ID_EVM, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM,
+    DUMMY_SOLVER_ADDR_EVM, DUMMY_TX_HASH,
+};
+
 // ============================================================================
 // JSON PARSING TESTS
 // ============================================================================
@@ -27,26 +34,26 @@ fn test_verifier_client_new() {
 #[test]
 fn test_api_response_parsing() {
     // Test successful response
-    let json = r#"{
+    let json = format!(r#"{{
         "success": true,
         "data": [
-            {
-                "draft_id": "11111111-1111-1111-1111-111111111111",
-                "requester_address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "draft_data": {
-                    "offered_metadata": {"inner": "0xa"},
+            {{
+                "draft_id": "{}",
+                "requester_addr": "{}",
+                "draft_data": {{
+                    "offered_metadata": {{"inner": "0xa"}},
                     "offered_amount": 1000,
-                    "desired_metadata": {"inner": "0xb"},
+                    "desired_metadata": {{"inner": "0xb"}},
                     "desired_amount": 2000
-                },
+                }},
                 "timestamp": 1000000,
                 "expiry_time": 2000000
-            }
+            }}
         ],
         "error": null
-    }"#;
+    }}"#, DUMMY_DRAFT_ID, DUMMY_REQUESTER_ADDR_EVM);
 
-    let response: ApiResponse<Vec<PendingDraft>> = serde_json::from_str(json).unwrap();
+    let response: ApiResponse<Vec<PendingDraft>> = serde_json::from_str(&json).unwrap();
     assert!(response.success);
     assert!(response.data.is_some());
     assert!(response.error.is_none());
@@ -55,11 +62,11 @@ fn test_api_response_parsing() {
     assert_eq!(drafts.len(), 1);
     assert_eq!(
         drafts[0].draft_id,
-        "11111111-1111-1111-1111-111111111111"
+        DUMMY_DRAFT_ID
     );
     assert_eq!(
         drafts[0].requester_addr,
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        DUMMY_REQUESTER_ADDR_EVM
     );
 }
 
@@ -88,7 +95,7 @@ fn test_api_error_response_parsing() {
 #[test]
 fn test_signature_submission_serialization() {
     let submission = SignatureSubmission {
-        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };
@@ -105,29 +112,29 @@ fn test_signature_submission_serialization() {
 /// Why: Ensure we can handle different draft_data JSON structures from verifier
 #[test]
 fn test_pending_draft_deserialization() {
-    let json = r#"{
-        "draft_id": "11111111-1111-1111-1111-111111111111",
-        "requester_address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "draft_data": {
-            "offered_metadata": {"inner": "0xa"},
+    let json = format!(r#"{{
+        "draft_id": "{}",
+        "requester_addr": "{}",
+        "draft_data": {{
+            "offered_metadata": {{"inner": "0xa"}},
             "offered_amount": 1000,
             "offered_chain_id": 1,
-            "desired_metadata": {"inner": "0xb"},
+            "desired_metadata": {{"inner": "0xb"}},
             "desired_amount": 2000,
             "desired_chain_id": 2
-        },
+        }},
         "timestamp": 1000000,
         "expiry_time": 2000000
-    }"#;
+    }}"#, DUMMY_DRAFT_ID, DUMMY_REQUESTER_ADDR_EVM);
 
-    let draft: PendingDraft = serde_json::from_str(json).unwrap();
+    let draft: PendingDraft = serde_json::from_str(&json).unwrap();
     assert_eq!(
         draft.draft_id,
-        "11111111-1111-1111-1111-111111111111"
+        DUMMY_DRAFT_ID
     );
     assert_eq!(
         draft.requester_addr,
-        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        DUMMY_REQUESTER_ADDR_EVM
     );
     assert_eq!(draft.timestamp, 1000000);
     assert_eq!(draft.expiry_time, 2000000);
@@ -159,8 +166,8 @@ fn test_poll_pending_drafts_success() {
             "success": true,
             "data": [
                 {
-                    "draft_id": "11111111-1111-1111-1111-111111111111",
-                    "requester_address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "draft_id": DUMMY_DRAFT_ID,
+                    "requester_addr": DUMMY_REQUESTER_ADDR_EVM,
                     "draft_data": {
                         "offered_metadata": {"inner": "0xa"},
                         "offered_amount": 1000,
@@ -190,7 +197,7 @@ fn test_poll_pending_drafts_success() {
     assert_eq!(drafts.len(), 1);
     assert_eq!(
         drafts[0].draft_id,
-        "11111111-1111-1111-1111-111111111111"
+        DUMMY_DRAFT_ID
     );
 }
 
@@ -270,7 +277,7 @@ fn test_submit_signature_success() {
         let response = json!({
             "success": true,
             "data": {
-                "draft_id": "11111111-1111-1111-1111-111111111111",
+                "draft_id": DUMMY_DRAFT_ID,
                 "status": "signed"
             },
             "error": null
@@ -288,7 +295,7 @@ fn test_submit_signature_success() {
 
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
-        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };
@@ -327,7 +334,7 @@ fn test_submit_signature_conflict() {
 
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
-        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };
@@ -367,7 +374,7 @@ fn test_submit_signature_other_error() {
 
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
-        solver_addr: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         signature: "0x".to_string() + &"a".repeat(128),
         public_key: "0x".to_string() + &"b".repeat(64),
     };
@@ -422,10 +429,9 @@ fn test_validate_outflow_fulfillment_success() {
 
     let client = VerifierClient::new(base_url);
     let request = ValidateOutflowFulfillmentRequest {
-        transaction_hash: "0x2222222222222222222222222222222222222222222222222222222222222222"
-            .to_string(),
+        transaction_hash: DUMMY_TX_HASH.to_string(),
         chain_type: "evm".to_string(),
-        intent_id: Some("0x1111111111111111111111111111111111111111111111111111111111111111".to_string()),
+        intent_id: Some(DUMMY_INTENT_ID.to_string()),
     };
 
     let result = client.validate_outflow_fulfillment(&request).unwrap();
@@ -465,8 +471,7 @@ fn test_validate_outflow_fulfillment_failure() {
 
     let client = VerifierClient::new(base_url);
     let request = ValidateOutflowFulfillmentRequest {
-        transaction_hash: "0x2222222222222222222222222222222222222222222222222222222222222222"
-            .to_string(),
+        transaction_hash: DUMMY_TX_HASH.to_string(),
         chain_type: "evm".to_string(),
         intent_id: None,
     };
@@ -496,8 +501,8 @@ fn test_get_approvals_success() {
             "success": true,
             "data": [
                 {
-                    "escrow_id": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-                    "intent_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
+                    "escrow_id": DUMMY_ESCROW_ID_EVM,
+                    "intent_id": DUMMY_INTENT_ID,
                     "signature": "base64signature==",
                     "timestamp": 1000000
                 }
@@ -521,11 +526,11 @@ fn test_get_approvals_success() {
     assert_eq!(approvals.len(), 1);
     assert_eq!(
         approvals[0].escrow_id,
-        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        DUMMY_ESCROW_ID_EVM
     );
     assert_eq!(
         approvals[0].intent_id,
-        "0x1111111111111111111111111111111111111111111111111111111111111111"
+        DUMMY_INTENT_ID
     );
     assert_eq!(approvals[0].signature, "base64signature==");
     assert_eq!(approvals[0].timestamp, 1000000);

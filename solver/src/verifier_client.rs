@@ -44,7 +44,6 @@ pub struct PendingDraft {
     /// Unique identifier for the draft
     pub draft_id: String,
     /// Address of the requester who submitted the draft
-    #[serde(rename = "requester_address")]
     pub requester_addr: String,
     /// Draft data (JSON object - matches Draftintent structure from Move)
     pub draft_data: serde_json::Value,

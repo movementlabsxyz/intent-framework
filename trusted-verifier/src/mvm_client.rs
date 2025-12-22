@@ -1375,6 +1375,7 @@ pub struct LimitOrderEvent {
     pub intent_id: String,                   // For cross-chain linking
     pub offered_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     #[serde(
+        rename = "offered_metadata_addr",
         deserialize_with = "deserialize_move_option_string",
         skip_serializing_if = "Option::is_none"
     )]
@@ -1410,6 +1411,7 @@ pub struct OracleLimitOrderEvent {
     pub offered_chain_id: String, // Chain ID where offered tokens are located
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     #[serde(
+        rename = "desired_metadata_addr",
         deserialize_with = "deserialize_move_option_string",
         skip_serializing_if = "Option::is_none"
     )]

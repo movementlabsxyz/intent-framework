@@ -191,7 +191,14 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 // Outflow intents use OracleLimitOrderEvent (from fa_intent_with_oracle)
                 // All outflow intents MUST have a reserved solver
                 let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
-                    .context("Failed to parse OracleLimitOrderEvent")?;
+                    .with_context(|| {
+                        format!(
+                            "Failed to parse OracleLimitOrderEvent. Event type: {}, Event data: {}",
+                            event_type,
+                            serde_json::to_string_pretty(&event.data)
+                                .unwrap_or_else(|_| format!("{:?}", event.data))
+                        )
+                    })?;
 
                 // Use reserved_solver from event (now included in the event)
                 // All outflow intents must have a reserved solver
@@ -315,7 +322,14 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 // Outflow intents use OracleLimitOrderEvent (from fa_intent_with_oracle)
                 // All outflow intents MUST have a reserved solver
                 let data: MvmOracleLimitOrderEvent = serde_json::from_value(event.data.clone())
-                    .context("Failed to parse OracleLimitOrderEvent")?;
+                    .with_context(|| {
+                        format!(
+                            "Failed to parse OracleLimitOrderEvent. Event type: {}, Event data: {}",
+                            event_type,
+                            serde_json::to_string_pretty(&event.data)
+                                .unwrap_or_else(|_| format!("{:?}", event.data))
+                        )
+                    })?;
 
                 // Use reserved_solver from event (now included in the event)
                 // All outflow intents must have a reserved solver

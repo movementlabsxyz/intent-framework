@@ -12,8 +12,8 @@ use trusted_verifier::validator::{
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_evm, create_base_evm_transaction,
-    create_base_fulfillment_transaction_params_evm, create_base_intent_evm,
+    build_test_config_with_evm, create_default_evm_transaction,
+    create_default_fulfillment_transaction_params_evm, create_default_intent_evm,
     setup_mock_server_with_registry_evm, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM,
     DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_REGISTRY_ADDR,
     DUMMY_TOKEN_ADDR_EVM,
@@ -47,7 +47,7 @@ fn test_extract_evm_fulfillment_params_success() {
 
     let tx = EvmTransaction {
         input: format!("0x{}", calldata),
-        ..create_base_evm_transaction()
+        ..create_default_evm_transaction()
     };
 
     let result = extract_evm_fulfillment_params(&tx);
@@ -90,7 +90,7 @@ fn test_extract_evm_fulfillment_params_success() {
 fn test_extract_evm_fulfillment_params_wrong_selector() {
     let tx = EvmTransaction {
         input: "0x12345678".to_string(), // Wrong selector
-        ..create_base_evm_transaction()
+        ..create_default_evm_transaction()
     };
 
     let result = extract_evm_fulfillment_params(&tx);
@@ -111,7 +111,7 @@ fn test_extract_evm_fulfillment_params_insufficient_calldata() {
     let tx = EvmTransaction {
         input: "0xa9059cbb0000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             .to_string(), // Too short - missing amount and intent_id
-        ..create_base_evm_transaction()
+        ..create_default_evm_transaction()
     };
 
     let result = extract_evm_fulfillment_params(&tx);
@@ -147,7 +147,7 @@ fn test_extract_evm_fulfillment_params_amount_exceeds_u64_max() {
 
     let tx = EvmTransaction {
         input: format!("0x{}", calldata),
-        ..create_base_evm_transaction()
+        ..create_default_evm_transaction()
     };
 
     let result = extract_evm_fulfillment_params(&tx);
@@ -189,7 +189,7 @@ fn test_extract_evm_fulfillment_params_amount_equals_u64_max() {
 
     let tx = EvmTransaction {
         input: format!("0x{}", calldata),
-        ..create_base_evm_transaction()
+        ..create_default_evm_transaction()
     };
 
     let result = extract_evm_fulfillment_params(&tx);
@@ -228,7 +228,7 @@ fn test_extract_evm_fulfillment_params_large_valid_amount() {
 
     let tx = EvmTransaction {
         input: format!("0x{}", calldata),
-        ..create_base_evm_transaction()
+        ..create_default_evm_transaction()
     };
 
     let result = extract_evm_fulfillment_params(&tx);
@@ -261,7 +261,7 @@ fn test_extract_evm_fulfillment_params_normalizes_intent_id_with_leading_zeros()
 
     let tx = EvmTransaction {
         input: format!("0x{}", calldata),
-        ..create_base_evm_transaction()
+        ..create_default_evm_transaction()
     };
 
     let result = extract_evm_fulfillment_params(&tx);
@@ -305,13 +305,12 @@ async fn test_validate_outflow_fulfillment_success() {
     let intent = IntentEvent {
         desired_amount: 25000000, // For outflow intents, validation uses desired_amount (amount desired on connected chain)
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
-        ..create_base_intent_evm()
+        ..create_default_intent_evm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: 25000000,
-        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        ..create_base_fulfillment_transaction_params_evm()
+        ..create_default_fulfillment_transaction_params_evm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -344,15 +343,14 @@ async fn test_validate_outflow_fulfillment_succeeds_with_normalized_intent_id() 
         intent_id: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         desired_amount: 25000000,
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
-        ..create_base_intent_evm()
+        ..create_default_intent_evm()
     };
 
     // Transaction has intent_id with leading zeros (padded format)
     let tx_params = FulfillmentTransactionParams {
         intent_id: "0x00aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
         amount: 25000000,
-        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        ..create_base_fulfillment_transaction_params_evm()
+        ..create_default_fulfillment_transaction_params_evm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -379,11 +377,10 @@ async fn test_validate_outflow_fulfillment_fails_on_unsuccessful_tx() {
         .await
         .expect("Failed to create validator");
 
-    let intent = create_base_intent_evm();
+    let intent = create_default_intent_evm();
     let tx_params = FulfillmentTransactionParams {
-        intent_id: intent.intent_id.clone(),
         amount: intent.desired_amount,
-        ..create_base_fulfillment_transaction_params_evm()
+        ..create_default_fulfillment_transaction_params_evm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, false).await;
@@ -413,11 +410,11 @@ async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
         .await
         .expect("Failed to create validator");
 
-    let intent = create_base_intent_evm();
+    let intent = create_default_intent_evm();
     let tx_params = FulfillmentTransactionParams {
         intent_id: "0xwrong_intent_id".to_string(), // Different intent_id
         amount: intent.desired_amount,
-        ..create_base_fulfillment_transaction_params_evm()
+        ..create_default_fulfillment_transaction_params_evm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -448,13 +445,13 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
         .expect("Failed to create validator");
 
     let intent = IntentEvent {
-        ..create_base_intent_evm()
+        ..create_default_intent_evm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         recipient_addr: "0xdddddddddddddddddddddddddddddddddddddddd".to_string(), // Different recipient (EVM address format)
         amount: intent.desired_amount,
-        ..create_base_fulfillment_transaction_params_evm()
+        ..create_default_fulfillment_transaction_params_evm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -486,12 +483,12 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 
     let intent = IntentEvent {
         desired_amount: 1000,
-        ..create_base_intent_evm()
+        ..create_default_intent_evm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: 500, // Different amount
-        ..create_base_fulfillment_transaction_params_evm()
+        ..create_default_fulfillment_transaction_params_evm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -532,13 +529,13 @@ async fn test_validate_outflow_fulfillment_fails_on_solver_mismatch() {
     let intent = IntentEvent {
         desired_amount: 1000, // Set desired_amount to avoid validation failure on amount check
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
-        ..create_base_intent_evm()
+        ..create_default_intent_evm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: intent.desired_amount,
         solver_addr: different_solver.to_string(), // Different solver (EVM address format)
-        ..create_base_fulfillment_transaction_params_evm()
+        ..create_default_fulfillment_transaction_params_evm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;

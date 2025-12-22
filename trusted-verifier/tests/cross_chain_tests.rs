@@ -7,7 +7,7 @@ use trusted_verifier::monitor::{EscrowEvent, IntentEvent};
 #[path = "mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    create_base_escrow_event, create_base_intent_mvm, setup_mock_server_with_solver_registry,
+    create_default_escrow_event, create_default_intent_mvm, setup_mock_server_with_solver_registry,
     DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
 };
 
@@ -44,11 +44,11 @@ use test_helpers::{
 #[test]
 fn test_cross_chain_intent_matching() {
     // Step 1: User creates intent on hub chain (requests 1000 tokens to be provided by solver)
-    let hub_intent = create_base_intent_mvm();
+    let hub_intent = create_default_intent_mvm();
 
     // Step 2: User creates escrow on connected chain WITH tokens locked in it
     // The user must manually provide the hub_intent_id when creating the escrow
-    let escrow_creation = create_base_escrow_event();
+    let escrow_creation = create_default_escrow_event();
 
     // Step 3: Solver fulfills hub intent (solver provides 1000 tokens on hub chain)
     // [Not yet tested. This will also be tested here, not just in integration tests.]
@@ -90,11 +90,11 @@ async fn test_escrow_chain_id_validation() {
     // Remove solvers to avoid solver validation interfering with chain_id test
     let valid_intent = IntentEvent {
         reserved_solver_addr: None,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
     let valid_escrow = EscrowEvent {
         reserved_solver_addr: None,
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     // This should pass the connected_chain_id check (may fail other validations, but not this one)
@@ -135,14 +135,14 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
     // Create a hub intent with offered_amount = 1000 and solver
     let hub_intent = IntentEvent {
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create an escrow with mismatched offered_amount (500 != 1000)
     let escrow_mismatch = EscrowEvent {
         offered_amount: 500,
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -166,7 +166,7 @@ async fn test_escrow_amount_must_match_hub_intent_offered_amount() {
     // Now test with matching amounts
     let escrow_match = EscrowEvent {
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -207,13 +207,13 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_suc
     // Create a hub intent with specific offered_metadata and solver
     let hub_intent = IntentEvent {
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create an escrow with matching offered_metadata
     let escrow_match = EscrowEvent {
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -248,12 +248,12 @@ async fn test_escrow_offered_metadata_must_match_hub_intent_offered_metadata_rej
         .expect("Failed to create validator");
 
     // Create a hub intent with specific offered_metadata
-    let hub_intent = create_base_intent_mvm();
+    let hub_intent = create_default_intent_mvm();
 
     // Create an escrow with mismatched offered_metadata
     let escrow_mismatch = EscrowEvent {
         offered_metadata: "{\"inner\":\"0xdifferent_meta\"}".to_string(),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     // The validation function should complete successfully (return Ok, not Err)
@@ -294,12 +294,12 @@ async fn test_escrow_offered_metadata_empty_strings() {
     let hub_intent_empty = IntentEvent {
         offered_metadata: "".to_string(),
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
     let escrow_empty = EscrowEvent {
         offered_metadata: "".to_string(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -320,12 +320,12 @@ async fn test_escrow_offered_metadata_empty_strings() {
     let hub_intent_with_meta = IntentEvent {
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
     let escrow_empty_2 = EscrowEvent {
         offered_metadata: "".to_string(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -350,12 +350,12 @@ async fn test_escrow_offered_metadata_empty_strings() {
     let hub_intent_empty_3 = IntentEvent {
         offered_metadata: "".to_string(),
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
     let escrow_with_meta = EscrowEvent {
         offered_metadata: "{\"inner\":\"0xoffered_meta\"}".to_string(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -396,12 +396,12 @@ async fn test_escrow_offered_metadata_complex_json() {
     let hub_intent_complex = IntentEvent {
         offered_metadata: complex_metadata.to_string(),
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
     let escrow_complex_match = EscrowEvent {
         offered_metadata: complex_metadata.to_string(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -426,7 +426,7 @@ async fn test_escrow_offered_metadata_complex_json() {
     let escrow_complex_mismatch = EscrowEvent {
         offered_metadata: complex_metadata_2.to_string(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -453,7 +453,7 @@ async fn test_escrow_offered_metadata_complex_json() {
     let escrow_complex_mismatch_2 = EscrowEvent {
         offered_metadata: complex_metadata_3.to_string(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -491,13 +491,13 @@ async fn test_escrow_desired_amount_must_be_zero_success() {
     // Create a hub intent with solver
     let hub_intent = IntentEvent {
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Validation passes when desired_amount is 0
     let escrow_valid = EscrowEvent {
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
     // Ensure desired_amount is 0 (it's already set to 0 in the helper)
     assert_eq!(
@@ -533,12 +533,12 @@ async fn test_escrow_desired_amount_must_be_zero_rejection() {
         .expect("Failed to create validator");
 
     // Create a hub intent
-    let hub_intent = create_base_intent_mvm();
+    let hub_intent = create_default_intent_mvm();
 
     // Validation fails when desired_amount is non-zero
     let escrow_invalid = EscrowEvent {
         desired_amount: 1,
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -575,13 +575,13 @@ async fn test_escrow_rejection_when_connected_chain_id_is_none() {
     // Create a hub intent without connected_chain_id
     let hub_intent = IntentEvent {
         connected_chain_id: None,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create an escrow with a chain_id
     let escrow = EscrowEvent {
         chain_id: 999,
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -620,13 +620,13 @@ async fn test_escrow_chain_id_mismatch_rejection() {
     // Create a hub intent with connected_chain_id
     let hub_intent = IntentEvent {
         connected_chain_id: Some(31337),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create an escrow with mismatched chain_id
     let escrow_mismatch = EscrowEvent {
         chain_id: 999, // Different from connected_chain_id (31337)
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =

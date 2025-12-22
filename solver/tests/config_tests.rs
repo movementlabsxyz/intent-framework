@@ -3,11 +3,12 @@
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    create_base_token_pair, DUMMY_MODULE_ADDR_CON, DUMMY_MODULE_ADDR_HUB, DUMMY_SOLVER_ADDR_EVM,
+    create_default_connected_mvm_chain_config, create_default_hub_chain_config,
+    create_default_service_config, create_default_solver_signing_config, create_default_token_pair,
     DUMMY_TOKEN_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON, DUMMY_TOKEN_ADDR_MVM_HUB,
 };
 
-use solver::config::{AcceptanceConfig, ChainConfig, ConnectedChainConfig, ServiceConfig, SolverConfig, SolverSigningConfig};
+use solver::config::{AcceptanceConfig, ChainConfig, ConnectedChainConfig, SolverConfig};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -17,24 +18,11 @@ use std::collections::HashMap;
 /// Create a minimal valid SolverConfig for testing
 fn create_test_config() -> SolverConfig {
     SolverConfig {
-        service: ServiceConfig {
-            verifier_url: "http://127.0.0.1:3333".to_string(),
-            polling_interval_ms: 2000,
-        },
-        hub_chain: ChainConfig {
-            name: "Hub Chain".to_string(),
-            rpc_url: "http://127.0.0.1:8080/v1".to_string(),
-            chain_id: 1,
-            module_addr: DUMMY_MODULE_ADDR_HUB.to_string(),
-            profile: "solver-chain1".to_string(),
-        },
-        connected_chain: ConnectedChainConfig::Mvm(ChainConfig {
-            name: "Connected Chain".to_string(),
-            rpc_url: "http://127.0.0.1:8082/v1".to_string(),
-            chain_id: 2,
-            module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
-            profile: "solver-chain2".to_string(),
-        }),
+        service: create_default_service_config(),
+        hub_chain: create_default_hub_chain_config(),
+        connected_chain: ConnectedChainConfig::Mvm(
+            create_default_connected_mvm_chain_config(),
+        ),
         acceptance: AcceptanceConfig {
             token_pairs: {
                 let mut pairs = HashMap::new();
@@ -45,10 +33,7 @@ fn create_test_config() -> SolverConfig {
                 pairs
             },
         },
-        solver: SolverSigningConfig {
-            profile: "solver-chain1".to_string(),
-            address: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        },
+        solver: create_default_solver_signing_config(),
     }
 }
 
@@ -71,11 +56,8 @@ fn test_config_validation_duplicate_chain_ids() {
     let mut config = create_test_config();
     // Set connected chain to same ID as hub
     config.connected_chain = ConnectedChainConfig::Mvm(ChainConfig {
-        name: "Connected Chain".to_string(),
-        rpc_url: "http://127.0.0.1:8082/v1".to_string(),
         chain_id: 1, // Same as hub chain
-        module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
-        profile: "solver-chain2".to_string(),
+        ..create_default_connected_mvm_chain_config()
     });
 
     let result = config.validate();
@@ -160,10 +142,7 @@ fn test_get_token_pairs_success() {
 
     assert_eq!(pairs.len(), 1);
     
-    use solver::TokenPair;
-    let expected_pair = TokenPair {
-        ..create_base_token_pair()
-    };
+    let expected_pair = create_default_token_pair();
     
     assert!(pairs.contains_key(&expected_pair));
     assert_eq!(pairs[&expected_pair], 1.0);
@@ -216,7 +195,7 @@ fn test_get_token_pairs_token_address() {
     use solver::TokenPair;
     let expected_pair = TokenPair {
         desired_token: DUMMY_TOKEN_ADDR_EVM.to_string(), // Connected chain token (EVM format, different from base)
-        ..create_base_token_pair() // Uses base for offered_token and chain_id fields
+        ..create_default_token_pair() // Uses default for offered_token and chain_id fields
     };
     
     assert!(pairs.contains_key(&expected_pair));
@@ -251,11 +230,11 @@ fn test_config_toml_roundtrip() {
 fn test_connected_chain_mvm_deserialization() {
     let toml_str = r#"
 type = "mvm"
-name = "Connected Chain"
+name = "connected-chain"
 rpc_url = "http://127.0.0.1:8082/v1"
 chain_id = 2
 module_addr = "0x2"
-profile = "solver-chain2"
+profile = "connected-profile"
 "#;
 
     let chain: ConnectedChainConfig = toml::from_str(toml_str).unwrap();
@@ -263,7 +242,7 @@ profile = "solver-chain2"
     match chain {
         ConnectedChainConfig::Mvm(config) => {
             assert_eq!(config.chain_id, 2);
-            assert_eq!(config.name, "Connected Chain");
+            assert_eq!(config.name, "connected-chain");
         }
         ConnectedChainConfig::Evm(_) => panic!("Expected MVM config"),
     }
@@ -319,25 +298,25 @@ verifier_url = "http://127.0.0.1:3333"
 polling_interval_ms = 2000
 
 [hub_chain]
-name = "Hub Chain"
+name = "hub-chain"
 rpc_url = "http://127.0.0.1:8080/v1"
 chain_id = 1
 module_addr = "0x1"
-profile = "solver-chain1"
+profile = "hub-profile"
 
 [connected_chain]
 type = "mvm"
-name = "Connected Chain"
+name = "connected-chain"
 rpc_url = "http://127.0.0.1:8082/v1"
 chain_id = 2
 module_addr = "0x2"
-profile = "solver-chain2"
+profile = "connected-profile"
 
 [acceptance]
 "1:0xaaa:2:0xbbb" = 1.0
 
 [solver]
-profile = "solver-chain1"
+profile = "hub-profile"
 address = "0xccc"
 "#;
     

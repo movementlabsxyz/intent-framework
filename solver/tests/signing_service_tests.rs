@@ -6,8 +6,7 @@
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    DUMMY_EXPIRY, DUMMY_INTENT_ID, DUMMY_MODULE_ADDR_CON, DUMMY_MODULE_ADDR_HUB,
-    DUMMY_REQUESTER_ADDR_EVM, DUMMY_SOLVER_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON,
+    DUMMY_EXPIRY, DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON,
     DUMMY_TOKEN_ADDR_MVM_HUB,
 };
 
@@ -20,7 +19,7 @@ use std::sync::Arc;
 // ============================================================================
 
 /// Create a base draft data JSON with valid test values
-fn create_base_draft_data() -> serde_json::Value {
+fn create_default_draft_data() -> serde_json::Value {
     json!({
         "intent_id": DUMMY_INTENT_ID,
         "offered_metadata": DUMMY_TOKEN_ADDR_MVM_HUB,
@@ -36,8 +35,13 @@ fn create_base_draft_data() -> serde_json::Value {
 /// Create a minimal SolverConfig for testing
 /// Configures token pairs to match the base draft data so drafts would be accepted if not expired
 fn create_test_solver_config() -> solver::config::SolverConfig {
-    use solver::config::{AcceptanceConfig, ChainConfig, ConnectedChainConfig, ServiceConfig, SolverConfig, SolverSigningConfig};
+    use solver::config::{AcceptanceConfig, SolverConfig};
     use std::collections::HashMap;
+    use test_helpers::{
+        create_default_connected_mvm_chain_config, create_default_hub_chain_config,
+        create_default_service_config, create_default_solver_signing_config, DUMMY_TOKEN_ADDR_MVM_CON,
+        DUMMY_TOKEN_ADDR_MVM_HUB,
+    };
 
     let mut token_pairs = HashMap::new();
     token_pairs.insert(
@@ -46,31 +50,15 @@ fn create_test_solver_config() -> solver::config::SolverConfig {
     );
 
     SolverConfig {
-        service: ServiceConfig {
-            verifier_url: "http://127.0.0.1:3333".to_string(),
-            polling_interval_ms: 2000,
-        },
-        hub_chain: ChainConfig {
-            name: "Hub Chain".to_string(),
-            rpc_url: "http://127.0.0.1:8080/v1".to_string(),
-            chain_id: 1,
-            module_addr: DUMMY_MODULE_ADDR_HUB.to_string(),
-            profile: "test-profile".to_string(),
-        },
-        connected_chain: ConnectedChainConfig::Mvm(ChainConfig {
-            name: "Connected Chain".to_string(),
-            rpc_url: "http://127.0.0.1:8082/v1".to_string(),
-            chain_id: 2,
-            module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
-            profile: "test-profile".to_string(),
-        }),
+        service: create_default_service_config(),
+        hub_chain: create_default_hub_chain_config(),
+        connected_chain: solver::config::ConnectedChainConfig::Mvm(
+            create_default_connected_mvm_chain_config(),
+        ),
         acceptance: AcceptanceConfig {
             token_pairs,
         },
-        solver: SolverSigningConfig {
-            profile: "test-profile".to_string(),
-            address: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        },
+        solver: create_default_solver_signing_config(),
     }
 }
 
@@ -79,7 +67,7 @@ fn create_test_pending_draft(expiry_time: u64) -> solver::verifier_client::Pendi
     solver::verifier_client::PendingDraft {
         draft_id: "test-draft-1".to_string(),
         requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(),
-        draft_data: create_base_draft_data(),
+        draft_data: create_default_draft_data(),
         timestamp: DUMMY_EXPIRY,
         expiry_time,
     }
@@ -93,7 +81,7 @@ fn create_test_pending_draft(expiry_time: u64) -> solver::verifier_client::Pendi
 /// Why: Ensure the parser extracts all required fields correctly from well-formed input
 #[test]
 fn test_parse_draft_data_success() {
-    let draft_data = create_base_draft_data();
+    let draft_data = create_default_draft_data();
     let result = parse_draft_data(&draft_data).unwrap();
 
     assert_eq!(result.offered_token, DUMMY_TOKEN_ADDR_MVM_HUB);

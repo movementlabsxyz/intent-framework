@@ -7,7 +7,7 @@ use trusted_verifier::monitor::IntentEvent;
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    create_base_intent_evm, DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM_HUB, setup_mock_server_with_error,
+    create_default_intent_evm, DUMMY_SOLVER_ADDR_EVM, DUMMY_SOLVER_ADDR_MVM_HUB, setup_mock_server_with_error,
     setup_mock_server_with_evm_address_response,
 };
 
@@ -22,8 +22,7 @@ fn create_test_intent(solver_addr: Option<String>) -> IntentEvent {
         desired_metadata: "{}".to_string(),
         expiry_time: 1000000,
         reserved_solver_addr: solver_addr,
-        connected_chain_id: Some(31337),
-        ..create_base_intent_evm()
+        ..create_default_intent_evm()
     }
 }
 

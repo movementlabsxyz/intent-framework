@@ -6,7 +6,7 @@ use trusted_verifier::crypto::CryptoService;
 
 #[path = "../mod.rs"]
 mod test_helpers;
-use test_helpers::{build_test_config_with_mvm, create_base_fulfillment};
+use test_helpers::{build_test_config_with_mvm, create_default_fulfillment};
 
 /// Test that crypto service creates different key pairs for each instance
 /// Why: Ensure each verifier instance has a unique cryptographic identity to prevent key collisions
@@ -162,7 +162,7 @@ fn test_mvm_signature_intent_id_validation() {
     let service = CryptoService::new(&config).unwrap();
 
     // Test with valid intent ID from base helper (should succeed)
-    let base_fulfillment = create_base_fulfillment();
+    let base_fulfillment = create_default_fulfillment();
     let valid_intent_id = &base_fulfillment.intent_id;
     let result = service.create_mvm_approval_signature(valid_intent_id);
     assert!(

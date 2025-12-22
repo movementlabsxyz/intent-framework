@@ -8,7 +8,7 @@ use trusted_verifier::validator::CrossChainValidator;
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_mvm, create_base_fulfillment, create_base_intent_mvm,
+    build_test_config_with_mvm, create_default_fulfillment, create_default_intent_mvm,
 };
 
 // ============================================================================
@@ -34,7 +34,7 @@ async fn test_expired_intent_rejection_in_validate_intent_safety() {
     let past_expiry = current_time - 1000; // Expired 1000 seconds ago
     let intent = IntentEvent {
         expiry_time: past_expiry,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     let result = validator
@@ -69,7 +69,7 @@ async fn test_non_expired_intent_acceptance_in_validate_intent_safety() {
     let future_expiry = current_time + 1000; // Expires in 1000 seconds
     let intent = IntentEvent {
         expiry_time: future_expiry,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     let result = validator
@@ -103,7 +103,7 @@ async fn test_intent_expires_exactly_at_current_time() {
     let current_time = chrono::Utc::now().timestamp() as u64;
     let intent = IntentEvent {
         expiry_time: current_time,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     let result = validator
@@ -150,7 +150,7 @@ async fn test_fulfillment_timestamp_validation_after_expiry() {
     let expiry_time = current_time + 100; // Expires in 100 seconds
     let intent = IntentEvent {
         expiry_time,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create a fulfillment with timestamp after expiry
@@ -160,7 +160,7 @@ async fn test_fulfillment_timestamp_validation_after_expiry() {
         intent_id: intent.intent_id.clone(),
         provided_amount: intent.desired_amount,
         provided_metadata: intent.desired_metadata.clone(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     let result = validator
@@ -194,7 +194,7 @@ async fn test_fulfillment_timestamp_validation_before_expiry() {
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
     let intent = IntentEvent {
         expiry_time,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create a fulfillment with timestamp before expiry
@@ -204,7 +204,7 @@ async fn test_fulfillment_timestamp_validation_before_expiry() {
         intent_id: intent.intent_id.clone(),
         provided_amount: intent.desired_amount,
         provided_metadata: intent.desired_metadata.clone(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     let result = validator
@@ -238,7 +238,7 @@ async fn test_fulfillment_timestamp_validation_at_expiry() {
     let expiry_time = current_time + 1000; // Expires in 1000 seconds
     let intent = IntentEvent {
         expiry_time,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create a fulfillment with timestamp exactly at expiry
@@ -247,7 +247,7 @@ async fn test_fulfillment_timestamp_validation_at_expiry() {
         intent_id: intent.intent_id.clone(),
         provided_amount: intent.desired_amount,
         provided_metadata: intent.desired_metadata.clone(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     let result = validator
@@ -286,7 +286,7 @@ async fn test_fulfillment_validation_success() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create a fulfillment that matches all requirements
@@ -296,7 +296,7 @@ async fn test_fulfillment_validation_success() {
         intent_id: intent.intent_id.clone(),
         provided_amount: intent.desired_amount,
         provided_metadata: intent.desired_metadata.clone(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     let result = validator
@@ -332,7 +332,7 @@ async fn test_fulfillment_amount_mismatch_rejection() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create a fulfillment with different provided_amount
@@ -342,7 +342,7 @@ async fn test_fulfillment_amount_mismatch_rejection() {
         intent_id: intent.intent_id.clone(),
         provided_amount: 300, // Different amount than desired_amount (500)
         provided_metadata: intent.desired_metadata.clone(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     let result = validator
@@ -379,7 +379,7 @@ async fn test_fulfillment_metadata_mismatch_rejection() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create a fulfillment with different provided_metadata
@@ -389,7 +389,7 @@ async fn test_fulfillment_metadata_mismatch_rejection() {
         intent_id: intent.intent_id.clone(),
         provided_amount: intent.desired_amount,
         provided_metadata: "{\"token\":\"USDT\"}".to_string(), // Different metadata than desired_metadata
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     let result = validator
@@ -426,7 +426,7 @@ async fn test_fulfillment_intent_id_mismatch_rejection() {
         expiry_time,
         desired_amount: 500,
         desired_metadata: "{\"token\":\"USDC\"}".to_string(),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create a fulfillment with different intent_id
@@ -436,7 +436,7 @@ async fn test_fulfillment_intent_id_mismatch_rejection() {
         intent_id: "0xdifferent_intent_id".to_string(), // Different intent_id
         provided_amount: intent.desired_amount,
         provided_metadata: intent.desired_metadata.clone(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     let result = validator

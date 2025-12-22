@@ -8,7 +8,7 @@ use trusted_verifier::validator::CrossChainValidator;
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_mvm, create_base_escrow_event, create_base_intent_mvm,
+    build_test_config_with_mvm, create_default_escrow_event, create_default_intent_mvm,
     setup_mock_server_with_solver_registry, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
 };
 
@@ -32,13 +32,13 @@ async fn test_escrow_solver_address_matching_success() {
     // Create a hub intent with a solver
     let hub_intent = IntentEvent {
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create an escrow with matching connected chain MVM solver address
     let escrow_match = EscrowEvent {
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -78,13 +78,13 @@ async fn test_escrow_solver_address_mismatch_rejection() {
     // Create a hub intent with a solver
     let hub_intent = IntentEvent {
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Create an escrow with different solver address (doesn't match registered connected chain MVM address)
     let escrow_mismatch = EscrowEvent {
         reserved_solver_addr: Some(different_solver_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -116,14 +116,11 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
         .expect("Failed to create validator");
 
     // Test case 1: Hub intent has solver, escrow doesn't
-    let hub_intent_with_solver = IntentEvent {
-        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
-        ..create_base_intent_mvm()
-    };
+    let hub_intent_with_solver = create_default_intent_mvm();
 
     let escrow_without_solver = EscrowEvent {
         reserved_solver_addr: None,
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     let validation_result =
@@ -147,13 +144,10 @@ async fn test_escrow_solver_reservation_mismatch_rejection() {
     // Test case 2: Escrow has solver, hub intent doesn't
     let hub_intent_without_solver = IntentEvent {
         reserved_solver_addr: None,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
-    let escrow_with_solver = EscrowEvent {
-        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_MVM_HUB.to_string()),
-        ..create_base_escrow_event()
-    };
+    let escrow_with_solver = create_default_escrow_event();
 
     let validation_result =
         trusted_verifier::validator::inflow_generic::validate_intent_fulfillment(

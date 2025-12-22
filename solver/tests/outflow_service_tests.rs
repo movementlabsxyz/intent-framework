@@ -12,8 +12,7 @@ use std::sync::Arc;
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    DUMMY_INTENT_ID, DUMMY_MODULE_ADDR_HUB, DUMMY_MODULE_ADDR_CON, DUMMY_SOLVER_ADDR_EVM,
-    DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
+    create_default_solver_config, DUMMY_INTENT_ID, DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
 };
 
 // ============================================================================
@@ -21,35 +20,7 @@ use test_helpers::{
 // ============================================================================
 
 fn create_test_config() -> SolverConfig {
-    SolverConfig {
-        service: solver::config::ServiceConfig {
-            verifier_url: "http://127.0.0.1:3333".to_string(),
-            polling_interval_ms: 2000,
-        },
-        hub_chain: solver::config::ChainConfig {
-            name: "test-hub".to_string(),
-            rpc_url: "http://127.0.0.1:8080".to_string(),
-            chain_id: 1,
-            module_addr: DUMMY_MODULE_ADDR_HUB.to_string(),
-            profile: "test-profile".to_string(),
-        },
-        connected_chain: solver::config::ConnectedChainConfig::Mvm(
-            solver::config::ChainConfig {
-                name: "test-mvm".to_string(),
-                rpc_url: "http://127.0.0.1:8082".to_string(),
-                chain_id: 2,
-                module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
-                profile: "test-profile".to_string(),
-            },
-        ),
-        acceptance: solver::config::AcceptanceConfig {
-            token_pairs: std::collections::HashMap::new(),
-        },
-        solver: solver::config::SolverSigningConfig {
-            profile: "test-profile".to_string(),
-            address: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        },
-    }
+    create_default_solver_config()
 }
 
 // Helper function for creating outflow draft data (available for future tests)

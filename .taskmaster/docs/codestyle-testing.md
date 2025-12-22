@@ -72,12 +72,12 @@ For test-specific values that aren't reusable constants:
 
 ### 8. Struct Update Syntax Pattern
 
-Use Rust's struct update syntax with base helper functions to reduce duplication:
+Use Rust's struct update syntax with default helper functions to reduce duplication:
 
-- ✅ **Use `..function_name()`** to fill remaining struct fields from base helper functions
-- ✅ **Override only specific fields** that differ from the base
-- ✅ **Create base helper functions** (e.g., `create_base_intent_mvm()`, `create_base_escrow_event()`) that return structs with sensible defaults
-- ✅ **Chain base functions** when appropriate (e.g., `create_base_intent_evm()` can use `..create_base_intent_mvm()`)
+- ✅ **Use `..function_name()`** to fill remaining struct fields from default helper functions
+- ✅ **Override only specific fields** that differ from the default
+- ✅ **Create default helper functions** (e.g., `create_default_intent_mvm()`, `create_default_escrow_event()`) that return structs with sensible defaults
+- ✅ **Chain default functions** when appropriate (e.g., `create_default_intent_evm()` can use `..create_default_intent_mvm()`)
 
 **Example:**
 
@@ -86,7 +86,7 @@ let evm_escrow = EscrowEvent {
     intent_id: hub_intent.intent_id.clone(),  // Override specific fields
     escrow_id: hub_intent.intent_id.clone(),
     requester_addr: hub_intent.requester_addr.clone(),
-    ..create_base_escrow_event_evm()  // Fill in the rest from base
+    ..create_default_escrow_event_evm()  // Fill in the rest from default
 };
 ```
 
@@ -95,7 +95,7 @@ let evm_escrow = EscrowEvent {
 - Reduces code duplication
 - Makes tests more maintainable
 - Allows focusing on fields that matter for each test
-- Base helpers provide consistent defaults across tests
+- Default helpers provide consistent defaults across tests
 
 ### 9. Format Requirements
 

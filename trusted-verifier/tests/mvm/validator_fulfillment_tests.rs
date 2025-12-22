@@ -15,8 +15,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_mvm, create_base_fulfillment_transaction_params_mvm,
-    create_base_mvm_transaction, create_base_intent_mvm, setup_mock_server_with_registry_mvm,
+    build_test_config_with_mvm, create_default_fulfillment_transaction_params_mvm,
+    create_default_mvm_transaction, create_default_intent_mvm, setup_mock_server_with_registry_mvm,
     DUMMY_INTENT_ID, DUMMY_METADATA_ADDR_MVM, DUMMY_REQUESTER_ADDR_MVM_CON, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
     DUMMY_SOLVER_REGISTRY_ADDR,
 };
@@ -44,7 +44,7 @@ fn test_extract_mvm_fulfillment_params_success() {
                 DUMMY_INTENT_ID // intent_id
             ]
         })),
-        ..create_base_mvm_transaction()
+        ..create_default_mvm_transaction()
     };
 
     let result = extract_mvm_fulfillment_params(&tx);
@@ -90,7 +90,7 @@ fn test_extract_mvm_fulfillment_params_amount_as_number() {
                 DUMMY_INTENT_ID // intent_id
             ]
         })),
-        ..create_base_mvm_transaction()
+        ..create_default_mvm_transaction()
     };
 
     let result = extract_mvm_fulfillment_params(&tx);
@@ -120,7 +120,7 @@ fn test_extract_mvm_fulfillment_params_amount_as_decimal_string() {
                 DUMMY_INTENT_ID // intent_id
             ]
         })),
-        ..create_base_mvm_transaction()
+        ..create_default_mvm_transaction()
     };
 
     let result = extract_mvm_fulfillment_params(&tx);
@@ -147,7 +147,7 @@ fn test_extract_mvm_fulfillment_params_wrong_function() {
             "function": "0x123::utils::transfer",
             "arguments": ["0xrecipient", "0xmetadata", "0x100"]
         })),
-        ..create_base_mvm_transaction()
+        ..create_default_mvm_transaction()
     };
 
     let result = extract_mvm_fulfillment_params(&tx);
@@ -170,7 +170,7 @@ fn test_extract_mvm_fulfillment_params_wrong_function() {
 fn test_extract_mvm_fulfillment_params_missing_payload() {
     let tx = MvmTransaction {
         payload: None,
-        ..create_base_mvm_transaction()
+        ..create_default_mvm_transaction()
     };
 
     let result = extract_mvm_fulfillment_params(&tx);
@@ -209,7 +209,7 @@ fn test_extract_mvm_fulfillment_params_address_normalization() {
         sender: Some(
             DUMMY_SOLVER_ADDR_MVM_HUB.to_string(), // solver
         ),
-        ..create_base_mvm_transaction()
+        ..create_default_mvm_transaction()
     };
 
     let result = extract_mvm_fulfillment_params(&tx);
@@ -277,13 +277,13 @@ async fn test_validate_outflow_fulfillment_success() {
     let intent = IntentEvent {
         desired_amount: 25000000, // For outflow intents, validation uses desired_amount (amount desired on connected chain)
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: 25000000,
         solver_addr: solver_connected_chain_mvm_addr.to_string(),
-        ..create_base_fulfillment_transaction_params_mvm()
+        ..create_default_fulfillment_transaction_params_mvm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -309,11 +309,11 @@ async fn test_validate_outflow_fulfillment_fails_on_unsuccessful_tx() {
         .await
         .expect("Failed to create validator");
 
-    let intent = create_base_intent_mvm();
+    let intent = create_default_intent_mvm();
     let tx_params = FulfillmentTransactionParams {
         intent_id: intent.intent_id.clone(),
         amount: intent.desired_amount,
-        ..create_base_fulfillment_transaction_params_mvm()
+        ..create_default_fulfillment_transaction_params_mvm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, false).await;
@@ -343,11 +343,11 @@ async fn test_validate_outflow_fulfillment_fails_on_intent_id_mismatch() {
         .await
         .expect("Failed to create validator");
 
-    let intent = create_base_intent_mvm();
+    let intent = create_default_intent_mvm();
     let tx_params = FulfillmentTransactionParams {
         intent_id: "0xwrong_intent_id".to_string(), // Different intent_id
         amount: intent.desired_amount,
-        ..create_base_fulfillment_transaction_params_mvm()
+        ..create_default_fulfillment_transaction_params_mvm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -377,12 +377,12 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
         .await
         .expect("Failed to create validator");
 
-    let intent = create_base_intent_mvm();
+    let intent = create_default_intent_mvm();
 
     let tx_params = FulfillmentTransactionParams {
         recipient_addr: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd".to_string(), // Different recipient (Move VM address format)
         amount: intent.desired_amount,
-        ..create_base_fulfillment_transaction_params_mvm()
+        ..create_default_fulfillment_transaction_params_mvm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -414,12 +414,12 @@ async fn test_validate_outflow_fulfillment_fails_on_amount_mismatch() {
 
     let intent = IntentEvent {
         desired_amount: 1000,
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: 500, // Different amount
-        ..create_base_fulfillment_transaction_params_mvm()
+        ..create_default_fulfillment_transaction_params_mvm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;
@@ -468,12 +468,12 @@ async fn test_validate_outflow_fulfillment_fails_on_solver_not_registered() {
     let intent = IntentEvent {
         desired_amount: 1000, // Set desired_amount to avoid validation failure on amount check
         reserved_solver_addr: Some(unregistered_solver.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     let tx_params = FulfillmentTransactionParams {
         amount: intent.desired_amount,
-        ..create_base_fulfillment_transaction_params_mvm()
+        ..create_default_fulfillment_transaction_params_mvm()
     };
 
     let result = validate_outflow_fulfillment(&validator, &intent, &tx_params, true).await;

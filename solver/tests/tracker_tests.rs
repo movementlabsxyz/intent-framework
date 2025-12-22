@@ -8,9 +8,8 @@ use solver::{
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    DUMMY_DRAFT_ID, DUMMY_EXPIRY, DUMMY_INTENT_ID, DUMMY_MODULE_ADDR_CON, DUMMY_MODULE_ADDR_HUB,
-    DUMMY_REQUESTER_ADDR_EVM, DUMMY_SOLVER_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON,
-    DUMMY_TOKEN_ADDR_MVM_HUB,
+    create_default_solver_config, DUMMY_DRAFT_ID, DUMMY_EXPIRY, DUMMY_INTENT_ID,
+    DUMMY_REQUESTER_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON, DUMMY_TOKEN_ADDR_MVM_HUB,
 };
 
 // ============================================================================
@@ -18,38 +17,11 @@ use test_helpers::{
 // ============================================================================
 
 fn create_test_config() -> SolverConfig {
-    SolverConfig {
-        service: solver::config::ServiceConfig {
-            verifier_url: "http://127.0.0.1:3333".to_string(),
-            polling_interval_ms: 2000,
-        },
-        hub_chain: solver::config::ChainConfig {
-            name: "test-hub".to_string(),
-            rpc_url: "http://127.0.0.1:8080".to_string(),
-            chain_id: 1,
-            module_addr: DUMMY_MODULE_ADDR_HUB.to_string(),
-            profile: "test-profile".to_string(),
-        },
-        connected_chain: solver::config::ConnectedChainConfig::Mvm(
-            solver::config::ChainConfig {
-                name: "test-mvm".to_string(),
-                rpc_url: "http://127.0.0.1:8082".to_string(),
-                chain_id: 2,
-                module_addr: DUMMY_MODULE_ADDR_CON.to_string(),
-                profile: "test-profile".to_string(),
-            },
-        ),
-        acceptance: solver::config::AcceptanceConfig {
-            token_pairs: std::collections::HashMap::new(),
-        },
-        solver: solver::config::SolverSigningConfig {
-            profile: "test-profile".to_string(),
-            address: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        },
-    }
+    create_default_solver_config()
 }
 
-fn create_test_draft_data() -> DraftintentData {
+/// Create default draft data for inflow intents (tokens locked on connected chain)
+fn create_default_draft_data_inflow() -> DraftintentData {
     DraftintentData {
         intent_id: DUMMY_INTENT_ID.to_string(),
         offered_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
@@ -58,6 +30,19 @@ fn create_test_draft_data() -> DraftintentData {
         desired_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
         desired_amount: 2000,
         desired_chain_id: 1, // Hub chain
+    }
+}
+
+/// Create default draft data for outflow intents (tokens locked on hub chain)
+fn create_default_draft_data_outflow() -> DraftintentData {
+    DraftintentData {
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
+        offered_amount: 1000,
+        offered_chain_id: 1, // Hub chain (outflow)
+        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
+        desired_amount: 2000,
+        desired_chain_id: 2, // Connected chain
     }
 }
 
@@ -80,7 +65,7 @@ async fn test_add_signed_intent() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
-    let draft_data = create_test_draft_data();
+    let draft_data = create_default_draft_data_inflow();
     tracker
         .add_signed_intent(
             DUMMY_DRAFT_ID.to_string(),
@@ -111,10 +96,7 @@ async fn test_add_signed_intent_inflow_outflow() {
     let tracker = IntentTracker::new(&config).unwrap();
 
     // Test inflow intent (tokens locked on connected chain)
-    let inflow_data = DraftintentData {
-        offered_chain_id: 2, // Connected chain
-        ..create_test_draft_data()
-    };
+    let inflow_data = create_default_draft_data_inflow();
     tracker
         .add_signed_intent(
             "inflow-draft".to_string(),
@@ -126,11 +108,7 @@ async fn test_add_signed_intent_inflow_outflow() {
         .unwrap();
 
     // Test outflow intent (tokens locked on hub chain, desired on connected)
-    let outflow_data = DraftintentData {
-        offered_chain_id: 1, // Hub chain
-        desired_chain_id: 2, // Connected chain
-        ..create_test_draft_data()
-    };
+    let outflow_data = create_default_draft_data_outflow();
     tracker
         .add_signed_intent(
             "outflow-draft".to_string(),
@@ -157,7 +135,7 @@ async fn test_get_intents_ready_for_fulfillment_state_filter() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
-    let draft_data = create_test_draft_data();
+    let draft_data = create_default_draft_data_inflow();
 
     // Add signed draftintent (Signed state - not yet on-chain)
     tracker
@@ -192,10 +170,7 @@ async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
     let tracker = IntentTracker::new(&config).unwrap();
 
     // Add inflow intent
-    let inflow_data = DraftintentData {
-        offered_chain_id: 2,
-        ..create_test_draft_data()
-    };
+    let inflow_data = create_default_draft_data_inflow();
     tracker
         .add_signed_intent(
             "inflow-draft".to_string(),
@@ -207,11 +182,7 @@ async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
         .unwrap();
 
     // Add outflow intent (offered on hub, desired on connected)
-    let outflow_data = DraftintentData {
-        offered_chain_id: 1, // Hub chain
-        desired_chain_id: 2, // Connected chain
-        ..create_test_draft_data()
-    };
+    let outflow_data = create_default_draft_data_outflow();
     tracker
         .add_signed_intent(
             "outflow-draft".to_string(),
@@ -248,7 +219,7 @@ async fn test_mark_fulfilled() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
-    let draft_data = create_test_draft_data();
+    let draft_data = create_default_draft_data_inflow();
     tracker
         .add_signed_intent(
             "draft-1".to_string(),
@@ -320,7 +291,7 @@ async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
-    let draft_data = create_test_draft_data();
+    let draft_data = create_default_draft_data_inflow();
 
     // Add two intents
     tracker
@@ -368,7 +339,7 @@ async fn test_get_intents_ready_for_fulfillment_returns_only_created() {
     let config = create_test_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
-    let draft_data = create_test_draft_data();
+    let draft_data = create_default_draft_data_inflow();
 
     // Add signed draftintent (Signed state - not yet on-chain)
     tracker

@@ -8,8 +8,8 @@ use trusted_verifier::monitor::{EscrowEvent, EventMonitor, FulfillmentEvent, Int
 #[path = "mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_mvm, create_base_escrow_event, create_base_fulfillment,
-    create_base_intent_mvm, setup_mock_server_with_solver_registry_config,
+    build_test_config_with_mvm, create_default_escrow_event, create_default_fulfillment,
+    create_default_intent_mvm, setup_mock_server_with_solver_registry_config,
     DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_SOLVER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_CON,
 };
 
@@ -83,7 +83,7 @@ fn test_revocable_intent_rejection() {
     let revocable_intent = IntentEvent {
         intent_id: "0xrevocable".to_string(),
         revocable: true, // NOT safe for escrow
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Simulate validation: revocable intents should be rejected
@@ -92,7 +92,7 @@ fn test_revocable_intent_rejection() {
 
     let non_revocable_intent = IntentEvent {
         intent_id: "0xsafe".to_string(),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     let result = is_safe_for_escrow(&non_revocable_intent);
@@ -124,7 +124,7 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
             intent_id: intent_id.to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_addr.to_string()),
-            ..create_base_intent_mvm()
+            ..create_default_intent_mvm()
         });
     }
 
@@ -135,14 +135,14 @@ async fn test_generates_approval_when_fulfillment_and_escrow_present() {
             intent_id: intent_id.to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         });
     }
 
     // Act: call approval generation on fulfillment with same intent_id
     let fulfillment = FulfillmentEvent {
         intent_id: intent_id.to_string(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
     monitor
         .validate_and_approve_fulfillment(&fulfillment)
@@ -174,7 +174,7 @@ async fn test_returns_error_when_no_matching_escrow() {
 
     let fulfillment = FulfillmentEvent {
         intent_id: "0x999".to_string(), // Valid hex but no matching escrow
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     // Act: try to generate approval without matching escrow
@@ -220,19 +220,19 @@ async fn test_multiple_concurrent_intents() {
             intent_id: "0x01".to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_addr.to_string()),
-            ..create_base_intent_mvm()
+            ..create_default_intent_mvm()
         },
         IntentEvent {
             intent_id: "0x02".to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_addr.to_string()),
-            ..create_base_intent_mvm()
+            ..create_default_intent_mvm()
         },
         IntentEvent {
             intent_id: "0x03".to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_addr.to_string()),
-            ..create_base_intent_mvm()
+            ..create_default_intent_mvm()
         },
     ];
 
@@ -249,21 +249,21 @@ async fn test_multiple_concurrent_intents() {
             intent_id: "0x01".to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow2".to_string(),
             intent_id: "0x02".to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         },
         EscrowEvent {
             escrow_id: "0xescrow3".to_string(),
             intent_id: "0x03".to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         },
     ];
 
@@ -277,15 +277,15 @@ async fn test_multiple_concurrent_intents() {
     let fulfillments = vec![
         FulfillmentEvent {
             intent_id: "0x01".to_string(),
-            ..create_base_fulfillment()
+            ..create_default_fulfillment()
         },
         FulfillmentEvent {
             intent_id: "0x02".to_string(),
-            ..create_base_fulfillment()
+            ..create_default_fulfillment()
         },
         FulfillmentEvent {
             intent_id: "0x03".to_string(),
-            ..create_base_fulfillment()
+            ..create_default_fulfillment()
         },
     ];
 
@@ -369,7 +369,7 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
         intent_id: "0xexpired_intent".to_string(),
         expiry_time: past_expiry,
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Add expired intent to cache
@@ -386,7 +386,7 @@ async fn test_expiry_check_failure_in_monitor_validate_intent_fulfillment() {
     let escrow_event = EscrowEvent {
         intent_id: expired_intent.intent_id.clone(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     // Verify that validation fails when intent has expired
@@ -433,7 +433,7 @@ async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
         intent_id: "0xvalid_intent".to_string(),
         expiry_time: future_expiry,
         reserved_solver_addr: Some(solver_addr.to_string()),
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     };
 
     // Add non-expired intent to cache
@@ -450,7 +450,7 @@ async fn test_expiry_check_success_in_monitor_validate_intent_fulfillment() {
     let valid_escrow = EscrowEvent {
         intent_id: non_expired_intent.intent_id.clone(),
         reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-        ..create_base_escrow_event()
+        ..create_default_escrow_event()
     };
 
     // Verify that validation passes when intent has not expired
@@ -474,7 +474,7 @@ async fn test_duplicate_escrow_event_rejection() {
         .await
         .expect("Failed to create monitor");
 
-    let escrow = create_base_escrow_event();
+    let escrow = create_default_escrow_event();
 
     // Add escrow to cache (first time)
     {
@@ -524,7 +524,7 @@ async fn test_duplicate_intent_event_rejection() {
         .await
         .expect("Failed to create monitor");
 
-    let intent = create_base_intent_mvm();
+    let intent = create_default_intent_mvm();
 
     // Add intent to cache (first time)
     {
@@ -589,7 +589,7 @@ async fn test_duplicate_fulfillment_event_handling() {
         intent_cache.push(IntentEvent {
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_addr.to_string()),
-            ..create_base_intent_mvm()
+            ..create_default_intent_mvm()
         });
     }
 
@@ -599,11 +599,11 @@ async fn test_duplicate_fulfillment_event_handling() {
         escrow_cache.push(EscrowEvent {
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         });
     }
 
-    let fulfillment = create_base_fulfillment();
+    let fulfillment = create_default_fulfillment();
 
     // Add fulfillment to cache (first time) and process it
     {
@@ -690,7 +690,7 @@ async fn test_base_helpers_work_with_signature_generation() {
         intent_cache.push(IntentEvent {
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_addr.to_string()),
-            ..create_base_intent_mvm()
+            ..create_default_intent_mvm()
         });
     }
 
@@ -700,12 +700,12 @@ async fn test_base_helpers_work_with_signature_generation() {
         escrow_cache.push(EscrowEvent {
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         });
     }
 
     // Create fulfillment using base helper (should have valid hex intent_id matching escrow)
-    let fulfillment = create_base_fulfillment();
+    let fulfillment = create_default_fulfillment();
 
     // This should succeed - base helpers should have valid hex values
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
@@ -751,7 +751,7 @@ async fn test_fulfillment_with_odd_length_intent_id() {
             intent_id: escrow_intent_id.to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_addr.to_string()),
-            ..create_base_intent_mvm()
+            ..create_default_intent_mvm()
         });
     }
 
@@ -762,7 +762,7 @@ async fn test_fulfillment_with_odd_length_intent_id() {
             escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
             expiry_time: DUMMY_EXPIRY,
             reserved_solver_addr: Some(solver_connected_chain_mvm_addr.to_string()),
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         });
     }
 
@@ -772,7 +772,7 @@ async fn test_fulfillment_with_odd_length_intent_id() {
         "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; // 63 hex chars
     let fulfillment = FulfillmentEvent {
         intent_id: fulfillment_odd_intent_id.to_string(),
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     // This should succeed - the intent_id should be normalized to 64 chars before signature creation
@@ -807,14 +807,14 @@ async fn test_approval_fails_when_intent_id_mismatch() {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
             intent_id: "0x01".to_string(), // Valid hex
-            ..create_base_escrow_event()
+            ..create_default_escrow_event()
         });
     }
 
     // Create fulfillment with different intent_id (doesn't match escrow)
     let fulfillment = FulfillmentEvent {
         intent_id: "0x02".to_string(), // Different intent_id - doesn't match escrow
-        ..create_base_fulfillment()
+        ..create_default_fulfillment()
     };
 
     // This should fail - no matching escrow found
@@ -857,7 +857,7 @@ async fn test_approval_fails_when_no_escrow_exists() {
     drop(escrow_cache);
 
     // Create fulfillment (but no matching escrow exists)
-    let fulfillment = create_base_fulfillment();
+    let fulfillment = create_default_fulfillment();
 
     // This should fail - no escrow in cache to match
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;

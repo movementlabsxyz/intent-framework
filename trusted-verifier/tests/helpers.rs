@@ -177,10 +177,10 @@ pub fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
 // BASE EVENT CREATORS
 // ============================================================================
 
-/// Create a base intent event with default test values for Move VM connected chain.
+/// Create a default intent event with test values for Move VM hub chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let intent = create_base_intent_mvm();
+/// let intent = create_default_intent_mvm();
 /// let custom_intent = IntentEvent {
 ///     desired_amount: 500,
 ///     expiry_time: 1000000,
@@ -188,7 +188,7 @@ pub fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_intent_mvm() -> IntentEvent {
+pub fn create_default_intent_mvm() -> IntentEvent {
     IntentEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
@@ -205,12 +205,12 @@ pub fn create_base_intent_mvm() -> IntentEvent {
     }
 }
 
-/// Create a base intent event with default test values for EVM connected chain.
-/// This uses `create_base_intent_mvm()` as a base and overrides EVM-specific fields.
+/// Create a default intent event with test values for EVM connected chain.
+/// This uses `create_default_intent_mvm()` as a base and overrides EVM-specific fields.
 /// For inflow intents, offered_metadata uses {"token":"0x..."} format to match EVM escrow format.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let intent = create_base_intent_evm();
+/// let intent = create_default_intent_evm();
 /// let custom_intent = IntentEvent {
 ///     desired_amount: 500,
 ///     expiry_time: 1000000,
@@ -218,20 +218,20 @@ pub fn create_base_intent_mvm() -> IntentEvent {
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_intent_evm() -> IntentEvent {
+pub fn create_default_intent_evm() -> IntentEvent {
     IntentEvent {
         offered_metadata: format!(r#"{{"token":"{}"}}"#, DUMMY_TOKEN_ADDR_EVM), // EVM token address format for cross-chain
         reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         connected_chain_id: Some(31337), // EVM chain ID (matches build_test_config_with_evm)
         requester_addr_connected_chain: Some(DUMMY_REQUESTER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
-        ..create_base_intent_mvm()
+        ..create_default_intent_mvm()
     }
 }
 
-/// Create a base fulfillment event with default test values.
+/// Create a default fulfillment event with test values.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let fulfillment = create_base_fulfillment();
+/// let fulfillment = create_default_fulfillment();
 /// let custom_fulfillment = FulfillmentEvent {
 ///     timestamp: 1000000,
 ///     provided_amount: 500,
@@ -240,10 +240,10 @@ pub fn create_base_intent_evm() -> IntentEvent {
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_fulfillment() -> FulfillmentEvent {
+pub fn create_default_fulfillment() -> FulfillmentEvent {
     FulfillmentEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
-        intent_addr: "0xintent_addr".to_string(),
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
         solver_addr: DUMMY_SOLVER_ADDR_MVM_CON.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 0,
@@ -251,10 +251,10 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
     }
 }
 
-/// Create a base escrow event with default test values for Move VM connected chain.
+/// Create a default escrow event with test values for Move VM connected chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let escrow = create_base_escrow_event();
+/// let escrow = create_default_escrow_event();
 /// let custom_escrow = EscrowEvent {
 ///     escrow_id: "0xescrow_id".to_string(),
 ///     intent_id: "0xintent_id".to_string(),
@@ -263,7 +263,7 @@ pub fn create_base_fulfillment() -> FulfillmentEvent {
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_escrow_event() -> EscrowEvent {
+pub fn create_default_escrow_event() -> EscrowEvent {
     EscrowEvent {
         escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
         intent_id: DUMMY_INTENT_ID.to_string(),
@@ -281,11 +281,11 @@ pub fn create_base_escrow_event() -> EscrowEvent {
     }
 }
 
-/// Create a base escrow event with default test values for EVM connected chain.
+/// Create a default escrow event with test values for EVM connected chain.
 /// This reflects real EVM escrow behavior where desired_metadata is always empty
 /// because the EVM IntentEscrow contract doesn't store this field.
 #[allow(dead_code)]
-pub fn create_base_escrow_event_evm() -> EscrowEvent {
+pub fn create_default_escrow_event_evm() -> EscrowEvent {
     EscrowEvent {
         escrow_id: DUMMY_INTENT_ID.to_string(), // For EVM, escrow_id = intent_id
         intent_id: DUMMY_INTENT_ID.to_string(),
@@ -303,18 +303,18 @@ pub fn create_base_escrow_event_evm() -> EscrowEvent {
     }
 }
 
-/// Create a base fulfillment transaction params with default test values for Move VM connected chain.
+/// Create a default fulfillment transaction params with test values for Move VM connected chain.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let base = create_base_fulfillment_transaction_params_mvm();
+/// let default = create_default_fulfillment_transaction_params_mvm();
 /// let custom = FulfillmentTransactionParams {
 ///     intent_id: "0xcustom".to_string(),
 ///     amount: 5000,
-///     ..base
+///     ..default
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_fulfillment_transaction_params_mvm() -> FulfillmentTransactionParams {
+pub fn create_default_fulfillment_transaction_params_mvm() -> FulfillmentTransactionParams {
     FulfillmentTransactionParams {
         intent_id: DUMMY_INTENT_ID.to_string(),
         recipient_addr: DUMMY_REQUESTER_ADDR_MVM_CON.to_string(), // Requester who receives tokens on connected chain (Move VM format - 32 bytes)
@@ -324,38 +324,38 @@ pub fn create_base_fulfillment_transaction_params_mvm() -> FulfillmentTransactio
     }
 }
 
-/// Create a base fulfillment transaction params with default test values for EVM connected chain.
-/// This uses `create_base_fulfillment_transaction_params_mvm()` as a base and overrides EVM-specific fields.
+/// Create a default fulfillment transaction params with test values for EVM connected chain.
+/// This uses `create_default_fulfillment_transaction_params_mvm()` as a base and overrides EVM-specific fields.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let base = create_base_fulfillment_transaction_params_evm();
+/// let default = create_default_fulfillment_transaction_params_evm();
 /// let custom = FulfillmentTransactionParams {
 ///     intent_id: "0xcustom".to_string(),
 ///     amount: 5000,
-///     ..base
+///     ..default
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_fulfillment_transaction_params_evm() -> FulfillmentTransactionParams {
+pub fn create_default_fulfillment_transaction_params_evm() -> FulfillmentTransactionParams {
     FulfillmentTransactionParams {
         recipient_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
         solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(), // EVM address format (20 bytes)
-        ..create_base_fulfillment_transaction_params_mvm()
+        ..create_default_fulfillment_transaction_params_mvm()
     }
 }
 
-/// Create a base Move VM transaction with default test values.
+/// Create a default Move VM transaction with test values.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let base = create_base_mvm_transaction();
+/// let default = create_default_mvm_transaction();
 /// let custom = MvmTransaction {
 ///     hash: "0x123123".to_string(),
 ///     success: false,
-///     ..base
+///     ..default
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_mvm_transaction() -> MvmTransaction {
+pub fn create_default_mvm_transaction() -> MvmTransaction {
     MvmTransaction {
         version: "12345".to_string(),
         hash: "0x123123".to_string(), // Transaction hash - arbitrary test value
@@ -366,18 +366,18 @@ pub fn create_base_mvm_transaction() -> MvmTransaction {
     }
 }
 
-/// Create a base EVM transaction with default test values.
+/// Create a default EVM transaction with test values.
 /// This can be customized using Rust's struct update syntax:
 /// ```
-/// let base = create_base_evm_transaction();
+/// let default = create_default_evm_transaction();
 /// let custom = EvmTransaction {
 ///     hash: "0x123123".to_string(),
 ///     status: Some("0x0".to_string()), // Failed
-///     ..base
+///     ..default
 /// };
 /// ```
 #[allow(dead_code)]
-pub fn create_base_evm_transaction() -> EvmTransaction {
+pub fn create_default_evm_transaction() -> EvmTransaction {
     EvmTransaction {
         hash: "0x123123".to_string(), // Transaction hash - arbitrary test value
         block_number: Some("0x1000".to_string()), // Block 4096 - arbitrary test value

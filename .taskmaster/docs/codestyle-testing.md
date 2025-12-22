@@ -65,7 +65,8 @@ Before adding a new constant, ask for approval:
 
 For test-specific values that aren't reusable constants:
 
-- Use descriptive inline values with comments (e.g., `"0xwrong_solver" // different solver address as registered`)
+- Use descriptive inline values with comments only when they add meaningful context (e.g., `"0xwrong_solver" // different solver address as registered` to explain why it's wrong)
+- Don't add comments that just state the obvious (e.g., don't comment every test URL, profile name, or numeric value)
 - Don't create constants for one-off test cases
 - Only create constants for values used across multiple tests
 

@@ -3,7 +3,7 @@
 //! Main service loop that polls the verifier for pending drafts,
 //! evaluates acceptance, and signs/submits accepted drafts.
 
-use crate::acceptance::{should_accept_draft, AcceptanceConfig, AcceptanceResult, DraftintentData};
+use crate::acceptance::{evaluate_draft_acceptance, AcceptanceConfig, AcceptanceResult, DraftintentData};
 use crate::config::SolverConfig;
 use crate::crypto::{get_intent_hash, get_private_key_from_profile, sign_intent_hash};
 use crate::service::tracker::IntentTracker;
@@ -147,7 +147,7 @@ impl SigningService {
         let draft_data = self.parse_draft_data(&draft.draft_data)?;
 
         // Evaluate acceptance
-        match should_accept_draft(&draft_data, &self.acceptance_config) {
+        match evaluate_draft_acceptance(&draft_data, &self.acceptance_config) {
             AcceptanceResult::Accept => {
                 info!("Draft {} accepted, signing...", draft.draft_id);
                 self.sign_and_submit(draft, &draft_data).await

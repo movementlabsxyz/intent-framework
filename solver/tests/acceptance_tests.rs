@@ -3,8 +3,14 @@
 //! These tests verify that the solver correctly evaluates draft intents
 //! based on token types and amounts.
 
-use solver::acceptance::{AcceptanceConfig, AcceptanceResult, DraftintentData, should_accept_draft};
+use solver::acceptance::{AcceptanceConfig, AcceptanceResult, DraftintentData, evaluate_draft_acceptance};
 use std::collections::HashMap;
+
+#[path = "helpers.rs"]
+mod test_helpers;
+use test_helpers::{
+    DUMMY_INTENT_ID, DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
+};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -21,9 +27,9 @@ use std::collections::HashMap;
 fn create_base_token_pair() -> solver::acceptance::TokenPair {
     solver::acceptance::TokenPair {
         offered_chain_id: 1,
-        offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
         desired_chain_id: 2,
-        desired_token: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
     }
 }
 
@@ -44,7 +50,7 @@ fn test_config() -> AcceptanceConfig {
     // Token A -> Token C (chain 2) (0.5 rate: 1 Token C = 0.5 Token A, cross-chain)
     token_pairs.insert(
         TokenPair {
-            desired_token: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),
+            desired_token: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string(), // Token C on chain 2 (different from Token B)
             ..create_base_token_pair()
         },
         0.5,  // 0.5 offered per 1 desired
@@ -67,11 +73,11 @@ fn test_config() -> AcceptanceConfig {
 /// ```
 fn create_base_draft_data() -> DraftintentData {
     DraftintentData {
-        intent_id: "0x1111111111111111111111111111111111111111111111111111111111111111".to_string(),
-        offered_token: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
         offered_amount: 1000000,
         offered_chain_id: 1,
-        desired_token: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string(),
+        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
         desired_amount: 1000000,
         desired_chain_id: 2,
     }
@@ -86,7 +92,7 @@ fn test_token_pair_accept() {
     let draft = DraftintentData {
         ..create_base_draft_data()  // 1:1 rate, offered=1000000, desired=1000000
     };
-    assert!(matches!(should_accept_draft(&draft, &config), AcceptanceResult::Accept));
+    assert!(matches!(evaluate_draft_acceptance(&draft, &config), AcceptanceResult::Accept));
 }
 
 /// Test that token pair swaps are rejected when offered < required amount at configured exchange rate
@@ -100,7 +106,7 @@ fn test_token_pair_reject_unfavorable() {
         desired_amount: 1000000,  // 1.0 requires 1.0 offered at configured 1:1 exchange rate
         ..create_base_draft_data()
     };
-    assert!(matches!(should_accept_draft(&draft, &config), AcceptanceResult::Reject(_)));
+    assert!(matches!(evaluate_draft_acceptance(&draft, &config), AcceptanceResult::Reject(_)));
 }
 
 /// Test that token pair swaps with non-1:1 exchange rates are accepted when offered meets configured rate
@@ -110,11 +116,11 @@ fn test_token_pair_reject_unfavorable() {
 fn test_token_pair_with_exchange_rate_accept() {
     let config = test_config();
     let draft = DraftintentData {
-        desired_token: "0xcccccccccccccccccccccccccccccccccccccccc".to_string(),  // Token C
+        desired_token: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string(), // Token C on chain 2 (different from Token B)
         desired_amount: 2000000,  // 2.0 Token C (at 0.5 rate, requires 1.0 offered)
         ..create_base_draft_data()  // offered_amount: 1000000 (1.0) meets the requirement (2.0 * 0.5 = 1.0)
     };
-    assert!(matches!(should_accept_draft(&draft, &config), AcceptanceResult::Accept));
+    assert!(matches!(evaluate_draft_acceptance(&draft, &config), AcceptanceResult::Accept));
 }
 
 /// Test that unsupported token pairs are rejected
@@ -124,9 +130,9 @@ fn test_token_pair_with_exchange_rate_accept() {
 fn test_unsupported_token_pair_rejected() {
     let config = test_config();
     let draft = DraftintentData {
-        offered_token: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc".to_string(),  // Token not in any configured pair
+        offered_token: "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string(), // Unsupported token (not in any configured pair)
         ..create_base_draft_data()  // offered_amount: 1000000, desired_amount: 1000000, but pair is not configured
     };
-    assert!(matches!(should_accept_draft(&draft, &config), AcceptanceResult::Reject(_)));
+    assert!(matches!(evaluate_draft_acceptance(&draft, &config), AcceptanceResult::Reject(_)));
 }
 

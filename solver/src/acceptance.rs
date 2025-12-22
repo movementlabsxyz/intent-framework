@@ -43,8 +43,8 @@ pub enum AcceptanceResult {
     Reject(String),  // Reason for rejection
 }
 
-/// Evaluate whether to accept a draftintent
-pub fn should_accept_draft(draft: &DraftintentData, config: &AcceptanceConfig) -> AcceptanceResult {
+/// Evaluate whether to accept a draft intent
+pub fn evaluate_draft_acceptance(draft: &DraftintentData, config: &AcceptanceConfig) -> AcceptanceResult {
     // Create token pair key for lookup
     let pair = TokenPair {
         offered_chain_id: draft.offered_chain_id,

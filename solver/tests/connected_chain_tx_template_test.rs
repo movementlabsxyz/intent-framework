@@ -3,8 +3,15 @@
 //! These tests verify the core functionality of address normalization,
 //! EVM calldata generation, and error handling without requiring CLI execution.
 
+#[path = "helpers.rs"]
+mod test_helpers;
+
 #[cfg(test)]
 mod tests {
+    use super::test_helpers::{
+        DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_EVM, DUMMY_REQUESTER_ADDR_MVM_CON,
+        DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
+    };
     use ethereum_types::U256;
 
     // Helper functions from the binary (would need to be extracted to a lib module)
@@ -31,17 +38,17 @@ mod tests {
     }
 
     fn generate_evm_calldata(
-        recipient: &str,
+        recipient_addr: &str,
         amount: &str,
         intent_id: &str,
     ) -> Result<String, String> {
-        let recipient_clean = strip_0x(recipient)?;
+        let recipient_clean = strip_0x(recipient_addr)?;
         let intent_clean = strip_0x(intent_id)?;
 
         let amount_u256 =
             U256::from_dec_str(amount).map_err(|e| format!("Invalid amount: {}", e))?;
 
-        let selector = "a9059cbb";
+        let selector = "a9059cbb"; // ERC20 transfer(address,uint256) function selector
         let recipient_hex = format!("{:0>64}", recipient_clean.to_lowercase());
         let amount_hex = format!("{amount:064x}", amount = amount_u256);
         let intent_hex = format!("{:0>64}", intent_clean.to_lowercase());
@@ -92,7 +99,7 @@ mod tests {
     fn test_normalize_address_mvm_format() {
         // What is tested: Full 64-character Move VM address format is normalized correctly
         // Why: Move VM addresses are 64 hex chars; we must handle full-length addresses
-        let addr = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let addr = DUMMY_TOKEN_ADDR_MVM_HUB;
         let result = normalize_address(addr).unwrap();
         assert_eq!(result, addr.to_lowercase());
     }
@@ -145,13 +152,13 @@ mod tests {
     // ============================================================================
 
     fn generate_mvm_command(
-        recipient: &str,
-        metadata: &str,
+        recipient_addr: &str,
+        metadata_addr: &str,
         amount: u64,
         intent_id: &str,
     ) -> Result<String, String> {
-        let recipient_addr = normalize_address(recipient)?;
-        let metadata_addr = normalize_address(metadata)?;
+        let recipient_addr = normalize_address(recipient_addr)?;
+        let metadata_addr = normalize_address(metadata_addr)?;
         let intent_id_addr = normalize_address(intent_id)?;
 
         Ok(format!(
@@ -164,27 +171,21 @@ mod tests {
     fn test_mvm_command_generation() {
         // What is tested: Complete aptos move run command is generated with all required arguments
         // Why: Solvers need a ready-to-use command; format must match Aptos CLI expectations
-        // Use simple repeated patterns for addresses (64 hex chars = 32 bytes for Move)
-        let recipient = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        let metadata = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-        let amount = 25000000u64;
-        let intent_id = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
-
-        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
+        // Use constants for addresses (64 hex chars = 32 bytes for Move)
+        let result = generate_mvm_command(
+            DUMMY_TOKEN_ADDR_MVM_HUB,
+            DUMMY_TOKEN_ADDR_MVM_CON,
+            25000000u64, // Test-specific amount
+            DUMMY_INTENT_ID,
+        ).unwrap();
 
         // Should contain the function call
         assert!(result.contains("utils::transfer_with_intent_id"));
 
         // Should contain all addresses in correct format
-        assert!(result.contains(
-            "address:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        ));
-        assert!(result.contains(
-            "address:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-        ));
-        assert!(result.contains(
-            "address:0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-        ));
+        assert!(result.contains(&format!("address:{}", DUMMY_TOKEN_ADDR_MVM_HUB)));
+        assert!(result.contains(&format!("address:{}", DUMMY_TOKEN_ADDR_MVM_CON)));
+        assert!(result.contains(&format!("address:{}", DUMMY_INTENT_ID)));
 
         // Should contain amount as u64
         assert!(result.contains("u64:25000000"));
@@ -194,29 +195,29 @@ mod tests {
     fn test_mvm_command_address_normalization() {
         // What is tested: All addresses in command are normalized to lowercase with 0x prefix
         // Why: Aptos CLI requires consistent address format; normalization prevents errors (Move VM addresses)
-        let recipient = "0xAAAA"; // Uppercase
-        let metadata = "bbbbbbbbbbbbbbbb"; // No prefix
-        let amount = 1000u64;
-        let intent_id = "0x5678";
-
-        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
+        let result = generate_mvm_command(
+            "0xAAAA", // Uppercase
+            "bbbbbbbbbbbbbbbb", // No prefix
+            1000u64,
+            DUMMY_INTENT_ID,
+        ).unwrap();
 
         // All addresses should be normalized to lowercase with 0x prefix
         assert!(result.contains("address:0xaaaa"));
         assert!(result.contains("address:0xbbbbbbbbbbbbbbbb"));
-        assert!(result.contains("address:0x5678"));
+        assert!(result.contains(&format!("address:{}", DUMMY_INTENT_ID)));
     }
 
     #[test]
     fn test_mvm_command_zero_amount() {
         // What is tested: Zero amount is handled correctly in command generation
         // Why: Edge case that should work (though not practical for transfers)
-        let recipient = "0x1234";
-        let metadata = "0x5678";
-        let amount = 0u64;
-        let intent_id = "0x9abc";
-
-        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
+        let result = generate_mvm_command(
+            DUMMY_REQUESTER_ADDR_MVM_CON,
+            DUMMY_TOKEN_ADDR_MVM_CON,
+            0u64, // Zero amount edge case
+            DUMMY_INTENT_ID,
+        ).unwrap();
 
         // Should handle zero amount
         assert!(result.contains("u64:0"));
@@ -226,12 +227,12 @@ mod tests {
     fn test_mvm_command_large_amount() {
         // What is tested: Maximum u64 value is handled correctly
         // Why: Ensures large token amounts don't cause overflow or formatting issues
-        let recipient = "0x1234";
-        let metadata = "0x5678";
-        let amount = u64::MAX;
-        let intent_id = "0x9abc";
-
-        let result = generate_mvm_command(recipient, metadata, amount, intent_id).unwrap();
+        let result = generate_mvm_command(
+            DUMMY_REQUESTER_ADDR_MVM_CON,
+            DUMMY_TOKEN_ADDR_MVM_CON,
+            u64::MAX, // Maximum u64 value to test overflow handling
+            DUMMY_INTENT_ID,
+        ).unwrap();
 
         // Should handle max u64 value
         assert!(result.contains(&format!("u64:{}", u64::MAX)));
@@ -241,12 +242,12 @@ mod tests {
     fn test_mvm_command_invalid_recipient() {
         // What is tested: Invalid recipient address is rejected with error
         // Why: Invalid addresses should fail early before command generation
-        let recipient = "0xinvalid";
-        let metadata = "0x5678";
-        let amount = 1000u64;
-        let intent_id = "0x9abc";
-
-        let result = generate_mvm_command(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command(
+            "0xinvalid", // Invalid hex characters to test error handling
+            DUMMY_TOKEN_ADDR_MVM_CON,
+            1000u64,
+            DUMMY_INTENT_ID,
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
@@ -255,12 +256,12 @@ mod tests {
     fn test_mvm_command_invalid_metadata() {
         // What is tested: Invalid metadata address is rejected with error
         // Why: Metadata is required for Move VM; invalid format should be caught
-        let recipient = "0x1234";
-        let metadata = "0xinvalid";
-        let amount = 1000u64;
-        let intent_id = "0x9abc";
-
-        let result = generate_mvm_command(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command(
+            DUMMY_REQUESTER_ADDR_MVM_CON,
+            "0xinvalid", // Invalid hex characters to test error handling
+            1000u64,
+            DUMMY_INTENT_ID,
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
@@ -269,12 +270,12 @@ mod tests {
     fn test_mvm_command_invalid_intent_id() {
         // What is tested: Invalid intent_id address is rejected with error
         // Why: Intent ID must be valid hex address for verifier tracking
-        let recipient = "0x1234";
-        let metadata = "0x5678";
-        let amount = 1000u64;
-        let intent_id = "0xinvalid";
-
-        let result = generate_mvm_command(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command(
+            DUMMY_REQUESTER_ADDR_MVM_CON,
+            DUMMY_TOKEN_ADDR_MVM_CON,
+            1000u64,
+            "0xinvalid", // Invalid hex characters to test error handling
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
@@ -284,13 +285,13 @@ mod tests {
         // What is tested: Non-numeric amount string is rejected
         // Why: Amount must parse as u64; invalid strings should fail with clear error
         fn generate_mvm_command_with_string_amount(
-            recipient: &str,
-            metadata: &str,
+            recipient_addr: &str,
+            metadata_addr: &str,
             amount: &str,
             intent_id: &str,
         ) -> Result<String, String> {
-            let recipient_addr = normalize_address(recipient)?;
-            let metadata_addr = normalize_address(metadata)?;
+            let recipient_addr = normalize_address(recipient_addr)?;
+            let metadata_addr = normalize_address(metadata_addr)?;
             let intent_id_addr = normalize_address(intent_id)?;
 
             let amount_u64: u64 = amount
@@ -303,13 +304,12 @@ mod tests {
             ))
         }
 
-        let recipient = "0x1234";
-        let metadata = "0x5678";
-        let amount = "not_a_number";
-        let intent_id = "0x9abc";
-
-        let result =
-            generate_mvm_command_with_string_amount(recipient, metadata, amount, intent_id);
+        let result = generate_mvm_command_with_string_amount(
+            DUMMY_REQUESTER_ADDR_MVM_CON,
+            DUMMY_TOKEN_ADDR_MVM_CON,
+            "not_a_number", // Invalid amount to test error handling
+            DUMMY_INTENT_ID,
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid amount"));
     }
@@ -322,23 +322,23 @@ mod tests {
     fn test_evm_calldata_generation() {
         // What is tested: Complete EVM calldata payload is generated with selector, recipient, amount, and intent_id
         // Why: Solvers need correct calldata format for ERC20 transfer with embedded intent_id
-        let recipient = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
-        let amount = "1000000000000000000";
-        let intent_id = "0x5678123456789012345678901234567890123456789012345678901234567890";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
+        let result = generate_evm_calldata(
+            DUMMY_REQUESTER_ADDR_EVM,
+            "1000000000000000000", // 1 ETH in wei
+            DUMMY_INTENT_ID,
+        ).unwrap();
 
         // Should start with selector
         assert!(result.starts_with("0xa9059cbb"));
 
         // Should contain recipient (padded to 64 hex chars)
-        assert!(result.contains("742d35cc6634c0532925a3b844bc9e7595f0beb"));
+        assert!(result.contains(&DUMMY_REQUESTER_ADDR_EVM.strip_prefix("0x").unwrap().to_lowercase()));
 
         // Should contain amount (padded to 64 hex chars)
         assert!(result.contains("0de0b6b3a7640000")); // 1 ETH in hex
 
         // Should contain intent_id (padded to 64 hex chars)
-        assert!(result.contains("5678123456789012345678901234567890123456789012345678901234567890"));
+        assert!(result.contains(&DUMMY_INTENT_ID.strip_prefix("0x").unwrap()));
 
         // Total length: 0x (2) + selector (8) + recipient (64) + amount (64) + intent_id (64) = 202
         assert_eq!(result.len(), 202);
@@ -348,11 +348,8 @@ mod tests {
     fn test_evm_calldata_recipient_padding() {
         // What is tested: Short recipient addresses are padded to 32 bytes (64 hex chars)
         // Why: EVM calldata requires fixed 32-byte words; padding ensures correct format
-        let recipient = "0x1234"; // Short address
-        let amount = "1000";
-        let intent_id = "0x5678";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
+        let recipient_addr = "0x1234"; // Requester address on connected chain (short address for padding test)
+        let result = generate_evm_calldata(recipient_addr, "1000", DUMMY_INTENT_ID).unwrap();
 
         // Recipient should be padded to 64 hex chars (32 bytes)
         // Position: after selector (0xa9059cbb = 8 chars) + 0x (2 chars) = starts at index 10
@@ -366,11 +363,11 @@ mod tests {
     fn test_evm_calldata_amount_padding() {
         // What is tested: Small amounts are padded to 32 bytes (64 hex chars)
         // Why: EVM uint256 requires 32-byte representation; padding ensures correct encoding
-        let recipient = "0x1234";
-        let amount = "1"; // Small amount
-        let intent_id = "0x5678";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
+        let result = generate_evm_calldata(
+            DUMMY_REQUESTER_ADDR_EVM,
+            "1", // Small amount to test padding
+            DUMMY_INTENT_ID,
+        ).unwrap();
 
         // Amount should be padded to 64 hex chars
         // Position: after selector (8) + recipient (64) + 0x (2) = starts at index 74
@@ -384,11 +381,12 @@ mod tests {
     fn test_evm_calldata_large_amount() {
         // What is tested: Maximum U256 value is handled correctly
         // Why: Ensures large token amounts (up to U256::MAX) don't cause overflow
-        let recipient = "0x1234";
         let amount = U256::MAX.to_string();
-        let intent_id = "0x5678";
-
-        let result = generate_evm_calldata(recipient, &amount, intent_id);
+        let result = generate_evm_calldata(
+            DUMMY_REQUESTER_ADDR_EVM,
+            &amount, // Maximum U256 value to test overflow handling
+            DUMMY_INTENT_ID,
+        );
         assert!(result.is_ok());
 
         // Should handle max U256 value
@@ -402,11 +400,11 @@ mod tests {
     fn test_evm_calldata_invalid_amount() {
         // What is tested: Non-numeric amount string is rejected with error
         // Why: Amount must parse as decimal number; invalid strings should fail early
-        let recipient = "0x1234";
-        let amount = "not_a_number";
-        let intent_id = "0x5678";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id);
+        let result = generate_evm_calldata(
+            DUMMY_REQUESTER_ADDR_EVM,
+            "not_a_number", // Invalid amount to test error handling
+            DUMMY_INTENT_ID,
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid amount"));
     }
@@ -415,11 +413,11 @@ mod tests {
     fn test_evm_calldata_invalid_recipient() {
         // What is tested: Invalid recipient address is rejected with error
         // Why: Invalid addresses should fail before calldata generation
-        let recipient = "0xinvalid";
-        let amount = "1000";
-        let intent_id = "0x5678";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id);
+        let result = generate_evm_calldata(
+            "0xinvalid", // Invalid hex characters to test error handling
+            "1000",
+            DUMMY_INTENT_ID,
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
@@ -428,11 +426,11 @@ mod tests {
     fn test_evm_calldata_invalid_intent_id() {
         // What is tested: Invalid intent_id address is rejected with error
         // Why: Intent ID must be valid hex for verifier tracking
-        let recipient = "0x1234";
-        let amount = "1000";
-        let intent_id = "0xinvalid";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id);
+        let result = generate_evm_calldata(
+            DUMMY_REQUESTER_ADDR_EVM,
+            "1000",
+            "0xinvalid", // Invalid hex characters to test error handling
+        );
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("must be hex"));
     }
@@ -441,11 +439,11 @@ mod tests {
     fn test_evm_calldata_zero_amount() {
         // What is tested: Zero amount is encoded correctly as all zeros
         // Why: Edge case that should work (though not practical for transfers)
-        let recipient = "0x1234";
-        let amount = "0";
-        let intent_id = "0x5678";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
+        let result = generate_evm_calldata(
+            DUMMY_REQUESTER_ADDR_EVM,
+            "0", // Zero amount edge case
+            DUMMY_INTENT_ID,
+        ).unwrap();
 
         // Amount should be all zeros (padded)
         assert!(result.contains("0000000000000000000000000000000000000000000000000000000000000000"));
@@ -455,11 +453,7 @@ mod tests {
     fn test_evm_calldata_selector_correct() {
         // What is tested: ERC20 transfer function selector is correct (0xa9059cbb)
         // Why: Selector must match transfer(address,uint256) signature for EVM to route call correctly
-        let recipient = "0x1234";
-        let amount = "1000";
-        let intent_id = "0x5678";
-
-        let result = generate_evm_calldata(recipient, amount, intent_id).unwrap();
+        let result = generate_evm_calldata(DUMMY_REQUESTER_ADDR_EVM, "1000", DUMMY_INTENT_ID).unwrap();
 
         // ERC20 transfer selector: transfer(address,uint256) = 0xa9059cbb
         assert_eq!(&result[0..10], "0xa9059cbb");

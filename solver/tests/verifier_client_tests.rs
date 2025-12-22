@@ -34,6 +34,7 @@ fn test_verifier_client_new() {
 #[test]
 fn test_api_response_parsing() {
     // Test successful response
+    // Using test-specific timestamp (1000000) and expiry_time (2000000) for mock data
     let json = format!(r#"{{
         "success": true,
         "data": [
@@ -96,8 +97,8 @@ fn test_api_error_response_parsing() {
 fn test_signature_submission_serialization() {
     let submission = SignatureSubmission {
         solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        signature: "0x".to_string() + &"a".repeat(128),
-        public_key: "0x".to_string() + &"b".repeat(64),
+        signature: "0x".to_string() + &"a".repeat(128), // 128 hex chars = 64 bytes signature (ECDSA format)
+        public_key: "0x".to_string() + &"b".repeat(64), // 64 hex chars = 32 bytes public key (Ed25519 format)
     };
 
     let json = serde_json::to_string(&submission).unwrap();
@@ -112,6 +113,7 @@ fn test_signature_submission_serialization() {
 /// Why: Ensure we can handle different draft_data JSON structures from verifier
 #[test]
 fn test_pending_draft_deserialization() {
+    // Using test-specific timestamp (1000000) and expiry_time (2000000) for mock data
     let json = format!(r#"{{
         "draft_id": "{}",
         "requester_addr": "{}",
@@ -136,6 +138,7 @@ fn test_pending_draft_deserialization() {
         draft.requester_addr,
         DUMMY_REQUESTER_ADDR_EVM
     );
+    // Assertions use test-specific timestamp (1000000) and expiry_time (2000000)
     assert_eq!(draft.timestamp, 1000000);
     assert_eq!(draft.expiry_time, 2000000);
 
@@ -162,6 +165,7 @@ fn test_poll_pending_drafts_success() {
     let (_mock_server, base_url) = rt.block_on(async {
         let mock_server = MockServer::start().await;
 
+        // Using test-specific timestamp (1000000) and expiry_time (2000000) for mock data
         let response = json!({
             "success": true,
             "data": [
@@ -284,7 +288,7 @@ fn test_submit_signature_success() {
         });
 
         Mock::given(method("POST"))
-            .and(path("/draftintent/11111111-1111-1111-1111-111111111111/signature"))
+            .and(path(format!("/draftintent/{}/signature", DUMMY_DRAFT_ID)))
             .respond_with(ResponseTemplate::new(200).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -296,15 +300,15 @@ fn test_submit_signature_success() {
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
         solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        signature: "0x".to_string() + &"a".repeat(128),
-        public_key: "0x".to_string() + &"b".repeat(64),
+        signature: "0x".to_string() + &"a".repeat(128), // 128 hex chars = 64 bytes signature (ECDSA format)
+        public_key: "0x".to_string() + &"b".repeat(64), // 64 hex chars = 32 bytes public key (Ed25519 format)
     };
 
     let result = client
-        .submit_signature("11111111-1111-1111-1111-111111111111", &submission)
+        .submit_signature(DUMMY_DRAFT_ID, &submission)
         .unwrap();
 
-    assert_eq!(result.draft_id, "11111111-1111-1111-1111-111111111111");
+    assert_eq!(result.draft_id, DUMMY_DRAFT_ID);
     assert_eq!(result.status, "signed");
 }
 
@@ -323,7 +327,7 @@ fn test_submit_signature_conflict() {
         });
 
         Mock::given(method("POST"))
-            .and(path("/draftintent/11111111-1111-1111-1111-111111111111/signature"))
+            .and(path(format!("/draftintent/{}/signature", DUMMY_DRAFT_ID)))
             .respond_with(ResponseTemplate::new(409).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -335,11 +339,11 @@ fn test_submit_signature_conflict() {
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
         solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        signature: "0x".to_string() + &"a".repeat(128),
-        public_key: "0x".to_string() + &"b".repeat(64),
+        signature: "0x".to_string() + &"a".repeat(128), // 128 hex chars = 64 bytes signature (ECDSA format)
+        public_key: "0x".to_string() + &"b".repeat(64), // 64 hex chars = 32 bytes public key (Ed25519 format)
     };
 
-    let result = client.submit_signature("11111111-1111-1111-1111-111111111111", &submission);
+    let result = client.submit_signature(DUMMY_DRAFT_ID, &submission);
 
     assert!(result.is_err());
     assert!(result
@@ -363,7 +367,7 @@ fn test_submit_signature_other_error() {
         });
 
         Mock::given(method("POST"))
-            .and(path("/draftintent/11111111-1111-1111-1111-111111111111/signature"))
+            .and(path(format!("/draftintent/{}/signature", DUMMY_DRAFT_ID)))
             .respond_with(ResponseTemplate::new(400).set_body_json(response))
             .mount(&mock_server)
             .await;
@@ -375,11 +379,11 @@ fn test_submit_signature_other_error() {
     let client = VerifierClient::new(base_url);
     let submission = SignatureSubmission {
         solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
-        signature: "0x".to_string() + &"a".repeat(128),
-        public_key: "0x".to_string() + &"b".repeat(64),
+        signature: "0x".to_string() + &"a".repeat(128), // 128 hex chars = 64 bytes signature (ECDSA format)
+        public_key: "0x".to_string() + &"b".repeat(64), // 64 hex chars = 32 bytes public key (Ed25519 format)
     };
 
-    let result = client.submit_signature("11111111-1111-1111-1111-111111111111", &submission);
+    let result = client.submit_signature(DUMMY_DRAFT_ID, &submission);
 
     assert!(result.is_err());
     let error_msg = result.unwrap_err().to_string();
@@ -533,6 +537,7 @@ fn test_get_approvals_success() {
         DUMMY_INTENT_ID
     );
     assert_eq!(approvals[0].signature, "base64signature==");
+    // Assertion uses test-specific timestamp (1000000)
     assert_eq!(approvals[0].timestamp, 1000000);
 }
 
@@ -574,7 +579,7 @@ fn test_get_approvals_empty() {
 /// Why: Ensure network errors are properly propagated
 #[test]
 fn test_network_error() {
-    // Use a port that's definitely not listening
+    // Use a port that's definitely not listening (test-specific invalid URL)
     let client = VerifierClient::new("http://127.0.0.1:99999");
 
     let result = client.poll_pending_drafts();

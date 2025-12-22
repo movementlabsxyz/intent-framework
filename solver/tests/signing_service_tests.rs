@@ -128,7 +128,7 @@ fn test_parse_draft_data_missing_offered_metadata() {
 fn test_parse_draft_data_invalid_offered_metadata_type() {
     let draft_data = json!({
         "intent_id": DUMMY_INTENT_ID,
-        "offered_metadata": 12345,
+        "offered_metadata": 12345, // Test-specific: invalid type (number instead of string) to test validation
         "offered_amount": "1000",
         "offered_chain_id": "1",
         "desired_metadata": DUMMY_TOKEN_ADDR_MVM_CON,
@@ -166,7 +166,7 @@ fn test_parse_draft_data_invalid_offered_amount() {
     let draft_data = json!({
         "intent_id": DUMMY_INTENT_ID,
         "offered_metadata": DUMMY_TOKEN_ADDR_MVM_HUB,
-        "offered_amount": "not_a_number",
+        "offered_amount": "not_a_number", // Test-specific: invalid number string to test validation
         "offered_chain_id": "1",
         "desired_metadata": DUMMY_TOKEN_ADDR_MVM_CON,
         "desired_amount": "2000",

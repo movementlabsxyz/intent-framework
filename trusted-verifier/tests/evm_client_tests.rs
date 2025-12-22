@@ -10,7 +10,9 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::{DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_SOLVER_ADDR_EVM, DUMMY_TX_HASH};
+use test_helpers::{
+    DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_SOLVER_ADDR_EVM, DUMMY_TOKEN_ADDR_EVM, DUMMY_TX_HASH,
+};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -31,7 +33,7 @@ async fn setup_mock_transaction(
             "blockNumber": "0x1",
             "transactionIndex": "0x0",
             "from": DUMMY_SOLVER_ADDR_EVM,
-            "to": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "to": DUMMY_TOKEN_ADDR_EVM, // Token contract address: solver calls ERC20 transfer() to fulfill intent
             "input": calldata,
             "value": "0x0",
             "gas": "0x5208",

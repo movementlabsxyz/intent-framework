@@ -150,7 +150,7 @@ async fn test_get_solver_connected_chain_mvm_addr_none() {
 async fn test_get_solver_connected_chain_mvm_addr_solver_not_found() {
     let solver_registry_addr = DUMMY_SOLVER_REGISTRY_ADDR;
     let registered_solver = DUMMY_SOLVER_ADDR_MVM_HUB;
-    let unregistered_solver = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    let unregistered_solver = "0xunregistered_solver_addr"; // Unregistered solver address for testing
 
     let (_mock_server, client) = setup_mock_server_with_registry(
         solver_registry_addr,
@@ -768,7 +768,7 @@ async fn test_get_solver_public_key_errors_on_non_string_element() {
 
     let mock_server = MockServer::start().await;
     // Return number instead of hex string
-    let view_response = json!([12345]);
+    let view_response = json!([12345]); // Invalid: number instead of hex string
 
     Mock::given(method("POST"))
         .and(path("/v1/view"))

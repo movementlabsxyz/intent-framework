@@ -10,7 +10,9 @@ use serde_json;
 
 #[path = "mod.rs"]
 mod test_helpers;
-use test_helpers::DUMMY_EXPIRY;
+use test_helpers::{
+    DUMMY_EXPIRY, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_MVM_HUB,
+};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -51,14 +53,14 @@ async fn test_add_and_get_draft() {
     let draft = store
         .add_draft(
             "test-draft-1".to_string(),
-            "0x123".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data.clone(),
             future_expiry_time(),
         )
         .await;
 
     assert_eq!(draft.draft_id, "test-draft-1");
-    assert_eq!(draft.requester_addr, "0x123");
+    assert_eq!(draft.requester_addr, DUMMY_REQUESTER_ADDR_MVM_HUB);
     assert_eq!(draft.status, DraftintentStatus::Pending);
     assert!(draft.signature.is_none(), "Draft should not have signature initially");
 
@@ -66,7 +68,7 @@ async fn test_add_and_get_draft() {
     assert!(retrieved.is_some(), "Draft should be retrievable");
     let retrieved = retrieved.unwrap();
     assert_eq!(retrieved.draft_id, "test-draft-1");
-    assert_eq!(retrieved.requester_addr, "0x123");
+    assert_eq!(retrieved.requester_addr, DUMMY_REQUESTER_ADDR_MVM_HUB);
     assert_eq!(retrieved.status, DraftintentStatus::Pending);
 }
 
@@ -96,7 +98,7 @@ async fn test_get_pending_drafts() {
     store
         .add_draft(
             "draft-1".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data.clone(),
             future_expiry_time(),
         )
@@ -105,7 +107,7 @@ async fn test_get_pending_drafts() {
     store
         .add_draft(
             "draft-2".to_string(),
-            "0x222".to_string(),
+            "0xrequester2".to_string(), // Different requester address for second draft
             draft_data.clone(),
             future_expiry_time(),
         )
@@ -127,7 +129,7 @@ async fn test_pending_drafts_exclude_expired() {
     store
         .add_draft(
             "draft-pending".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data.clone(),
             future_expiry_time(),
         )
@@ -137,7 +139,7 @@ async fn test_pending_drafts_exclude_expired() {
     store
         .add_draft(
             "draft-expired".to_string(),
-            "0x222".to_string(),
+            "0xrequester2".to_string(), // Different requester address for expired draft
             draft_data.clone(),
             past_expiry_time(),
         )
@@ -163,7 +165,7 @@ async fn test_pending_drafts_exclude_signed() {
     store
         .add_draft(
             "draft-pending".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data.clone(),
             future_expiry_time(),
         )
@@ -174,7 +176,7 @@ async fn test_pending_drafts_exclude_signed() {
     store
         .add_draft(
             signed_draft_id.clone(),
-            "0x222".to_string(),
+            "0xrequester2".to_string(), // Different requester address for signed draft
             draft_data.clone(),
             future_expiry_time(),
         )
@@ -184,7 +186,7 @@ async fn test_pending_drafts_exclude_signed() {
     store
         .add_signature(
             &signed_draft_id,
-            "0xsolver1".to_string(),
+            DUMMY_SOLVER_ADDR_MVM_HUB.to_string(),
             "sig1".to_string(),
             "pub1".to_string(),
         )
@@ -214,7 +216,7 @@ async fn test_fcfs_first_signature_succeeds() {
     store
         .add_draft(
             "draft-1".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data,
             future_expiry_time(),
         )
@@ -224,7 +226,7 @@ async fn test_fcfs_first_signature_succeeds() {
     let result = store
         .add_signature(
             "draft-1",
-            "0xsolver1".to_string(),
+            DUMMY_SOLVER_ADDR_MVM_HUB.to_string(),
             "sig1".to_string(),
             "pub1".to_string(),
         )
@@ -235,7 +237,7 @@ async fn test_fcfs_first_signature_succeeds() {
     let draft = store.get_draft("draft-1").await.unwrap();
     assert_eq!(draft.status, DraftintentStatus::Signed);
     assert!(draft.signature.is_some());
-    assert_eq!(draft.signature.unwrap().solver_addr, "0xsolver1");
+    assert_eq!(draft.signature.unwrap().solver_addr, DUMMY_SOLVER_ADDR_MVM_HUB);
 }
 
 /// Test that second signature fails (FCFS)
@@ -249,7 +251,7 @@ async fn test_fcfs_second_signature_fails() {
     store
         .add_draft(
             "draft-1".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data,
             future_expiry_time(),
         )
@@ -259,18 +261,18 @@ async fn test_fcfs_second_signature_fails() {
     store
         .add_signature(
             "draft-1",
-            "0xsolver1".to_string(),
+            DUMMY_SOLVER_ADDR_MVM_HUB.to_string(),
             "sig1".to_string(),
             "pub1".to_string(),
         )
         .await
         .unwrap();
 
-    // Second signature should fail (FCFS)
+    // Second signature should fail (FCFS) - different solver tries to sign
     let result = store
         .add_signature(
             "draft-1",
-            "0xsolver2".to_string(),
+            "0xsolver2".to_string(), // Different solver attempting to sign after first solver
             "sig2".to_string(),
             "pub2".to_string(),
         )
@@ -284,7 +286,7 @@ async fn test_fcfs_second_signature_fails() {
     // Verify first signature is still stored
     let draft = store.get_draft("draft-1").await.unwrap();
     assert_eq!(draft.status, DraftintentStatus::Signed);
-    assert_eq!(draft.signature.unwrap().solver_addr, "0xsolver1");
+    assert_eq!(draft.signature.unwrap().solver_addr, DUMMY_SOLVER_ADDR_MVM_HUB);
 }
 
 /// Test that signature to non-existent draft fails
@@ -297,7 +299,7 @@ async fn test_signature_nonexistent_draft() {
     let result = store
         .add_signature(
             "nonexistent-draft",
-            "0xsolver1".to_string(),
+            DUMMY_SOLVER_ADDR_MVM_HUB.to_string(),
             "sig1".to_string(),
             "pub1".to_string(),
         )
@@ -320,7 +322,7 @@ async fn test_signature_expired_draft() {
     store
         .add_draft(
             "draft-expired".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data,
             past_expiry_time(),
         )
@@ -329,7 +331,7 @@ async fn test_signature_expired_draft() {
     let result = store
         .add_signature(
             "draft-expired",
-            "0xsolver1".to_string(),
+            DUMMY_SOLVER_ADDR_MVM_HUB.to_string(),
             "sig1".to_string(),
             "pub1".to_string(),
         )
@@ -356,7 +358,7 @@ async fn test_status_transition_pending_to_signed() {
     store
         .add_draft(
             "draft-1".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data,
             future_expiry_time(),
         )
@@ -370,7 +372,7 @@ async fn test_status_transition_pending_to_signed() {
     store
         .add_signature(
             "draft-1",
-            "0xsolver1".to_string(),
+            DUMMY_SOLVER_ADDR_MVM_HUB.to_string(),
             "sig1".to_string(),
             "pub1".to_string(),
         )
@@ -398,7 +400,7 @@ async fn test_cleanup_expired() {
     store
         .add_draft(
             "draft-expired".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data.clone(),
             past_expiry_time(),
         )
@@ -408,7 +410,7 @@ async fn test_cleanup_expired() {
     store
         .add_draft(
             "draft-pending".to_string(),
-            "0x222".to_string(),
+            "0xrequester2".to_string(), // Different requester address for pending draft
             draft_data,
             future_expiry_time(),
         )
@@ -441,7 +443,7 @@ async fn test_draft_with_empty_data() {
     let draft = store
         .add_draft(
             "draft-empty".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             empty_data,
             future_expiry_time(),
         )
@@ -463,7 +465,7 @@ async fn test_signature_timestamp() {
     store
         .add_draft(
             "draft-1".to_string(),
-            "0x111".to_string(),
+            DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             draft_data,
             future_expiry_time(),
         )
@@ -472,7 +474,7 @@ async fn test_signature_timestamp() {
     store
         .add_signature(
             "draft-1",
-            "0xsolver1".to_string(),
+            DUMMY_SOLVER_ADDR_MVM_HUB.to_string(),
             "sig1".to_string(),
             "pub1".to_string(),
         )

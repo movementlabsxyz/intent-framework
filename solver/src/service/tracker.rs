@@ -214,7 +214,7 @@ impl IntentTracker {
                         && event.desired_amount == tracked.draft_data.desired_amount.to_string()
                         && event.offered_chain_id == tracked.draft_data.offered_chain_id.to_string()
                         && event.desired_chain_id == tracked.draft_data.desired_chain_id.to_string()
-                        && event.requester == tracked.requester_addr
+                        && event.requester_addr == tracked.requester_addr
                 };
 
                 if matches {

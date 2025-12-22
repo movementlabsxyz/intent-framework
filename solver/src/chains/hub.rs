@@ -90,7 +90,7 @@ pub struct IntentCreatedEvent {
     /// Desired chain ID
     pub desired_chain_id: String,
     /// Requester address
-    pub requester: String,
+    pub requester_addr: String,
     /// Expiry timestamp
     pub expiry_time: String,
     /// Requester address on the connected chain (for outflow intents)

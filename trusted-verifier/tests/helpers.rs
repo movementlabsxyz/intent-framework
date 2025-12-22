@@ -21,11 +21,15 @@ use trusted_verifier::validator::FulfillmentTransactionParams;
 // CONSTANTS
 // ============================================================================
 
+// --------------------------------- IDs ----------------------------------
+
 /// Dummy intent ID (64 hex characters, valid hex format)
 pub const DUMMY_INTENT_ID: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
 /// Dummy escrow ID (Move VM format, 64 hex characters)
 pub const DUMMY_ESCROW_ID_MVM: &str = "0x2222222222222222222222222222222222222222222222222222222222222222";
+
+// -------------------------------- USERS ---------------------------------
 
 /// Dummy requester address on hub chain (Move VM format, 32 bytes)
 pub const DUMMY_REQUESTER_ADDR_MVM_HUB: &str = "0x3333333333333333333333333333333333333333333333333333333333333333";
@@ -45,24 +49,28 @@ pub const DUMMY_SOLVER_ADDR_MVM_CON: &str = "0x777777777777777777777777777777777
 /// Dummy solver address (EVM format, 20 bytes)
 pub const DUMMY_SOLVER_ADDR_EVM: &str = "0x8888888888888888888888888888888888888888";
 
+/// Dummy verifier address (EVM format, 20 bytes)
+#[allow(dead_code)]
+pub const DUMMY_VERIFIER_ADDR_EVM: &str = "0x9999999999999999999999999999999999999999";
+
+// ------------------------- TOKENS AND CONTRACTS -------------------------
+
 /// Dummy token address (EVM format, 20 bytes)
-pub const DUMMY_TOKEN_ADDR_EVM: &str = "0x9999999999999999999999999999999999999999";
+pub const DUMMY_TOKEN_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 /// Dummy escrow contract address (EVM format, 20 bytes)
 #[allow(dead_code)]
-pub const DUMMY_ESCROW_CONTRACT_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-
-/// Dummy verifier address (EVM format, 20 bytes)
-#[allow(dead_code)]
-pub const DUMMY_VERIFIER_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-
-/// Dummy transaction hash (64 hex characters)
-#[allow(dead_code)]
-pub const DUMMY_TX_HASH: &str = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+pub const DUMMY_ESCROW_CONTRACT_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 /// Dummy metadata object address (Move VM format, 32 bytes)
 #[allow(dead_code)]
-pub const DUMMY_METADATA_ADDR_MVM: &str = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+pub const DUMMY_METADATA_ADDR_MVM: &str = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+
+// -------------------------------- OTHER ---------------------------------
+
+/// Dummy transaction hash (64 hex characters)
+#[allow(dead_code)]
+pub const DUMMY_TX_HASH: &str = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
 
 /// Dummy timestamp for solver registration (arbitrary test value)
 #[allow(dead_code)]

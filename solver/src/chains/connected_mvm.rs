@@ -33,8 +33,8 @@ pub struct EscrowEvent {
     pub escrow_id: String,
     /// Intent ID for cross-chain linking
     pub intent_id: String,
-    /// Requester address (called requester in Move)
-    #[serde(rename = "requester")]
+    /// Requester address (issuer of the escrow)
+    #[serde(rename = "requester_addr")]
     pub issuer: String,
     /// Offered token metadata
     pub offered_metadata: serde_json::Value,

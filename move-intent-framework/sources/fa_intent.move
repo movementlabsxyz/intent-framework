@@ -42,7 +42,7 @@ module mvmt_intent::fa_intent {
     struct FungibleAssetLimitOrder has store, drop {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
-        requester: address,
+        requester_addr: address,
         intent_id: Option<address>, // Optional cross-chain intent_id for linking (None for regular intents)
         offered_chain_id: u64,
         desired_chain_id: u64
@@ -105,7 +105,7 @@ module mvmt_intent::fa_intent {
         desired_metadata: Object<Metadata>,
         desired_amount: u64,
         desired_chain_id: u64,
-        requester: address,
+        requester_addr: address,
         expiry_time: u64,
         revocable: bool,
         reserved_solver: Option<address>, // Solver address if the intent is reserved (None for unreserved intents)
@@ -158,7 +158,7 @@ module mvmt_intent::fa_intent {
         desired_amount: u64,
         desired_chain_id: u64,
         expiry_time: u64,
-        requester: address,
+        requester_addr: address,
         reservation: Option<IntentReserved>,
         revocable: bool,
         intent_id: Option<address>, // Optional cross-chain intent_id (None for regular intents)
@@ -187,7 +187,7 @@ module mvmt_intent::fa_intent {
             (*option::borrow(&offered_amount_override), offered_metadata_addr_override)
         };
 
-        let coin_store_ref = object::create_object(requester);
+        let coin_store_ref = object::create_object(requester_addr);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
         let delete_ref = object::generate_delete_ref(&coin_store_ref);
         let transfer_ref = object::generate_transfer_ref(&coin_store_ref);
@@ -219,13 +219,13 @@ module mvmt_intent::fa_intent {
                 FungibleAssetLimitOrder {
                     desired_metadata,
                     desired_amount,
-                    requester,
+                    requester_addr,
                     intent_id,
                     offered_chain_id,
                     desired_chain_id
                 },
                 expiry_time,
-                requester,
+                requester_addr,
                 FungibleAssetRecipientWitness {},
                 reservation,
                 revocable
@@ -252,7 +252,7 @@ module mvmt_intent::fa_intent {
                 desired_amount,
                 desired_chain_id,
                 expiry_time,
-                requester,
+                requester_addr,
                 revocable,
                 reserved_solver,
                 requester_addr_connected_chain
@@ -287,7 +287,7 @@ module mvmt_intent::fa_intent {
         solver: address,
         solver_signature: vector<u8>
     ) acquires ChainInfo {
-        let requester = signer::address_of(account);
+        let requester_addr = signer::address_of(account);
         let reservation =
             if (vector::is_empty(&solver_signature)) {
                 option::none() // Explicitly unreserved intent
@@ -301,7 +301,7 @@ module mvmt_intent::fa_intent {
                         desired_amount,
                         chain_id,
                         expiry_time,
-                        requester,
+                        requester_addr,
                         solver
                     );
                 let result =
@@ -327,7 +327,7 @@ module mvmt_intent::fa_intent {
             desired_amount,
             chain_id, // desired_chain_id (same chain for regular intents)
             expiry_time,
-            signer::address_of(account),
+            requester_addr,
             reservation,
             true, // revocable by default for regular intents
             option::none(), // No cross-chain intent_id for regular intents
@@ -419,7 +419,7 @@ module mvmt_intent::fa_intent {
             error::invalid_argument(EAMOUNT_NOT_MEET)
         );
 
-        primary_fungible_store::deposit(argument.requester, received_fa);
+        primary_fungible_store::deposit(argument.requester_addr, received_fa);
 
         // Emit fulfillment event
         let timestamp = timestamp::now_seconds();
@@ -461,7 +461,7 @@ module mvmt_intent::fa_intent {
             error::invalid_argument(EAMOUNT_NOT_MEET)
         );
 
-        primary_fungible_store::deposit(argument.requester, received_fa);
+        primary_fungible_store::deposit(argument.requester_addr, received_fa);
         intent::finish_intent_session(session, FungibleAssetRecipientWitness {})
     }
 

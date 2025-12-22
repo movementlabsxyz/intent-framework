@@ -60,7 +60,7 @@ module mvmt_intent::fa_intent_with_oracle {
         desired_amount: u64, // Original desired amount (for the chain specified by desired_chain_id)
         desired_chain_id: u64, // Chain ID where desired tokens are located
         offered_chain_id: u64, // Chain ID where offered tokens are located (used to determine if payment is required on current chain)
-        requester: address,
+        requester_addr: address,
         requirement: OracleSignatureRequirement,
         intent_id: address, // Intent ID from hub chain (for escrows) - used for signature verification
         requester_addr_connected_chain: Option<address>, // Address on connected chain where solver should send tokens (for outflow intents)
@@ -89,7 +89,7 @@ module mvmt_intent::fa_intent_with_oracle {
         desired_metadata_addr: Option<address>, // Raw address for cross-chain tokens, None for same-chain
         desired_amount: u64,    // Original desired amount (for the chain specified by desired_chain_id)
         desired_chain_id: u64,  // Chain ID where desired tokens are located
-        requester: address,
+        requester_addr: address,
         expiry_time: u64,
         min_reported_value: u64,
         revocable: bool,
@@ -153,7 +153,7 @@ module mvmt_intent::fa_intent_with_oracle {
         desired_chain_id: u64,
         desired_metadata_addr: Option<address>, // Optional explicit desired metadata address for cross-chain intents
         expiry_time: u64,
-        requester: address,
+        requester_addr: address,
         requirement: OracleSignatureRequirement,
         revocable: bool,
         intent_id: address,
@@ -175,7 +175,7 @@ module mvmt_intent::fa_intent_with_oracle {
             desired_metadata_addr
         };
         
-        let coin_store_ref = object::create_object(requester);
+        let coin_store_ref = object::create_object(requester_addr);
         let extend_ref = object::generate_extend_ref(&coin_store_ref);
         let delete_ref = object::generate_delete_ref(&coin_store_ref);
         let transfer_ref = object::generate_transfer_ref(&coin_store_ref);
@@ -198,9 +198,9 @@ module mvmt_intent::fa_intent_with_oracle {
         
         let intent_obj = intent::create_intent<FungibleStoreManager, OracleGuardedLimitOrder, OracleGuardedWitness>(
             FungibleStoreManager { extend_ref, delete_ref },
-            OracleGuardedLimitOrder { desired_metadata, desired_amount, desired_chain_id, offered_chain_id, requester, requirement, intent_id, requester_addr_connected_chain },
+            OracleGuardedLimitOrder { desired_metadata, desired_amount, desired_chain_id, offered_chain_id, requester_addr, requirement, intent_id, requester_addr_connected_chain },
             expiry_time,
-            requester,
+            requester_addr,
             OracleGuardedWitness {},
             reservation,
             revocable,
@@ -218,7 +218,7 @@ module mvmt_intent::fa_intent_with_oracle {
             desired_metadata_addr: event_desired_metadata_addr,
             desired_amount,
             desired_chain_id,
-            requester,
+            requester_addr,
             expiry_time,
             min_reported_value: requirement.min_reported_value,
             revocable,
@@ -296,7 +296,7 @@ module mvmt_intent::fa_intent_with_oracle {
 
         verify_oracle_requirement(argument, &oracle_witness_opt);
 
-        primary_fungible_store::deposit(argument.requester, received_fa);
+        primary_fungible_store::deposit(argument.requester_addr, received_fa);
         intent::finish_intent_session(session, OracleGuardedWitness {})
     }
 

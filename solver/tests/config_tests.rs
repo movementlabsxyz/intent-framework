@@ -3,7 +3,7 @@
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    DUMMY_MODULE_ADDR_CON, DUMMY_MODULE_ADDR_HUB, DUMMY_SOLVER_ADDR_EVM,
+    create_base_token_pair, DUMMY_MODULE_ADDR_CON, DUMMY_MODULE_ADDR_HUB, DUMMY_SOLVER_ADDR_EVM,
     DUMMY_TOKEN_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON, DUMMY_TOKEN_ADDR_MVM_HUB,
 };
 
@@ -162,10 +162,7 @@ fn test_get_token_pairs_success() {
     
     use solver::TokenPair;
     let expected_pair = TokenPair {
-        offered_chain_id: 1,
-        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
-        desired_chain_id: 2,
-        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
+        ..create_base_token_pair()
     };
     
     assert!(pairs.contains_key(&expected_pair));
@@ -209,7 +206,7 @@ fn test_get_token_pairs_token_address() {
     config.acceptance.token_pairs.clear();
     // Token addresses in the config use hex format
     config.acceptance.token_pairs.insert(
-        format!("1:0xaaa:2:{}", DUMMY_TOKEN_ADDR_EVM),
+        format!("1:{}:2:{}", DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_EVM),
         0.5,
     );
 
@@ -218,10 +215,8 @@ fn test_get_token_pairs_token_address() {
     
     use solver::TokenPair;
     let expected_pair = TokenPair {
-        offered_chain_id: 1,
-        offered_token: "0xaaa".to_string(),
-        desired_chain_id: 2,
-        desired_token: DUMMY_TOKEN_ADDR_EVM.to_string(),
+        desired_token: DUMMY_TOKEN_ADDR_EVM.to_string(), // Connected chain token (EVM format, different from base)
+        ..create_base_token_pair() // Uses base for offered_token and chain_id fields
     };
     
     assert!(pairs.contains_key(&expected_pair));

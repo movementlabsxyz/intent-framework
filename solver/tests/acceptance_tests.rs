@@ -9,29 +9,12 @@ use std::collections::HashMap;
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    DUMMY_INTENT_ID, DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
+    create_base_token_pair, DUMMY_INTENT_ID, DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON,
 };
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/// Create a base TokenPair with default test values
-/// This can be customized using Rust's struct update syntax:
-/// ```
-/// let pair = TokenPair {
-///     desired_token: "0xccc...".to_string(),
-///     ..create_base_token_pair()
-/// };
-/// ```
-fn create_base_token_pair() -> solver::acceptance::TokenPair {
-    solver::acceptance::TokenPair {
-        offered_chain_id: 1,
-        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
-        desired_chain_id: 2,
-        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
-    }
-}
 
 /// Create a base acceptance config with default test values
 fn test_config() -> AcceptanceConfig {

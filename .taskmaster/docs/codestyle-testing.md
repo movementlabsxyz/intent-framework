@@ -70,7 +70,34 @@ For test-specific values that aren't reusable constants:
 - Don't create constants for one-off test cases
 - Only create constants for values used across multiple tests
 
-### 8. Format Requirements
+### 8. Struct Update Syntax Pattern
+
+Use Rust's struct update syntax with base helper functions to reduce duplication:
+
+- ✅ **Use `..function_name()`** to fill remaining struct fields from base helper functions
+- ✅ **Override only specific fields** that differ from the base
+- ✅ **Create base helper functions** (e.g., `create_base_intent_mvm()`, `create_base_escrow_event()`) that return structs with sensible defaults
+- ✅ **Chain base functions** when appropriate (e.g., `create_base_intent_evm()` can use `..create_base_intent_mvm()`)
+
+**Example:**
+
+```rust
+let evm_escrow = EscrowEvent {
+    intent_id: hub_intent.intent_id.clone(),  // Override specific fields
+    escrow_id: hub_intent.intent_id.clone(),
+    requester_addr: hub_intent.requester_addr.clone(),
+    ..create_base_escrow_event_evm()  // Fill in the rest from base
+};
+```
+
+**Benefits:**
+
+- Reduces code duplication
+- Makes tests more maintainable
+- Allows focusing on fields that matter for each test
+- Base helpers provide consistent defaults across tests
+
+### 9. Format Requirements
 
 Match the expected format for each constant type:
 

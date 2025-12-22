@@ -57,6 +57,7 @@ pub const DUMMY_VERIFIER_ADDR_EVM: &str = "0x99999999999999999999999999999999999
 
 /// Dummy intent address (Move VM format, 64 hex characters)
 /// This represents the Move VM object address of an intent on the hub chain
+#[allow(dead_code)]
 pub const DUMMY_INTENT_ADDR_MVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 /// Dummy token address (EVM format, 20 bytes)

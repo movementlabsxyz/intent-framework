@@ -72,3 +72,24 @@ pub const DUMMY_TX_HASH: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 
 /// Dummy expiry timestamp (far future timestamp for tests)
 pub const DUMMY_EXPIRY: u64 = 9999999999;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/// Create a base token pair with default test values.
+/// This can be customized using Rust's struct update syntax:
+/// ```
+/// let pair = TokenPair {
+///     desired_token: "0xccc...".to_string(),
+///     ..create_base_token_pair()
+/// };
+/// ```
+pub fn create_base_token_pair() -> solver::acceptance::TokenPair {
+    solver::acceptance::TokenPair {
+        offered_chain_id: 1,
+        offered_token: DUMMY_TOKEN_ADDR_MVM_HUB.to_string(),
+        desired_chain_id: 2,
+        desired_token: DUMMY_TOKEN_ADDR_MVM_CON.to_string(),
+    }
+}

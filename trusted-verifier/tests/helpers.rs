@@ -4,8 +4,8 @@
 //!
 //! The module is organized into several categories:
 //! - **Configuration Builders**: Functions to create test configurations (MVM, EVM, with mock servers)
-//! - **Base Event Creators**: Functions to create base test events (intents, escrows, fulfillments)
-//! - **Base Transaction Creators**: Functions to create base test transactions (MVM, EVM)
+//! - **Default Event Creators**: Functions to create default test events (intents, escrows, fulfillments)
+//! - **Default Transaction Creators**: Functions to create default test transactions (MVM, EVM)
 //! - **Transaction Params Creators**: Functions to create fulfillment transaction parameters
 
 use base64::{engine::general_purpose, Engine as _};
@@ -174,7 +174,7 @@ pub fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
 }
 
 // ============================================================================
-// BASE EVENT CREATORS
+// DEFAULT EVENT CREATORS
 // ============================================================================
 
 /// Create a default intent event with test values for Move VM hub chain.
@@ -221,7 +221,6 @@ pub fn create_default_intent_mvm() -> IntentEvent {
 pub fn create_default_intent_evm() -> IntentEvent {
     IntentEvent {
         offered_metadata: format!(r#"{{"token":"{}"}}"#, DUMMY_TOKEN_ADDR_EVM), // EVM token address format for cross-chain
-        reserved_solver_addr: Some(DUMMY_SOLVER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         connected_chain_id: Some(31337), // EVM chain ID (matches build_test_config_with_evm)
         requester_addr_connected_chain: Some(DUMMY_REQUESTER_ADDR_EVM.to_string()), // EVM address format (20 bytes)
         ..create_default_intent_mvm()

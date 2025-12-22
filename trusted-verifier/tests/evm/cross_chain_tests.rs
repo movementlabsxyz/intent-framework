@@ -18,7 +18,7 @@ fn test_evm_escrow_cross_chain_matching() {
     // Step 2: Create EVM escrow with matching intent_id
     // Use the realistic EVM escrow helper which has empty desired_metadata
     let evm_escrow = EscrowEvent {
-        requester_addr: hub_intent.requester_addr.clone(), // Match hub intent requester (MVM format) instead of base EVM address
+        requester_addr: hub_intent.requester_addr.clone(), // Match hub intent requester (MVM format) instead of default EVM address
         ..create_default_escrow_event_evm()
     };
 
@@ -141,8 +141,8 @@ fn test_evm_escrow_matching_with_hub_intent() {
     // Use the realistic EVM escrow helper which has empty desired_metadata
     // (because the EVM IntentEscrow contract doesn't store this field)
     let evm_escrow = EscrowEvent {
-        requester_addr: hub_intent.requester_addr.clone(), // Match hub intent requester (MVM format) instead of base EVM address
-        expiry_time: DUMMY_EXPIRY, // Matches hub intent expiry (base sets 0)
+        requester_addr: hub_intent.requester_addr.clone(), // Match hub intent requester (MVM format) instead of default EVM address
+        expiry_time: DUMMY_EXPIRY, // Matches hub intent expiry (default sets 0)
         ..create_default_escrow_event_evm()
     };
 

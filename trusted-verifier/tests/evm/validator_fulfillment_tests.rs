@@ -444,9 +444,7 @@ async fn test_validate_outflow_fulfillment_fails_on_recipient_mismatch() {
         .await
         .expect("Failed to create validator");
 
-    let intent = IntentEvent {
-        ..create_default_intent_evm()
-    };
+    let intent = create_default_intent_evm();
 
     let tx_params = FulfillmentTransactionParams {
         recipient_addr: "0xdddddddddddddddddddddddddddddddddddddddd".to_string(), // Different recipient (EVM address format)

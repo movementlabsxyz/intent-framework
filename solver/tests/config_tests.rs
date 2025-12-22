@@ -3,9 +3,8 @@
 #[path = "helpers.rs"]
 mod test_helpers;
 use test_helpers::{
-    create_default_connected_mvm_chain_config, create_default_hub_chain_config,
-    create_default_service_config, create_default_solver_signing_config, create_default_token_pair,
-    DUMMY_TOKEN_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON, DUMMY_TOKEN_ADDR_MVM_HUB,
+    create_default_connected_mvm_chain_config, create_default_solver_config, create_default_token_pair,
+    DUMMY_ESCROW_CONTRACT_ADDR_EVM, DUMMY_TOKEN_ADDR_EVM, DUMMY_TOKEN_ADDR_MVM_CON, DUMMY_TOKEN_ADDR_MVM_HUB,
 };
 
 use solver::config::{AcceptanceConfig, ChainConfig, ConnectedChainConfig, SolverConfig};
@@ -17,23 +16,17 @@ use std::collections::HashMap;
 
 /// Create a minimal valid SolverConfig for testing
 fn create_test_config() -> SolverConfig {
+    let mut token_pairs = HashMap::new();
+    token_pairs.insert(
+        format!("1:{}:2:{}", DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON),
+        1.0,
+    );
+    
     SolverConfig {
-        service: create_default_service_config(),
-        hub_chain: create_default_hub_chain_config(),
-        connected_chain: ConnectedChainConfig::Mvm(
-            create_default_connected_mvm_chain_config(),
-        ),
         acceptance: AcceptanceConfig {
-            token_pairs: {
-                let mut pairs = HashMap::new();
-                pairs.insert(
-                    format!("1:{}:2:{}", DUMMY_TOKEN_ADDR_MVM_HUB, DUMMY_TOKEN_ADDR_MVM_CON),
-                    1.0,
-                );
-                pairs
-            },
+            token_pairs,
         },
-        solver: create_default_solver_signing_config(),
+        ..create_default_solver_config()
     }
 }
 
@@ -194,7 +187,7 @@ fn test_get_token_pairs_token_address() {
     
     use solver::TokenPair;
     let expected_pair = TokenPair {
-        desired_token: DUMMY_TOKEN_ADDR_EVM.to_string(), // Connected chain token (EVM format, different from base)
+        desired_token: DUMMY_TOKEN_ADDR_EVM.to_string(), // Connected chain token (EVM format, different from default)
         ..create_default_token_pair() // Uses default for offered_token and chain_id fields
     };
     
@@ -252,22 +245,22 @@ profile = "connected-profile"
 /// Why: Ensure EVM chain config is correctly parsed from TOML
 #[test]
 fn test_connected_chain_evm_deserialization() {
-    let toml_str = r#"
+    let toml_str = format!(r#"
 type = "evm"
 name = "Connected EVM Chain"
 rpc_url = "https://sepolia.base.org"
 chain_id = 84532
-escrow_contract_addr = "0x123"
+escrow_contract_addr = "{}"
 private_key_env = "BASE_SOLVER_PRIVATE_KEY"
-"#;
+"#, DUMMY_ESCROW_CONTRACT_ADDR_EVM);
 
-    let chain: ConnectedChainConfig = toml::from_str(toml_str).unwrap();
+    let chain: ConnectedChainConfig = toml::from_str(&toml_str).unwrap();
     
     match chain {
         ConnectedChainConfig::Evm(config) => {
             assert_eq!(config.chain_id, 84532);
             assert_eq!(config.name, "Connected EVM Chain");
-            assert_eq!(config.escrow_contract_addr, "0x123");
+            assert_eq!(config.escrow_contract_addr, DUMMY_ESCROW_CONTRACT_ADDR_EVM);
             assert_eq!(config.private_key_env, "BASE_SOLVER_PRIVATE_KEY");
         }
         ConnectedChainConfig::Mvm(_) => panic!("Expected EVM config"),

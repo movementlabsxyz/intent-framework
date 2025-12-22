@@ -18,7 +18,7 @@ use std::sync::Arc;
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Create a base draft data JSON with valid test values
+/// Create a default draft data JSON with valid test values
 fn create_default_draft_data() -> serde_json::Value {
     json!({
         "intent_id": DUMMY_INTENT_ID,
@@ -33,7 +33,7 @@ fn create_default_draft_data() -> serde_json::Value {
 }
 
 /// Create a minimal SolverConfig for testing
-/// Configures token pairs to match the base draft data so drafts would be accepted if not expired
+/// Configures token pairs to match the default draft data so drafts would be accepted if not expired
 fn create_test_solver_config() -> solver::config::SolverConfig {
     use solver::config::{AcceptanceConfig, SolverConfig};
     use std::collections::HashMap;

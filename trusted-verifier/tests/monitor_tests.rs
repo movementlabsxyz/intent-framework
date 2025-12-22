@@ -667,8 +667,8 @@ async fn test_duplicate_fulfillment_event_handling() {
     );
 }
 
-/// Test that base helper structs work with signature generation
-/// Why: Verify that base helpers use valid hex values that can be used for signature generation
+/// Test that default helper structs work with signature generation
+/// Why: Verify that default helpers use valid hex values that can be used for signature generation
 #[tokio::test]
 async fn test_base_helpers_work_with_signature_generation() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -684,7 +684,7 @@ async fn test_base_helpers_work_with_signature_generation() {
         .await
         .expect("Failed to create monitor");
 
-    // Add intent using base helper (required for escrow validation)
+    // Add intent using default helper (required for escrow validation)
     {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
@@ -694,7 +694,7 @@ async fn test_base_helpers_work_with_signature_generation() {
         });
     }
 
-    // Add escrow using base helper (should have valid hex intent_id)
+    // Add escrow using default helper (should have valid hex intent_id)
     {
         let mut escrow_cache = monitor.escrow_cache.write().await;
         escrow_cache.push(EscrowEvent {
@@ -704,12 +704,12 @@ async fn test_base_helpers_work_with_signature_generation() {
         });
     }
 
-    // Create fulfillment using base helper (should have valid hex intent_id matching escrow)
+    // Create fulfillment using default helper (should have valid hex intent_id matching escrow)
     let fulfillment = create_default_fulfillment();
 
-    // This should succeed - base helpers should have valid hex values
+    // This should succeed - default helpers should have valid hex values
     let result = monitor.validate_and_approve_fulfillment(&fulfillment).await;
-    assert!(result.is_ok(), "Base helpers should work with signature generation - intent_id must be valid hex (even number of digits): {:?}", result);
+    assert!(result.is_ok(), "Default helpers should work with signature generation - intent_id must be valid hex (even number of digits): {:?}", result);
 
     // Verify approval was generated
     let approval = monitor
@@ -717,7 +717,7 @@ async fn test_base_helpers_work_with_signature_generation() {
         .await;
     assert!(
         approval.is_some(),
-        "Approval should exist when using base helpers"
+        "Approval should exist when using default helpers"
     );
 }
 

@@ -1,7 +1,7 @@
 //! Unit tests for intent tracker
 
 use solver::{
-    acceptance::DraftintentData, config::SolverConfig, service::tracker::IntentTracker,
+    acceptance::DraftintentData, service::tracker::IntentTracker,
     IntentState,
 };
 
@@ -15,10 +15,6 @@ use test_helpers::{
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-fn create_test_config() -> SolverConfig {
-    create_default_solver_config()
-}
 
 /// Create default draft data for inflow intents (tokens locked on connected chain)
 fn create_default_draft_data_inflow() -> DraftintentData {
@@ -54,7 +50,7 @@ fn create_default_draft_data_outflow() -> DraftintentData {
 /// Why: Ensure tracker initialization works correctly
 #[test]
 fn test_intent_tracker_new() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let _tracker = IntentTracker::new(&config).unwrap();
 }
 
@@ -62,7 +58,7 @@ fn test_intent_tracker_new() {
 /// Why: Ensure signed draftintents (not yet on-chain) are tracked correctly
 #[tokio::test]
 async fn test_add_signed_intent() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let draft_data = create_default_draft_data_inflow();
@@ -92,7 +88,7 @@ async fn test_add_signed_intent() {
 /// Why: Ensure intent type classification works correctly
 #[tokio::test]
 async fn test_add_signed_intent_inflow_outflow() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     // Test inflow intent (tokens locked on connected chain)
@@ -132,7 +128,7 @@ async fn test_add_signed_intent_inflow_outflow() {
 /// Why: Ensure filtering by state works correctly - only on-chain intents are returned, not draftintents
 #[tokio::test]
 async fn test_get_intents_ready_for_fulfillment_state_filter() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let draft_data = create_default_draft_data_inflow();
@@ -166,7 +162,7 @@ async fn test_get_intents_ready_for_fulfillment_state_filter() {
 /// Why: Ensure intent type filtering works correctly
 #[tokio::test]
 async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     // Add inflow intent
@@ -216,7 +212,7 @@ async fn test_get_intents_ready_for_fulfillment_inflow_outflow_filter() {
 /// Why: Ensure intent state transitions work correctly
 #[tokio::test]
 async fn test_mark_fulfilled() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let draft_data = create_default_draft_data_inflow();
@@ -241,7 +237,7 @@ async fn test_mark_fulfilled() {
 /// Why: Ensure error handling works correctly
 #[tokio::test]
 async fn test_mark_fulfilled_not_found() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let result = tracker.mark_fulfilled("non-existent").await;
@@ -253,7 +249,7 @@ async fn test_mark_fulfilled_not_found() {
 /// Why: Ensure error handling works correctly
 #[tokio::test]
 async fn test_get_intent_not_found() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let result = tracker.get_intent("non-existent").await;
@@ -264,7 +260,7 @@ async fn test_get_intent_not_found() {
 /// Why: Ensure error handling works correctly
 #[tokio::test]
 async fn test_set_intent_state_not_found() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let result = tracker.set_intent_state("non-existent", IntentState::Created).await;
@@ -276,7 +272,7 @@ async fn test_set_intent_state_not_found() {
 /// Why: Ensure early return works correctly when no intents are tracked
 #[tokio::test]
 async fn test_poll_for_created_intents_empty_requester_addresses() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     // No intents added, so no requester addresses tracked
@@ -288,7 +284,7 @@ async fn test_poll_for_created_intents_empty_requester_addresses() {
 /// Why: Ensure only Created intents are returned, not Fulfilled ones
 #[tokio::test]
 async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let draft_data = create_default_draft_data_inflow();
@@ -336,7 +332,7 @@ async fn test_get_intents_ready_for_fulfillment_excludes_fulfilled() {
 ///      even when other intents in Signed state (draftintents not yet created on-chain) also exist
 #[tokio::test]
 async fn test_get_intents_ready_for_fulfillment_returns_only_created() {
-    let config = create_test_config();
+    let config = create_default_solver_config();
     let tracker = IntentTracker::new(&config).unwrap();
 
     let draft_data = create_default_draft_data_inflow();

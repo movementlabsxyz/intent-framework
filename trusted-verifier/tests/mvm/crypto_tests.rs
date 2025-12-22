@@ -161,13 +161,13 @@ fn test_mvm_signature_intent_id_validation() {
     let config = build_test_config_with_mvm();
     let service = CryptoService::new(&config).unwrap();
 
-    // Test with valid intent ID from base helper (should succeed)
-    let base_fulfillment = create_default_fulfillment();
-    let valid_intent_id = &base_fulfillment.intent_id;
+    // Test with valid intent ID from default helper (should succeed)
+    let default_fulfillment = create_default_fulfillment();
+    let valid_intent_id = &default_fulfillment.intent_id;
     let result = service.create_mvm_approval_signature(valid_intent_id);
     assert!(
         result.is_ok(),
-        "Should accept valid intent ID from base helper with even number of hex digits"
+        "Should accept valid intent ID from default helper with even number of hex digits"
     );
 
     // Test with intent ID that has odd number of hex digits (now valid after padding)

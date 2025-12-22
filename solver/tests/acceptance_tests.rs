@@ -16,7 +16,7 @@ use test_helpers::{
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Create a base acceptance config with default test values
+/// Create a default acceptance config with test values
 fn test_config() -> AcceptanceConfig {
     use solver::acceptance::TokenPair;
     
@@ -42,7 +42,7 @@ fn test_config() -> AcceptanceConfig {
     }
 }
 
-/// Create a base draft intent data with default test values
+/// Create a default draft intent data with test values
 /// This can be customized using Rust's struct update syntax:
 /// ```
 /// let draft = create_default_draft_data();

@@ -8,7 +8,8 @@ use trusted_verifier::monitor::{EventMonitor, FulfillmentEvent};
 #[path = "../mod.rs"]
 mod test_helpers;
 use test_helpers::{
-    build_test_config_with_evm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ID,
+    build_test_config_with_evm, DUMMY_ESCROW_ID_MVM, DUMMY_EXPIRY, DUMMY_INTENT_ADDR_MVM,
+    DUMMY_INTENT_ID, DUMMY_REQUESTER_ADDR_MVM_HUB, DUMMY_SOLVER_ADDR_EVM,
 };
 
 /// Test that EVM escrow detection logic correctly identifies EVM escrows
@@ -24,9 +25,9 @@ async fn test_evm_escrow_detection_logic() {
     // Create a fulfillment event for an intent that doesn't exist in Move VM escrow cache
     // This should be detected as an EVM escrow
     let fulfillment = FulfillmentEvent {
-        intent_id: "0xevm_intent_123".to_string(),
-        intent_addr: "0xevm_addr".to_string(),
-        solver_addr: "0xsolver".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 1,
@@ -42,7 +43,7 @@ async fn test_evm_escrow_detection_logic() {
     // The actual detection happens in validate_and_approve_fulfillment
     // We verify by checking the approval signature format
     if result.is_ok() {
-        let approval = monitor.get_approval_for_escrow("0xevm_intent_123").await;
+        let approval = monitor.get_approval_for_escrow(DUMMY_INTENT_ID).await;
         assert!(approval.is_some(), "Approval should exist for EVM escrow");
         let approval = approval.unwrap();
         // ECDSA signatures are base64 encoded 65-byte signatures
@@ -69,9 +70,9 @@ async fn test_evm_escrow_ecdsa_signature_creation() {
         .expect("Failed to create monitor");
 
     let fulfillment = FulfillmentEvent {
-        intent_id: "0xevm_test_intent".to_string(),
-        intent_addr: "0xevm_test_addr".to_string(),
-        solver_addr: "0xsolver".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 1,
@@ -82,7 +83,7 @@ async fn test_evm_escrow_ecdsa_signature_creation() {
 
     // Should succeed (even if escrow not in cache, signature creation should work)
     if result.is_ok() {
-        let approval = monitor.get_approval_for_escrow("0xevm_test_intent").await;
+        let approval = monitor.get_approval_for_escrow(DUMMY_INTENT_ID).await;
         if let Some(approval) = approval {
             // Verify signature is ECDSA format (65 bytes)
             let sig_bytes = base64::engine::general_purpose::STANDARD
@@ -113,7 +114,7 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
         escrow_cache.push(trusted_verifier::monitor::EscrowEvent {
             escrow_id: DUMMY_ESCROW_ID_MVM.to_string(),
             intent_id: DUMMY_INTENT_ID.to_string(),
-            requester_addr: "0xissuer".to_string(),
+            requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
@@ -129,9 +130,9 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
 
     // Test Move VM escrow - should use Ed25519 signature
     let mvm_fulfillment = FulfillmentEvent {
-        intent_id: "0xmvmt_intent".to_string(),
-        intent_addr: "0xmvm_addr".to_string(),
-        solver_addr: "0xsolver".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 2,
@@ -157,9 +158,9 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
 
     // Test EVM escrow - should use ECDSA signature
     let evm_fulfillment = FulfillmentEvent {
-        intent_id: "0xevm_intent".to_string(),
-        intent_addr: "0xevm_addr".to_string(),
-        solver_addr: "0xsolver".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 3,
@@ -169,7 +170,7 @@ async fn test_evm_vs_mvm_escrow_differentiation() {
         .validate_and_approve_fulfillment(&evm_fulfillment)
         .await;
     if evm_result.is_ok() {
-        let evm_approval = monitor.get_approval_for_escrow("0xevm_intent").await;
+        let evm_approval = monitor.get_approval_for_escrow(DUMMY_INTENT_ID).await;
         if let Some(approval) = evm_approval {
             // ECDSA signatures are 65 bytes
             let sig_bytes = base64::engine::general_purpose::STANDARD
@@ -194,11 +195,10 @@ async fn test_evm_escrow_approval_flow() {
         .await
         .expect("Failed to create monitor");
 
-    let intent_id = "0xevm_workflow_intent";
     let fulfillment = FulfillmentEvent {
-        intent_id: intent_id.to_string(),
-        intent_addr: "0xworkflow_addr".to_string(),
-        solver_addr: "0xsolver".to_string(),
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 1,
@@ -209,7 +209,7 @@ async fn test_evm_escrow_approval_flow() {
 
     // Should succeed and create approval
     if result.is_ok() {
-        let approval = monitor.get_approval_for_escrow(intent_id).await;
+        let approval = monitor.get_approval_for_escrow(DUMMY_INTENT_ID).await;
         assert!(
             approval.is_some(),
             "Approval should exist after workflow completion"
@@ -217,7 +217,7 @@ async fn test_evm_escrow_approval_flow() {
 
         let approval = approval.unwrap();
         assert_eq!(
-            approval.intent_id, intent_id,
+            approval.intent_id, DUMMY_INTENT_ID,
             "Approval should have correct intent_id"
         );
         assert!(
@@ -249,9 +249,9 @@ async fn test_evm_escrow_with_invalid_intent_id() {
 
     // Test with empty intent ID
     let fulfillment_empty = FulfillmentEvent {
-        intent_id: "".to_string(),
-        intent_addr: "0xaddr".to_string(),
-        solver_addr: "0xsolver".to_string(),
+        intent_id: "".to_string(), // Empty intent ID for testing error handling
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 1,
@@ -268,9 +268,9 @@ async fn test_evm_escrow_with_invalid_intent_id() {
 
     // Test with invalid hex format (if signature creation requires valid hex)
     let fulfillment_invalid = FulfillmentEvent {
-        intent_id: "not_a_valid_hex_string".to_string(),
-        intent_addr: "0xaddr".to_string(),
-        solver_addr: "0xsolver".to_string(),
+        intent_id: "not_a_valid_hex_string".to_string(), // Invalid hex for testing error handling
+        intent_addr: DUMMY_INTENT_ADDR_MVM.to_string(),
+        solver_addr: DUMMY_SOLVER_ADDR_EVM.to_string(),
         provided_metadata: "{}".to_string(),
         provided_amount: 1000,
         timestamp: 1,

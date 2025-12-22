@@ -55,22 +55,26 @@ pub const DUMMY_VERIFIER_ADDR_EVM: &str = "0x99999999999999999999999999999999999
 
 // ------------------------- TOKENS AND CONTRACTS -------------------------
 
+/// Dummy intent address (Move VM format, 64 hex characters)
+/// This represents the Move VM object address of an intent on the hub chain
+pub const DUMMY_INTENT_ADDR_MVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
 /// Dummy token address (EVM format, 20 bytes)
-pub const DUMMY_TOKEN_ADDR_EVM: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+pub const DUMMY_TOKEN_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 /// Dummy escrow contract address (EVM format, 20 bytes)
 #[allow(dead_code)]
-pub const DUMMY_ESCROW_CONTRACT_ADDR_EVM: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+pub const DUMMY_ESCROW_CONTRACT_ADDR_EVM: &str = "0xcccccccccccccccccccccccccccccccccccccccc";
 
 /// Dummy metadata object address (Move VM format, 32 bytes)
 #[allow(dead_code)]
-pub const DUMMY_METADATA_ADDR_MVM: &str = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+pub const DUMMY_METADATA_ADDR_MVM: &str = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
 
 // -------------------------------- OTHER ---------------------------------
 
 /// Dummy transaction hash (64 hex characters)
 #[allow(dead_code)]
-pub const DUMMY_TX_HASH: &str = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+pub const DUMMY_TX_HASH: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
 /// Dummy timestamp for solver registration (arbitrary test value)
 #[allow(dead_code)]

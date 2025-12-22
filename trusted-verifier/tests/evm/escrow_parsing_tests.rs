@@ -99,11 +99,10 @@ async fn test_zero_amount_escrow_fails_validation() {
         .expect("Failed to create monitor");
 
     // Add intent that requires 1000 tokens
-    // Note: reserved_solver is None to avoid triggering EVM RPC validation in unit tests
     {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
-            intent_id: "0xtest_intent".to_string(),
+            intent_id: DUMMY_INTENT_ID.to_string(),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
@@ -111,7 +110,7 @@ async fn test_zero_amount_escrow_fails_validation() {
             revocable: false,
             requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             requester_addr_connected_chain: None,
-            reserved_solver_addr: None,
+            reserved_solver_addr: None, // None to avoid triggering EVM RPC validation in unit tests
             connected_chain_id: Some(84532), // Base Sepolia
             expiry_time: DUMMY_EXPIRY,
             timestamp: 1,
@@ -120,9 +119,9 @@ async fn test_zero_amount_escrow_fails_validation() {
 
     // Add escrow with amount = 0
     let zero_amount_escrow = EscrowEvent {
-        escrow_id: "0xtest_intent".to_string(),
-        intent_id: "0xtest_intent".to_string(),
-        requester_addr: "0xrequester".to_string(),
+        escrow_id: DUMMY_INTENT_ID.to_string(), // escrow_id matches intent_id in this test
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(),
         offered_metadata: "{}".to_string(),
         offered_amount: 0,
         desired_metadata: "{}".to_string(),
@@ -161,11 +160,10 @@ async fn test_correct_amount_escrow_passes_validation() {
         .expect("Failed to create monitor");
 
     // Add intent that requires 1000 tokens
-    // Note: reserved_solver is None to avoid triggering EVM RPC validation in unit tests
     {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
-            intent_id: "0xvalid_intent".to_string(),
+            intent_id: DUMMY_INTENT_ID.to_string(),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
             desired_metadata: "{}".to_string(),
@@ -173,7 +171,7 @@ async fn test_correct_amount_escrow_passes_validation() {
             revocable: false,
             requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             requester_addr_connected_chain: None,
-            reserved_solver_addr: None,
+            reserved_solver_addr: None, // None to avoid triggering EVM RPC validation in unit tests
             connected_chain_id: Some(84532),
             expiry_time: DUMMY_EXPIRY,
             timestamp: 1,
@@ -182,9 +180,9 @@ async fn test_correct_amount_escrow_passes_validation() {
 
     // Add escrow with correct amount
     let valid_escrow = EscrowEvent {
-        escrow_id: "0xvalid_intent".to_string(),
-        intent_id: "0xvalid_intent".to_string(),
-        requester_addr: "0xrequester".to_string(),
+        escrow_id: DUMMY_INTENT_ID.to_string(), // escrow_id matches intent_id in this test
+        intent_id: DUMMY_INTENT_ID.to_string(),
+        requester_addr: DUMMY_REQUESTER_ADDR_EVM.to_string(),
         offered_metadata: "{}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{}".to_string(),

@@ -77,7 +77,7 @@ pub struct IntentEvent {
     /// Unique identifier for the intent
     pub intent_id: String,
     /// Address of the requester who created the intent
-    pub requester: String,
+    pub requester_addr: String,
     /// Metadata of the asset being offered
     pub offered_metadata: String,
     /// Amount of the asset being offered (u64, matching Move contract constraint)

@@ -104,7 +104,7 @@ async fn test_zero_amount_escrow_fails_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xtest_intent".to_string(),
-            requester: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
+            requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             connected_chain_id: Some(84532), // Base Sepolia
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,
@@ -166,7 +166,7 @@ async fn test_correct_amount_escrow_passes_validation() {
         let mut intent_cache = monitor.event_cache.write().await;
         intent_cache.push(IntentEvent {
             intent_id: "0xvalid_intent".to_string(),
-            requester: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
+            requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(),
             connected_chain_id: Some(84532),
             offered_metadata: "{}".to_string(),
             offered_amount: 1000,

@@ -38,7 +38,7 @@ pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
                 for event in events {
                     // CRITICAL SECURITY CHECK: Reject revocable intents
                     if event.revocable {
-                        error!("SECURITY: Rejecting revocable intent {} from {} - NOT safe for escrow", event.intent_id, event.requester);
+                        error!("SECURITY: Rejecting revocable intent {} from {} - NOT safe for escrow", event.intent_id, event.requester_addr);
                         continue; // Skip this event - do not cache or process
                     }
 
@@ -65,7 +65,7 @@ pub async fn monitor_hub_chain(monitor: &EventMonitor) -> Result<()> {
                                 == normalized_intent_id
                         }) {
                             // Only log new events
-                            info!("New intent event: {} from {}", event.intent_id, event.requester);
+                            info!("New intent event: {} from {}", event.intent_id, event.requester_addr);
                             info!(
                                 "Request-intent {} is non-revocable - safe for escrow",
                                 event.intent_id

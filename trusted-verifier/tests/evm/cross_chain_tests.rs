@@ -20,7 +20,7 @@ fn test_evm_escrow_cross_chain_matching() {
     let evm_escrow = EscrowEvent {
         intent_id: hub_intent.intent_id.clone(),
         escrow_id: hub_intent.intent_id.clone(), // For EVM, escrow_id = intent_id
-        issuer_addr: hub_intent.requester.clone(),
+        issuer_addr: hub_intent.requester_addr.clone(),
         offered_amount: hub_intent.offered_amount,
         ..create_base_escrow_event_evm()
     };
@@ -146,7 +146,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
     let evm_escrow = EscrowEvent {
         intent_id: hub_intent.intent_id.clone(),
         escrow_id: hub_intent.intent_id.clone(), // EVM: escrow_id = intent_id
-        issuer_addr: hub_intent.requester.clone(),
+        issuer_addr: hub_intent.requester_addr.clone(),
         offered_amount: hub_intent.offered_amount,
         expiry_time: DUMMY_EXPIRY, // Matches hub intent expiry
         ..create_base_escrow_event_evm()
@@ -178,7 +178,7 @@ fn test_evm_escrow_matching_with_hub_intent() {
         "Expiry times should match"
     );
     assert_eq!(
-        matched.requester, evm_escrow.issuer_addr,
+        matched.requester_addr, evm_escrow.issuer_addr,
         "Request-intent requester should match escrow issuer"
     );
 

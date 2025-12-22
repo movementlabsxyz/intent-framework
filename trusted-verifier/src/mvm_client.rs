@@ -1385,7 +1385,7 @@ pub struct LimitOrderEvent {
     pub desired_metadata: serde_json::Value, // Can be Object<Metadata> which is {"inner":"0x..."}
     pub desired_amount: String,
     pub desired_chain_id: String,
-    pub requester: String,
+    pub requester_addr: String,
     pub expiry_time: String,
     pub revocable: bool,
     #[serde(
@@ -1419,7 +1419,7 @@ pub struct OracleLimitOrderEvent {
     pub desired_amount: String,
     #[serde(deserialize_with = "deserialize_u64_string")]
     pub desired_chain_id: String, // Chain ID where desired tokens are located
-    pub requester: String,
+    pub requester_addr: String,
     pub expiry_time: String,
     pub min_reported_value: String,
     pub revocable: bool,

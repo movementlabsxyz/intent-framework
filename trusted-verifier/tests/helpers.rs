@@ -186,7 +186,7 @@ pub fn build_test_config_with_mock_server(mock_server_url: &str) -> Config {
 pub fn create_base_intent_mvm() -> IntentEvent {
     IntentEvent {
         intent_id: DUMMY_INTENT_ID.to_string(),
-        requester: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(), // Hub chain requester (Move VM format, 32 bytes)
+        requester_addr: DUMMY_REQUESTER_ADDR_MVM_HUB.to_string(), // Hub chain requester (Move VM format, 32 bytes)
         offered_metadata: "{\"inner\":\"offered_meta\"}".to_string(),
         offered_amount: 1000,
         desired_metadata: "{\"inner\":\"desired_meta\"}".to_string(),

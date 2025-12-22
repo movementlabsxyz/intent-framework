@@ -33,9 +33,8 @@ pub struct EscrowEvent {
     pub escrow_id: String,
     /// Intent ID for cross-chain linking
     pub intent_id: String,
-    /// Requester address (issuer of the escrow)
-    #[serde(rename = "requester_addr")]
-    pub issuer: String,
+    /// Requester address (the account that created the escrow and locked funds)
+    pub requester_addr: String,
     /// Offered token metadata
     pub offered_metadata: serde_json::Value,
     /// Offered amount

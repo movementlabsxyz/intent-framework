@@ -44,7 +44,7 @@ fn create_mock_oracle_limit_order_event(
             "desired_metadata_addr": {"vec": []}, // None for same-chain (test uses same chain IDs)
             "desired_amount": "500",
             "desired_chain_id": "2",
-            "requester": DUMMY_REQUESTER_ADDR_MVM_HUB,
+            "requester_addr": DUMMY_REQUESTER_ADDR_MVM_HUB,
             "expiry_time": "1000000",
             "min_reported_value": "0",
             "revocable": false,

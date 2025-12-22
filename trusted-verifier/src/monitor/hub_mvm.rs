@@ -246,7 +246,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
-                    requester: data.requester.clone(),
+                    requester_addr: data.requester_addr.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
@@ -302,7 +302,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
-                    requester: data.requester.clone(),
+                    requester_addr: data.requester_addr.clone(),
                     offered_metadata: offered_metadata_str,
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,
                     desired_metadata: serde_json::to_string(&data.desired_metadata)
@@ -377,7 +377,7 @@ pub async fn poll_hub_events(monitor: &EventMonitor) -> Result<Vec<IntentEvent>>
                 
                 intent_events.push(IntentEvent {
                     intent_id: data.intent_id.clone(), // Use intent_id for cross-chain linking
-                    requester: data.requester.clone(),
+                    requester_addr: data.requester_addr.clone(),
                     offered_metadata: serde_json::to_string(&data.offered_metadata)
                         .unwrap_or_default(),
                     offered_amount: parse_amount_with_u64_limit(&data.offered_amount, "Request-intent offered_amount")?,

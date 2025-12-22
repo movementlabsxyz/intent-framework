@@ -101,7 +101,7 @@ fn test_escrow_event_deserialization() {
     let event: solver::chains::connected_mvm::EscrowEvent = serde_json::from_value(json).unwrap();
     assert_eq!(event.escrow_id, DUMMY_ESCROW_ID_MVM);
     assert_eq!(event.intent_id, DUMMY_INTENT_ID);
-    assert_eq!(event.issuer, DUMMY_REQUESTER_ADDR_MVM_CON);
+    assert_eq!(event.requester_addr, DUMMY_REQUESTER_ADDR_MVM_CON);
     assert_eq!(event.offered_amount, "1000");
     // reserved_solver is a Move Option wrapper
     let solver = event.reserved_solver.and_then(|opt| opt.into_option());
